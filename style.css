@@ -3064,3 +3064,40 @@ input[type="range"] { accent-color:var(--gh-accent); }
     margin-top: 7px;
   }
 }
+
+
+/* ============================================================
+   GameHub v1.0.9 — clock size + numeral alignment correction
+   The previous 850px breakpoint reduced the clock to ~61vw,
+   which almost cancelled the intended enlargement on this phone.
+   ============================================================ */
+#clock-page .clock-stage {
+  width: min(74vw, 320px);
+}
+
+#clock-page .clock-number-group {
+  dominant-baseline: auto;
+}
+
+/* Most current iPhones land in this height range. Keep the clock
+   genuinely larger rather than shrinking it back toward 235px. */
+@media (max-height: 850px) {
+  #clock-page .clock-stage {
+    width: min(72vw, 285px);
+  }
+
+  #clock-page .day-cycle-card {
+    margin-top: 15px;
+  }
+}
+
+/* Only substantially shorter displays get the strong reduction. */
+@media (max-height: 690px) {
+  #clock-page .clock-stage {
+    width: min(58vw, 225px);
+  }
+
+  #clock-page .day-cycle-card {
+    margin-top: 8px;
+  }
+}

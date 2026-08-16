@@ -36,7 +36,10 @@ for (let n = 1; n <= 12; n++) {
   const y = 150 - Math.cos(angle) * radius;
   const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
   text.setAttribute("x", x);
-  text.setAttribute("y", y + 1);
+  text.setAttribute("y", y);
+  // Safari's SVG dominant-baseline sits these numerals slightly high.
+  // A dy based on the font em gives consistent optical vertical centring.
+  text.setAttribute("dy", "0.35em");
   text.textContent = n;
   clockNumbers.appendChild(text);
 }
