@@ -3019,60 +3019,48 @@ input[type="range"] { accent-color:var(--gh-accent); }
 
 
 /* ============================================================
-   GameHub v1.0.7 — Tell the Time sizing balance
+   GameHub v1.0.7 — Tell the Time size correction
+   Final overrides intentionally follow the earlier responsive rules.
    ============================================================ */
-.clock-stage {
-  width:min(64vw, 292px);
-  margin:6px auto 0;
+#clock-page .clock-stage {
+  width: min(68vw, 310px);
+  margin-top: 5px;
 }
 
-.digital-time {
-  font-size:clamp(39px,10vw,54px);
-  font-weight:660;
-  margin-top:5px;
+#clock-page .digital-time {
+  font-size: clamp(42px, 11vw, 56px);
+  font-weight: 650;
+  margin-top: 5px;
 }
 
-.day-label {
-  margin-top:4px;
+#clock-page .day-label {
+  margin-top: 4px;
 }
 
-.day-cycle-card {
-  margin-top:18px;
+#clock-page .day-cycle-card {
+  margin-top: 18px;
 }
 
-.clock-controls-card {
-  margin-top:4px;
-}
-
-@media (max-height:850px) {
-  .clock-stage {
-    width:min(58vw, 258px);
+@media (max-height: 850px) {
+  #clock-page .clock-stage {
+    width: min(61vw, 270px);
   }
-  .digital-time {
-    font-size:39px;
+  #clock-page .digital-time {
+    font-size: clamp(40px, 10.5vw, 52px);
   }
-  .day-cycle-card {
-    margin-top:11px;
+  #clock-page .day-cycle-card {
+    margin-top: 12px;
   }
 }
 
-@media (max-height:760px) {
-  .clock-stage {
-    width:min(53vw, 228px);
+@media (max-height: 690px) {
+  #clock-page .clock-stage {
+    width: min(49vw, 205px);
   }
-  .digital-time {
-    font-size:36px;
+  #clock-page .digital-time {
+    font-size: 38px;
   }
-  .day-cycle-card {
-    margin-top:7px;
-  }
-}
-
-@media (max-height:690px) {
-  .clock-stage {
-    width:min(46vw, 190px);
-  }
-  .digital-time {
-    font-size:33px;
+  #clock-page .day-cycle-card {
+    margin-top: 7px;
   }
 }
