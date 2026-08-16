@@ -15,7 +15,7 @@ let chosenNumber = Number(localStorage.getItem("chosenNumber") || 4);
 let taps = Number(localStorage.getItem("numberTaps") || 0);
 
 function renderNumbers() {
-  chosenNumber = clamp(chosenNumber, 1, 12);
+  chosenNumber = Math.max(1, chosenNumber);
   const total = chosenNumber * taps;
 
   chosenNumberEl.textContent = chosenNumber;
@@ -52,7 +52,7 @@ function renderNumbers() {
 }
 
 function changeChosenNumber(delta) {
-  chosenNumber = clamp(chosenNumber + delta, 1, 12);
+  chosenNumber = Math.max(1, chosenNumber + delta);
   taps = 0;
   renderNumbers();
 }

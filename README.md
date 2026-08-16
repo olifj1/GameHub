@@ -1,4 +1,4 @@
-# GameHub v1.0.12
+# GameHub v1.0.13
 
 Phone-first modular web-game hub.
 
@@ -21,7 +21,7 @@ changed in `site-config.js` without renaming files or refactoring game code.
 
 ## Upload from iPhone
 
-Unzip `GameHub-v1.0.12.zip`, then upload/select all files from the extracted folder and
+Unzip `GameHub-v1.0.13.zip`, then upload/select all files from the extracted folder and
 upload the files to the root of the GameHub GitHub repository.
 
 ## v1.0.9 fixes
@@ -74,6 +74,12 @@ upload the files to the root of the GameHub GitHub repository.
 - Reduced the digital clock font weight so it competes less with the analogue face.
 - Shifted the SVG clock numerals down slightly for better optical centring on iOS Safari.
 
+
+
+## v1.0.13
+
+- Times Tables: vertically rebalanced the selector, result card, tap history and Reset control so the main learning content sits closer to the middle of the space between the title and bottom TAP button.
+- Times Tables: removed the previous maximum table limit of 12; the + control can now continue upward without an arbitrary cap (minimum remains 1).
 
 ## v1.0.12
 
