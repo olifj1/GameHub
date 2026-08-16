@@ -57,10 +57,6 @@ let testScore = 0;
 let testCorrect = 0;
 let testPassed = 0;
 
-function randomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
 function makeAddition(maxAnswer) {
   const minPart = maxAnswer <= 10 ? 1 : 2;
   const answer = randomInt(minPart * 2, maxAnswer);
@@ -122,7 +118,7 @@ function generateProblem() {
   answerDisplay.classList.remove("correct", "wrong");
   sumFeedback.classList.remove("good", "bad");
   sumQuestion.textContent = `${problem.a} ${problem.op} ${problem.b} = ?`;
-  sumFeedback.textContent = testRunning ? "Solve it or tap Pass" : "Tap the numbers below";
+  sumFeedback.textContent = "";
   renderAnswer();
 }
 

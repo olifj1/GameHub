@@ -3439,3 +3439,76 @@ input[type="range"] { accent-color:var(--gh-accent); }
     padding-bottom: 8px;
   }
 }
+
+
+/* GameHub v1.0.14 — Sums layout polish and interaction fixes */
+#sums-screen {
+  /* Keep the area below the page the same neutral colour as the page shell. */
+  background: var(--gh-bg);
+}
+
+.sums-page .sums-header {
+  margin-bottom: 34px;
+}
+
+.sums-page .mode-switch {
+  margin-bottom: 24px;
+}
+
+.sums-page .sum-setup {
+  margin-bottom: 20px;
+}
+
+/* Difficulty guidance has been removed from the visible layout. */
+.sums-page .difficulty-note {
+  display: none !important;
+}
+
+.sums-page .sum-card {
+  margin-top: 8px;
+}
+
+.sums-page .sum-feedback:empty {
+  display: none;
+}
+
+.sums-page .sum-feedback:not(:empty) {
+  margin-top: 10px;
+}
+
+/* New Sum / Pass should read as a proper centred action rather than half a row. */
+.sums-page .sum-actions {
+  display: block;
+  width: min(100%, 310px);
+  margin: 18px auto 0;
+}
+
+.sums-page .sum-actions .secondary-action {
+  width: 100%;
+  min-height: 56px;
+  padding: 0 24px;
+  font-size: 17px;
+  border-radius: 18px;
+}
+
+@media (max-height: 850px) {
+  .sums-page .sums-header {
+    margin-bottom: 28px;
+  }
+
+  .sums-page .mode-switch {
+    margin-bottom: 18px;
+  }
+
+  .sums-page .sum-setup {
+    margin-bottom: 15px;
+  }
+
+  .sums-page .sum-actions {
+    margin-top: 14px;
+  }
+
+  .sums-page .sum-actions .secondary-action {
+    min-height: 52px;
+  }
+}

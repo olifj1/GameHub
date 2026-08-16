@@ -1,4 +1,4 @@
-# GameHub v1.0.13
+# GameHub v1.0.14
 
 Phone-first modular web-game hub.
 
@@ -21,7 +21,7 @@ changed in `site-config.js` without renaming files or refactoring game code.
 
 ## Upload from iPhone
 
-Unzip `GameHub-v1.0.13.zip`, then upload/select all files from the extracted folder and
+Unzip `GameHub-v1.0.14.zip`, then upload/select all files from the extracted folder and
 upload the files to the root of the GameHub GitHub repository.
 
 ## v1.0.9 fixes
@@ -91,3 +91,12 @@ upload the files to the root of the GameHub GitHub repository.
 - Times Tables: moved the main TAP control to the bottom of the page for easier thumb reach.
 - Enlarged and rebalanced the results card, total, equations and tap feedback.
 - Added more breathing room between the page title and the main controls.
+
+
+## v1.0.14
+
+- Rebalanced the Sums page with more breathing room below the title.
+- Removed the visible explanatory/help text from the main Sums layout.
+- Removed the green background block below the page content.
+- Fixed Sums interactions (Practice/Test, difficulty, New Sum, keypad) by removing a duplicate global `randomInt` declaration that prevented `game-03.js` from loading.
+- Enlarged and centred the New Sum / Pass action button.
