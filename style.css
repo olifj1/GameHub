@@ -3300,3 +3300,105 @@ input[type="range"] { accent-color:var(--gh-accent); }
     font-size: 50px;
   }
 }
+
+/* GameHub v1.0.12 — Times Tables spacing and result emphasis */
+.numbers-page {
+  min-height: calc(100dvh - 20px);
+  height: auto;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+.numbers-page .page-header {
+  margin-bottom: 36px;
+}
+
+.numbers-page .number-picker {
+  margin-bottom: 22px;
+}
+
+.numbers-page .total-card {
+  min-height: 230px;
+  padding: 24px 22px 22px;
+}
+
+.numbers-page .total-value {
+  margin-top: 6px;
+  font-size: 70px;
+}
+
+.numbers-page .equation {
+  margin-top: 18px;
+  font-size: 20px;
+}
+
+.numbers-page .multiply-equation {
+  margin-top: 10px;
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.numbers-page .tap-history {
+  min-height: 72px;
+  margin-top: 20px;
+}
+
+.numbers-page .tap-dots {
+  margin-bottom: 10px;
+}
+
+.numbers-page .tap-count {
+  font-size: 18px;
+}
+
+.numbers-page #numbers-reset {
+  margin-top: 10px;
+  padding: 13px 24px;
+}
+
+.numbers-page .tap-button {
+  margin-top: auto;
+  margin-bottom: max(8px, env(safe-area-inset-bottom));
+}
+
+/* Keep the layout generous on normal iPhone-height screens instead of
+   dropping back to the much tighter legacy compact sizing. */
+@media (max-height:850px) {
+  .numbers-page .page-header {
+    margin-bottom: 28px;
+  }
+  .numbers-page .number-picker {
+    margin-bottom: 16px;
+  }
+  .numbers-page .chosen-number {
+    min-height: 78px;
+  }
+  .numbers-page .total-card {
+    min-height: 200px;
+    padding: 18px 20px;
+  }
+  .numbers-page .total-value {
+    font-size: 62px;
+  }
+  .numbers-page .equation {
+    margin-top: 12px;
+    font-size: 18px;
+  }
+  .numbers-page .multiply-equation {
+    margin-top: 8px;
+    font-size: 25px;
+  }
+  .numbers-page .tap-history {
+    min-height: 62px;
+    margin-top: 14px;
+  }
+  .numbers-page #numbers-reset {
+    margin-top: 8px;
+    padding: 11px 20px;
+  }
+  .numbers-page .tap-button {
+    min-height: 112px;
+    margin-top: auto;
+    margin-bottom: max(6px, env(safe-area-inset-bottom));
+  }
+}

@@ -1,4 +1,4 @@
-# GameHub v1.0.11
+# GameHub v1.0.12
 
 Phone-first modular web-game hub.
 
@@ -21,7 +21,7 @@ changed in `site-config.js` without renaming files or refactoring game code.
 
 ## Upload from iPhone
 
-Unzip `GameHub-v1.0.11.zip`, then upload/select all files from the extracted folder and
+Unzip `GameHub-v1.0.12.zip`, then upload/select all files from the extracted folder and
 upload the files to the root of the GameHub GitHub repository.
 
 ## v1.0.9 fixes
@@ -75,7 +75,12 @@ upload the files to the root of the GameHub GitHub repository.
 - Shifted the SVG clock numerals down slightly for better optical centring on iOS Safari.
 
 
-## v1.0.11
+## v1.0.12
+
+- Times Tables: increased the gap below the page title so the controls sit lower on the screen.
+- Enlarged and strengthened the multiplication result line for clearer emphasis.
+- Rebalanced spacing around the tap history and Reset control.
+- Made the Times Tables page fill the phone viewport so the TAP button is pushed down into easier thumb reach.
 
 - Times Tables: moved the main TAP control to the bottom of the page for easier thumb reach.
 - Enlarged and rebalanced the results card, total, equations and tap feedback.
