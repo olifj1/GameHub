@@ -9,13 +9,21 @@
 </head>
 <body class="modular-game" data-game-id="game-07">
   <a class="game-home-button" href="index.html" aria-label="Back to games">← Games</a>
+  <button class="game-info-button" type="button" aria-label="How to play" aria-haspopup="dialog">i</button>
+  <div class="game-info-overlay" hidden>
+    <div class="game-info-dialog" role="dialog" aria-modal="true" aria-labelledby="game-07-info-title">
+      <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
+      <p class="kicker">HOW TO PLAY</p>
+      <h2 id="game-07-info-title">Instructions</h2>
+      <p>Build a program from the movement commands, then press Run to guide the character through the puzzle. Change level for a different challenge and clear the program when you want to try again.</p>
+    </div>
+  </div>
   <main class="screen-wrap">
     <section aria-labelledby="coding-title" class="screen active" id="coding-screen">
 <div class="page coding-page">
 <header class="page-header coding-header">
 <p class="kicker" data-site-name="">GameHub</p>
 <h1 id="coding-title">Coding</h1>
-<p class="subhead">Build a program to guide the rover to the flag.</p>
 </header>
 <div class="coding-topbar">
 <div aria-label="Coding difficulty" class="coding-levels" role="group">

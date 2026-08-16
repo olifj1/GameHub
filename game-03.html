@@ -9,13 +9,21 @@
 </head>
 <body class="modular-game" data-game-id="game-03">
   <a class="game-home-button" href="index.html" aria-label="Back to games">← Games</a>
+  <button class="game-info-button" type="button" aria-label="How to play" aria-haspopup="dialog">i</button>
+  <div class="game-info-overlay" hidden>
+    <div class="game-info-dialog" role="dialog" aria-modal="true" aria-labelledby="game-03-info-title">
+      <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
+      <p class="kicker">HOW TO PLAY</p>
+      <h2 id="game-03-info-title">Instructions</h2>
+      <p>Choose Practice or Test and select a difficulty. Enter answers with the number pad and press ✓ to check them. In Test mode, answer as many as you can before the timer ends.</p>
+    </div>
+  </div>
   <main class="screen-wrap">
     <section aria-labelledby="sums-title" class="screen active" id="sums-screen">
 <div class="page sums-page">
 <header class="page-header sums-header">
 <p class="kicker" data-site-name="">GameHub</p>
 <h1 id="sums-title">Sums</h1>
-<p class="subhead">Practise at your own pace, or race the timer.</p>
 </header>
 <div aria-label="Sum mode" class="mode-switch" role="group">
 <button class="mode-button active" data-sum-mode="practice">Practice</button>

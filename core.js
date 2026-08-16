@@ -53,3 +53,28 @@ if ("serviceWorker" in navigator) {
     }
   });
 }
+
+
+// Shared instructions dialog for every game.
+document.querySelectorAll(".game-info-button").forEach(button => {
+  button.addEventListener("click", () => {
+    const overlay = document.querySelector(".game-info-overlay");
+    if (!overlay) return;
+    overlay.hidden = false;
+    requestAnimationFrame(() => overlay.classList.add("open"));
+    overlay.querySelector(".game-info-close")?.focus();
+  });
+});
+document.querySelectorAll(".game-info-overlay").forEach(overlay => {
+  const close = () => {
+    overlay.classList.remove("open");
+    setTimeout(() => { overlay.hidden = true; }, 150);
+  };
+  overlay.querySelector(".game-info-close")?.addEventListener("click", close);
+  overlay.addEventListener("click", event => {
+    if (event.target === overlay) close();
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !overlay.hidden) close();
+  });
+});

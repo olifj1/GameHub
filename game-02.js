@@ -31,7 +31,7 @@ for (let i = 0; i < 60; i++) {
 const clockNumbers = $("#clock-numbers");
 for (let n = 1; n <= 12; n++) {
   const angle = n * 30 * Math.PI / 180;
-  const radius = 98;
+  const radius = 91;
   const x = 150 + Math.sin(angle) * radius;
   const y = 150 - Math.cos(angle) * radius;
   const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -58,8 +58,9 @@ function labelForTime(decimalHour) {
 }
 
 function renderClock() {
+  const baseHour = hour === 24 ? 0 : hour;
   const minuteForHands = minute === 60 ? 0 : minute;
-  const carriedHour = minute === 60 ? (hour + 1) % 24 : hour;
+  const carriedHour = minute === 60 ? (baseHour + 1) % 24 : baseHour;
   const decimalHour = carriedHour + minuteForHands / 60;
 
   hourHand.style.transform = `rotate(${(decimalHour % 12) * 30}deg)`;
@@ -68,7 +69,7 @@ function renderClock() {
   const hh = String(carriedHour).padStart(2, "0");
   const mm = String(minute === 60 ? 0 : minute).padStart(2, "0");
   digitalTime.textContent = `${hh}:${mm}`;
-  hourReadout.textContent = String(hour).padStart(2, "0");
+  hourReadout.textContent = String(hour === 24 ? 0 : hour).padStart(2, "0");
   minuteReadout.textContent = String(minute).padStart(2, "0");
   dayLabel.textContent = labelForTime(decimalHour);
 
@@ -82,7 +83,7 @@ function renderClock() {
 
   cycleTimeLabel.textContent = `${hh}:${mm}`;
 
-  localStorage.setItem("clockHour", hour);
+  localStorage.setItem("clockHour", hour === 24 ? 0 : hour);
   localStorage.setItem("clockMinute", minute);
 }
 

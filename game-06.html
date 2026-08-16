@@ -9,13 +9,21 @@
 </head>
 <body class="modular-game" data-game-id="game-06">
   <a class="game-home-button" href="index.html" aria-label="Back to games">← Games</a>
+  <button class="game-info-button" type="button" aria-label="How to play" aria-haspopup="dialog">i</button>
+  <div class="game-info-overlay" hidden>
+    <div class="game-info-dialog" role="dialog" aria-modal="true" aria-labelledby="game-06-info-title">
+      <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
+      <p class="kicker">HOW TO PLAY</p>
+      <h2 id="game-06-info-title">Instructions</h2>
+      <p>Use Left and Right to rotate the ship and Thrust to fly. Collect both stars, avoid the walls, and land gently on the landing pad. Gravity and Thrust sliders let you tune the flight feel.</p>
+    </div>
+  </div>
   <main class="screen-wrap">
     <section aria-labelledby="gravity-title" class="screen active" id="gravity-screen">
 <div class="page gravity-page">
 <header class="page-header gravity-header">
 <p class="kicker" data-site-name="">GameHub</p>
 <h1 id="gravity-title">Gravity</h1>
-<p class="subhead">Fly through the cavern, collect the stars, and land safely at the far end.</p>
 </header>
 <div class="gravity-hud">
 <div><span>HEIGHT</span><strong id="gravity-height">0</strong></div>

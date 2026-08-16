@@ -9,13 +9,21 @@
 </head>
 <body class="modular-game" data-game-id="game-01">
   <a class="game-home-button" href="index.html" aria-label="Back to games">← Games</a>
+  <button class="game-info-button" type="button" aria-label="How to play" aria-haspopup="dialog">i</button>
+  <div class="game-info-overlay" hidden>
+    <div class="game-info-dialog" role="dialog" aria-modal="true" aria-labelledby="game-01-info-title">
+      <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
+      <p class="kicker">HOW TO PLAY</p>
+      <h2 id="game-01-info-title">Instructions</h2>
+      <p>Choose a times table with the − and + controls. Tap the main button to add one more group each time and watch the multiplication build up. Use Reset to start again.</p>
+    </div>
+  </div>
   <main class="screen-wrap">
     <section aria-labelledby="numbers-title" class="screen active" id="numbers-screen">
 <div class="page numbers-page">
 <header class="page-header">
 <p class="kicker" data-site-name="">GameHub</p>
 <h1 id="numbers-title">Times Tables</h1>
-<p class="subhead">Choose a times table, then tap to build it one step at a time.</p>
 </header>
 <div aria-label="Choose a number" class="number-picker">
 <button aria-label="Decrease number" class="round-control" id="number-down">−</button>
