@@ -3101,3 +3101,55 @@ input[type="range"] { accent-color:var(--gh-accent); }
     margin-top: 8px;
   }
 }
+
+
+/* ============================================================
+   GameHub v1.0.10 — Tell the Time layout refinement
+   Larger analogue face, lower supporting panels, lighter digital readout,
+   and improved optical centring for the clock numerals on iOS Safari.
+   ============================================================ */
+#clock-page .clock-stage {
+  width: min(80vw, 345px);
+  margin-top: 6px;
+}
+
+#clock-page .digital-time {
+  font-weight: 560;
+}
+
+#clock-page .day-cycle-card {
+  margin-top: 26px;
+  margin-bottom: 12px;
+}
+
+#clock-page .clock-controls-card {
+  margin-top: 8px;
+}
+
+@media (max-height: 850px) {
+  #clock-page .clock-stage {
+    width: min(78vw, 315px);
+  }
+
+  #clock-page .day-cycle-card {
+    margin-top: 22px;
+  }
+
+  #clock-page .clock-controls-card {
+    margin-top: 7px;
+  }
+}
+
+@media (max-height: 690px) {
+  #clock-page .clock-stage {
+    width: min(63vw, 245px);
+  }
+
+  #clock-page .day-cycle-card {
+    margin-top: 12px;
+  }
+
+  #clock-page .clock-controls-card {
+    margin-top: 4px;
+  }
+}

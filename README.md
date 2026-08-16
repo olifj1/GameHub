@@ -1,4 +1,4 @@
-# GameHub v1.0.9
+# GameHub v1.0.10
 
 Phone-first modular web-game hub.
 
@@ -21,7 +21,7 @@ changed in `site-config.js` without renaming files or refactoring game code.
 
 ## Upload from iPhone
 
-Unzip `GameHub-v1.0.9.zip`, open the `GameHub-v1.0.9` folder, Select All, and
+Unzip `GameHub-v1.0.10.zip`, then upload/select all files from the extracted folder and
 upload the files to the root of the GameHub GitHub repository.
 
 ## v1.0.9 fixes
@@ -65,3 +65,11 @@ upload the files to the root of the GameHub GitHub repository.
 - Fixed the responsive breakpoint that was almost cancelling the analogue-clock size increase on normal iPhone screens.
 - The clock now uses roughly 72% of the viewport width on the common phone-height layout, with a 285px cap.
 - Corrected SVG numeral baseline placement for iOS Safari so clock-face numbers sit optically centred.
+
+
+## v1.0.10
+
+- Increased the Tell the Time analogue clock size again, especially on normal iPhone-height screens.
+- Moved the day-cycle visualisation and slider controls slightly lower to improve spacing.
+- Reduced the digital clock font weight so it competes less with the analogue face.
+- Shifted the SVG clock numerals down slightly for better optical centring on iOS Safari.

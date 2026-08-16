@@ -39,7 +39,7 @@ for (let n = 1; n <= 12; n++) {
   text.setAttribute("y", y);
   // Safari's SVG dominant-baseline sits these numerals slightly high.
   // A dy based on the font em gives consistent optical vertical centring.
-  text.setAttribute("dy", "0.35em");
+  text.setAttribute("dy", "0.43em");
   text.textContent = n;
   clockNumbers.appendChild(text);
 }
