@@ -3016,3 +3016,63 @@ input[type="range"] { accent-color:var(--gh-accent); }
 @media (max-height:690px) {
   .clock-stage { width:min(42vw,180px); }
 }
+
+
+/* ============================================================
+   GameHub v1.0.7 — Tell the Time sizing balance
+   ============================================================ */
+.clock-stage {
+  width:min(64vw, 292px);
+  margin:6px auto 0;
+}
+
+.digital-time {
+  font-size:clamp(39px,10vw,54px);
+  font-weight:660;
+  margin-top:5px;
+}
+
+.day-label {
+  margin-top:4px;
+}
+
+.day-cycle-card {
+  margin-top:18px;
+}
+
+.clock-controls-card {
+  margin-top:4px;
+}
+
+@media (max-height:850px) {
+  .clock-stage {
+    width:min(58vw, 258px);
+  }
+  .digital-time {
+    font-size:39px;
+  }
+  .day-cycle-card {
+    margin-top:11px;
+  }
+}
+
+@media (max-height:760px) {
+  .clock-stage {
+    width:min(53vw, 228px);
+  }
+  .digital-time {
+    font-size:36px;
+  }
+  .day-cycle-card {
+    margin-top:7px;
+  }
+}
+
+@media (max-height:690px) {
+  .clock-stage {
+    width:min(46vw, 190px);
+  }
+  .digital-time {
+    font-size:33px;
+  }
+}
