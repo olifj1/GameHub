@@ -2156,3 +2156,141 @@ body.modular-home {
   background: linear-gradient(180deg,#f9e4ad 0%,#f6d694 100%);
   color:#263238;
 }
+
+
+/* GameHub v1.0.3 — Coding uses a true one-screen phone layout. */
+.coding-page {
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+
+.coding-page .coding-header,
+.coding-page .coding-topbar,
+.coding-page .guide-toggle,
+.coding-page .coding-board-wrap,
+.coding-page .coding-status,
+.coding-page .program-strip,
+.coding-page .coding-controls,
+.coding-page .coding-actions {
+  flex: 0 0 auto;
+}
+
+.coding-board-wrap {
+  /* Reserve space for the header and controls, then make the 6:7 board use the rest. */
+  width: min(100%, 430px, calc((100dvh - 385px) * 6 / 7));
+  min-width: 190px;
+}
+
+@media (max-height: 850px) {
+  .coding-page {
+    padding-top: max(10px, env(safe-area-inset-top));
+  }
+  .coding-header {
+    margin: 0 0 5px;
+  }
+  .coding-header .kicker {
+    margin-bottom: 2px;
+    font-size: 9px;
+  }
+  .coding-header h1 {
+    font-size: 27px;
+  }
+  .coding-header .subhead {
+    display: none;
+  }
+  .coding-topbar {
+    margin-bottom: 5px;
+  }
+  .guide-toggle {
+    min-height: 34px;
+    margin-bottom: 5px;
+    padding: 4px 9px;
+  }
+  .guide-toggle small {
+    display: none;
+  }
+  .coding-board-wrap {
+    padding: 5px;
+    border-radius: 18px;
+    width: min(100%, 390px, calc((100dvh - 335px) * 6 / 7));
+  }
+  .coding-board {
+    gap: 2px;
+    padding: 2px;
+    border-radius: 13px;
+  }
+  .coding-status {
+    min-height: 18px;
+    margin: 4px auto 3px;
+    font-size: 11px;
+  }
+  .program-strip {
+    padding: 5px 8px;
+    border-radius: 14px;
+  }
+  .program-heading {
+    margin-bottom: 3px;
+  }
+  .program-timeline {
+    min-height: 29px;
+  }
+  .program-step {
+    flex-basis: 28px;
+    height: 28px;
+    font-size: 16px;
+  }
+  .coding-controls {
+    margin-top: 5px;
+    gap: 5px;
+  }
+  .command-button {
+    min-height: 43px;
+    border-radius: 13px;
+    font-size: 9px;
+  }
+  .command-icon {
+    font-size: 20px;
+    line-height: 19px;
+  }
+  .coding-actions {
+    margin-top: 5px;
+    gap: 5px;
+  }
+  .coding-secondary,
+  .coding-run {
+    min-height: 36px;
+    border-radius: 12px;
+  }
+}
+
+@media (max-height: 690px) {
+  .coding-header .kicker {
+    display: none;
+  }
+  .coding-header h1 {
+    font-size: 24px;
+  }
+  .guide-toggle {
+    min-height: 30px;
+  }
+  .coding-board-wrap {
+    width: min(100%, 340px, calc((100dvh - 300px) * 6 / 7));
+    min-width: 160px;
+  }
+  .program-heading {
+    display: none;
+  }
+  .program-timeline {
+    min-height: 25px;
+  }
+  .command-button {
+    min-height: 38px;
+  }
+  .coding-secondary,
+  .coding-run {
+    min-height: 33px;
+  }
+}

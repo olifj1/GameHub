@@ -283,7 +283,8 @@ function speakReadingText() {
   utterance.onerror = stopReadingSpeech;
 
   window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utterance);
+  // iOS Safari can ignore a speak() issued in the same tick as cancel().
+  setTimeout(() => window.speechSynthesis.speak(utterance), 0);
 }
 
 readingSpeakButton.addEventListener("click", speakReadingText);

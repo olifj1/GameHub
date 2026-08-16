@@ -69,7 +69,7 @@ function resetGravityGame(){
   rocket={
     x:gravityStartPad.x+gravityStartPad.w/2,
     y:gravityStartPad.y-16,
-    vx:0,vy:0,angle:Math.PI/2,radius:16,landed:false,crashed:false
+    vx:0,vy:0,angle:0,radius:16,landed:false,crashed:false
   };
   gravityCollectibles=gravityCollectiblesBase.map(c=>({...c,collected:false}));
   gravityWorld.cameraX=0;

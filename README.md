@@ -1,4 +1,4 @@
-# GameHub v1.0.2
+# GameHub v1.0.3
 
 Phone-first modular web-game hub.
 
@@ -21,5 +21,12 @@ changed in `site-config.js` without renaming files or refactoring game code.
 
 ## Upload from iPhone
 
-Unzip `GameHub-v1.0.2.zip`, open the `GameHub-v1.0.2` folder, Select All, and
+Unzip `GameHub-v1.0.3.zip`, open the `GameHub-v1.0.3` folder, Select All, and
 upload the files to the root of the GameHub GitHub repository.
+
+## v1.0.3 fixes
+
+- Restored the shared random-number helper used by Reading and Coding.
+- Reading controls and speech setup can now complete normally; speech start is also safer on iOS.
+- Coding generates/renders its puzzle again and uses a compact one-screen phone layout.
+- Gravity now starts with the ship upright.

@@ -2,6 +2,7 @@
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const $ = selector => document.querySelector(selector);
 const $$ = selector => document.querySelectorAll(selector);
+const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
 // Prevent iOS gesture zoom and unwanted double-tap zoom in the app shell.
 document.addEventListener("gesturestart", event => event.preventDefault(), { passive: false });
