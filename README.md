@@ -1,4 +1,4 @@
-# GameHub v1.0.4
+# GameHub v1.0.5
 
 Phone-first modular web-game hub.
 
@@ -21,17 +21,17 @@ changed in `site-config.js` without renaming files or refactoring game code.
 
 ## Upload from iPhone
 
-Unzip `GameHub-v1.0.4.zip`, open the `GameHub-v1.0.4` folder, Select All, and
+Unzip `GameHub-v1.0.5.zip`, open the `GameHub-v1.0.5` folder, Select All, and
 upload the files to the root of the GameHub GitHub repository.
 
-## v1.0.4 fixes
+## v1.0.5 fixes
 
 - Restored the shared random-number helper used by Reading and Coding.
 - Reading controls and speech setup can now complete normally; speech start is also safer on iOS.
 - Coding generates/renders its puzzle again and uses a compact one-screen phone layout.
 - Gravity now starts with the ship upright.
 
-## v1.0.4 visual system
+## v1.0.5 visual system
 
 - Introduced a shared warm beige/stone palette across GameHub and all games.
 - Added stable muted accent colours per internal game ID.
@@ -39,3 +39,10 @@ upload the files to the root of the GameHub GitHub repository.
 - Replaced emoji-like hub icons with simpler graphic glyphs.
 - Restyled shared buttons, cards, selectors and panels to use the new system.
 - Redrew Gravity as a light graphic environment with outlined geometry, a line-art rocket and violet accent.
+
+## v1.0.5 Tell the Time refinement
+
+- Removed the old full-screen changing sky colour and its exposed yellow background.
+- Redesigned the analogue clock as cleaner ink-line artwork with no drop shadow.
+- Added a full 24-hour sun orbit showing sunrise, midday, sunset and the sun below the horizon at night.
+- Moved/compacted the hour and minute controls into the bottom of the one-screen layout.

@@ -10,6 +10,8 @@ const digitalTime = $("#digital-time");
 const dayLabel = $("#day-label");
 const clockScreen = $("#clock-screen");
 const clockTicks = $("#clock-ticks");
+const cycleSun = $("#cycle-sun");
+const cycleTimeLabel = $("#cycle-time-label");
 
 for (let i = 0; i < 60; i++) {
   const angle = i * 6 * Math.PI / 180;
@@ -44,33 +46,6 @@ let minute = Number(localStorage.getItem("clockMinute") || 0);
 hourSlider.value = hour;
 minuteSlider.value = minute;
 
-const skyStops = [
-  { t: 0.00, c: [5, 8, 14] },
-  { t: 0.18, c: [28, 44, 78] },
-  { t: 0.24, c: [232, 148, 124] },
-  { t: 0.30, c: [247, 199, 118] },
-  { t: 0.50, c: [248, 219, 145] },
-  { t: 0.70, c: [243, 190, 108] },
-  { t: 0.79, c: [224, 120, 102] },
-  { t: 0.86, c: [42, 51, 86] },
-  { t: 1.00, c: [5, 8, 14] }
-];
-
-const lerp = (a, b, t) => a + (b - a) * t;
-
-function skyColor(normalizedDay) {
-  for (let i = 0; i < skyStops.length - 1; i++) {
-    const a = skyStops[i];
-    const b = skyStops[i + 1];
-    if (normalizedDay >= a.t && normalizedDay <= b.t) {
-      const localT = (normalizedDay - a.t) / (b.t - a.t);
-      const rgb = a.c.map((value, j) => Math.round(lerp(value, b.c[j], localT)));
-      return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
-    }
-  }
-  return "rgb(5, 8, 14)";
-}
-
 function labelForTime(decimalHour) {
   if (decimalHour < 5) return "Night";
   if (decimalHour < 7) return "Sunrise";
@@ -96,14 +71,16 @@ function renderClock() {
   hourReadout.textContent = String(hour).padStart(2, "0");
   minuteReadout.textContent = String(minute).padStart(2, "0");
   dayLabel.textContent = labelForTime(decimalHour);
-  clockScreen.style.backgroundColor = skyColor(decimalHour / 24);
 
-  const page = $("#clock-page");
-  const dark = decimalHour < 6 || decimalHour >= 20.5;
-  page.style.color = dark ? "#f8fafc" : "#27313c";
-  page.querySelector(".subhead").style.color = dark
-    ? "rgba(248,250,252,.72)"
-    : "rgba(39,49,60,.68)";
+  // 24-hour sun orbit:
+  // 06:00 = left horizon, 12:00 = top, 18:00 = right horizon, 00:00 = below.
+  const orbitAngle = Math.PI - ((decimalHour - 6) / 12) * Math.PI;
+  const sunX = 210 + Math.cos(orbitAngle) * 165;
+  const sunY = 76 - Math.sin(orbitAngle) * 56;
+  cycleSun.setAttribute("transform", `translate(${sunX.toFixed(2)} ${sunY.toFixed(2)})`);
+  cycleSun.classList.toggle("below-horizon", decimalHour < 6 || decimalHour >= 18);
+
+  cycleTimeLabel.textContent = `${hh}:${mm}`;
 
   localStorage.setItem("clockHour", hour);
   localStorage.setItem("clockMinute", minute);
