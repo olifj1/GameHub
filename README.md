@@ -1,4 +1,4 @@
-# GameHub v1.0.1
+# GameHub v1.0.2
 
 Phone-first modular web-game hub.
 
@@ -21,5 +21,5 @@ changed in `site-config.js` without renaming files or refactoring game code.
 
 ## Upload from iPhone
 
-Unzip `GameHub-v1.0.1.zip`, open the `GameHub-v1.0.1` folder, Select All, and
+Unzip `GameHub-v1.0.2.zip`, open the `GameHub-v1.0.2` folder, Select All, and
 upload the files to the root of the GameHub GitHub repository.

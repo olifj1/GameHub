@@ -1,6 +1,6 @@
 {
-  "name": "Learning Play",
-  "short_name": "Learning Play",
+  "name": "GameHub",
+  "short_name": "GameHub",
   "description": "A growing collection of small web games.",
   "id": "./",
   "start_url": "./",

@@ -2129,3 +2129,30 @@ body.modular-home { min-height: 100vh; background: linear-gradient(180deg,#f9e4a
 .game-home-button { position:fixed; z-index:1000; top:max(10px,env(safe-area-inset-top)); left:10px; display:flex; align-items:center; gap:6px; min-height:38px; padding:0 12px; border-radius:999px; text-decoration:none; color:#263238; background:rgba(255,255,255,.82); box-shadow:0 5px 18px rgba(0,0,0,.12); backdrop-filter:blur(9px); font-size:11px; font-weight:900; }
 .modular-game .page-header .kicker { padding-left:52px; padding-right:52px; }
 @media (max-width:520px) { .home-shell{padding:24px 12px 28px}.game-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.game-card{min-height:164px;padding:15px;border-radius:20px}.game-card-icon{width:45px;height:45px;font-size:22px}.game-card h2{font-size:17px;margin-top:14px}.game-card p{font-size:11px}.game-card-play{font-size:9px} }
+
+
+/* Home hub is a normal vertically scrolling document.
+   Individual games retain the fixed-screen behaviour above. */
+html:has(body.modular-home) {
+  height: auto;
+  min-height: 100%;
+  overflow-y: auto;
+  position: static;
+  inset: auto;
+  overscroll-behavior-y: auto;
+  touch-action: pan-y manipulation;
+}
+
+body.modular-home {
+  position: static;
+  inset: auto;
+  width: 100%;
+  height: auto;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
+  touch-action: pan-y manipulation;
+  background: linear-gradient(180deg,#f9e4ad 0%,#f6d694 100%);
+  color:#263238;
+}

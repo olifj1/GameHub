@@ -1,8 +1,8 @@
 window.APP_CONFIG = {
   "site": {
     "internalId": "game-collection",
-    "displayName": "Learning Play",
-    "shortName": "Learning Play",
+    "displayName": "GameHub",
+    "shortName": "GameHub",
     "tagline": "Small games for learning, experimenting and playing.",
     "description": "A growing collection of small web games."
   },
