@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#f5c56b">
+  <link rel="stylesheet" href="style.css">
+  <title>Reading</title>
+</head>
+<body class="modular-game" data-game-id="game-04">
+  <a class="game-home-button" href="index.html" aria-label="Back to games">← Games</a>
+  <main class="screen-wrap">
+    <section aria-labelledby="reading-title" class="screen active" id="reading-screen">
+<div class="page reading-page">
+<header class="page-header reading-header">
+<p class="kicker" data-site-name="">Learning Play</p>
+<h1 id="reading-title">Reading</h1>
+<p class="subhead">Read a sentence, or choose the missing word.</p>
+</header>
+<div aria-label="Reading mode" class="mode-switch" role="group">
+<button class="mode-button reading-mode active" data-reading-mode="read">Read</button>
+<button class="mode-button reading-mode" data-reading-mode="test">Test</button>
+</div>
+<div class="reading-difficulty">
+<div class="choice-title">Level</div>
+<div class="choice-row difficulty-row">
+<button class="choice-button reading-level active" data-reading-level="easy">Easy</button>
+<button class="choice-button reading-level" data-reading-level="medium">Medium</button>
+<button class="choice-button reading-level" data-reading-level="hard">Hard</button>
+</div>
+<p class="difficulty-note" id="reading-note">Short, familiar sentences with simple words.</p>
+</div>
+<div class="reading-card">
+<div class="reading-prompt" id="reading-prompt">The red fox can run fast.</div>
+<div class="word-choices hidden" id="word-choices"></div>
+<div class="reading-feedback" id="reading-feedback">Read it out loud.</div>
+</div>
+<div class="reading-speech-controls">
+<button class="reading-speak-button" id="reading-speak">
+<span class="reading-speaker-icon">🔊</span>
+<span id="reading-speak-label">Read aloud</span>
+</button>
+<div class="reading-voice-control"><span>Voice</span><select id="reading-voice-select"><option value="">Default voice</option></select></div>
+<div class="reading-speed-control">
+<span>Voice speed</span>
+<div aria-label="Reading voice speed" class="reading-speed-buttons" role="group">
+<button class="reading-speed-button" data-reading-speed="0.75">Slow</button>
+<button class="reading-speed-button active" data-reading-speed="0.95">Normal</button>
+</div>
+</div>
+</div>
+<button class="primary-action reading-next" id="new-reading">New Sentence</button>
+</div>
+</section>
+  </main>
+  <script src="site-config.js"></script>
+  <script src="core.js"></script>
+  <script src="game-04.js"></script>
+</body>
+</html>

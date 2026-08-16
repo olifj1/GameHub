@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#f5c56b">
+  <link rel="stylesheet" href="style.css">
+  <title>Times Tables</title>
+</head>
+<body class="modular-game" data-game-id="game-01">
+  <a class="game-home-button" href="index.html" aria-label="Back to games">← Games</a>
+  <main class="screen-wrap">
+    <section aria-labelledby="numbers-title" class="screen active" id="numbers-screen">
+<div class="page numbers-page">
+<header class="page-header">
+<p class="kicker" data-site-name="">Learning Play</p>
+<h1 id="numbers-title">Times Tables</h1>
+<p class="subhead">Choose a times table, then tap to build it one step at a time.</p>
+</header>
+<div aria-label="Choose a number" class="number-picker">
+<button aria-label="Decrease number" class="round-control" id="number-down">−</button>
+<div class="chosen-number" id="chosen-number">4</div>
+<button aria-label="Increase number" class="round-control" id="number-up">+</button>
+</div>
+<button aria-label="Add the chosen number" class="tap-button" id="tap-number">
+<span class="tap-small">ADD ONE MORE</span>
+<span class="tap-big">TAP</span>
+</button>
+<div class="total-card">
+<div class="total-label">TOTAL</div>
+<div class="total-value" id="total-value">0</div>
+<div class="equation" id="equation">Tap the button to begin</div>
+<div class="multiply-equation" id="multiply-equation"></div>
+</div>
+<div class="tap-history">
+<div aria-hidden="true" class="tap-dots" id="tap-dots"></div>
+<div class="tap-count" id="tap-count">0 taps</div>
+</div>
+<button class="text-button" id="numbers-reset">Reset</button>
+</div>
+</section>
+  </main>
+  <script src="site-config.js"></script>
+  <script src="core.js"></script>
+  <script src="game-01.js"></script>
+</body>
+</html>

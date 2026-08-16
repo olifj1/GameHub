@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#f5c56b">
+  <link rel="stylesheet" href="style.css">
+  <title>Laser Lab</title>
+</head>
+<body class="modular-game" data-game-id="game-08">
+  <a class="game-home-button" href="index.html" aria-label="Back to games">← Games</a>
+  <main class="screen-wrap">
+    <section aria-labelledby="laser-title" class="screen active" id="laser-screen">
+<div class="page laser-page">
+<header class="page-header laser-header">
+<p class="kicker" data-site-name="">Learning Play</p>
+<h1 id="laser-title">Laser Lab</h1>
+<p class="subhead">Build a puzzle in Setup, then switch to Play and solve it with mirrors.</p>
+</header>
+<div aria-label="Laser Lab mode" class="laser-mode-switch" role="group">
+<button class="laser-mode-button active" data-laser-mode="setup">Setup</button>
+<button class="laser-mode-button" data-laser-mode="play">Play</button>
+</div>
+<div class="laser-setup-panel" id="laser-setup-panel">
+<div class="laser-size-row">
+<span>Grid</span>
+<button class="laser-size-button" data-laser-size="small">8×10</button>
+<button class="laser-size-button" data-laser-size="medium">9×12</button>
+<button class="laser-size-button active" data-laser-size="large">10×14</button>
+</div>
+<div class="laser-tools">
+<button class="laser-tool active" data-laser-tool="emitter"><span class="laser-tool-icon">▶</span><span>Laser</span></button>
+<button class="laser-tool" data-laser-tool="checkpoint"><span class="laser-tool-icon">○</span><span>Check</span></button>
+<button class="laser-tool" data-laser-tool="target"><span class="laser-tool-icon">◎</span><span>Target</span></button>
+<button class="laser-tool" data-laser-tool="splitter"><span class="laser-tool-icon">Y</span><span>Splitter</span></button>
+<button class="laser-tool" data-laser-tool="block"><span class="laser-tool-icon">■</span><span>Block</span></button>
+<button class="laser-tool" data-laser-tool="eraser"><span class="laser-tool-icon">⌫</span><span>Erase</span></button>
+</div>
+<div class="laser-help">Tap a square to place the selected piece. Tap an existing laser or splitter again to rotate it.</div>
+<div class="laser-save-row">
+<input id="laser-level-name" maxlength="28" placeholder="Level name" type="text"/>
+<button class="laser-save-button" id="laser-save-level">Save</button>
+<select aria-label="Saved Laser Lab levels" id="laser-saved-levels"><option value="">Saved levels…</option></select>
+<button class="laser-save-button" id="laser-load-level">Load</button>
+<button class="laser-save-button danger" id="laser-delete-level">Delete</button>
+</div>
+</div>
+<div class="laser-play-panel hidden" id="laser-play-panel">
+<div class="laser-tools play-tools">
+<button class="laser-tool active" data-laser-play-tool="mirror"><span class="laser-tool-icon">╱</span><span>Mirror</span></button>
+<button class="laser-tool" data-laser-play-tool="eraser"><span class="laser-tool-icon">⌫</span><span>Erase</span></button>
+<button class="laser-save-button" id="laser-reset-play">Reset mirrors</button>
+</div>
+<div class="laser-help">Mirrors are unlimited. Tap a mirror again to rotate it through eight angles.</div>
+</div>
+<div class="laser-board-wrap">
+<div aria-label="Laser puzzle grid" class="laser-board" id="laser-board"></div>
+<svg aria-hidden="true" class="laser-beam-layer" id="laser-beam-layer" preserveaspectratio="none" viewbox="0 0 1000 1400"></svg>
+</div>
+<div class="laser-status" id="laser-status">Place a laser, at least one target, then build your puzzle.</div>
+<div aria-live="polite" class="laser-result hidden" id="laser-result">
+<span class="laser-result-stars">★★★</span>
+<strong>Puzzle solved!</strong>
+<span id="laser-result-text">Every target and checkpoint was hit.</span>
+</div>
+<div class="laser-info-row">
+<div class="laser-info-pill"><span>MIRRORS</span><strong id="laser-mirror-count">0</strong></div>
+<div class="laser-info-pill"><span>CHECKPOINTS</span><strong id="laser-checkpoint-count">0 / 0</strong></div>
+<div class="laser-info-pill"><span>TARGETS</span><strong id="laser-target-count">0 / 0</strong></div>
+</div>
+</div>
+</section>
+  </main>
+  <script src="site-config.js"></script>
+  <script src="core.js"></script>
+  <script src="game-08.js"></script>
+</body>
+</html>

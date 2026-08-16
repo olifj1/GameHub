@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#f5c56b">
+  <link rel="stylesheet" href="style.css">
+  <title>Tell the Time</title>
+</head>
+<body class="modular-game" data-game-id="game-02">
+  <a class="game-home-button" href="index.html" aria-label="Back to games">← Games</a>
+  <main class="screen-wrap">
+    <section aria-labelledby="clock-title" class="screen active" id="clock-screen">
+<div class="page clock-page" id="clock-page">
+<header class="page-header clock-header">
+<p class="kicker" data-site-name="">Learning Play</p>
+<h1 id="clock-title">Tell the Time</h1>
+<p class="subhead">Move through the whole day and watch the clock and sky change together.</p>
+</header>
+<div class="clock-stage">
+<svg aria-label="Analogue clock" class="clock-face" role="img" viewbox="0 0 300 300">
+<circle class="clock-rim" cx="150" cy="150" r="138"></circle>
+<circle class="clock-inner" cx="150" cy="150" r="124"></circle>
+<g class="ticks" id="clock-ticks"></g>
+<g class="clock-number-group" id="clock-numbers"></g>
+<line class="hour-hand" id="hour-hand" x1="150" x2="150" y1="150" y2="88"></line>
+<line class="minute-hand" id="minute-hand" x1="150" x2="150" y1="150" y2="58"></line>
+<circle class="clock-pin" cx="150" cy="150" r="8"></circle>
+</svg>
+</div>
+<div class="digital-time" id="digital-time">12:00</div>
+<div class="day-label" id="day-label">Midday</div>
+<div class="slider-card">
+<div class="slider-row">
+<div class="slider-heading"><span>Hour</span><strong id="hour-readout">12</strong></div>
+<input aria-label="Hour" id="hour-slider" max="23" min="0" step="1" type="range" value="12"/>
+<div class="range-ends"><span>00</span><span>12</span><span>23</span></div>
+</div>
+<div class="slider-row">
+<div class="slider-heading"><span>Minute</span><strong id="minute-readout">00</strong></div>
+<input aria-label="Minute" id="minute-slider" max="60" min="0" step="1" type="range" value="0"/>
+<div class="range-ends"><span>00</span><span>30</span><span>60</span></div>
+</div>
+</div>
+</div>
+</section>
+  </main>
+  <script src="site-config.js"></script>
+  <script src="core.js"></script>
+  <script src="game-02.js"></script>
+</body>
+</html>

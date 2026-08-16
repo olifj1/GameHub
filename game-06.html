@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#f5c56b">
+  <link rel="stylesheet" href="style.css">
+  <title>Gravity</title>
+</head>
+<body class="modular-game" data-game-id="game-06">
+  <a class="game-home-button" href="index.html" aria-label="Back to games">← Games</a>
+  <main class="screen-wrap">
+    <section aria-labelledby="gravity-title" class="screen active" id="gravity-screen">
+<div class="page gravity-page">
+<header class="page-header gravity-header">
+<p class="kicker" data-site-name="">Learning Play</p>
+<h1 id="gravity-title">Gravity</h1>
+<p class="subhead">Fly through the cavern, collect the stars, and land safely at the far end.</p>
+</header>
+<div class="gravity-hud">
+<div><span>HEIGHT</span><strong id="gravity-height">0</strong></div>
+<div><span>SPEED</span><strong id="gravity-speed">0</strong></div>
+<div><span>STARS</span><strong id="gravity-collect">0/2</strong></div>
+<button class="gravity-reset" id="gravity-reset">Reset</button>
+</div>
+<div class="gravity-tuning">
+<label>
+<span>Gravity <strong id="gravity-value">0.025</strong></span>
+<input id="gravity-slider" max="0.080" min="0.005" step="0.005" type="range" value="0.025"/>
+</label>
+<label>
+<span>Thrust <strong id="thrust-value">0.060</strong></span>
+<input id="thrust-slider" max="0.140" min="0.020" step="0.005" type="range" value="0.060"/>
+</label>
+</div>
+<div class="gravity-stage-wrap">
+<canvas aria-label="Gravity rocket game" height="1040" id="gravity-canvas" width="720"></canvas>
+<div class="gravity-message hidden" id="gravity-message">
+<strong id="gravity-message-title">Nice landing!</strong>
+<span id="gravity-message-text">You made it.</span>
+<button id="gravity-again">Fly again</button>
+</div>
+</div>
+<div aria-label="Rocket controls" class="gravity-controls">
+<button class="gravity-control rotate" id="gravity-left">
+<span>↶</span><small>LEFT</small>
+</button>
+<button class="gravity-control thrust" id="gravity-thrust">
+<span>🔥</span><small>THRUST</small>
+</button>
+<button class="gravity-control rotate" id="gravity-right">
+<span>↷</span><small>RIGHT</small>
+</button>
+</div>
+<div class="gravity-tip">Hold LEFT or RIGHT to rotate. Hold THRUST to accelerate in the direction the rocket is pointing.</div>
+</div>
+</section>
+  </main>
+  <script src="site-config.js"></script>
+  <script src="core.js"></script>
+  <script src="game-06.js"></script>
+</body>
+</html>

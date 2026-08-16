@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#f5c56b">
+  <link rel="stylesheet" href="style.css">
+  <title>Coding</title>
+</head>
+<body class="modular-game" data-game-id="game-07">
+  <a class="game-home-button" href="index.html" aria-label="Back to games">← Games</a>
+  <main class="screen-wrap">
+    <section aria-labelledby="coding-title" class="screen active" id="coding-screen">
+<div class="page coding-page">
+<header class="page-header coding-header">
+<p class="kicker" data-site-name="">Learning Play</p>
+<h1 id="coding-title">Coding</h1>
+<p class="subhead">Build a program to guide the rover to the flag.</p>
+</header>
+<div class="coding-topbar">
+<div aria-label="Coding difficulty" class="coding-levels" role="group">
+<button class="coding-level active" data-coding-level="easy">Easy</button>
+<button class="coding-level" data-coding-level="medium">Medium</button>
+<button class="coding-level" data-coding-level="hard">Hard</button>
+</div>
+<button class="new-puzzle-button" id="new-coding-puzzle">New</button>
+</div>
+<label class="guide-toggle" for="coding-guide-toggle">
+<span>
+<strong>Learning guide</strong>
+<small>Show what each command will do on the grid</small>
+</span>
+<input checked="" id="coding-guide-toggle" type="checkbox"/>
+</label>
+<div class="coding-board-wrap">
+<div aria-label="Coding puzzle grid" class="coding-board" id="coding-board"></div>
+<div aria-live="polite" class="coding-win-overlay hidden" id="coding-win-overlay">
+<div class="coding-win-stars" id="coding-win-stars">★★★</div>
+<strong>Flag reached!</strong>
+<span id="coding-win-text">Great program!</span>
+</div>
+</div>
+<div class="coding-status" id="coding-status">Build your program, then press Run.</div>
+<div class="program-strip">
+<div class="program-heading">
+<span>YOUR PROGRAM</span>
+<strong id="program-count">0</strong>
+</div>
+<div aria-live="polite" class="program-timeline" id="program-timeline">
+<span class="program-empty">Tap a command below</span>
+</div>
+</div>
+<div class="coding-controls">
+<button class="command-button" data-command="forward">
+<span class="command-icon">↑</span><span>Forward</span>
+</button>
+<button class="command-button" data-command="left">
+<span class="command-icon">↶</span><span>Left</span>
+</button>
+<button class="command-button" data-command="right">
+<span class="command-icon">↷</span><span>Right</span>
+</button>
+<button class="command-button" data-command="back">
+<span class="command-icon">↓</span><span>Back</span>
+</button>
+</div>
+<div class="coding-actions">
+<button class="coding-secondary" id="coding-undo">Undo</button>
+<button class="coding-secondary" id="coding-clear">Clear</button>
+<button class="coding-run" id="coding-run">▶ Run</button>
+</div>
+</div>
+</section>
+  </main>
+  <script src="site-config.js"></script>
+  <script src="core.js"></script>
+  <script src="game-07.js"></script>
+</body>
+</html>
