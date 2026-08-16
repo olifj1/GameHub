@@ -7,6 +7,7 @@ const grid = document.getElementById("game-grid");
 window.APP_CONFIG.games.filter(game => game.enabled).forEach(game => {
   const card = document.createElement("a");
   card.className = "game-card";
+  card.dataset.gameId = game.id;
   card.href = game.path;
   card.innerHTML = `
     <span class="game-card-icon" aria-hidden="true">${game.icon}</span>

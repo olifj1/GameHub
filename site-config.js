@@ -43,7 +43,7 @@ window.APP_CONFIG = {
       "id": "game-05",
       "displayName": "Real World Maths",
       "description": "Use maths to solve everyday problems.",
-      "icon": "🛒",
+      "icon": "▦",
       "enabled": true,
       "path": "game-05.html"
     },
@@ -51,7 +51,7 @@ window.APP_CONFIG = {
       "id": "game-06",
       "displayName": "Gravity",
       "description": "Fly through the cavern, collect the stars and land safely.",
-      "icon": "🚀",
+      "icon": "△",
       "enabled": true,
       "path": "game-06.html"
     },
@@ -59,7 +59,7 @@ window.APP_CONFIG = {
       "id": "game-07",
       "displayName": "Coding",
       "description": "Build a program to guide the rover to the flag.",
-      "icon": "</>",
+      "icon": "{ }",
       "enabled": true,
       "path": "game-07.html"
     },
@@ -67,7 +67,7 @@ window.APP_CONFIG = {
       "id": "game-08",
       "displayName": "Laser Lab",
       "description": "Build and solve laser puzzles with mirrors.",
-      "icon": "⌁",
+      "icon": "◇",
       "enabled": true,
       "path": "game-08.html"
     }

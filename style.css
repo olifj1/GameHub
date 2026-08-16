@@ -2294,3 +2294,312 @@ body.modular-home {
     min-height: 33px;
   }
 }
+
+
+/* ============================================================
+   GameHub v1.0.4 — Soft modern / graphic design system
+   Shared neutral foundation + one muted accent per game.
+   ============================================================ */
+
+:root {
+  --gh-bg: #e7dbd2;
+  --gh-bg-soft: #eee5de;
+  --gh-surface: #f7f1eb;
+  --gh-surface-2: #efe6df;
+  --gh-ink: #252b33;
+  --gh-muted: #736d69;
+  --gh-line: rgba(37,43,51,.22);
+  --gh-line-strong: rgba(37,43,51,.72);
+  --gh-accent: #7a75d8;
+  --gh-accent-soft: color-mix(in srgb, var(--gh-accent) 14%, transparent);
+  --gh-radius: 20px;
+}
+
+/* Stable per-game accents. Public names can change without affecting them. */
+body[data-game-id="game-01"], .game-card[data-game-id="game-01"] { --gh-accent:#c86f5b; }
+body[data-game-id="game-02"], .game-card[data-game-id="game-02"] { --gh-accent:#6683a8; }
+body[data-game-id="game-03"], .game-card[data-game-id="game-03"] { --gh-accent:#c58a50; }
+body[data-game-id="game-04"], .game-card[data-game-id="game-04"] { --gh-accent:#9b708e; }
+body[data-game-id="game-05"], .game-card[data-game-id="game-05"] { --gh-accent:#7e916e; }
+body[data-game-id="game-06"], .game-card[data-game-id="game-06"] { --gh-accent:#706bd8; }
+body[data-game-id="game-07"], .game-card[data-game-id="game-07"] { --gh-accent:#568a83; }
+body[data-game-id="game-08"], .game-card[data-game-id="game-08"] { --gh-accent:#bd6f72; }
+
+html, body {
+  color: var(--gh-ink);
+  background: var(--gh-bg);
+}
+
+.app-shell {
+  background:
+    radial-gradient(circle at 14% 0%, rgba(255,255,255,.33), transparent 30%),
+    linear-gradient(180deg, var(--gh-bg-soft), var(--gh-bg));
+}
+
+body.modular-home {
+  color:var(--gh-ink);
+  background:
+    radial-gradient(circle at 14% 0%, rgba(255,255,255,.35), transparent 32%),
+    linear-gradient(180deg, var(--gh-bg-soft), var(--gh-bg));
+}
+
+.kicker, .home-kicker {
+  color: var(--gh-muted);
+  opacity:1;
+  letter-spacing:.18em;
+}
+
+h1, .home-title, .game-card h2 {
+  color: var(--gh-ink);
+  font-weight:850;
+  letter-spacing:-.035em;
+}
+
+.subhead, .home-tagline, .game-card p {
+  color:var(--gh-muted);
+  opacity:1;
+}
+
+.home-shell { max-width:920px; }
+.home-header { margin-bottom:24px; }
+.home-title { font-size:clamp(38px,9vw,64px); }
+
+.game-grid { gap:12px; }
+.game-card {
+  position:relative;
+  overflow:hidden;
+  min-height:184px;
+  background:rgba(247,241,235,.88);
+  border:1.5px solid var(--gh-line);
+  border-radius:22px;
+  box-shadow:none;
+}
+.game-card::after {
+  content:"";
+  position:absolute;
+  left:0; right:0; bottom:0;
+  height:5px;
+  background:var(--gh-accent);
+}
+.game-card-icon {
+  color:var(--gh-accent);
+  background:transparent;
+  border:1.5px solid color-mix(in srgb, var(--gh-accent) 58%, var(--gh-line));
+  border-radius:15px;
+  font-weight:900;
+  box-shadow:none;
+}
+.game-card-play {
+  color:var(--gh-accent);
+}
+.game-card:active {
+  transform:translateY(1px) scale(.992);
+  background:var(--gh-surface);
+}
+
+/* Shared game page shell */
+body.modular-game {
+  background:var(--gh-bg);
+}
+body.modular-game .page {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(255,255,255,.3), transparent 30%),
+    linear-gradient(180deg, var(--gh-bg-soft), var(--gh-bg));
+}
+.game-home-button {
+  color:var(--gh-ink);
+  background:rgba(247,241,235,.94);
+  border:1.5px solid var(--gh-line-strong);
+  box-shadow:none;
+  backdrop-filter:blur(8px);
+}
+.page-header { color:var(--gh-ink); }
+.page-header .subhead { color:var(--gh-muted); }
+
+/* Common panels/cards: flatter, outlined, less "app bubble". */
+.total-card, .slider-card, .sum-card, .test-results,
+.reading-card, .reading-difficulty, .reading-speech-controls,
+.realm-card, .program-strip, .guide-toggle,
+.coding-board-wrap, .laser-board-wrap, .laser-play-panel, .laser-setup-panel,
+.gravity-hud > div, .gravity-tuning label {
+  background:rgba(247,241,235,.84);
+  border:1.5px solid var(--gh-line);
+  box-shadow:none;
+  backdrop-filter:none;
+}
+
+/* Generic controls */
+button, select, input { color:var(--gh-ink); }
+.choice-button, .mode-button, .text-button, .secondary-action,
+.reading-speed-button, .coding-level, .coding-secondary,
+.laser-level, .laser-mode-button, .laser-size-button, .laser-tool,
+.new-puzzle-button, .laser-new, .gravity-reset {
+  background:rgba(247,241,235,.8);
+  color:var(--gh-ink);
+  border:1.5px solid var(--gh-line);
+  box-shadow:none;
+}
+
+.choice-button.active, .mode-button.active,
+.reading-speed-button.active, .coding-level.active,
+.laser-level.active, .laser-mode-button.active,
+.laser-size-button.active, .laser-tool.active,
+.realm-category.active, .realm-level.active {
+  color:var(--gh-accent);
+  background:color-mix(in srgb, var(--gh-accent) 10%, var(--gh-surface));
+  border-color:color-mix(in srgb, var(--gh-accent) 72%, var(--gh-ink));
+}
+
+.primary-action, .reading-next, .reading-speak-button,
+.realm-speak, .coding-run, .laser-save-button {
+  background:var(--gh-accent);
+  color:#fff;
+  border:1.5px solid color-mix(in srgb, var(--gh-accent) 72%, #252b33);
+  box-shadow:none;
+}
+
+input[type="range"] { accent-color:var(--gh-accent); }
+
+/* Times tables / maths */
+.tap-button {
+  background:var(--gh-accent);
+  border:1.5px solid color-mix(in srgb, var(--gh-accent) 75%, var(--gh-ink));
+  box-shadow:none;
+}
+.round-control, .chosen-number {
+  background:var(--gh-surface);
+  border:1.5px solid var(--gh-line);
+  box-shadow:none;
+}
+.key {
+  border:1px solid var(--gh-line);
+  box-shadow:none;
+}
+
+/* Clock */
+.clock-stage {
+  background:transparent;
+}
+.clock-face {
+  background:var(--gh-surface);
+  border-color:var(--gh-line-strong);
+  box-shadow:none;
+}
+.clock-rim { border-color:var(--gh-accent); }
+.clock-pin { background:var(--gh-accent); }
+
+/* Reading */
+.reading-card { border-radius:22px; }
+.reading-prompt { color:var(--gh-ink); }
+.reading-feedback { color:var(--gh-muted); }
+.word-choice {
+  background:var(--gh-surface);
+  border:1.5px solid var(--gh-line);
+  box-shadow:none;
+}
+.word-choice.correct { border-color:#668b6b; background:#e8efe6; }
+.word-choice.wrong { border-color:#b36d66; background:#f1e4e1; }
+
+/* Real world maths */
+.realm-category, .realm-level {
+  background:var(--gh-surface);
+  border:1.5px solid var(--gh-line);
+  box-shadow:none;
+}
+.realm-story, .realm-feedback { color:var(--gh-muted); }
+
+/* Coding */
+.coding-board-wrap { border-radius:20px; }
+.coding-board {
+  background:color-mix(in srgb, var(--gh-accent) 8%, var(--gh-surface));
+  border:1px solid var(--gh-line);
+}
+.coding-status { color:var(--gh-muted); }
+.command-button {
+  background:var(--gh-surface);
+  color:var(--gh-accent);
+  border:1.5px solid var(--gh-line);
+  box-shadow:none;
+}
+.program-step {
+  background:color-mix(in srgb, var(--gh-accent) 10%, var(--gh-surface));
+  border:1px solid var(--gh-line);
+}
+.program-step.running, .program-step.done {
+  color:#fff;
+  background:var(--gh-accent);
+}
+
+/* Laser Lab */
+.laser-board {
+  background:var(--gh-surface);
+}
+.laser-cell {
+  border-color:rgba(37,43,51,.10);
+}
+.laser-info-pill, .laser-result, .laser-status {
+  background:rgba(247,241,235,.82);
+  border:1.5px solid var(--gh-line);
+  box-shadow:none;
+}
+
+/* Gravity: outer UI adopts the same light graphic system. */
+.gravity-page {
+  max-width:760px;
+}
+.gravity-hud {
+  gap:8px;
+}
+.gravity-hud > div, .gravity-reset {
+  border-radius:17px;
+}
+.gravity-hud span,
+.gravity-control small {
+  color:var(--gh-muted);
+}
+.gravity-hud strong,
+.gravity-tuning strong {
+  color:var(--gh-ink);
+}
+.gravity-reset {
+  color:var(--gh-accent);
+  font-weight:850;
+}
+.gravity-tuning {
+  gap:8px;
+}
+.gravity-tuning label {
+  border-radius:17px;
+}
+.gravity-stage-wrap {
+  background:#f7f1eb;
+  border:1.5px solid var(--gh-line-strong);
+  border-radius:24px;
+  box-shadow:none;
+  overflow:hidden;
+}
+.gravity-control {
+  background:rgba(247,241,235,.85);
+  color:var(--gh-accent);
+  border:1.5px solid var(--gh-line);
+  box-shadow:none;
+}
+.gravity-control.thrust {
+  background:var(--gh-accent);
+  color:white;
+  border-color:color-mix(in srgb, var(--gh-accent) 72%, var(--gh-ink));
+}
+.gravity-control.pressed {
+  transform:translateY(1px) scale(.98);
+}
+.gravity-tip {
+  color:var(--gh-muted);
+}
+
+/* On phones, keep the visual system airy but compact. */
+@media (max-width:520px) {
+  .game-card { min-height:162px; padding:15px; }
+  .game-card-icon { width:46px; height:46px; }
+  .game-card h2 { font-size:18px; }
+  .home-header { margin-bottom:20px; }
+}
