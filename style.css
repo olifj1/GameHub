@@ -4312,3 +4312,98 @@ body[data-game-id="game-07"] .coding-action-command{
   body[data-game-id="game-07"] .program-insert-slot span{width:14px;height:14px;font-size:12px}
 }
 body[data-game-id="game-07"] .coding-guide-arrow::before{content:none!important}
+
+
+/* v1.0.25 — Coding compact toolbar + true top-down forklift */
+body[data-game-id="game-07"] .coding-topbar{
+  width:min(100%,430px)!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 54px 62px!important;
+  gap:6px!important;
+  margin:0 auto 14px!important;
+  align-items:stretch!important;
+}
+body[data-game-id="game-07"] .coding-levels{
+  min-width:0!important;
+  gap:4px!important;
+  padding:4px!important;
+}
+body[data-game-id="game-07"] .coding-level,
+body[data-game-id="game-07"] .new-puzzle-button{
+  min-width:0!important;
+  min-height:40px!important;
+  padding:0 5px!important;
+  font-size:13px!important;
+}
+body[data-game-id="game-07"] .coding-guide-toggle{
+  position:relative!important;
+  display:flex!important;
+  width:auto!important;
+  min-width:0!important;
+  min-height:48px!important;
+  margin:0!important;
+  padding:3px 3px 2px!important;
+  border:1.5px solid color-mix(in srgb,var(--gh-accent) 48%,var(--gh-line))!important;
+  border-radius:14px!important;
+  background:color-mix(in srgb,var(--gh-accent) 5%,var(--coding-panel))!important;
+  align-items:center!important;
+  justify-content:center!important;
+  flex-direction:column!important;
+  gap:0!important;
+  color:var(--gh-accent)!important;
+  cursor:pointer;
+}
+body[data-game-id="game-07"] .coding-guide-icon{display:grid;place-items:center;height:24px}
+body[data-game-id="game-07"] .coding-guide-icon svg{
+  width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;
+}
+body[data-game-id="game-07"] .coding-guide-label{
+  font-size:8px!important;font-weight:900!important;line-height:1!important;letter-spacing:.02em;
+}
+body[data-game-id="game-07"] .coding-guide-toggle input{
+  position:absolute!important;inset:0!important;width:100%!important;height:100%!important;margin:0!important;
+  opacity:0!important;cursor:pointer;
+}
+body[data-game-id="game-07"] .coding-guide-toggle:has(input:not(:checked)){
+  color:#7d7975!important;border-color:var(--gh-line)!important;background:var(--coding-panel)!important;opacity:.72;
+}
+
+/* make the whole coding stack slightly tighter so the action row remains reachable above Safari chrome */
+body[data-game-id="game-07"] .coding-board-wrap{margin-bottom:10px!important}
+body[data-game-id="game-07"] .coding-status{margin:0 0 10px!important}
+body[data-game-id="game-07"] .program-strip{margin-bottom:10px!important}
+body[data-game-id="game-07"] .coding-controls{margin-bottom:10px!important}
+body[data-game-id="game-07"] .coding-actions{margin-bottom:calc(12px + env(safe-area-inset-bottom))!important}
+
+/* top-down forklift: body reads as a box, forks are unmistakably at the front */
+body[data-game-id="game-07"] .coding-forklift{
+  width:calc(72% / var(--coding-cols))!important;
+  height:calc(72% / var(--coding-rows))!important;
+}
+body[data-game-id="game-07"] .coding-forklift svg{stroke-width:2!important}
+body[data-game-id="game-07"] .coding-forklift .forklift-outline{
+  fill:color-mix(in srgb,var(--gh-accent) 7%,#f7f2ec)!important;
+  stroke:var(--coding-ink)!important;
+}
+body[data-game-id="game-07"] .coding-forklift .forklift-window{
+  fill:#f7f2ec!important;stroke:var(--coding-ink)!important;
+}
+body[data-game-id="game-07"] .coding-forklift .forklift-wheel{
+  fill:var(--coding-ink)!important;stroke:var(--coding-ink)!important;stroke-width:1.5!important;
+}
+body[data-game-id="game-07"] .coding-forklift .forklift-mast,
+body[data-game-id="game-07"] .coding-forklift .forklift-forks{
+  fill:none!important;stroke:var(--coding-ink)!important;stroke-width:2.4!important;
+}
+body[data-game-id="game-07"] .coding-forklift .forklift-direction{
+  fill:none!important;stroke:var(--gh-accent)!important;stroke-width:2.8!important;
+}
+body[data-game-id="game-07"] .carried-crate{
+  width:27%!important;left:36.5%!important;right:auto!important;top:-1%!important;
+}
+
+@media(max-width:390px){
+  body[data-game-id="game-07"] .coding-topbar{grid-template-columns:minmax(0,1fr) 48px 56px!important;gap:4px!important}
+  body[data-game-id="game-07"] .coding-level,body[data-game-id="game-07"] .new-puzzle-button{font-size:12px!important;padding:0 3px!important}
+  body[data-game-id="game-07"] .coding-guide-label{font-size:7px!important}
+}

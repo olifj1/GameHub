@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.0.24">
+  <link rel="stylesheet" href="style.css?v=1.0.25">
   <title>Coding</title>
 </head>
 <body class="modular-game" data-game-id="game-07">
@@ -32,12 +32,15 @@
 <button class="coding-level" data-coding-level="medium">Medium</button>
 <button class="coding-level" data-coding-level="hard">Hard</button>
 </div>
-<button class="new-puzzle-button" id="new-coding-puzzle">New</button>
-</div>
-<label class="guide-toggle coding-guide-toggle" for="coding-guide-toggle">
-  <span><strong>Learning guide</strong></span>
+<label class="coding-guide-toggle" for="coding-guide-toggle" aria-label="Learning guide">
+  <span class="coding-guide-icon" aria-hidden="true">
+    <svg viewBox="0 0 32 32"><path d="M7 24V9M7 9l5 4-5 4M13 24h12M19 18l6 6-6 6"/></svg>
+  </span>
+  <span class="coding-guide-label">Guide</span>
   <input checked id="coding-guide-toggle" type="checkbox" aria-label="Show program preview on the grid">
 </label>
+<button class="new-puzzle-button" id="new-coding-puzzle">New</button>
+</div>
 
 <div class="coding-board-wrap">
 <div aria-label="Coding puzzle grid" class="coding-board" id="coding-board"></div>
@@ -86,8 +89,8 @@
 </div>
 </section>
   </main>
-  <script src="site-config.js?v=1.0.24"></script>
-  <script src="core.js?v=1.0.24"></script>
-  <script src="game-07.js?v=1.0.24"></script>
+  <script src="site-config.js?v=1.0.25"></script>
+  <script src="core.js?v=1.0.25"></script>
+  <script src="game-07.js?v=1.0.25"></script>
 </body>
 </html>

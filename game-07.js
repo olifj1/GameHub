@@ -142,11 +142,13 @@ function newPuzzle(){
 
 function forkliftSvg(){
   return `<svg viewBox="0 0 64 64" aria-hidden="true">
-    <path class="forklift-outline" d="M18 48V25h24l7 8v15H18Z"/>
-    <path d="M23 25v-9h16v9M24 35h16M42 25h7v-7M49 18v-8M49 10h8M49 14h8"/>
-    <circle class="forklift-wheel" cx="24" cy="49" r="5"/><circle class="forklift-wheel" cx="43" cy="49" r="5"/>
-    <path class="forklift-window" d="M27 29h11v8H27z"/>
-    <path class="forklift-direction" d="M32 10V3M28 7l4-4 4 4"/>
+    <rect class="forklift-outline" x="18" y="24" width="28" height="31" rx="4"/>
+    <rect class="forklift-window" x="23" y="35" width="18" height="13" rx="2"/>
+    <path class="forklift-mast" d="M20 23h24M23 23V15M41 23V15"/>
+    <path class="forklift-forks" d="M23 15V5M41 15V5M23 5h5M41 5h-5"/>
+    <rect class="forklift-wheel" x="13" y="30" width="5" height="12" rx="2"/>
+    <rect class="forklift-wheel" x="46" y="30" width="5" height="12" rx="2"/>
+    <path class="forklift-direction" d="M32 20V10M28 14l4-4 4 4"/>
   </svg>`;
 }
 
