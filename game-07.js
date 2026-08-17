@@ -4,6 +4,10 @@ const codingLevelButtons = $$('[data-coding-level]');
 const commandButtons = $$('[data-command]');
 const programTimeline = $("#program-timeline");
 const programCount = $("#program-count");
+const programEditor = $("#program-editor");
+const programMoveLeft = $("#program-move-left");
+const programDelete = $("#program-delete");
+const programMoveRight = $("#program-move-right");
 const codingRun = $("#coding-run");
 const codingClear = $("#coding-clear");
 const codingUndo = $("#coding-undo");
@@ -19,12 +23,13 @@ const levelInfo = {
   hard:   { rows:7, cols:7, min:11, open:3, crate:true,  max:32 }
 };
 const dirs = [[-1,0],[0,1],[1,0],[0,-1]];
-const glyph = { forward:'↑', back:'↓', left:'↶', right:'↷', action:'▣' };
 let codingLevel = localStorage.getItem('codingLevel') || 'easy';
 if (!levelInfo[codingLevel]) codingLevel = 'easy';
 let codingGuideOn = localStorage.getItem('codingGuideOn') !== 'false';
 let puzzle = null;
 let program = [];
+let selectedProgramIndex = null;
+let insertIndex = null;
 let running = false;
 let token = 0;
 
@@ -114,8 +119,13 @@ function reset(render=true){
   if(render) renderBoard();
 }
 
+function clearProgramSelection(){
+  selectedProgramIndex=null;
+  insertIndex=null;
+}
+
 function newPuzzle(){
-  token++; running=false; program=[]; puzzle=null;
+  token++; running=false; program=[]; clearProgramSelection(); puzzle=null;
   codingWinOverlay.classList.add('hidden');
   for(let i=0;i<500 && !puzzle;i++) puzzle=buildCandidate();
   if(!puzzle){
@@ -132,14 +142,42 @@ function newPuzzle(){
 
 function forkliftSvg(){
   return `<svg viewBox="0 0 64 64" aria-hidden="true">
-    <rect class="forklift-body" x="15" y="21" width="34" height="30" rx="7"/>
-    <rect class="forklift-cab" x="21" y="28" width="20" height="15" rx="3"/>
-    <rect class="forklift-wheel" x="10" y="27" width="7" height="13" rx="3"/>
-    <rect class="forklift-wheel" x="47" y="27" width="7" height="13" rx="3"/>
-    <path d="M22 21V12M42 21V12M22 12h20M25 8v8M39 8v8"/>
-    <path d="M25 8h-8M39 8h8"/>
-    <path class="forklift-facing" d="M32 17l-6 8h12z"/>
+    <path class="forklift-outline" d="M18 48V25h24l7 8v15H18Z"/>
+    <path d="M23 25v-9h16v9M24 35h16M42 25h7v-7M49 18v-8M49 10h8M49 14h8"/>
+    <circle class="forklift-wheel" cx="24" cy="49" r="5"/><circle class="forklift-wheel" cx="43" cy="49" r="5"/>
+    <path class="forklift-window" d="M27 29h11v8H27z"/>
+    <path class="forklift-direction" d="M32 10V3M28 7l4-4 4 4"/>
   </svg>`;
+}
+
+function crateSvg(className='coding-crate'){
+  return `<span class="${className}" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M6 9l10-5 10 5v14l-10 5-10-5V9Z M6 9l10 5 10-5M16 14v14M11 6.5l10 5"/></svg></span>`;
+}
+
+function dropSvg(){
+  return `<span class="coding-drop" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M8 29v5h24v-5M12 29h16M20 5v18M14 17l6 6 6-6"/><rect x="13" y="25" width="14" height="8" rx="1"/></svg></span>`;
+}
+
+function commandSvg(cmd, actionKind='action'){
+  if(cmd==='forward') return `<svg viewBox="0 0 32 32"><path d="M16 25V7M9 14l7-7 7 7"/></svg>`;
+  if(cmd==='back') return `<svg viewBox="0 0 32 32"><path d="M16 7v18M9 18l7 7 7-7"/></svg>`;
+  if(cmd==='left') return `<svg viewBox="0 0 32 32"><path d="M23 24a10 10 0 0 0-10-16M13 8l4-5M13 8l6 2"/></svg>`;
+  if(cmd==='right') return `<svg viewBox="0 0 32 32"><path d="M9 24A10 10 0 0 1 19 8M19 8l-4-5M19 8l-6 2"/></svg>`;
+  if(actionKind==='drop') return `<svg viewBox="0 0 32 32"><path d="M9 20h14v8H9zM12 20v-5h8v5M16 5v10M12 11l4 4 4-4"/></svg>`;
+  return `<svg viewBox="0 0 32 32"><path d="M9 20h14v8H9zM12 20v-5h8v5M16 15V5M12 9l4-4 4 4"/></svg>`;
+}
+
+function actionKinds(){
+  const kinds=[];
+  let s={row:puzzle.start.row,col:puzzle.start.col,dir:0,carrying:false,delivered:!info().crate};
+  for(const cmd of program){
+    let kind='action';
+    if(cmd==='action') kind=s.carrying?'drop':'pick';
+    kinds.push(kind);
+    const n=stepState(s,cmd);
+    if(!n.collision&&!n.invalid) s=n;
+  }
+  return kinds;
 }
 
 function guidePreview(){
@@ -147,18 +185,20 @@ function guidePreview(){
   let s={row:puzzle.start.row,col:puzzle.start.col,dir:0,carrying:false,delivered:!info().crate};
   const marks=[];
   for(const cmd of program){
+    const actionKind=cmd==='action'?(s.carrying?'drop':'pick'):null;
     const n=stepState(s,cmd);
-    if(n.collision || n.invalid){ marks.push({row:s.row,col:s.col,dir:s.dir,collision:true}); break; }
+    if(n.collision || n.invalid){ marks.push({row:s.row,col:s.col,dir:s.dir,cmd,actionKind,collision:true}); break; }
     s=n;
-    marks.push({row:s.row,col:s.col,dir:s.dir,collision:false});
+    marks.push({row:s.row,col:s.col,dir:s.dir,cmd,actionKind,collision:false});
   }
   return marks;
 }
 
 function addGuideMarker(cell, mark){
   const marker=document.createElement('span');
-  marker.className='coding-guide-marker'+(mark.collision?' collision':'');
-  marker.innerHTML=`<span class="coding-guide-dot"></span><span class="coding-guide-arrow" style="--guide-rot:${mark.dir*90}deg"></span>`;
+  marker.className='coding-guide-marker'+(mark.collision?' collision':'')+((mark.cmd==='left'||mark.cmd==='right')?' turn':'')+(mark.cmd==='action'?' action':'');
+  const actionIcon=mark.cmd==='action' ? `<span class="coding-guide-action ${mark.actionKind}">${commandSvg('action',mark.actionKind)}</span>` : '';
+  marker.innerHTML=`<span class="coding-guide-dot"></span><span class="coding-guide-arrow dir-${mark.dir}" style="--guide-rot:${mark.dir*90}deg"><span></span></span>${actionIcon}`;
   cell.appendChild(marker);
 }
 
@@ -171,23 +211,23 @@ function renderBoard(){
     const el=document.createElement('div');
     el.className='grid-cell';
     if(puzzle.obstacles.has(key(r,c))) el.classList.add('obstacle');
-    if(r===puzzle.start.row&&c===puzzle.start.col){
-      el.classList.add('start-cell');
-      el.innerHTML+='<span class="coding-start-label">START</span>';
-    }
+    if(r===puzzle.start.row&&c===puzzle.start.col) el.classList.add('start-cell');
     if(r===puzzle.goal.row&&c===puzzle.goal.col){
       el.classList.add('goal-cell');
       el.innerHTML+='<span class="finish-mark"><svg viewBox="0 0 32 32"><path d="M8 28V5M9 6h14l-3 5 3 5H9"/></svg></span>';
     }
-    if(info().crate&&!puzzle.state.delivered&&!puzzle.state.carrying&&r===puzzle.crate.row&&c===puzzle.crate.col) el.innerHTML+='<span class="coding-crate"></span>';
-    if(info().crate&&r===puzzle.drop.row&&c===puzzle.drop.col) el.innerHTML+='<span class="coding-drop"></span><span class="coding-drop-label">DROP</span>';
+    if(info().crate){
+      if(puzzle.state.delivered && r===puzzle.drop.row && c===puzzle.drop.col) el.innerHTML+=crateSvg('coding-crate delivered');
+      else if(!puzzle.state.carrying && r===puzzle.crate.row && c===puzzle.crate.col) el.innerHTML+=crateSvg();
+      if(r===puzzle.drop.row&&c===puzzle.drop.col) el.innerHTML+=dropSvg();
+    }
     const mark=[...guide].reverse().find(m=>m.row===r&&m.col===c);
     if(mark) addGuideMarker(el,mark);
     codingBoard.appendChild(el);
   }
   const rover=document.createElement('div');
   rover.id='coding-rover'; rover.className='coding-forklift';
-  rover.innerHTML=forkliftSvg()+(puzzle.state.carrying?'<span class="carried-crate"></span>':'');
+  rover.innerHTML=forkliftSvg()+(puzzle.state.carrying?crateSvg('carried-crate'):'');
   codingBoard.appendChild(rover);
   positionRover(false);
 }
@@ -201,30 +241,87 @@ function positionRover(anim=true){
   rover.style.transform=`translate(-50%,-50%) rotate(${puzzle.state.dir*90}deg)`;
 }
 
+function insertSlot(index){
+  const b=document.createElement('button');
+  b.type='button';
+  b.className='program-insert-slot'+(insertIndex===index?' selected':'');
+  b.dataset.insertIndex=index;
+  b.setAttribute('aria-label',`Insert a command at position ${index+1}`);
+  b.innerHTML='<span>+</span>';
+  return b;
+}
+
 function renderProgram(active=-1,done=-1){
+  if(selectedProgramIndex!==null && selectedProgramIndex>=program.length) selectedProgramIndex=program.length?program.length-1:null;
+  if(insertIndex!==null && insertIndex>program.length) insertIndex=program.length;
   programCount.textContent=program.length;
   programTimeline.innerHTML='';
-  if(!program.length){ programTimeline.innerHTML='<span class="program-empty">Tap a command below</span>'; renderBoard(); return; }
+  const kinds=actionKinds();
+  programTimeline.appendChild(insertSlot(0));
+  if(!program.length){
+    const empty=document.createElement('span'); empty.className='program-empty'; empty.textContent=''; programTimeline.appendChild(empty);
+  }
   program.forEach((c,i)=>{
-    const e=document.createElement('span'); e.className='program-step'; e.textContent=glyph[c];
+    const e=document.createElement('button');
+    e.type='button'; e.className='program-step'; e.dataset.programIndex=i;
+    e.setAttribute('aria-label',`Command ${i+1}: ${c}`);
+    e.innerHTML=commandSvg(c,kinds[i]);
     if(i===active)e.classList.add('running'); else if(i<=done)e.classList.add('done');
+    if(i===selectedProgramIndex)e.classList.add('selected');
     programTimeline.appendChild(e);
+    programTimeline.appendChild(insertSlot(i+1));
   });
+  if(programEditor){
+    programEditor.hidden=selectedProgramIndex===null || running;
+    if(selectedProgramIndex!==null){
+      programMoveLeft.disabled=selectedProgramIndex<=0;
+      programMoveRight.disabled=selectedProgramIndex>=program.length-1;
+      programDelete.disabled=false;
+    }
+  }
   if(!running) renderBoard();
 }
 
 function add(c){
   if(running||program.length>=32)return;
-  program.push(c); renderProgram();
+  if(insertIndex!==null){
+    program.splice(insertIndex,0,c);
+    selectedProgramIndex=insertIndex;
+    insertIndex=null;
+  } else {
+    program.push(c);
+    selectedProgramIndex=program.length-1;
+  }
+  renderProgram();
 }
+
+function deleteSelected(){
+  if(running||selectedProgramIndex===null)return;
+  program.splice(selectedProgramIndex,1);
+  if(!program.length) selectedProgramIndex=null;
+  else selectedProgramIndex=Math.min(selectedProgramIndex,program.length-1);
+  insertIndex=null;
+  renderProgram();
+}
+
+function moveSelected(delta){
+  if(running||selectedProgramIndex===null)return;
+  const next=selectedProgramIndex+delta;
+  if(next<0||next>=program.length)return;
+  [program[selectedProgramIndex],program[next]]=[program[next],program[selectedProgramIndex]];
+  selectedProgramIndex=next; insertIndex=null; renderProgram();
+}
+
 function setEnabled(v){
   commandButtons.forEach(b=>{b.disabled=!v; b.hidden=(b.dataset.command==='action'&&!info().crate)});
   [codingUndo,codingClear,codingRun,newCodingPuzzle,...codingLevelButtons].forEach(b=>b.disabled=!v);
   if(codingGuideToggle) codingGuideToggle.disabled=!v;
+  if(!v && programEditor) programEditor.hidden=true;
 }
 
 async function run(){
   if(running||!program.length)return;
+  clearProgramSelection();
   running=true; const t=++token; setEnabled(false); reset(false); renderBoard();
   let done=-1;
   for(let i=0;i<program.length;i++){
@@ -255,9 +352,8 @@ function finish(used){
   codingWinOverlay.classList.remove('hidden'); setEnabled(true);
 }
 
-// Use pointerdown on touch devices so the global iOS double-tap guard cannot swallow
-// a quick command -> Run / Undo / Clear press. Click remains as keyboard/mouse fallback.
 function bindPress(el,fn){
+  if(!el) return;
   let lastPointer=0;
   el.addEventListener('pointerdown',e=>{
     if(e.pointerType==='mouse' && e.button!==0) return;
@@ -271,11 +367,42 @@ function bindPress(el,fn){
   });
 }
 
+function handleTimelineTarget(target){
+  const step=target.closest('[data-program-index]');
+  if(step){
+    const i=Number(step.dataset.programIndex);
+    selectedProgramIndex=selectedProgramIndex===i?null:i;
+    insertIndex=null;
+    renderProgram();
+    return;
+  }
+  const slot=target.closest('[data-insert-index]');
+  if(slot){
+    const i=Number(slot.dataset.insertIndex);
+    insertIndex=insertIndex===i?null:i;
+    selectedProgramIndex=null;
+    renderProgram();
+  }
+}
+let timelinePointer=0;
+programTimeline.addEventListener('pointerdown',e=>{
+  if(running)return;
+  if(!e.target.closest('[data-program-index],[data-insert-index]')) return;
+  timelinePointer=performance.now(); e.preventDefault(); handleTimelineTarget(e.target);
+});
+programTimeline.addEventListener('click',e=>{
+  if(performance.now()-timelinePointer<600){e.preventDefault();return;}
+  if(!running) handleTimelineTarget(e.target);
+});
+
 commandButtons.forEach(b=>bindPress(b,()=>add(b.dataset.command)));
-bindPress(codingUndo,()=>{if(!running){program.pop();renderProgram();}});
-bindPress(codingClear,()=>{if(!running){program=[];reset(false);renderProgram();}});
+bindPress(programMoveLeft,()=>moveSelected(-1));
+bindPress(programDelete,deleteSelected);
+bindPress(programMoveRight,()=>moveSelected(1));
+bindPress(codingUndo,()=>{if(!running){program.pop();clearProgramSelection();renderProgram();}});
+bindPress(codingClear,()=>{if(!running){program=[];clearProgramSelection();reset(false);renderProgram();}});
 bindPress(codingRun,run);
-bindPress(newCodingPuzzle,()=>newPuzzle());
+bindPress(newCodingPuzzle,newPuzzle);
 codingLevelButtons.forEach(b=>bindPress(b,()=>{
   if(running)return;
   codingLevel=b.dataset.codingLevel;

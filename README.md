@@ -62,11 +62,18 @@ self.addEventListener("fetch", event => {
 - Corrected the configured Real World Maths display name to Maths.
 
 
-## v1.0.23
+## v1.0.24
 Hub-wide visual consistency pass; vector home icons; neutral page backgrounds and Safari safe spacing; Coding rebuilt with animated forklift, difficulty-specific grid sizes, and crate pickup/drop challenges on Medium and Hard.
 
-## v1.0.23
+## v1.0.24
 - Coding readability pass: stronger grid/obstacle contrast and clearer start, finish and drop targets.
 - Replaced the subtle rover mark with a clear top-down forklift graphic and strong facing indicator.
 - Restored the Coding Learning guide toggle and live program preview markers on the grid.
 - Coding controls now use immediate pointer input so rapid command-to-Run, Undo and Clear taps are not swallowed by iOS double-tap protection.
+
+## v1.0.24
+- Refined Coding visuals to the clean line-art language used on Tell the Time.
+- Dropped crates remain visible on the delivery target.
+- Learning-guide direction badges render above the forklift, including turn-first programs.
+- Clearer vector pick/drop, crate and delivery symbols.
+- Program timeline is editable: tap a block to select it, move it earlier/later or delete it; tap a + insertion point then a command to insert at that position.

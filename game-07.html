@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.0.23">
+  <link rel="stylesheet" href="style.css?v=1.0.24">
   <title>Coding</title>
 </head>
 <body class="modular-game" data-game-id="game-07">
@@ -56,13 +56,27 @@
 <div aria-live="polite" class="program-timeline" id="program-timeline">
 <span class="program-empty">Tap a command below</span>
 </div>
+<div class="program-editor" id="program-editor" hidden aria-label="Edit selected command">
+  <button class="program-edit-button" id="program-move-left" type="button" aria-label="Move selected command earlier">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M20 8l-8 8 8 8M12 16h12"/></svg>
+    <span>Earlier</span>
+  </button>
+  <button class="program-edit-button program-delete-button" id="program-delete" type="button" aria-label="Delete selected command">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 10l1 16h10l1-16M8 10h16M13 10V6h6v4M14 14v8M18 14v8"/></svg>
+    <span>Delete</span>
+  </button>
+  <button class="program-edit-button" id="program-move-right" type="button" aria-label="Move selected command later">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M12 8l8 8-8 8M20 16H8"/></svg>
+    <span>Later</span>
+  </button>
+</div>
 </div>
 <div class="coding-controls">
 <button class="command-button" data-command="forward"><span class="command-icon"><svg viewBox="0 0 32 32"><path d="M16 25V7M9 14l7-7 7 7"/></svg></span><span>Forward</span></button>
 <button class="command-button" data-command="left"><span class="command-icon"><svg viewBox="0 0 32 32"><path d="M23 24a10 10 0 0 0-10-16M13 8l4-5M13 8l6 2"/></svg></span><span>Left</span></button>
 <button class="command-button" data-command="right"><span class="command-icon"><svg viewBox="0 0 32 32"><path d="M9 24A10 10 0 0 1 19 8M19 8l-4-5M19 8l-6 2"/></svg></span><span>Right</span></button>
 <button class="command-button" data-command="back"><span class="command-icon"><svg viewBox="0 0 32 32"><path d="M16 7v18M9 18l7 7 7-7"/></svg></span><span>Back</span></button>
-<button class="command-button coding-action-command" data-command="action"><span class="command-icon"><svg viewBox="0 0 32 32"><path d="M8 20h16v8H8zM11 20v-6h10v6M16 14V5M12 9l4-4 4 4"/></svg></span><span>Pick / Drop</span></button>
+<button class="command-button coding-action-command" data-command="action"><span class="command-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9 20h14v8H9zM12 20v-5h8v5M16 15V5M12 9l4-4 4 4M6 24h3M23 24h3"/></svg></span><span>Pick / Drop</span></button>
 </div>
 <div class="coding-actions">
 <button class="coding-secondary" id="coding-undo">Undo</button>
@@ -72,8 +86,8 @@
 </div>
 </section>
   </main>
-  <script src="site-config.js?v=1.0.23"></script>
-  <script src="core.js?v=1.0.23"></script>
-  <script src="game-07.js?v=1.0.23"></script>
+  <script src="site-config.js?v=1.0.24"></script>
+  <script src="core.js?v=1.0.24"></script>
+  <script src="game-07.js?v=1.0.24"></script>
 </body>
 </html>
