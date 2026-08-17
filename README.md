@@ -1,4 +1,4 @@
-const CACHE = "gamehub-v1.0.20";
+const CACHE = "gamehub-v1.0.21";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -56,7 +56,7 @@ self.addEventListener("fetch", event => {
 });
 
 
-## v1.0.20
+## v1.0.21
 - Reading layout hard-polished: neutral background, consistent section spacing, Sums-style Difficulty selector, compact Voice + Read aloud row, shared vector speech icon, and smaller action controls.
-- Added explicit v1.0.20 cache-busting to the home and Reading page asset URLs and game links to prevent iOS/GitHub Pages mixing stale HTML with newer CSS/JS.
+- Added explicit v1.0.21 cache-busting to the home and Reading page asset URLs and game links to prevent iOS/GitHub Pages mixing stale HTML with newer CSS/JS.
 - Corrected the configured Real World Maths display name to Maths.

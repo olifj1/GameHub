@@ -3949,3 +3949,23 @@ body[data-game-id="game-04"] .reading-next {
   body[data-game-id="game-04"] .reading-speech-controls { margin-bottom: 18px !important; }
   body[data-game-id="game-04"] .reading-card { min-height: 185px !important; padding: 20px 18px !important; }
 }
+
+/* GameHub v1.0.21 — Maths polish */
+.realm-card .realm-question{
+  width:auto;
+  margin:16px 0 0!important;
+  padding-top:16px;
+  border-top:1.5px solid var(--gh-line);
+  font-size:17px;
+  line-height:1.35;
+  font-weight:850;
+  text-align:left;
+  color:var(--gh-text);
+}
+.realm-page #realm-new{
+  margin-bottom:calc(88px + env(safe-area-inset-bottom));
+}
+@media(max-height:850px){
+  .realm-card .realm-question{margin-top:12px!important;padding-top:12px;font-size:15px}
+  .realm-page #realm-new{margin-bottom:calc(76px + env(safe-area-inset-bottom));}
+}
