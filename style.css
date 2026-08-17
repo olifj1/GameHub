@@ -3970,7 +3970,7 @@ body[data-game-id="game-04"] .reading-next {
   .realm-page #realm-new{margin-bottom:calc(76px + env(safe-area-inset-bottom));}
 }
 
-/* v1.0.22 — hub-wide polish rules */
+/* v1.0.23 — hub-wide polish rules */
 html,body.modular-game,.modular-game .screen-wrap,.modular-game .screen,.modular-game .page{background:var(--gh-bg,#e7dbd2)!important;}
 body.modular-game{min-height:100svh;}
 .modular-game .page{padding-bottom:max(96px,calc(72px + env(safe-area-inset-bottom)))!important;}
@@ -3998,3 +3998,95 @@ body[data-game-id="game-07"] .coding-page{width:min(100%,480px);margin-inline:au
 .command-icon{display:grid;place-items:center}.command-icon svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}.coding-controls{display:grid!important;grid-template-columns:repeat(5,1fr)!important;gap:8px!important}.command-button{min-width:0!important;padding:9px 4px!important;border-radius:16px!important;background:var(--gh-surface)!important;color:var(--gh-text)!important}.command-button span:last-child{font-size:10px!important}.coding-action-command{color:var(--gh-accent)!important;border-color:color-mix(in srgb,var(--gh-accent) 65%,var(--gh-line))!important;background:color-mix(in srgb,var(--gh-accent) 9%,var(--gh-surface))!important}
 .program-strip{border:1.5px solid var(--gh-line)!important;background:var(--gh-surface)!important;border-radius:18px!important}.program-step{border-radius:10px!important;background:color-mix(in srgb,var(--gh-accent) 9%,var(--gh-surface))!important;border:1.5px solid color-mix(in srgb,var(--gh-accent) 35%,var(--gh-line))!important}.coding-run{background:var(--gh-accent)!important;color:white!important}.coding-status{min-height:0!important;margin:-4px 0 14px!important;text-align:center;font-size:13px!important}.guide-toggle{display:none!important}
 @media(max-width:430px){.coding-controls{gap:6px!important}.command-button span:last-child{font-size:9px!important}.coding-board-wrap{padding:6px}.coding-topbar,.coding-board-wrap,.program-strip,.coding-controls,.coding-actions{margin-bottom:14px}}
+
+/* v1.0.23 Coding readability + learning guide */
+body[data-game-id="game-07"] .coding-guide-toggle{
+  display:flex!important;
+  width:min(100%,430px);
+  min-height:44px;
+  margin:0 auto 14px!important;
+  padding:7px 12px;
+  border:1.5px solid var(--gh-line);
+  border-radius:16px;
+  background:var(--gh-surface);
+  align-items:center;
+  justify-content:space-between;
+}
+body[data-game-id="game-07"] .coding-guide-toggle strong{
+  color:var(--gh-text);
+  font-size:13px;
+  letter-spacing:.01em;
+}
+body[data-game-id="game-07"] .coding-guide-toggle input{
+  width:44px;
+  height:25px;
+  accent-color:var(--gh-accent);
+}
+body[data-game-id="game-07"] .coding-board-wrap{
+  background:#f8f4ef!important;
+  padding:8px!important;
+  border:2px solid color-mix(in srgb,var(--gh-accent) 22%,var(--gh-line))!important;
+}
+body[data-game-id="game-07"] .coding-board{
+  gap:4px!important;
+  padding:3px;
+  background:color-mix(in srgb,var(--gh-accent) 16%,#d9d5cf)!important;
+}
+body[data-game-id="game-07"] .coding-board .grid-cell{
+  border:1.5px solid #c8c4bd!important;
+  border-radius:7px!important;
+  background:#faf7f2!important;
+}
+body[data-game-id="game-07"] .coding-board .grid-cell.obstacle{
+  background:repeating-linear-gradient(135deg,#91aaa5 0 8px,#7d9994 8px 16px)!important;
+  border-color:#6e8984!important;
+  opacity:1!important;
+}
+body[data-game-id="game-07"] .coding-board .grid-cell.start-cell{
+  background:color-mix(in srgb,var(--gh-accent) 12%,#faf7f2)!important;
+}
+body[data-game-id="game-07"] .coding-board .grid-cell.goal-cell{
+  background:#f6e8b8!important;
+  border-color:#c9ad52!important;
+}
+body[data-game-id="game-07"] .finish-mark svg{
+  width:32px;height:32px;fill:none;stroke:#735f28;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;
+}
+.coding-start-label,.coding-drop-label{
+  position:absolute;left:4px;bottom:3px;z-index:3;font-size:6px;font-weight:900;letter-spacing:.08em;color:#52635f;
+}
+.coding-drop-label{left:50%;bottom:3px;transform:translateX(-50%);color:var(--gh-accent)}
+body[data-game-id="game-07"] .coding-drop{
+  inset:13%!important;border-width:3px!important;background:color-mix(in srgb,var(--gh-accent) 14%,#fff)!important;
+}
+body[data-game-id="game-07"] .coding-crate{
+  width:45%!important;left:27.5%!important;top:27.5%!important;border-width:2.5px!important;
+}
+body[data-game-id="game-07"] .coding-forklift{
+  width:calc(84% / var(--coding-cols))!important;
+  height:calc(84% / var(--coding-rows))!important;
+  z-index:10!important;
+}
+body[data-game-id="game-07"] .coding-forklift svg{
+  width:100%!important;height:100%!important;overflow:visible;
+  fill:none;stroke:#263037!important;stroke-width:2.6!important;
+  filter:drop-shadow(0 2px 1px rgba(255,255,255,.9)) drop-shadow(0 2px 2px rgba(0,0,0,.14))!important;
+}
+body[data-game-id="game-07"] .coding-forklift .forklift-body{fill:#efb84f;stroke:#263037}
+body[data-game-id="game-07"] .coding-forklift .forklift-cab{fill:#dbe9e7;stroke:#263037}
+body[data-game-id="game-07"] .coding-forklift .forklift-wheel{fill:#263037;stroke:#263037}
+body[data-game-id="game-07"] .coding-forklift .forklift-facing{fill:#263037;stroke:none}
+.coding-guide-marker{position:absolute;inset:0;z-index:6;pointer-events:none}
+.coding-guide-dot{position:absolute;left:50%;top:50%;width:24%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:color-mix(in srgb,var(--gh-accent) 55%,#fff);border:1.5px solid var(--gh-accent);opacity:.8}
+.coding-guide-arrow{position:absolute;left:50%;top:50%;width:48%;height:48%;transform:translate(-50%,-50%) rotate(var(--guide-rot));display:grid;place-items:start center;color:var(--gh-accent);font-size:clamp(13px,3.7vw,21px);font-weight:1000;line-height:1}
+.coding-guide-arrow::before{content:"▲"}
+.coding-guide-marker.collision .coding-guide-dot{background:#efcbc7;border-color:#a95049}
+.coding-guide-marker.collision .coding-guide-arrow{color:#a95049}
+.coding-guide-marker.collision .coding-guide-arrow::before{content:"×";font-size:1.25em}
+body[data-game-id="game-07"] .coding-status{font-weight:800!important;color:#625d59!important}
+body[data-game-id="game-07"] .coding-controls{gap:7px!important}
+body[data-game-id="game-07"] .command-button span:last-child{font-size:10px!important;font-weight:850!important}
+@media(max-width:430px){
+  body[data-game-id="game-07"] .coding-guide-toggle{margin-bottom:12px!important}
+  body[data-game-id="game-07"] .coding-board{gap:3px!important}
+}

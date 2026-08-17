@@ -62,5 +62,11 @@ self.addEventListener("fetch", event => {
 - Corrected the configured Real World Maths display name to Maths.
 
 
-## v1.0.22
+## v1.0.23
 Hub-wide visual consistency pass; vector home icons; neutral page backgrounds and Safari safe spacing; Coding rebuilt with animated forklift, difficulty-specific grid sizes, and crate pickup/drop challenges on Medium and Hard.
+
+## v1.0.23
+- Coding readability pass: stronger grid/obstacle contrast and clearer start, finish and drop targets.
+- Replaced the subtle rover mark with a clear top-down forklift graphic and strong facing indicator.
+- Restored the Coding Learning guide toggle and live program preview markers on the grid.
+- Coding controls now use immediate pointer input so rapid command-to-Run, Undo and Clear taps are not swallowed by iOS double-tap protection.
