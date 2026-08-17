@@ -3635,3 +3635,171 @@ body {
     border-radius: 5px;
   }
 }
+
+
+/* GameHub v1.0.18 — Reading layout consistency and shared speech icon */
+#reading-screen {
+  background: var(--gh-bg);
+}
+
+.reading-page {
+  padding-bottom: 24px;
+}
+
+/* Match the Sums page rhythm: a clear title gap followed by even section spacing. */
+.reading-page .reading-header {
+  margin-bottom: 40px;
+}
+
+.reading-page .mode-switch,
+.reading-page .reading-difficulty,
+.reading-page .reading-card,
+.reading-page .reading-speech-controls {
+  margin-bottom: 24px;
+}
+
+/* Difficulty uses the same unboxed selector treatment as Sums. */
+.reading-page .reading-difficulty {
+  width: min(100%, 430px);
+  margin-left: auto;
+  margin-right: auto;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.reading-page .reading-difficulty .difficulty-note {
+  display: none !important;
+}
+
+.reading-page .reading-card {
+  margin-left: auto;
+  margin-right: auto;
+  min-height: 220px;
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.reading-page .reading-feedback:empty {
+  display: none;
+}
+
+.reading-page .reading-feedback:not(:empty) {
+  margin-top: 18px;
+}
+
+/* Speech controls are a simple row, not a containing panel. */
+.reading-page .reading-speech-controls {
+  width: min(100%, 430px);
+  margin-left: auto;
+  margin-right: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.reading-page .reading-voice-control {
+  min-width: 0;
+  min-height: 58px;
+  padding: 7px 10px 8px;
+  border-radius: 18px;
+  background: var(--gh-surface);
+  border: 1.5px solid var(--gh-line);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.reading-page .reading-voice-control > span {
+  text-align: left;
+  padding-left: 3px;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--gh-muted);
+}
+
+.reading-page .reading-voice-control select {
+  width: 100%;
+  min-width: 0;
+  height: 29px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.reading-page .reading-speak-button {
+  min-height: 58px;
+  border-radius: 18px;
+  gap: 10px;
+  font-size: 15px;
+}
+
+/* Shared, device-independent read-aloud mark. */
+.speech-icon {
+  width: 27px;
+  height: 27px;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.speech-icon-fill {
+  fill: currentColor;
+}
+
+.speech-icon-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.35;
+  stroke-linecap: round;
+}
+
+.reading-speak-button .speech-icon,
+.realm-speak .speech-icon {
+  color: currentColor;
+}
+
+.realm-speak {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.reading-page .reading-next {
+  width: min(100%, 330px);
+  min-height: 64px;
+  margin: 0 auto;
+  display: block;
+  border-radius: 20px;
+  font-size: 18px;
+}
+
+@media (max-height: 850px) {
+  .reading-page .reading-header { margin-bottom: 32px; }
+  .reading-page .mode-switch,
+  .reading-page .reading-difficulty,
+  .reading-page .reading-card,
+  .reading-page .reading-speech-controls { margin-bottom: 20px; }
+  .reading-page .reading-card { min-height: 190px; padding: 22px 18px; }
+  .reading-page .reading-next { min-height: 58px; }
+}
+
+/* Keep the speech row side-by-side on phone widths; older Reading rules stacked the button. */
+@media (max-width: 430px) {
+  .reading-page .reading-speak-button {
+    grid-column: auto;
+  }
+}

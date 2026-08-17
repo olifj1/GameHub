@@ -117,3 +117,11 @@ upload the files to the root of the GameHub GitHub repository.
 - Sums: keypad presses now register on the initial pointer press, fixing missed digits during fast entry such as 10.
 - Sums: enlarged the New Sum button and changed it to the page accent colour for stronger emphasis.
 
+
+## v1.0.18
+- Reading: removed the old purple lower-page background and returned the whole screen to the neutral GameHub page colour.
+- Reading: matched the difficulty selector to the cleaner Sums-page treatment and removed visible difficulty/instruction text.
+- Reading: removed voice-speed controls and placed Voice and Read aloud side-by-side without an outer panel.
+- Reading: added a custom inline speech icon and reused it for the other read-aloud control in Real World Maths.
+- Reading: increased the gap below the heading and standardised spacing between the main page sections.
+- Reading: expanded the info-button instructions so guidance lives there rather than in the working area.
