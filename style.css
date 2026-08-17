@@ -3806,3 +3806,146 @@ body {
 
 /* GameHub v1.0.19 — Maths page rebuild */
 .realm-page{padding-bottom:24px}.realm-page .page-header{margin-bottom:40px}.realm-categories,.realm-difficulty,.realm-card,.realm-speech-row,.realm-question,.realm-answer-display,.realm-keypad{margin-bottom:24px!important}.realm-categories{width:min(100%,430px);display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.realm-category{min-height:72px;border:1.5px solid var(--gh-line);border-radius:18px;background:var(--gh-surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:var(--gh-text)}.realm-category svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}.realm-category span{font-size:11px;font-weight:850}.realm-category.active{color:var(--game-accent);border-color:currentColor;background:color-mix(in srgb,var(--game-accent) 8%,var(--gh-surface))}.realm-difficulty{width:min(100%,430px);margin-left:auto;margin-right:auto}.realm-difficulty .choice-title{text-align:left}.realm-card{width:min(100%,430px);margin-left:auto;margin-right:auto;padding:22px 20px;border-radius:22px;background:var(--gh-surface);border:1.5px solid var(--gh-line)}.realm-story{font-size:17px;line-height:1.45;font-weight:750;color:var(--gh-text)}.realm-speech-row{width:min(100%,430px);margin-left:auto;margin-right:auto;display:grid;grid-template-columns:1fr 1fr;gap:12px}.realm-voice-control{min-width:0;min-height:58px;padding:7px 10px 8px;border-radius:18px;background:var(--gh-surface);border:1.5px solid var(--gh-line);display:flex;flex-direction:column;justify-content:center;gap:4px}.realm-voice-control>span{font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase;color:var(--gh-muted)}.realm-voice-control select{width:100%;height:29px;border:0;background:transparent;font-size:13px;font-weight:700}.realm-speak{margin:0;min-height:58px;border-radius:18px;background:var(--game-accent);color:white;font-size:15px;font-weight:800}.realm-question{width:min(100%,430px);margin-left:auto;margin-right:auto;font-size:17px;line-height:1.3;font-weight:850;text-align:center}.realm-answer-display{width:min(100%,300px);min-height:64px;margin-left:auto;margin-right:auto;border-radius:20px;background:white;border:2px solid color-mix(in srgb,var(--game-accent) 55%,var(--gh-line));display:flex;align-items:center;justify-content:center;font-size:27px;font-weight:850;color:var(--gh-text)}.realm-keypad{width:min(100%,330px);margin-left:auto;margin-right:auto}.realm-feedback:empty{display:none}.realm-feedback:not(:empty){margin:-8px auto 18px}.realm-page #realm-new{width:min(100%,330px);min-height:58px;margin:0 auto;display:block}.realm-answer-row,.realm-levels{display:none!important}@media(max-height:850px){.realm-page .page-header{margin-bottom:30px}.realm-categories,.realm-difficulty,.realm-card,.realm-speech-row,.realm-question,.realm-answer-display,.realm-keypad{margin-bottom:16px!important}.realm-category{min-height:62px}.realm-card{padding:16px 18px}.realm-story{font-size:15px}.realm-answer-display{min-height:54px}.realm-keypad .key{min-height:44px}}
+
+
+/* GameHub v1.0.20 — Reading page final polish + hard override of legacy layout */
+body[data-game-id="game-04"],
+body[data-game-id="game-04"] .screen-wrap,
+body[data-game-id="game-04"] #reading-screen,
+body[data-game-id="game-04"] .reading-page {
+  background: var(--gh-bg) !important;
+}
+
+body[data-game-id="game-04"] .reading-page {
+  padding-bottom: 28px !important;
+}
+
+/* Use one consistent vertical rhythm between major sections. */
+body[data-game-id="game-04"] .reading-header {
+  margin-bottom: 38px !important;
+}
+body[data-game-id="game-04"] .mode-switch,
+body[data-game-id="game-04"] .reading-difficulty,
+body[data-game-id="game-04"] .reading-card,
+body[data-game-id="game-04"] .reading-speech-controls {
+  margin-top: 0 !important;
+  margin-bottom: 24px !important;
+}
+
+/* Difficulty exactly follows the unboxed Sums setup pattern. */
+body[data-game-id="game-04"] .reading-difficulty {
+  width: min(100%, 430px) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+body[data-game-id="game-04"] .reading-difficulty .choice-title {
+  margin-bottom: 7px !important;
+}
+body[data-game-id="game-04"] .reading-difficulty .difficulty-note {
+  display: none !important;
+}
+
+/* Sentence card only contains the actual activity; no instruction copy. */
+body[data-game-id="game-04"] .reading-card {
+  width: min(100%, 430px) !important;
+  min-height: 215px !important;
+  padding: 26px 20px !important;
+  border-radius: 22px !important;
+  background: var(--gh-surface) !important;
+  border: 1.5px solid var(--gh-line) !important;
+  box-shadow: none !important;
+}
+body[data-game-id="game-04"] .reading-feedback:empty {
+  display: none !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+}
+
+/* Voice + Read aloud are one compact row, with no enclosing panel. */
+body[data-game-id="game-04"] .reading-speech-controls {
+  width: min(100%, 430px) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, .85fr) !important;
+  align-items: stretch !important;
+  gap: 12px !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+body[data-game-id="game-04"] .reading-voice-control {
+  min-width: 0 !important;
+  min-height: 52px !important;
+  padding: 5px 10px 6px !important;
+  border-radius: 16px !important;
+  background: var(--gh-surface) !important;
+  border: 1.5px solid var(--gh-line) !important;
+  box-shadow: none !important;
+}
+body[data-game-id="game-04"] .reading-voice-control > span {
+  padding-left: 2px !important;
+  text-align: left !important;
+  font-size: 9px !important;
+  line-height: 1 !important;
+  font-weight: 850 !important;
+  letter-spacing: .07em !important;
+  text-transform: uppercase !important;
+  color: var(--gh-muted) !important;
+}
+body[data-game-id="game-04"] .reading-voice-control select {
+  width: 100% !important;
+  height: 27px !important;
+  padding: 0 1px !important;
+  border: 0 !important;
+  background: transparent !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+body[data-game-id="game-04"] .reading-speak-button {
+  grid-column: auto !important;
+  width: 100% !important;
+  min-height: 52px !important;
+  margin: 0 !important;
+  padding: 0 13px !important;
+  border-radius: 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  background: var(--game-accent, var(--gh-accent)) !important;
+  color: #fff !important;
+  border: 1.5px solid color-mix(in srgb, var(--game-accent, var(--gh-accent)) 72%, var(--gh-ink)) !important;
+  box-shadow: none !important;
+  font-size: 13px !important;
+  font-weight: 850 !important;
+}
+body[data-game-id="game-04"] .reading-speak-button .speech-icon {
+  width: 22px !important;
+  height: 22px !important;
+  flex: 0 0 22px !important;
+}
+
+body[data-game-id="game-04"] .reading-next {
+  width: min(100%, 310px) !important;
+  min-height: 56px !important;
+  margin: 0 auto !important;
+  border-radius: 18px !important;
+  font-size: 17px !important;
+}
+
+@media (max-height: 850px) {
+  body[data-game-id="game-04"] .reading-header { margin-bottom: 32px !important; }
+  body[data-game-id="game-04"] .mode-switch,
+  body[data-game-id="game-04"] .reading-difficulty,
+  body[data-game-id="game-04"] .reading-card,
+  body[data-game-id="game-04"] .reading-speech-controls { margin-bottom: 18px !important; }
+  body[data-game-id="game-04"] .reading-card { min-height: 185px !important; padding: 20px 18px !important; }
+}
