@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=1.0.22">
   <title>Coding</title>
 </head>
 <body class="modular-game" data-game-id="game-07">
@@ -16,7 +16,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="game-07-info-title">Instructions</h2>
-      <p>Build a program from the movement commands, then press Run to guide the character through the puzzle. Change level for a different challenge and clear the program when you want to try again.</p>
+      <p>Choose a difficulty, build a sequence of commands, then press Run. The forklift drives one square for each movement command and turns on the spot. Medium and Hard puzzles can include a crate: drive onto it, use Pick up, carry it to the marked delivery square and use Drop before reaching the finish.</p>
     </div>
   </div>
   <main class="screen-wrap">
@@ -34,13 +34,7 @@
 </div>
 <button class="new-puzzle-button" id="new-coding-puzzle">New</button>
 </div>
-<label class="guide-toggle" for="coding-guide-toggle">
-<span>
-<strong>Learning guide</strong>
-<small>Show what each command will do on the grid</small>
-</span>
-<input checked="" id="coding-guide-toggle" type="checkbox"/>
-</label>
+
 <div class="coding-board-wrap">
 <div aria-label="Coding puzzle grid" class="coding-board" id="coding-board"></div>
 <div aria-live="polite" class="coding-win-overlay hidden" id="coding-win-overlay">
@@ -60,18 +54,11 @@
 </div>
 </div>
 <div class="coding-controls">
-<button class="command-button" data-command="forward">
-<span class="command-icon">↑</span><span>Forward</span>
-</button>
-<button class="command-button" data-command="left">
-<span class="command-icon">↶</span><span>Left</span>
-</button>
-<button class="command-button" data-command="right">
-<span class="command-icon">↷</span><span>Right</span>
-</button>
-<button class="command-button" data-command="back">
-<span class="command-icon">↓</span><span>Back</span>
-</button>
+<button class="command-button" data-command="forward"><span class="command-icon"><svg viewBox="0 0 32 32"><path d="M16 25V7M9 14l7-7 7 7"/></svg></span><span>Forward</span></button>
+<button class="command-button" data-command="left"><span class="command-icon"><svg viewBox="0 0 32 32"><path d="M23 24a10 10 0 0 0-10-16M13 8l4-5M13 8l6 2"/></svg></span><span>Left</span></button>
+<button class="command-button" data-command="right"><span class="command-icon"><svg viewBox="0 0 32 32"><path d="M9 24A10 10 0 0 1 19 8M19 8l-4-5M19 8l-6 2"/></svg></span><span>Right</span></button>
+<button class="command-button" data-command="back"><span class="command-icon"><svg viewBox="0 0 32 32"><path d="M16 7v18M9 18l7 7 7-7"/></svg></span><span>Back</span></button>
+<button class="command-button coding-action-command" data-command="action"><span class="command-icon"><svg viewBox="0 0 32 32"><path d="M8 20h16v8H8zM11 20v-6h10v6M16 14V5M12 9l4-4 4 4"/></svg></span><span>Pick / Drop</span></button>
 </div>
 <div class="coding-actions">
 <button class="coding-secondary" id="coding-undo">Undo</button>
@@ -81,8 +68,8 @@
 </div>
 </section>
   </main>
-  <script src="site-config.js"></script>
-  <script src="core.js"></script>
-  <script src="game-07.js"></script>
+  <script src="site-config.js?v=1.0.22"></script>
+  <script src="core.js?v=1.0.22"></script>
+  <script src="game-07.js?v=1.0.22"></script>
 </body>
 </html>
