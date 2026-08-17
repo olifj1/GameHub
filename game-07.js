@@ -16,6 +16,7 @@ const codingGuideToggle = $("#coding-guide-toggle");
 const codingWinOverlay = $("#coding-win-overlay");
 const codingWinStars = $("#coding-win-stars");
 const codingWinText = $("#coding-win-text");
+const codingWinClose = $("#coding-win-close");
 
 const levelInfo = {
   easy:   { rows:5, cols:5, min:5,  open:8, crate:false, max:18 },
@@ -32,6 +33,9 @@ let selectedProgramIndex = null;
 let insertIndex = null;
 let running = false;
 let token = 0;
+// Keep a cumulative visual angle so CSS always animates a 90° turn in the
+// commanded direction instead of interpolating e.g. 270° -> 0° as a 270° spin.
+let visualAngle = 0;
 
 const key = (r,c) => `${r},${c}`;
 const info = () => levelInfo[codingLevel];
@@ -116,6 +120,7 @@ function buildCandidate(){
 
 function reset(render=true){
   puzzle.state={row:puzzle.start.row,col:puzzle.start.col,dir:0,carrying:false,delivered:!info().crate};
+  visualAngle=0;
   if(render) renderBoard();
 }
 
@@ -234,13 +239,14 @@ function renderBoard(){
   positionRover(false);
 }
 
-function positionRover(anim=true){
+function positionRover(anim=true,duration=500){
   const rover=$("#coding-rover"); if(!rover) return;
   rover.classList.toggle('animate',anim);
+  rover.style.setProperty('--motion-duration',`${duration}ms`);
   const x=(puzzle.state.col+.5)*100/info().cols;
   const y=(puzzle.state.row+.5)*100/info().rows;
   rover.style.left=x+'%'; rover.style.top=y+'%';
-  rover.style.transform=`translate(-50%,-50%) rotate(${puzzle.state.dir*90}deg)`;
+  rover.style.transform=`translate(-50%,-50%) rotate(${visualAngle}deg)`;
 }
 
 function insertSlot(index){
@@ -358,21 +364,86 @@ async function run(){
   clearProgramSelection();
   running=true; const t=++token; setEnabled(false); reset(false); renderBoard();
   let done=-1;
-  for(let i=0;i<program.length;i++){
+  let i=0;
+
+  while(i<program.length){
     if(t!==token)return;
+    const c=program[i];
+
+    // Consecutive moves in the same direction form one continuous drive.
+    // We still validate every individual grid step so collisions and winning
+    // behaviour remain identical to the block-by-block logic.
+    if(c==='forward'||c==='back'){
+      let temp={...puzzle.state};
+      let count=0;
+      let hitProblem=null;
+      let reachedGoal=false;
+
+      while(i+count<program.length && program[i+count]===c){
+        const n=stepState(temp,c);
+        if(n.collision||n.invalid){
+          hitProblem=n;
+          break;
+        }
+        temp=n;
+        count++;
+        if(temp.row===puzzle.goal.row&&temp.col===puzzle.goal.col&&temp.delivered){
+          reachedGoal=true;
+          break;
+        }
+      }
+
+      if(count>0){
+        renderProgram(i,done);
+        puzzle.state=temp;
+
+        // One smooth segment: roughly the same travel speed per cell, with
+        // easing only at the beginning and end of the whole straight run.
+        const duration=Math.max(420,360*count);
+        positionRover(true,duration);
+        await wait(duration+25);
+
+        done=i+count-1;
+        if(reachedGoal){ finish(done+1); return; }
+        i+=count;
+        continue;
+      }
+
+      // The very next movement is blocked.
+      if(hitProblem){
+        renderProgram(i,done);
+        codingStatus.textContent=hitProblem.collision?'The forklift cannot drive there.':'Pick up or drop on the marked square.';
+        await wait(500); running=false; reset(); renderProgram(); setEnabled(true); return;
+      }
+    }
+
     renderProgram(i,done);
-    const c=program[i], n=stepState(puzzle.state,c);
+    const n=stepState(puzzle.state,c);
     if(n.collision||n.invalid){
       codingStatus.textContent=n.collision?'The forklift cannot drive there.':'Pick up or drop on the marked square.';
       await wait(500); running=false; reset(); renderProgram(); setEnabled(true); return;
     }
+
     puzzle.state=n;
-    if(c==='left'||c==='right'){ positionRover(true); await wait(480); }
-    else if(c==='action'){ renderBoard(); await wait(480); }
-    else { positionRover(true); await wait(600); }
+
+    if(c==='left'||c==='right'){
+      // Cumulative angles force the shortest 90° turn in the intended
+      // direction, including across the 0°/360° boundary.
+      visualAngle += c==='left' ? -90 : 90;
+      positionRover(true,420);
+      await wait(445);
+    }else if(c==='action'){
+      renderBoard();
+      await wait(480);
+    }
+
     done=i;
-    if(puzzle.state.row===puzzle.goal.row&&puzzle.state.col===puzzle.goal.col&&puzzle.state.delivered){ finish(i+1); return; }
+    if(puzzle.state.row===puzzle.goal.row&&puzzle.state.col===puzzle.goal.col&&puzzle.state.delivered){
+      finish(i+1); return;
+    }
+    i++;
   }
+
   renderProgram(-1,done);
   codingStatus.textContent=info().crate&&!puzzle.state.delivered?'The crate still needs delivering.':'Not at the flag yet.';
   await wait(450); running=false; reset(); renderProgram(); setEnabled(true);
@@ -437,6 +508,7 @@ bindPress(codingUndo,()=>{if(!running){program.pop();clearProgramSelection();ren
 bindPress(codingClear,()=>{if(!running){program=[];clearProgramSelection();reset(false);renderProgram();}});
 bindPress(codingRun,run);
 bindPress(newCodingPuzzle,newPuzzle);
+bindPress(codingWinClose,()=>codingWinOverlay.classList.add('hidden'));
 codingLevelButtons.forEach(b=>bindPress(b,()=>{
   if(running)return;
   codingLevel=b.dataset.codingLevel;
