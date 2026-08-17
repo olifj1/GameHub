@@ -311,16 +311,20 @@ function add(c){
   if(program.length>=32)return;
 
   if(insertIndex!==null){
-    program.splice(insertIndex,0,c);
-    selectedProgramIndex=insertIndex;
+    const insertedAt=insertIndex;
+    program.splice(insertedAt,0,c);
+    selectedProgramIndex=null;
     insertIndex=null;
     renderProgram();
-    scrollProgramTo(selectedProgramIndex);
+    scrollProgramTo(insertedAt);
     return;
   }
 
   program.push(c);
-  selectedProgramIndex=program.length-1;
+  // Appending is normal programme building, not editing: do not select the
+  // new step. A block only becomes selected when the user explicitly taps it.
+  selectedProgramIndex=null;
+  insertIndex=null;
   renderProgram();
   scrollProgramTo();
 }
