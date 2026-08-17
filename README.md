@@ -79,5 +79,5 @@ Hub-wide visual consistency pass; vector home icons; neutral page backgrounds an
 - Program timeline is editable: tap a block to select it, move it earlier/later or delete it; tap a + insertion point then a command to insert at that position.
 
 
-## v1.0.33
+## v1.0.34
 - Logic programme editing: selecting an existing command and pressing a command now replaces it in place; + slots still insert and no selection still appends.

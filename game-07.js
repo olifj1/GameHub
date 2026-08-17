@@ -258,7 +258,7 @@ async function driveSegment(targetState,count){
   await nextFrame();
 
   puzzle.state=targetState;
-  const duration=700*count;
+  const duration=900*count;
   rover.classList.add('animate');
   rover.style.setProperty('--motion-duration',`${duration}ms`);
   const x=(puzzle.state.col+.5)*100/info().cols;
@@ -266,7 +266,7 @@ async function driveSegment(targetState,count){
   rover.style.left=x+'%';
   rover.style.top=y+'%';
   rover.style.transform=`translate(-50%,-50%) rotate(${visualAngle}deg)`;
-  await wait(duration+40);
+  await wait(duration);
 }
 
 
@@ -449,11 +449,11 @@ async function run(){
       // Cumulative angles force the shortest 90° turn in the intended
       // direction, including across the 0°/360° boundary.
       visualAngle += c==='left' ? -90 : 90;
-      positionRover(true,520);
-      await wait(545);
+      positionRover(true,900);
+      await wait(900);
     }else if(c==='action'){
       renderBoard();
-      await wait(560);
+      await wait(900);
     }
 
     done=i;
