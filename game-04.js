@@ -160,7 +160,7 @@ function generateReading() {
     lastReadingIndex = index;
     readingPrompt.textContent = library[index];
     wordChoices.classList.add('hidden');
-    readingFeedback.textContent = '';
+    readingFeedback.textContent = 'Read it out loud.';
     newReadingButton.textContent = 'New Sentence';
     return;
   }
@@ -169,7 +169,7 @@ function generateReading() {
   activeReadingTest = items[randomInt(0, items.length - 1)];
   const parts = activeReadingTest.sentence.split('___');
   readingPrompt.innerHTML = `${parts[0]}<span class="blank">?</span>${parts[1] || ''}`;
-  readingFeedback.textContent = '';
+  readingFeedback.textContent = 'Choose the word that fits.';
   wordChoices.classList.remove('hidden');
   newReadingButton.textContent = 'New Question';
 
@@ -212,9 +212,18 @@ setReadingMode(readingMode);
 // Reading aloud using the device/browser speech synthesiser.
 const readingSpeakButton = $("#reading-speak");
 const readingSpeakLabel = $("#reading-speak-label");
+const readingSpeedButtons = $$("[data-reading-speed]");
 const readingVoiceSelect = $("#reading-voice-select");
 let readingVoiceKey = localStorage.getItem("readingVoiceKey") || "";
-const readingSpeechRate = 0.95;
+let readingSpeechRate = Number(localStorage.getItem("readingSpeechRate") || 0.95);
+
+function setReadingSpeechRate(rate) {
+  readingSpeechRate = Number(rate);
+  localStorage.setItem("readingSpeechRate", String(readingSpeechRate));
+  readingSpeedButtons.forEach(button => {
+    button.classList.toggle("active", Number(button.dataset.readingSpeed) === readingSpeechRate);
+  });
+}
 
 function stopReadingSpeech() {
   if ("speechSynthesis" in window) window.speechSynthesis.cancel();
@@ -279,6 +288,13 @@ function speakReadingText() {
 }
 
 readingSpeakButton.addEventListener("click", speakReadingText);
+readingSpeedButtons.forEach(button => {
+  button.addEventListener("click", () => {
+    stopReadingSpeech();
+    setReadingSpeechRate(button.dataset.readingSpeed);
+  });
+});
+setReadingSpeechRate(readingSpeechRate);
 readingVoiceSelect.addEventListener("change",()=>{stopReadingSpeech();readingVoiceKey=readingVoiceSelect.value;localStorage.setItem("readingVoiceKey",readingVoiceKey);});
 populateReadingVoices();
 if("speechSynthesis" in window)window.speechSynthesis.addEventListener?.("voiceschanged",populateReadingVoices);
