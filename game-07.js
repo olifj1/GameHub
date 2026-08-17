@@ -284,17 +284,45 @@ function renderProgram(active=-1,done=-1){
   if(!running) renderBoard();
 }
 
+function scrollProgramTo(index=null){
+  requestAnimationFrame(()=>{
+    if(index===null){
+      programTimeline.scrollTo({left:programTimeline.scrollWidth,behavior:'smooth'});
+      return;
+    }
+    const step=programTimeline.querySelector(`[data-program-index="${index}"]`);
+    if(step) step.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  });
+}
+
 function add(c){
-  if(running||program.length>=32)return;
+  if(running)return;
+
+  // A selected programme step is an edit target: pressing a command replaces
+  // that step in place. A selected + slot inserts. Otherwise commands append.
+  if(selectedProgramIndex!==null){
+    program[selectedProgramIndex]=c;
+    insertIndex=null;
+    renderProgram();
+    scrollProgramTo(selectedProgramIndex);
+    return;
+  }
+
+  if(program.length>=32)return;
+
   if(insertIndex!==null){
     program.splice(insertIndex,0,c);
     selectedProgramIndex=insertIndex;
     insertIndex=null;
-  } else {
-    program.push(c);
-    selectedProgramIndex=program.length-1;
+    renderProgram();
+    scrollProgramTo(selectedProgramIndex);
+    return;
   }
+
+  program.push(c);
+  selectedProgramIndex=program.length-1;
   renderProgram();
+  scrollProgramTo();
 }
 
 function deleteSelected(){
@@ -401,7 +429,7 @@ commandButtons.forEach(b=>bindPress(b,()=>add(b.dataset.command)));
 bindPress(programMoveLeft,()=>moveSelected(-1));
 bindPress(programDelete,deleteSelected);
 bindPress(programMoveRight,()=>moveSelected(1));
-bindPress(codingUndo,()=>{if(!running){program.pop();clearProgramSelection();renderProgram();}});
+bindPress(codingUndo,()=>{if(!running){program.pop();clearProgramSelection();renderProgram();scrollProgramTo();}});
 bindPress(codingClear,()=>{if(!running){program=[];clearProgramSelection();reset(false);renderProgram();}});
 bindPress(codingRun,run);
 bindPress(newCodingPuzzle,newPuzzle);

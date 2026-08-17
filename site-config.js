@@ -57,7 +57,7 @@ window.APP_CONFIG = {
     },
     {
       "id": "game-07",
-      "displayName": "Coding",
+      "displayName": "Logic",
       "description": "Build a program to guide the rover to the flag.",
       "icon": "{ }",
       "enabled": true,

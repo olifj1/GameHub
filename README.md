@@ -77,3 +77,7 @@ Hub-wide visual consistency pass; vector home icons; neutral page backgrounds an
 - Learning-guide direction badges render above the forklift, including turn-first programs.
 - Clearer vector pick/drop, crate and delivery symbols.
 - Program timeline is editable: tap a block to select it, move it earlier/later or delete it; tap a + insertion point then a command to insert at that position.
+
+
+## v1.0.28
+- Logic programme editing: selecting an existing command and pressing a command now replaces it in place; + slots still insert and no selection still appends.
