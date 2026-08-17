@@ -1,4 +1,4 @@
-# GameHub v1.0.15
+# GameHub v1.0.16
 
 Phone-first modular web-game hub.
 
@@ -105,3 +105,8 @@ upload the files to the root of the GameHub GitHub repository.
 ## v1.0.15
 - Replaced the Home Screen / PWA icon artwork with the new minimalist GameHub logo.
 - Updated the service-worker cache version so the new icon assets are included in the release.
+
+
+## v1.0.16
+- Browser/PWA theme and background colours now match the main GameHub neutral background.
+- Added a portrait-only presentation guard: landscape shows a clean “Rotate your device” screen instead of a broken game layout.

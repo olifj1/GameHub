@@ -78,3 +78,23 @@ document.querySelectorAll(".game-info-overlay").forEach(overlay => {
     if (event.key === "Escape" && !overlay.hidden) close();
   });
 });
+
+
+// Portrait-only game presentation.
+// In landscape we keep the page loaded, but cover it with a simple rotate-device message.
+(function installOrientationGuard() {
+  const overlay = document.createElement("div");
+  overlay.className = "orientation-guard";
+  overlay.setAttribute("role", "status");
+  overlay.setAttribute("aria-live", "polite");
+  overlay.innerHTML = `
+    <div class="orientation-guard-card">
+      <div class="orientation-phone" aria-hidden="true">
+        <span></span>
+      </div>
+      <strong>Rotate your device</strong>
+      <p>GameHub works best in portrait.</p>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+})();

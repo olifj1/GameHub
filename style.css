@@ -3512,3 +3512,82 @@ input[type="range"] { accent-color:var(--gh-accent); }
     min-height: 52px;
   }
 }
+
+
+/* GameHub v1.0.16 — iPad/browser surround + portrait orientation guard */
+html,
+body {
+  background-color: var(--gh-bg, #e7dbd2) !important;
+}
+
+.orientation-guard {
+  display: none;
+}
+
+@media (orientation: landscape) {
+  .orientation-guard {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding:
+      max(24px, env(safe-area-inset-top))
+      max(24px, env(safe-area-inset-right))
+      max(24px, env(safe-area-inset-bottom))
+      max(24px, env(safe-area-inset-left));
+    background: var(--gh-bg, #e7dbd2);
+    color: var(--gh-ink, #252b33);
+    text-align: center;
+  }
+
+  .orientation-guard-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .orientation-guard-card strong {
+    font-size: clamp(28px, 5vw, 44px);
+    line-height: 1.05;
+    letter-spacing: -.035em;
+    font-weight: 850;
+  }
+
+  .orientation-guard-card p {
+    margin: 0;
+    color: var(--gh-muted, #736d69);
+    font-size: clamp(15px, 2vw, 20px);
+  }
+
+  .orientation-phone {
+    position: relative;
+    width: 54px;
+    height: 82px;
+    margin-bottom: 8px;
+    border: 3px solid var(--gh-line-strong, rgba(37,43,51,.72));
+    border-radius: 13px;
+    transform: rotate(-90deg);
+  }
+
+  .orientation-phone::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 5px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--gh-line-strong, rgba(37,43,51,.72));
+    transform: translateX(-50%);
+  }
+
+  .orientation-phone span {
+    position: absolute;
+    inset: 8px 6px 13px;
+    border: 2px solid var(--gh-line, rgba(37,43,51,.22));
+    border-radius: 5px;
+  }
+}
