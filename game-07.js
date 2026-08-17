@@ -42,6 +42,7 @@ const info = () => levelInfo[codingLevel];
 const inBounds = (r,c) => r >= 0 && r < info().rows && c >= 0 && c < info().cols;
 const blocked = (r,c,p=puzzle) => p.obstacles.has(key(r,c));
 const wait = ms => new Promise(resolve => setTimeout(resolve,ms));
+const nextFrame = () => new Promise(resolve => requestAnimationFrame(()=>requestAnimationFrame(resolve)));
 
 function stepState(st, cmd, p=puzzle){
   const s = {...st};
@@ -249,6 +250,26 @@ function positionRover(anim=true,duration=500){
   rover.style.transform=`translate(-50%,-50%) rotate(${visualAngle}deg)`;
 }
 
+async function driveSegment(targetState,count){
+  const rover=$("#coding-rover"); if(!rover) return;
+  // Make sure the current position is committed to screen before changing it.
+  rover.classList.remove('animate');
+  void rover.offsetWidth;
+  await nextFrame();
+
+  puzzle.state=targetState;
+  const duration=700*count;
+  rover.classList.add('animate');
+  rover.style.setProperty('--motion-duration',`${duration}ms`);
+  const x=(puzzle.state.col+.5)*100/info().cols;
+  const y=(puzzle.state.row+.5)*100/info().rows;
+  rover.style.left=x+'%';
+  rover.style.top=y+'%';
+  rover.style.transform=`translate(-50%,-50%) rotate(${visualAngle}deg)`;
+  await wait(duration+40);
+}
+
+
 function insertSlot(index){
   const b=document.createElement('button');
   b.type='button';
@@ -363,6 +384,8 @@ async function run(){
   if(running||!program.length)return;
   clearProgramSelection();
   running=true; const t=++token; setEnabled(false); reset(false); renderBoard();
+  // Safari can otherwise coalesce the initial and first destination positions.
+  await nextFrame();
   let done=-1;
   let i=0;
 
@@ -395,13 +418,9 @@ async function run(){
 
       if(count>0){
         renderProgram(i,done);
-        puzzle.state=temp;
-
-        // One smooth segment: roughly the same travel speed per cell, with
-        // easing only at the beginning and end of the whole straight run.
-        const duration=Math.max(650,650*count);
-        positionRover(true,duration);
-        await wait(duration+25);
+        // Drive the whole straight section as one continuous, reliably painted
+        // segment at a fixed pace per square.
+        await driveSegment(temp,count);
 
         done=i+count-1;
         if(reachedGoal){ finish(done+1); return; }
