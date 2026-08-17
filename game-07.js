@@ -399,7 +399,7 @@ async function run(){
 
         // One smooth segment: roughly the same travel speed per cell, with
         // easing only at the beginning and end of the whole straight run.
-        const duration=Math.max(420,360*count);
+        const duration=Math.max(650,650*count);
         positionRover(true,duration);
         await wait(duration+25);
 
@@ -430,11 +430,11 @@ async function run(){
       // Cumulative angles force the shortest 90° turn in the intended
       // direction, including across the 0°/360° boundary.
       visualAngle += c==='left' ? -90 : 90;
-      positionRover(true,420);
-      await wait(445);
+      positionRover(true,520);
+      await wait(545);
     }else if(c==='action'){
       renderBoard();
-      await wait(480);
+      await wait(560);
     }
 
     done=i;

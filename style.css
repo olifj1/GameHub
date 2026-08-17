@@ -4409,11 +4409,11 @@ body[data-game-id="game-07"] .carried-crate{
 }
 
 
-/* v1.0.31 — Logic programme follow + win-layer correction */
+/* v1.0.32 — Logic programme follow + win-layer correction */
 body[data-game-id="game-07"] .coding-win-overlay{z-index:100!important;}
 body[data-game-id="game-07"] .coding-win-overlay:not(.hidden){isolation:isolate;}
 
-/* v1.0.31 — dismissible Logic success overlay */
+/* v1.0.32 — dismissible Logic success overlay */
 body[data-game-id="game-07"] .coding-win-overlay{position:absolute!important}
 body[data-game-id="game-07"] .coding-win-close{
   position:absolute;top:8px;right:9px;width:34px;height:34px;padding:0;
