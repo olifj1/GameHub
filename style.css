@@ -4409,11 +4409,11 @@ body[data-game-id="game-07"] .carried-crate{
 }
 
 
-/* v1.0.39 — Logic programme follow + win-layer correction */
+/* v1.0.40 — Logic programme follow + win-layer correction */
 body[data-game-id="game-07"] .coding-win-overlay{z-index:100!important;}
 body[data-game-id="game-07"] .coding-win-overlay:not(.hidden){isolation:isolate;}
 
-/* v1.0.39 — dismissible Logic success overlay */
+/* v1.0.40 — dismissible Logic success overlay */
 body[data-game-id="game-07"] .coding-win-overlay{position:absolute!important}
 body[data-game-id="game-07"] .coding-win-close{
   position:absolute;top:8px;right:9px;width:34px;height:34px;padding:0;
@@ -4424,7 +4424,7 @@ body[data-game-id="game-07"] .coding-win-close{
 body[data-game-id="game-07"] .coding-win-close:active{transform:scale(.94)}
 
 
-/* v1.0.39 — Gravity layout, controls and route polish */
+/* v1.0.40 — Gravity layout, controls and route polish */
 body[data-game-id="game-06"] #gravity-screen{
   background:#f5efe9!important;
   color:var(--gh-text)!important;
@@ -4644,8 +4644,308 @@ body[data-game-id="game-06"] .gravity-tuning{display:none!important}
   body[data-game-id="game-06"] .gravity-reset{font-size:9px}
 }
 
-/* v1.0.39 — Gravity combined checkpoint/star HUD */
+/* v1.0.40 — Gravity combined checkpoint/star HUD */
 body[data-game-id="game-06"] .gravity-goals strong{
   font-size:11px!important;
   letter-spacing:-.02em;
+}
+
+
+/* v1.0.40 — Laser Lab visual/playability rebuild */
+body[data-game-id="game-08"]{
+  --laser-accent:#bf6f70;
+  --laser-ink:#282d35;
+  --laser-muted:#77716e;
+  --laser-line:#c8c5c1;
+  --laser-cell:#f7f2ec;
+  --laser-block:#d8d5d0;
+}
+#laser-screen{
+  background:var(--gh-bg)!important;
+  color:var(--gh-ink)!important;
+}
+.laser-page{
+  width:100%;
+  max-width:430px;
+  margin:0 auto;
+  padding-bottom:max(76px,env(safe-area-inset-bottom));
+}
+.laser-header{margin-bottom:14px!important}
+.laser-mode-switch{
+  width:100%;
+  margin:0 auto 10px;
+  padding:4px;
+  gap:6px;
+  border-radius:17px;
+  background:rgba(247,241,235,.78);
+  border:1.5px solid var(--gh-line);
+}
+.laser-mode-button{
+  min-height:42px;
+  border:1.5px solid transparent!important;
+  border-radius:13px;
+  background:transparent!important;
+  color:var(--laser-ink)!important;
+  font-size:16px;
+  font-weight:850;
+}
+.laser-mode-button.active{
+  color:var(--gh-accent)!important;
+  background:color-mix(in srgb,var(--gh-accent) 9%,var(--gh-surface))!important;
+  border-color:color-mix(in srgb,var(--gh-accent) 72%,var(--gh-ink))!important;
+}
+.laser-setup-panel,.laser-play-panel{
+  width:100%;
+  margin:0 auto 10px;
+  padding:8px;
+  border-radius:18px;
+  background:rgba(247,241,235,.84)!important;
+  border:1.5px solid var(--gh-line)!important;
+}
+.laser-size-row{
+  grid-template-columns:42px repeat(3,1fr);
+  gap:6px;
+  margin-bottom:8px;
+}
+.laser-size-row>span{
+  color:var(--gh-muted)!important;
+  font-size:10px;
+  letter-spacing:.12em;
+}
+.laser-size-button{
+  min-height:34px;
+  border:1.5px solid var(--gh-line)!important;
+  border-radius:11px;
+  background:var(--gh-surface)!important;
+  color:var(--laser-ink)!important;
+  font-size:11px;
+}
+.laser-size-button.active{
+  color:var(--gh-accent)!important;
+  background:color-mix(in srgb,var(--gh-accent) 9%,var(--gh-surface))!important;
+  border-color:color-mix(in srgb,var(--gh-accent) 72%,var(--gh-ink))!important;
+}
+.laser-tools{
+  grid-template-columns:repeat(6,1fr);
+  gap:6px;
+}
+.play-tools{grid-template-columns:1fr 1fr 1.35fr}
+.laser-tool{
+  min-height:56px;
+  padding:5px 2px;
+  border:1.5px solid var(--gh-line)!important;
+  border-radius:12px;
+  background:var(--gh-surface)!important;
+  color:var(--laser-ink)!important;
+  gap:3px;
+  font-size:9px;
+}
+.laser-tool.active{
+  color:var(--gh-accent)!important;
+  background:color-mix(in srgb,var(--gh-accent) 9%,var(--gh-surface))!important;
+  border-color:color-mix(in srgb,var(--gh-accent) 72%,var(--gh-ink))!important;
+}
+.laser-tool-icon{
+  width:27px;
+  height:27px;
+  display:grid;
+  place-items:center;
+  line-height:1;
+}
+.laser-tool-icon svg{
+  width:25px;
+  height:25px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2.2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.laser-tool[data-laser-tool="block"] .laser-tool-icon svg{
+  fill:color-mix(in srgb,var(--gh-ink) 10%,transparent);
+}
+.laser-save-row{
+  margin-top:8px;
+  display:grid;
+  grid-template-columns:1.15fr .62fr 1.05fr .62fr .62fr;
+  gap:5px;
+}
+.laser-save-row input,.laser-save-row select{
+  min-height:34px;
+  padding:0 7px;
+  border:1.5px solid var(--gh-line)!important;
+  border-radius:10px;
+  background:var(--gh-surface)!important;
+  color:var(--gh-ink)!important;
+  font-size:9px;
+}
+.laser-save-row input::placeholder{color:#a6a09b!important}
+.laser-save-button{
+  min-height:34px;
+  padding:0 5px;
+  border:1.5px solid color-mix(in srgb,var(--gh-accent) 72%,var(--gh-ink))!important;
+  border-radius:10px;
+  background:var(--gh-accent)!important;
+  color:#fff!important;
+  font-size:9px;
+}
+.laser-save-button.danger{
+  background:var(--gh-surface)!important;
+  color:#9b5555!important;
+  border-color:#b98a88!important;
+}
+
+/* Square board, visually matched to Logic. */
+.laser-board-wrap{
+  position:relative;
+  width:min(100%,390px)!important;
+  aspect-ratio:1/1;
+  margin:0 auto;
+  padding:8px!important;
+  border:1.5px solid var(--gh-line-strong)!important;
+  border-radius:24px!important;
+  background:rgba(247,241,235,.84)!important;
+  overflow:hidden;
+}
+.laser-board{
+  position:relative;
+  z-index:1;
+  width:100%;
+  height:100%;
+  aspect-ratio:1/1!important;
+  display:grid;
+  grid-template-columns:repeat(var(--laser-cols,12),1fr)!important;
+  grid-template-rows:repeat(var(--laser-rows,12),1fr)!important;
+  gap:2px!important;
+  padding:2px!important;
+  border-radius:16px;
+  overflow:hidden;
+  background:#d1ceca!important;
+}
+.laser-cell{
+  min-width:0;
+  min-height:0;
+  padding:0;
+  border:0!important;
+  border-radius:4px!important;
+  background:var(--laser-cell)!important;
+  box-shadow:inset 0 0 0 1px rgba(90,92,94,.18)!important;
+}
+.laser-cell.obstacle{
+  background:repeating-linear-gradient(135deg,#dad7d2 0 8px,#f0ede9 8px 16px)!important;
+  box-shadow:inset 0 0 0 1.5px #aaa9a6!important;
+}
+.laser-cell.obstacle:after{display:none!important}
+.laser-cell.emitter-cell{
+  background:color-mix(in srgb,var(--gh-accent) 7%,var(--laser-cell))!important;
+}
+.laser-cell.target-cell{
+  background:color-mix(in srgb,#6c9b82 7%,var(--laser-cell))!important;
+}
+.laser-cell.checkpoint-cell{
+  background:color-mix(in srgb,#c59c54 7%,var(--laser-cell))!important;
+}
+.laser-beam-layer{
+  z-index:3;
+  inset:10px!important;
+  width:calc(100% - 20px)!important;
+  height:calc(100% - 20px)!important;
+}
+.laser-beam-line{
+  stroke-width:5!important;
+  filter:none!important;
+}
+.laser-beam-line.branch-1{stroke:#c85f61!important}
+.laser-beam-line.branch-2{stroke:#d88a55!important}
+.laser-beam-line.branch-3{stroke:#c6a44f!important}
+.laser-beam-line.branch-4{stroke:#6094a5!important}
+
+/* Board pieces use the same clean outlined language as Logic. */
+.laser-emitter,.laser-target,.laser-checkpoint,.laser-mirror,.laser-splitter{
+  position:relative;
+  z-index:6;
+  width:78%;
+  height:78%;
+  background:none!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+.laser-emitter svg,.laser-target svg,.laser-checkpoint svg{
+  width:100%;
+  height:100%;
+  fill:none;
+  stroke:var(--gh-accent);
+  stroke-width:2.3;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.laser-emitter:after{display:none!important}
+.laser-target svg{stroke:#59836f}
+.laser-target.hit svg{fill:rgba(89,131,111,.16);stroke:#47745f}
+.laser-checkpoint svg{stroke:#b08445}
+.laser-checkpoint.hit svg{fill:rgba(176,132,69,.16);stroke:#966c32}
+.laser-mirror::before{
+  left:5%!important;right:5%!important;top:45%!important;height:10%!important;
+  background:#edf7f8!important;
+  border:1.5px solid #5e8791;
+  box-shadow:none!important;
+}
+.laser-splitter::before,.laser-splitter::after{
+  height:8%!important;
+  background:#eef0f5!important;
+  border:1.5px solid #766f91;
+  box-shadow:none!important;
+}
+.laser-splitter::after{
+  left:42%!important;
+  width:16%!important;
+  background:#766f91!important;
+  border:0!important;
+}
+.laser-status{
+  width:100%;
+  min-height:18px;
+  margin:7px auto 4px;
+  color:var(--gh-muted)!important;
+  font-size:11px;
+}
+.laser-status.good{color:#59836f!important}
+.laser-result{
+  width:100%;
+  background:color-mix(in srgb,#59836f 8%,var(--gh-surface))!important;
+  border-color:#9bb3a7!important;
+}
+.laser-result strong{color:#47745f!important}
+.laser-result>span:last-child{color:var(--gh-muted)!important}
+.laser-info-row{
+  width:100%;
+  grid-template-columns:repeat(3,1fr)!important;
+  gap:6px;
+}
+.laser-info-pill{
+  min-height:38px;
+  padding:5px 8px;
+  border:1.5px solid var(--gh-line);
+  border-radius:12px;
+  background:rgba(247,241,235,.84)!important;
+}
+.laser-info-pill span{font-size:8px;color:var(--gh-muted)!important}
+.laser-info-pill strong{font-size:14px;color:var(--gh-ink)!important}
+
+@media(max-height:760px){
+  .laser-header{margin-bottom:7px!important}
+  .laser-mode-switch{margin-bottom:6px}
+  .laser-mode-button{min-height:36px}
+  .laser-setup-panel,.laser-play-panel{margin-bottom:6px;padding:6px}
+  .laser-size-row{margin-bottom:5px}
+  .laser-size-button{min-height:30px}
+  .laser-tool{min-height:48px}
+  .laser-tool-icon{width:22px;height:22px}
+  .laser-tool-icon svg{width:21px;height:21px}
+  .laser-save-row{margin-top:5px}
+  .laser-save-row input,.laser-save-row select,.laser-save-button{min-height:30px}
+  .laser-board-wrap{width:min(82vw,330px)!important}
+  .laser-status{margin-top:4px}
+  .laser-info-pill{min-height:34px}
 }

@@ -21,9 +21,9 @@ const laserDeleteButton = $("#laser-delete-level");
 const laserResetPlay = $("#laser-reset-play");
 
 const laserGridSizes = {
-  small: { rows: 10, cols: 8 },
-  medium: { rows: 12, cols: 9 },
-  large: { rows: 14, cols: 10 }
+  small: { rows: 8, cols: 8 },
+  medium: { rows: 10, cols: 10 },
+  large: { rows: 12, cols: 12 }
 };
 
 const laserDirVectors = [
@@ -33,8 +33,8 @@ const laserDirVectors = [
 
 let laserMode = "setup";
 let laserGridSize = "large";
-let laserRowsCount = 14;
-let laserColsCount = 10;
+let laserRowsCount = 12;
+let laserColsCount = 12;
 let laserSetupTool = "emitter";
 let laserPlayTool = "mirror";
 
@@ -165,19 +165,24 @@ function renderLaserBoard() {
         cell.classList.add("emitter-cell");
         const e = document.createElement("span");
         e.className = `laser-emitter dir-${laserLevel.emitter.dir}`;
+        e.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="10" width="14" height="12" rx="3"/><path d="M19 13h5l4 3-4 3h-5M9 16h6"/></svg>';
         cell.appendChild(e);
       }
 
       if (laserLevel.targets.some(x => x.row === row && x.col === col)) {
         cell.classList.add("target-cell");
         const t = document.createElement("span");
-        t.className = "laser-target"; t.dataset.target = key; cell.appendChild(t);
+        t.className = "laser-target"; t.dataset.target = key;
+        t.innerHTML='<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="11"/><circle cx="16" cy="16" r="6"/><circle cx="16" cy="16" r="2"/></svg>';
+        cell.appendChild(t);
       }
 
       if (laserLevel.checkpoints.some(x => x.row === row && x.col === col)) {
         cell.classList.add("checkpoint-cell");
         const c = document.createElement("span");
-        c.className = "laser-checkpoint"; c.dataset.checkpoint = key; cell.appendChild(c);
+        c.className = "laser-checkpoint"; c.dataset.checkpoint = key;
+        c.innerHTML='<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="10"/><circle cx="16" cy="16" r="3"/><path d="M16 3v4M16 25v4M3 16h4M25 16h4"/></svg>';
+        cell.appendChild(c);
       }
 
       if (laserLevel.splitters.has(key)) {

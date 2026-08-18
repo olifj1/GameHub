@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.0.39">
+  <link rel="stylesheet" href="style.css?v=1.0.40">
   <title>Laser Lab</title>
 </head>
 <body class="modular-game" data-game-id="game-08">
@@ -16,7 +16,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="game-08-info-title">Instructions</h2>
-      <p>Set up the laser puzzle, place or adjust the available pieces, and guide the beam to its target. Use the level and mode controls to change the challenge.</p>
+      <p><strong>Setup:</strong> choose a grid size and place a laser, checkpoints, targets, splitters or blocks. Tap a laser or splitter again to rotate it. Save a layout if you want to reuse it.</p><p><strong>Play:</strong> place mirrors to guide the beam through the checkpoints and into every target. Tap an existing mirror to rotate it; use Erase to remove one.</p>
     </div>
   </div>
   <main class="screen-wrap">
@@ -33,19 +33,19 @@
 <div class="laser-setup-panel" id="laser-setup-panel">
 <div class="laser-size-row">
 <span>Grid</span>
-<button class="laser-size-button" data-laser-size="small">8×10</button>
-<button class="laser-size-button" data-laser-size="medium">9×12</button>
-<button class="laser-size-button active" data-laser-size="large">10×14</button>
+<button class="laser-size-button" data-laser-size="small">8×8</button>
+<button class="laser-size-button" data-laser-size="medium">10×10</button>
+<button class="laser-size-button active" data-laser-size="large">12×12</button>
 </div>
 <div class="laser-tools">
-<button class="laser-tool active" data-laser-tool="emitter"><span class="laser-tool-icon">▶</span><span>Laser</span></button>
-<button class="laser-tool" data-laser-tool="checkpoint"><span class="laser-tool-icon">○</span><span>Check</span></button>
-<button class="laser-tool" data-laser-tool="target"><span class="laser-tool-icon">◎</span><span>Target</span></button>
-<button class="laser-tool" data-laser-tool="splitter"><span class="laser-tool-icon">Y</span><span>Splitter</span></button>
-<button class="laser-tool" data-laser-tool="block"><span class="laser-tool-icon">■</span><span>Block</span></button>
-<button class="laser-tool" data-laser-tool="eraser"><span class="laser-tool-icon">⌫</span><span>Erase</span></button>
+<button class="laser-tool active" data-laser-tool="emitter"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="10" width="14" height="12" rx="3"/><path d="M19 13h5l4 3-4 3h-5M9 16h6"/></svg></span><span>Laser</span></button>
+<button class="laser-tool" data-laser-tool="checkpoint"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="10"/><circle cx="16" cy="16" r="4"/><path d="M16 3v4M16 25v4M3 16h4M25 16h4"/></svg></span><span>Check</span></button>
+<button class="laser-tool" data-laser-tool="target"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="11"/><circle cx="16" cy="16" r="6"/><circle cx="16" cy="16" r="2"/></svg></span><span>Target</span></button>
+<button class="laser-tool" data-laser-tool="splitter"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 16h8M14 16l10-8M14 16l10 8"/><circle cx="14" cy="16" r="2"/></svg></span><span>Splitter</span></button>
+<button class="laser-tool" data-laser-tool="block"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="6" width="20" height="20" rx="3"/><path d="M9 9l14 14M16 7l9 9M7 16l9 9"/></svg></span><span>Block</span></button>
+<button class="laser-tool" data-laser-tool="eraser"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 22L20 8l6 6-10 12H9l-3-3 2-1Z"/><path d="M15 25h11M12 18l6 6"/></svg></span><span>Erase</span></button>
 </div>
-<div class="laser-help">Tap a square to place the selected piece. Tap an existing laser or splitter again to rotate it.</div>
+
 <div class="laser-save-row">
 <input id="laser-level-name" maxlength="28" placeholder="Level name" type="text"/>
 <button class="laser-save-button" id="laser-save-level">Save</button>
@@ -56,11 +56,11 @@
 </div>
 <div class="laser-play-panel hidden" id="laser-play-panel">
 <div class="laser-tools play-tools">
-<button class="laser-tool active" data-laser-play-tool="mirror"><span class="laser-tool-icon">╱</span><span>Mirror</span></button>
-<button class="laser-tool" data-laser-play-tool="eraser"><span class="laser-tool-icon">⌫</span><span>Erase</span></button>
+<button class="laser-tool active" data-laser-play-tool="mirror"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 25L25 7"/><path d="M9 27L27 9"/><circle cx="8" cy="24" r="2"/><circle cx="24" cy="8" r="2"/></svg></span><span>Mirror</span></button>
+<button class="laser-tool" data-laser-play-tool="eraser"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 22L20 8l6 6-10 12H9l-3-3 2-1Z"/><path d="M15 25h11M12 18l6 6"/></svg></span><span>Erase</span></button>
 <button class="laser-save-button" id="laser-reset-play">Reset mirrors</button>
 </div>
-<div class="laser-help">Mirrors are unlimited. Tap a mirror again to rotate it through eight angles.</div>
+
 </div>
 <div class="laser-board-wrap">
 <div aria-label="Laser puzzle grid" class="laser-board" id="laser-board"></div>
@@ -80,8 +80,8 @@
 </div>
 </section>
   </main>
-  <script src="site-config.js?v=1.0.39"></script>
-  <script src="core.js?v=1.0.39"></script>
-  <script src="game-08.js?v=1.0.39"></script>
+  <script src="site-config.js?v=1.0.40"></script>
+  <script src="core.js?v=1.0.40"></script>
+  <script src="game-08.js?v=1.0.40"></script>
 </body>
 </html>
