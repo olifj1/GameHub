@@ -1,4 +1,4 @@
-const CACHE = "gamehub-v1.0.41";
+const CACHE = "gamehub-v1.0.42";
 const APP_SHELL = [
   "./",
   "./index.html",

@@ -20,12 +20,21 @@ const laserLoadButton = $("#laser-load-level");
 const laserDeleteButton = $("#laser-delete-level");
 const laserResetPlay = $("#laser-reset-play");
 const laserNewGenerated = $("#laser-new-generated");
+const laserDifficultyButtons = $$("[data-laser-difficulty]");
 
 const laserGridSizes = {
   small: { rows: 8, cols: 8 },
   medium: { rows: 10, cols: 10 },
   large: { rows: 12, cols: 12 }
 };
+
+const laserDifficultyInfo = {
+  easy:   { grid:"small",  checkpoints:1, splitters:0, obstacleRatio:.10, turns:2 },
+  medium: { grid:"medium", checkpoints:2, splitters:1, obstacleRatio:.15, turns:4 },
+  hard:   { grid:"large",  checkpoints:3, splitters:2, obstacleRatio:.19, turns:6 }
+};
+let laserDifficulty = localStorage.getItem("laserDifficulty") || "easy";
+if(!laserDifficultyInfo[laserDifficulty]) laserDifficulty="easy";
 
 // Orthogonal-only beam directions: up, right, down, left.
 const laserDirVectors = [
@@ -210,6 +219,10 @@ function renderLaserBoard() {
       laserBoard.appendChild(cell);
     }
   }
+
+  // Keep the beam SVG inside the exact same box as the grid so its coordinate
+  // system cannot drift relative to the cells.
+  laserBoard.appendChild(laserBeamLayer);
 }
 
 function traceSingleBeam(state, branchIndex, hitCheckpoints, hitTargets, queue) {
@@ -345,42 +358,88 @@ function randomBetween(min,max){
   return min+Math.floor(Math.random()*(max-min+1));
 }
 
+function chooseSeparatedRows(count,rows){
+  const out=[];
+  for(let tries=0;tries<200 && out.length<count;tries++){
+    const r=randomBetween(1,rows-2);
+    if(out.every(x=>Math.abs(x-r)>=2)) out.push(r);
+  }
+  // Reliable fallback for very unlucky random choices.
+  while(out.length<count){
+    const candidate=1+Math.floor((out.length+1)*(rows-2)/(count+1));
+    if(!out.includes(candidate)) out.push(candidate);
+    else out.push(Math.min(rows-2,candidate+1));
+  }
+  return out.slice(0,count);
+}
+
+function routeDirection(a,b){
+  if(b.row<a.row) return 0;
+  if(b.col>a.col) return 1;
+  if(b.row>a.row) return 2;
+  return 3;
+}
+
+function addCheckpointCandidate(list,a,b){
+  if(a.row===b.row){
+    const lo=Math.min(a.col,b.col)+1, hi=Math.max(a.col,b.col)-1;
+    if(hi>=lo) list.push({row:a.row,col:Math.floor((lo+hi)/2)});
+  }else{
+    const lo=Math.min(a.row,b.row)+1, hi=Math.max(a.row,b.row)-1;
+    if(hi>=lo) list.push({row:Math.floor((lo+hi)/2),col:a.col});
+  }
+}
+
+function makeBranchFromSplitter(splitter,inDir,rows,cols,routeCells){
+  // Generated splitters sit on horizontal right-moving sections. Send the
+  // branch toward whichever vertical edge is farther away, giving it room.
+  let branchDir=splitter.row>=Math.floor(rows/2)?0:2;
+  let target={row:branchDir===0?0:rows-1,col:splitter.col};
+  const orientation=mirrorOrientationForTurn(inDir,branchDir);
+  if(orientation===null) return null;
+  addSegmentCells(routeCells,splitter,target);
+  return {target,orientation,dir:branchDir};
+}
+
 function generateLaserLevel(){
-  // Generated puzzles use the selected square grid size.
+  const D=laserDifficultyInfo[laserDifficulty];
+  laserGridSize=D.grid;
+  const size=laserGridSizes[D.grid];
+  laserRowsCount=size.rows;
+  laserColsCount=size.cols;
+  laserSizeButtons.forEach(b=>b.classList.toggle("active",b.dataset.laserSize===D.grid));
+
   const rows=laserRowsCount, cols=laserColsCount;
   laserMirrors=new Map();
   laserGeneratedSolution=[];
 
-  let r0=randomBetween(1,rows-2);
-  let r1=randomBetween(1,rows-2);
-  while(Math.abs(r1-r0)<2) r1=randomBetween(1,rows-2);
-  let r2=randomBetween(1,rows-2);
-  while(Math.abs(r2-r1)<2) r2=randomBetween(1,rows-2);
+  // One vertical transition gives two turns; two gives four; three gives six.
+  const verticalTransitions=D.turns/2;
+  const rowValues=chooseSeparatedRows(verticalTransitions+1,rows);
 
-  const c1=randomBetween(2,Math.max(2,Math.floor(cols*.36)));
-  const c2=randomBetween(Math.max(c1+2,Math.floor(cols*.58)),cols-3);
+  const turnCols=[];
+  const fractions=verticalTransitions===1 ? [.48]
+    : verticalTransitions===2 ? [.30,.66]
+    : [.23,.50,.74];
+  fractions.forEach((f,i)=>{
+    let col=Math.max(2,Math.min(cols-3,Math.round((cols-1)*f)));
+    if(i && col<=turnCols[i-1]+1) col=turnCols[i-1]+2;
+    turnCols.push(Math.min(cols-3,col));
+  });
 
-  const points=[
-    {row:r0,col:0},
-    {row:r0,col:c1},
-    {row:r1,col:c1},
-    {row:r1,col:c2},
-    {row:r2,col:c2},
-    {row:r2,col:cols-1}
-  ];
+  const points=[{row:rowValues[0],col:0}];
+  for(let i=0;i<verticalTransitions;i++){
+    points.push({row:rowValues[i],col:turnCols[i]});
+    points.push({row:rowValues[i+1],col:turnCols[i]});
+  }
+  points.push({row:rowValues[rowValues.length-1],col:cols-1});
 
   const routeCells=new Set();
-  for(let i=0;i<points.length-1;i++) addSegmentCells(routeCells,points[i],points[i+1]);
-
-  // Directions for each segment.
-  const segmentDir=(a,b)=>{
-    if(b.row<a.row) return 0;
-    if(b.col>a.col) return 1;
-    if(b.row>a.row) return 2;
-    return 3;
-  };
   const dirs=[];
-  for(let i=0;i<points.length-1;i++) dirs.push(segmentDir(points[i],points[i+1]));
+  for(let i=0;i<points.length-1;i++){
+    addSegmentCells(routeCells,points[i],points[i+1]);
+    dirs.push(routeDirection(points[i],points[i+1]));
+  }
 
   laserLevel={
     emitter:{row:points[0].row,col:points[0].col,dir:dirs[0]},
@@ -390,7 +449,7 @@ function generateLaserLevel(){
     blocks:new Set()
   };
 
-  // Store the four mirror cells/orientations as the known solution, but do not place them.
+  // Every bend is a required player mirror.
   for(let i=1;i<points.length-1;i++){
     const orientation=mirrorOrientationForTurn(dirs[i-1],dirs[i]);
     if(orientation!==null){
@@ -398,38 +457,65 @@ function generateLaserLevel(){
     }
   }
 
-  // Put checkpoints on two straight segments, never on mirror cells.
-  const checkpointCandidates=[];
+  // Add fixed splitters on long horizontal sections for Medium/Hard. Their
+  // branches terminate directly at extra targets, so the generated puzzle has
+  // a known valid solution without requiring diagonal optics.
+  const horizontalSegments=[];
   for(let i=0;i<points.length-1;i++){
-    const a=points[i], b=points[i+1];
-    if(a.row===b.row){
-      const lo=Math.min(a.col,b.col)+1, hi=Math.max(a.col,b.col)-1;
-      if(hi>=lo){
-        const col=Math.floor((lo+hi)/2);
-        checkpointCandidates.push({row:a.row,col});
-      }
-    }else{
-      const lo=Math.min(a.row,b.row)+1, hi=Math.max(a.row,b.row)-1;
-      if(hi>=lo){
-        const row=Math.floor((lo+hi)/2);
-        checkpointCandidates.push({row,col:a.col});
-      }
+    const a=points[i],b=points[i+1];
+    if(a.row===b.row && Math.abs(b.col-a.col)>=3){
+      horizontalSegments.push({index:i,a,b,dir:dirs[i]});
     }
   }
-  const turnKeys=new Set(points.slice(1,-1).map(p=>laserKey(p.row,p.col)));
-  laserLevel.checkpoints=checkpointCandidates
-    .filter(p=>!turnKeys.has(laserKey(p.row,p.col)))
-    .filter((p,i)=>i%2===1)
-    .slice(0,2);
-  if(!laserLevel.checkpoints.length && checkpointCandidates.length){
-    laserLevel.checkpoints=[checkpointCandidates[0]];
-  }
 
-  // Add Logic-style obstacle blocks away from the guaranteed solution route.
-  const wanted=Math.max(8,Math.floor(rows*cols*.18));
+  const branchCheckpointCandidates=[];
+  horizontalSegments.slice(0,D.splitters).forEach((seg,branchIndex)=>{
+    const lo=Math.min(seg.a.col,seg.b.col)+1;
+    const hi=Math.max(seg.a.col,seg.b.col)-1;
+    if(hi<lo) return;
+    const span=hi-lo+1;
+    const col=lo+Math.floor(span*(branchIndex+1)/(D.splitters+1));
+    const splitter={row:seg.a.row,col};
+    const branch=makeBranchFromSplitter(splitter,seg.dir,rows,cols,routeCells);
+    if(!branch) return;
+    laserLevel.splitters.set(laserKey(splitter.row,splitter.col),branch.orientation);
+    laserLevel.targets.push(branch.target);
+
+    // A checkpoint halfway along each branch makes splitters meaningful.
+    const midRow=Math.floor((splitter.row+branch.target.row)/2);
+    if(midRow!==splitter.row && midRow!==branch.target.row){
+      branchCheckpointCandidates.push({row:midRow,col:splitter.col});
+    }
+  });
+
+  // Checkpoints scale with difficulty. Prefer branches first on harder levels,
+  // then distribute the rest along the main route.
+  const mainCheckpointCandidates=[];
+  for(let i=0;i<points.length-1;i++) addCheckpointCandidate(mainCheckpointCandidates,points[i],points[i+1]);
+  const blockedSpecial=new Set([
+    ...points.slice(1,-1).map(p=>laserKey(p.row,p.col)),
+    ...[...laserLevel.splitters.keys()]
+  ]);
+  const candidates=[
+    ...branchCheckpointCandidates,
+    ...mainCheckpointCandidates.filter(p=>!blockedSpecial.has(laserKey(p.row,p.col)))
+  ];
+  const unique=[];
+  const seenCp=new Set();
+  for(const cp of candidates){
+    const k=laserKey(cp.row,cp.col);
+    if(!seenCp.has(k) && !laserLevel.targets.some(t=>laserKey(t.row,t.col)===k)){
+      seenCp.add(k); unique.push(cp);
+    }
+  }
+  laserLevel.checkpoints=unique.slice(0,D.checkpoints);
+
+  // Logic-like obstacle blocks fill only cells that are not on any guaranteed
+  // beam path, so every generated puzzle remains solvable.
+  const wanted=Math.max(5,Math.floor(rows*cols*D.obstacleRatio));
   const choices=[];
-  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
-    const k=laserKey(r,c);
+  for(let r=0;r<rows;r++) for(let col=0;col<cols;col++){
+    const k=laserKey(r,col);
     if(!routeCells.has(k)) choices.push(k);
   }
   choices.sort(()=>Math.random()-.5);
@@ -439,7 +525,7 @@ function generateLaserLevel(){
   laserResult.classList.add("hidden");
   renderLaserBoard();
   traceLaser();
-  laserStatus.textContent="Place mirrors to guide the beam through every checkpoint and into the target.";
+  laserStatus.textContent="Place mirrors to hit every checkpoint and target.";
 }
 
 function serializeLaserLevel() {
@@ -510,6 +596,16 @@ laserPlayTools.forEach(b => b.addEventListener("click", () => {
   laserPlayTool = b.dataset.laserPlayTool;
   laserPlayTools.forEach(x => { if (x.dataset.laserPlayTool) x.classList.toggle("active", x === b); });
 }));
+
+laserDifficultyButtons.forEach(b=>{
+  b.classList.toggle("active",b.dataset.laserDifficulty===laserDifficulty);
+  b.addEventListener("click",()=>{
+    laserDifficulty=b.dataset.laserDifficulty;
+    localStorage.setItem("laserDifficulty",laserDifficulty);
+    laserDifficultyButtons.forEach(x=>x.classList.toggle("active",x===b));
+    generateLaserLevel();
+  });
+});
 
 laserNewGenerated.addEventListener("click", generateLaserLevel);
 
