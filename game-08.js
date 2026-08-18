@@ -358,50 +358,170 @@ function randomBetween(min,max){
   return min+Math.floor(Math.random()*(max-min+1));
 }
 
-function chooseSeparatedRows(count,rows){
+
+function shuffleArray(items){
+  for(let i=items.length-1;i>0;i--){
+    const k=Math.floor(Math.random()*(i+1));
+    [items[i],items[k]]=[items[k],items[i]];
+  }
+  return items;
+}
+
+function mazeNeighbors(row,col,rows,cols){
   const out=[];
-  for(let tries=0;tries<200 && out.length<count;tries++){
-    const r=randomBetween(1,rows-2);
-    if(out.every(x=>Math.abs(x-r)>=2)) out.push(r);
+  for(const [dr,dc] of laserDirVectors){
+    const nr=row+dr,nc=col+dc;
+    if(nr>=0&&nr<rows&&nc>=0&&nc<cols) out.push({row:nr,col:nc});
   }
-  // Reliable fallback for very unlucky random choices.
-  while(out.length<count){
-    const candidate=1+Math.floor((out.length+1)*(rows-2)/(count+1));
-    if(!out.includes(candidate)) out.push(candidate);
-    else out.push(Math.min(rows-2,candidate+1));
-  }
-  return out.slice(0,count);
+  return out;
 }
 
-function routeDirection(a,b){
-  if(b.row<a.row) return 0;
-  if(b.col>a.col) return 1;
-  if(b.row>a.row) return 2;
-  return 3;
+function shortestMazePath(start,target,blocks,rows,cols){
+  const q=[start];
+  const parent=new Map();
+  const seen=new Set([laserKey(start.row,start.col)]);
+  while(q.length){
+    const cur=q.shift();
+    if(cur.row===target.row&&cur.col===target.col){
+      const path=[];
+      let k=laserKey(cur.row,cur.col);
+      let node=cur;
+      while(node){
+        path.push(node);
+        const pk=parent.get(k);
+        if(!pk) break;
+        node=pk.node;
+        k=pk.key;
+      }
+      return path.reverse();
+    }
+    for(const n of mazeNeighbors(cur.row,cur.col,rows,cols)){
+      const k=laserKey(n.row,n.col);
+      if(seen.has(k)||blocks.has(k)) continue;
+      seen.add(k);
+      parent.set(k,{node:cur,key:laserKey(cur.row,cur.col)});
+      q.push(n);
+    }
+  }
+  return null;
 }
 
-function addCheckpointCandidate(list,a,b){
+function lineOfSightClear(a,b,blocks){
   if(a.row===b.row){
-    const lo=Math.min(a.col,b.col)+1, hi=Math.max(a.col,b.col)-1;
-    if(hi>=lo) list.push({row:a.row,col:Math.floor((lo+hi)/2)});
+    const lo=Math.min(a.col,b.col)+1, hi=Math.max(a.col,b.col);
+    for(let col=lo;col<hi;col++) if(blocks.has(laserKey(a.row,col))) return false;
+    return true;
+  }
+  if(a.col===b.col){
+    const lo=Math.min(a.row,b.row)+1, hi=Math.max(a.row,b.row);
+    for(let row=lo;row<hi;row++) if(blocks.has(laserKey(row,a.col))) return false;
+    return true;
+  }
+  return false;
+}
+
+function recursiveDivide(blocks,minRow,maxRow,minCol,maxCol,depth=0){
+  const height=maxRow-minRow+1;
+  const width=maxCol-minCol+1;
+  if(width<4||height<4) return;
+
+  // Split the longer dimension, with a little randomness to avoid a rigid grid.
+  const horizontal = height>width ? true : width>height ? false : Math.random()<.5;
+
+  if(horizontal){
+    const candidates=[];
+    for(let r=minRow+1;r<=maxRow-1;r++) candidates.push(r);
+    if(!candidates.length) return;
+    const wallRow=candidates[Math.floor(Math.random()*candidates.length)];
+
+    const openings=new Set();
+    const openingCount=depth<1?2:1;
+    while(openings.size<openingCount){
+      openings.add(randomBetween(minCol,maxCol));
+    }
+    for(let col=minCol;col<=maxCol;col++){
+      if(!openings.has(col)) blocks.add(laserKey(wallRow,col));
+    }
+
+    recursiveDivide(blocks,minRow,wallRow-1,minCol,maxCol,depth+1);
+    recursiveDivide(blocks,wallRow+1,maxRow,minCol,maxCol,depth+1);
   }else{
-    const lo=Math.min(a.row,b.row)+1, hi=Math.max(a.row,b.row)-1;
-    if(hi>=lo) list.push({row:Math.floor((lo+hi)/2),col:a.col});
+    const candidates=[];
+    for(let col=minCol+1;col<=maxCol-1;col++) candidates.push(col);
+    if(!candidates.length) return;
+    const wallCol=candidates[Math.floor(Math.random()*candidates.length)];
+
+    const openings=new Set();
+    const openingCount=depth<1?2:1;
+    while(openings.size<openingCount){
+      openings.add(randomBetween(minRow,maxRow));
+    }
+    for(let row=minRow;row<=maxRow;row++){
+      if(!openings.has(row)) blocks.add(laserKey(row,wallCol));
+    }
+
+    recursiveDivide(blocks,minRow,maxRow,minCol,wallCol-1,depth+1);
+    recursiveDivide(blocks,minRow,maxRow,wallCol+1,maxCol,depth+1);
   }
 }
 
-function makeBranchFromSplitter(splitter,inDir,rows,cols,routeCells){
-  // Generated splitters sit on horizontal right-moving sections. Send the
-  // branch toward whichever vertical edge is farther away, giving it room.
-  let branchDir=splitter.row>=Math.floor(rows/2)?0:2;
-  let target={row:branchDir===0?0:rows-1,col:splitter.col};
-  const orientation=mirrorOrientationForTurn(inDir,branchDir);
-  if(orientation===null) return null;
-  addSegmentCells(routeCells,splitter,target);
-  return {target,orientation,dir:branchDir};
+function compressMazePath(path){
+  if(path.length<3) return path.slice();
+  const out=[path[0]];
+  let prevDir=routeDirection(path[0],path[1]);
+  for(let i=1;i<path.length-1;i++){
+    const nextDir=routeDirection(path[i],path[i+1]);
+    if(nextDir!==prevDir){
+      out.push(path[i]);
+      prevDir=nextDir;
+    }
+  }
+  out.push(path[path.length-1]);
+  return out;
 }
 
-function generateLaserLevel(){
+function pathDirectionAt(path,index){
+  if(index>=path.length-1) return null;
+  return routeDirection(path[index],path[index+1]);
+}
+
+function chooseCheckpointIndices(path,count){
+  // Never place a checkpoint close to the laser or target, and prefer points
+  // well inside straight runs rather than immediately on a mirror.
+  const turns=new Set();
+  for(let i=1;i<path.length-1;i++){
+    const a=routeDirection(path[i-1],path[i]);
+    const b=routeDirection(path[i],path[i+1]);
+    if(a!==b) turns.add(i);
+  }
+
+  const candidates=[];
+  for(let i=3;i<path.length-3;i++){
+    if(turns.has(i)||turns.has(i-1)||turns.has(i+1)) continue;
+    candidates.push(i);
+  }
+  if(candidates.length<count){
+    for(let i=3;i<path.length-3;i++){
+      if(!turns.has(i)&&!candidates.includes(i)) candidates.push(i);
+    }
+  }
+  if(!candidates.length) return [];
+
+  const chosen=[];
+  for(let n=1;n<=count;n++){
+    const wanted=(path.length-1)*(n/(count+1));
+    let best=null,bestDist=Infinity;
+    for(const idx of candidates){
+      if(chosen.includes(idx)) continue;
+      const d=Math.abs(idx-wanted);
+      if(d<bestDist){best=idx;bestDist=d;}
+    }
+    if(best!==null) chosen.push(best);
+  }
+  return chosen.sort((a,b)=>a-b);
+}
+
+function tryGenerateMazePuzzle(){
   const D=laserDifficultyInfo[laserDifficulty];
   laserGridSize=D.grid;
   const size=laserGridSizes[D.grid];
@@ -410,117 +530,137 @@ function generateLaserLevel(){
   laserSizeButtons.forEach(b=>b.classList.toggle("active",b.dataset.laserSize===D.grid));
 
   const rows=laserRowsCount, cols=laserColsCount;
+  const blocks=new Set();
+
+  // Recursive division creates long walls and false corridors/chambers.
+  recursiveDivide(blocks,0,rows-1,0,cols-1);
+
+  // Pick start and target from opposite edges. Their rows must differ so the
+  // target is never directly in front of the emitter.
+  const start={row:randomBetween(1,rows-2),col:0};
+  let target={row:randomBetween(1,rows-2),col:cols-1};
+  for(let tries=0;tries<20 && Math.abs(target.row-start.row)<2;tries++){
+    target={row:randomBetween(1,rows-2),col:cols-1};
+  }
+
+  // Guarantee both endpoints and a small launch/arrival corridor are open.
+  [start,target,{row:start.row,col:1},{row:target.row,col:cols-2}].forEach(p=>blocks.delete(laserKey(p.row,p.col)));
+
+  const path=shortestMazePath(start,target,blocks,rows,cols);
+  if(!path || path.length < Math.max(8,Math.floor(rows*1.25))) return null;
+
+  // Require at least one turn before a checkpoint and enough turns for the difficulty.
+  const compressed=compressMazePath(path);
+  const mirrorCount=Math.max(0,compressed.length-2);
+  const minMirrors=laserDifficulty==="easy"?2:laserDifficulty==="medium"?3:4;
+  if(mirrorCount<minMirrors) return null;
+
+  const firstDir=routeDirection(path[0],path[1]);
+  if(firstDir!==1) return null; // laser always launches into the board
+
+  const checkpointIndices=chooseCheckpointIndices(path,D.checkpoints);
+  if(checkpointIndices.length<D.checkpoints) return null;
+  if(checkpointIndices[0]<4) return null;
+
+  const level={
+    emitter:{row:start.row,col:start.col,dir:1},
+    checkpoints:checkpointIndices.map(i=>({...path[i]})),
+    targets:[{...target}],
+    splitters:new Map(),
+    blocks
+  };
+
+  const solution=[];
+  for(let i=1;i<path.length-1;i++){
+    const inDir=routeDirection(path[i-1],path[i]);
+    const outDir=routeDirection(path[i],path[i+1]);
+    if(inDir!==outDir){
+      const orientation=mirrorOrientationForTurn(inDir,outDir);
+      if(orientation===null) return null;
+      solution.push({row:path[i].row,col:path[i].col,orientation});
+    }
+  }
+
+  // Medium/Hard: put fixed splitters later in the route, never right beside
+  // the emitter. Each splitter opens a short side objective ending in a target.
+  const splitterCandidates=[];
+  for(let i=Math.max(5,Math.floor(path.length*.35));i<path.length-4;i++){
+    const inDir=routeDirection(path[i-1],path[i]);
+    const outDir=routeDirection(path[i],path[i+1]);
+    if(inDir!==outDir) continue; // straight section only
+    const leftDir=(inDir+3)%4, rightDir=(inDir+1)%4;
+    for(const branchDir of shuffleArray([leftDir,rightDir])){
+      let r=path[i].row,c=path[i].col;
+      const [dr,dc]=laserDirVectors[branchDir];
+      const cells=[];
+      for(let s=0;s<3;s++){
+        r+=dr;c+=dc;
+        if(r<0||r>=rows||c<0||c>=cols||blocks.has(laserKey(r,c))) break;
+        cells.push({row:r,col:c});
+      }
+      if(cells.length>=2){
+        const orientation=mirrorOrientationForTurn(inDir,branchDir);
+        if(orientation!==null){
+          splitterCandidates.push({index:i,cell:path[i],branchDir,orientation,cells});
+          break;
+        }
+      }
+    }
+  }
+
+  let usedSplitters=0;
+  const occupied=new Set([
+    laserKey(start.row,start.col),
+    laserKey(target.row,target.col),
+    ...level.checkpoints.map(p=>laserKey(p.row,p.col))
+  ]);
+
+  for(const cand of splitterCandidates){
+    if(usedSplitters>=D.splitters) break;
+    const k=laserKey(cand.cell.row,cand.cell.col);
+    if(occupied.has(k)) continue;
+
+    const branchTarget=cand.cells[cand.cells.length-1];
+    level.splitters.set(k,cand.orientation);
+    level.targets.push(branchTarget);
+    occupied.add(k);
+    occupied.add(laserKey(branchTarget.row,branchTarget.col));
+
+    // Ensure the side branch is clear even if division walls changed nearby.
+    for(const p of cand.cells) level.blocks.delete(laserKey(p.row,p.col));
+    usedSplitters++;
+  }
+
+  if(usedSplitters<D.splitters) return null;
+
+  return {level,solution,path};
+}
+
+function generateLaserLevel(){
   laserMirrors=new Map();
   laserGeneratedSolution=[];
 
-  // One vertical transition gives two turns; two gives four; three gives six.
-  const verticalTransitions=D.turns/2;
-  const rowValues=chooseSeparatedRows(verticalTransitions+1,rows);
-
-  const turnCols=[];
-  const fractions=verticalTransitions===1 ? [.48]
-    : verticalTransitions===2 ? [.30,.66]
-    : [.23,.50,.74];
-  fractions.forEach((f,i)=>{
-    let col=Math.max(2,Math.min(cols-3,Math.round((cols-1)*f)));
-    if(i && col<=turnCols[i-1]+1) col=turnCols[i-1]+2;
-    turnCols.push(Math.min(cols-3,col));
-  });
-
-  const points=[{row:rowValues[0],col:0}];
-  for(let i=0;i<verticalTransitions;i++){
-    points.push({row:rowValues[i],col:turnCols[i]});
-    points.push({row:rowValues[i+1],col:turnCols[i]});
-  }
-  points.push({row:rowValues[rowValues.length-1],col:cols-1});
-
-  const routeCells=new Set();
-  const dirs=[];
-  for(let i=0;i<points.length-1;i++){
-    addSegmentCells(routeCells,points[i],points[i+1]);
-    dirs.push(routeDirection(points[i],points[i+1]));
+  let generated=null;
+  for(let attempt=0;attempt<180 && !generated;attempt++){
+    generated=tryGenerateMazePuzzle();
   }
 
-  laserLevel={
-    emitter:{row:points[0].row,col:points[0].col,dir:dirs[0]},
-    checkpoints:[],
-    targets:[{...points[points.length-1]}],
-    splitters:new Map(),
-    blocks:new Set()
-  };
-
-  // Every bend is a required player mirror.
-  for(let i=1;i<points.length-1;i++){
-    const orientation=mirrorOrientationForTurn(dirs[i-1],dirs[i]);
-    if(orientation!==null){
-      laserGeneratedSolution.push({row:points[i].row,col:points[i].col,orientation});
-    }
+  if(!generated){
+    // Extremely defensive fallback: temporarily step down one complexity level.
+    const original=laserDifficulty;
+    const fallback=original==="hard"?"medium":"easy";
+    laserDifficulty=fallback;
+    generated=tryGenerateMazePuzzle();
+    laserDifficulty=original;
   }
 
-  // Add fixed splitters on long horizontal sections for Medium/Hard. Their
-  // branches terminate directly at extra targets, so the generated puzzle has
-  // a known valid solution without requiring diagonal optics.
-  const horizontalSegments=[];
-  for(let i=0;i<points.length-1;i++){
-    const a=points[i],b=points[i+1];
-    if(a.row===b.row && Math.abs(b.col-a.col)>=3){
-      horizontalSegments.push({index:i,a,b,dir:dirs[i]});
-    }
+  if(!generated){
+    laserStatus.textContent="Could not generate a level. Tap New level to try again.";
+    return;
   }
 
-  const branchCheckpointCandidates=[];
-  horizontalSegments.slice(0,D.splitters).forEach((seg,branchIndex)=>{
-    const lo=Math.min(seg.a.col,seg.b.col)+1;
-    const hi=Math.max(seg.a.col,seg.b.col)-1;
-    if(hi<lo) return;
-    const span=hi-lo+1;
-    const col=lo+Math.floor(span*(branchIndex+1)/(D.splitters+1));
-    const splitter={row:seg.a.row,col};
-    const branch=makeBranchFromSplitter(splitter,seg.dir,rows,cols,routeCells);
-    if(!branch) return;
-    laserLevel.splitters.set(laserKey(splitter.row,splitter.col),branch.orientation);
-    laserLevel.targets.push(branch.target);
-
-    // A checkpoint halfway along each branch makes splitters meaningful.
-    const midRow=Math.floor((splitter.row+branch.target.row)/2);
-    if(midRow!==splitter.row && midRow!==branch.target.row){
-      branchCheckpointCandidates.push({row:midRow,col:splitter.col});
-    }
-  });
-
-  // Checkpoints scale with difficulty. Prefer branches first on harder levels,
-  // then distribute the rest along the main route.
-  const mainCheckpointCandidates=[];
-  for(let i=0;i<points.length-1;i++) addCheckpointCandidate(mainCheckpointCandidates,points[i],points[i+1]);
-  const blockedSpecial=new Set([
-    ...points.slice(1,-1).map(p=>laserKey(p.row,p.col)),
-    ...[...laserLevel.splitters.keys()]
-  ]);
-  const candidates=[
-    ...branchCheckpointCandidates,
-    ...mainCheckpointCandidates.filter(p=>!blockedSpecial.has(laserKey(p.row,p.col)))
-  ];
-  const unique=[];
-  const seenCp=new Set();
-  for(const cp of candidates){
-    const k=laserKey(cp.row,cp.col);
-    if(!seenCp.has(k) && !laserLevel.targets.some(t=>laserKey(t.row,t.col)===k)){
-      seenCp.add(k); unique.push(cp);
-    }
-  }
-  laserLevel.checkpoints=unique.slice(0,D.checkpoints);
-
-  // Logic-like obstacle blocks fill only cells that are not on any guaranteed
-  // beam path, so every generated puzzle remains solvable.
-  const wanted=Math.max(5,Math.floor(rows*cols*D.obstacleRatio));
-  const choices=[];
-  for(let r=0;r<rows;r++) for(let col=0;col<cols;col++){
-    const k=laserKey(r,col);
-    if(!routeCells.has(k)) choices.push(k);
-  }
-  choices.sort(()=>Math.random()-.5);
-  choices.slice(0,wanted).forEach(k=>laserLevel.blocks.add(k));
-
+  laserLevel=generated.level;
+  laserGeneratedSolution=generated.solution;
   laserLevelName.value="";
   laserResult.classList.add("hidden");
   renderLaserBoard();
