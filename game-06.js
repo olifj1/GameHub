@@ -166,7 +166,10 @@ function crossingTop(surface,prevY){
   const bottom=rocket.y+rocket.radius;
   const withinX=rocket.x>surface.x+rocket.radius*.55 &&
                 rocket.x<surface.x+surface.w-rocket.radius*.55;
-  return withinX && rocket.vy>=-0.15 &&
+
+  // Only a downward crossing can become a landing. This prevents the launch
+  // pad from immediately re-catching the rocket while it is thrusting upward.
+  return withinX && rocket.vy>0 &&
          prevBottom<=surface.y+4 && bottom>=surface.y-2;
 }
 
@@ -183,23 +186,30 @@ function tryLand(surface,prevY){
 function updateGravity(){
   if(!gravityWorld.running)return;
 
-  if(gravityInput.left)rocket.angle-=gravityWorld.rotationSpeed;
-  if(gravityInput.right)rocket.angle+=gravityWorld.rotationSpeed;
-
-  if(rocket.landed && !gravityInput.thrust){
+  if(rocket.landed){
+    // A parked rocket stays upright and cannot rotate on the pad.
+    rocket.angle=0;
     rocket.vx=0;
     rocket.vy=0;
-    const wanted=rocket.x-GW*.30;
-    gravityWorld.cameraX+=(wanted-gravityWorld.cameraX)*.06;
-    gravityWorld.cameraX=Math.max(0,Math.min(GRAVITY_WORLD_W-GW,gravityWorld.cameraX));
-    return;
+
+    if(!gravityInput.thrust){
+      const wanted=rocket.x-GW*.30;
+      gravityWorld.cameraX+=(wanted-gravityWorld.cameraX)*.06;
+      gravityWorld.cameraX=Math.max(0,Math.min(GRAVITY_WORLD_W-GW,gravityWorld.cameraX));
+      return;
+    }
+
+    // Thrust breaks contact with the pad and begins a vertical take-off.
+    rocket.landed=false;
+    rocket.landedOn=null;
   }
+
+  if(gravityInput.left)rocket.angle-=gravityWorld.rotationSpeed;
+  if(gravityInput.right)rocket.angle+=gravityWorld.rotationSpeed;
 
   if(gravityInput.thrust){
     rocket.vx+=Math.sin(rocket.angle)*gravityWorld.thrust;
     rocket.vy-=Math.cos(rocket.angle)*gravityWorld.thrust;
-    rocket.landed=false;
-    rocket.landedOn=null;
   }
 
   const prevY=rocket.y;
