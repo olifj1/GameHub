@@ -226,7 +226,7 @@ function renderBoard(){
     }
     if(info().crate){
       if(puzzle.state.delivered && r===puzzle.drop.row && c===puzzle.drop.col) el.innerHTML+=crateSvg('coding-crate delivered');
-      else if(!puzzle.state.carrying && r===puzzle.crate.row && c===puzzle.crate.col) el.innerHTML+=crateSvg();
+      else if(!puzzle.state.carrying && !puzzle.state.delivered && r===puzzle.crate.row && c===puzzle.crate.col) el.innerHTML+=crateSvg();
       if(r===puzzle.drop.row&&c===puzzle.drop.col) el.innerHTML+=dropSvg();
     }
     const mark=[...guide].reverse().find(m=>m.row===r&&m.col===c);
@@ -250,7 +250,7 @@ function positionRover(anim=true,duration=500){
   rover.style.transform=`translate(-50%,-50%) rotate(${visualAngle}deg)`;
 }
 
-async function driveSegment(targetState,count){
+async function driveSegment(targetState,count,startIndex,doneBefore){
   const rover=$("#coding-rover"); if(!rover) return;
   // Make sure the current position is committed to screen before changing it.
   rover.classList.remove('animate');
@@ -266,7 +266,15 @@ async function driveSegment(targetState,count){
   rover.style.left=x+'%';
   rover.style.top=y+'%';
   rover.style.transform=`translate(-50%,-50%) rotate(${visualAngle}deg)`;
-  await wait(duration);
+
+  // Keep the programme strip following the square currently being travelled.
+  // This does not alter the vehicle animation, so the straight run remains continuous.
+  for(let step=0;step<count;step++){
+    const activeIndex=startIndex+step;
+    renderProgram(activeIndex,step===0?doneBefore:activeIndex-1);
+    scrollProgramTo(activeIndex,false);
+    await wait(900);
+  }
 }
 
 
@@ -311,14 +319,15 @@ function renderProgram(active=-1,done=-1){
   if(!running) renderBoard();
 }
 
-function scrollProgramTo(index=null){
+function scrollProgramTo(index=null,smooth=true){
   requestAnimationFrame(()=>{
+    const behavior=smooth?'smooth':'auto';
     if(index===null){
-      programTimeline.scrollTo({left:programTimeline.scrollWidth,behavior:'smooth'});
+      programTimeline.scrollTo({left:programTimeline.scrollWidth,behavior});
       return;
     }
     const step=programTimeline.querySelector(`[data-program-index="${index}"]`);
-    if(step) step.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+    if(step) step.scrollIntoView({behavior,block:'nearest',inline:'center'});
   });
 }
 
@@ -420,7 +429,7 @@ async function run(){
         renderProgram(i,done);
         // Drive the whole straight section as one continuous, reliably painted
         // segment at a fixed pace per square.
-        await driveSegment(temp,count);
+        await driveSegment(temp,count,i,done);
 
         done=i+count-1;
         if(reachedGoal){ finish(done+1); return; }
@@ -437,6 +446,7 @@ async function run(){
     }
 
     renderProgram(i,done);
+    scrollProgramTo(i,false);
     const n=stepState(puzzle.state,c);
     if(n.collision||n.invalid){
       codingStatus.textContent=n.collision?'The forklift cannot drive there.':'Pick up or drop on the marked square.';

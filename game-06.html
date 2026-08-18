@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.0.34">
+  <link rel="stylesheet" href="style.css?v=1.0.36">
   <title>Gravity</title>
 </head>
 <body class="modular-game" data-game-id="game-06">
@@ -16,57 +16,69 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="game-06-info-title">Instructions</h2>
-      <p>Use Left and Right to rotate the ship and Thrust to fly. Collect both stars, avoid the walls, and land gently on the landing pad. Gravity and Thrust sliders let you tune the flight feel.</p>
+      <p>Use Left and Right to rotate the ship and Thrust to fly. Land gently on each checkpoint before reaching the finish flag. You can land on any flat platform if the ship is upright and moving slowly enough; hit a surface too fast or at too much of an angle and you will crash. Flight tuning is available from the sliders button beside Reset.</p>
     </div>
   </div>
   <main class="screen-wrap">
     <section aria-labelledby="gravity-title" class="screen active" id="gravity-screen">
-<div class="page gravity-page">
-<header class="page-header gravity-header">
-<p class="kicker" data-site-name="">GameHub</p>
-<h1 id="gravity-title">Gravity</h1>
-</header>
-<div class="gravity-hud">
-<div><span>HEIGHT</span><strong id="gravity-height">0</strong></div>
-<div><span>SPEED</span><strong id="gravity-speed">0</strong></div>
-<div><span>STARS</span><strong id="gravity-collect">0/2</strong></div>
-<button class="gravity-reset" id="gravity-reset">Reset</button>
-</div>
-<div class="gravity-tuning">
-<label>
-<span>Gravity <strong id="gravity-value">0.025</strong></span>
-<input id="gravity-slider" max="0.080" min="0.005" step="0.005" type="range" value="0.025"/>
-</label>
-<label>
-<span>Thrust <strong id="thrust-value">0.060</strong></span>
-<input id="thrust-slider" max="0.140" min="0.020" step="0.005" type="range" value="0.060"/>
-</label>
-</div>
-<div class="gravity-stage-wrap">
-<canvas aria-label="Gravity rocket game" height="1040" id="gravity-canvas" width="720"></canvas>
-<div class="gravity-message hidden" id="gravity-message">
-<strong id="gravity-message-title">Nice landing!</strong>
-<span id="gravity-message-text">You made it.</span>
-<button id="gravity-again">Fly again</button>
-</div>
-</div>
-<div aria-label="Rocket controls" class="gravity-controls">
-<button class="gravity-control rotate" id="gravity-left">
-<span>↶</span><small>LEFT</small>
-</button>
-<button class="gravity-control thrust" id="gravity-thrust">
-<span>🔥</span><small>THRUST</small>
-</button>
-<button class="gravity-control rotate" id="gravity-right">
-<span>↷</span><small>RIGHT</small>
-</button>
-</div>
-<div class="gravity-tip">Hold LEFT or RIGHT to rotate. Hold THRUST to accelerate in the direction the rocket is pointing.</div>
-</div>
-</section>
+      <div class="page gravity-page">
+        <header class="page-header gravity-header">
+          <p class="kicker" data-site-name="">GameHub</p>
+          <h1 id="gravity-title">Gravity</h1>
+        </header>
+
+        <div class="gravity-hud">
+          <div><span>HEIGHT</span><strong id="gravity-height">0</strong></div>
+          <div><span>SPEED</span><strong id="gravity-speed">0</strong></div>
+          <div><span>CHECK</span><strong id="gravity-collect">0/2</strong></div>
+
+          <details class="gravity-settings">
+            <summary aria-label="Flight settings">
+              <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 9h20M10 5v8M6 23h20M22 19v8M6 16h20M16 12v8"/></svg>
+            </summary>
+            <div class="gravity-settings-panel">
+              <label>
+                <span>Gravity <strong id="gravity-value">0.025</strong></span>
+                <input id="gravity-slider" max="0.080" min="0.005" step="0.005" type="range" value="0.025"/>
+              </label>
+              <label>
+                <span>Thrust <strong id="thrust-value">0.060</strong></span>
+                <input id="thrust-slider" max="0.140" min="0.020" step="0.005" type="range" value="0.060"/>
+              </label>
+            </div>
+          </details>
+
+          <button class="gravity-reset" id="gravity-reset" type="button">Reset</button>
+        </div>
+
+        <div class="gravity-stage-wrap">
+          <canvas aria-label="Gravity rocket game" height="900" id="gravity-canvas" width="720"></canvas>
+          <div class="gravity-message hidden" id="gravity-message">
+            <strong id="gravity-message-title">Route complete!</strong>
+            <span id="gravity-message-text">You made it.</span>
+            <button id="gravity-again" type="button">Fly again</button>
+          </div>
+        </div>
+
+        <div aria-label="Rocket controls" class="gravity-controls">
+          <button class="gravity-control rotate" id="gravity-left" type="button">
+            <span class="gravity-control-icon"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M27 26a12 12 0 1 1-2-18M25 8l-7-1 3-6"/></svg></span>
+            <small>LEFT</small>
+          </button>
+          <button class="gravity-control thrust" id="gravity-thrust" type="button">
+            <span class="gravity-control-icon thrust-icon"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M18 5l6 8v9H12v-9l6-8ZM14 22v4M22 22v4M15 27l3 5 3-5"/></svg></span>
+            <small>THRUST</small>
+          </button>
+          <button class="gravity-control rotate" id="gravity-right" type="button">
+            <span class="gravity-control-icon"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M9 26a12 12 0 1 0 2-18M11 8l7-1-3-6"/></svg></span>
+            <small>RIGHT</small>
+          </button>
+        </div>
+      </div>
+    </section>
   </main>
-  <script src="site-config.js?v=1.0.34"></script>
-  <script src="core.js?v=1.0.34"></script>
-  <script src="game-06.js?v=1.0.34"></script>
+  <script src="site-config.js?v=1.0.36"></script>
+  <script src="core.js?v=1.0.36"></script>
+  <script src="game-06.js?v=1.0.36"></script>
 </body>
 </html>
