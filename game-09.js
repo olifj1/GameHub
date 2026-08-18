@@ -31,6 +31,9 @@ const flightWorld = {
   acceleration:0.045,
   coastDrag:0.992,
   engineDrag:0.998,
+  glideGravity:0.052,
+  glideDrag:0.9985,
+  glideSteer:0.028,
   running:true
 };
 
@@ -57,6 +60,8 @@ function resetFlight(){
     y:GROUND_Y-23,
     angle:0,
     speed:0,
+    vx:0,
+    vy:0,
     engine:false,
     landed:true,
     crashed:false,
@@ -166,10 +171,14 @@ function updateFlight(){
     }
 
     plane.x+=Math.max(0,Math.cos(plane.angle)*plane.speed);
+    plane.vx=Math.max(0,Math.cos(plane.angle)*plane.speed);
+    plane.vy=0;
 
     if(plane.angle<-0.075 && plane.speed>2.75){
       plane.landed=false;
       plane.y-=1.5;
+      plane.vx=Math.cos(plane.angle)*plane.speed;
+      plane.vy=Math.sin(plane.angle)*plane.speed;
       flightStatus.textContent="Airborne!";
     }else{
       plane.y=GROUND_Y-23;
@@ -188,17 +197,57 @@ function updateFlight(){
       plane.angle-=n*.012;
     }
 
+    let verticalSpeed=plane.vy;
+    let horizontalSpeed=plane.vx;
+
     if(plane.engine){
+      // Powered flight remains responsive and arcade-like: the velocity is
+      // pulled quite strongly toward the direction the nose is pointing.
       plane.speed+=(flightWorld.cruiseSpeed-plane.speed)*.016;
       plane.speed=Math.min(flightWorld.maxSpeed,plane.speed);
       plane.speed*=flightWorld.engineDrag;
+
+      const targetVx=Math.cos(plane.angle)*plane.speed;
+      const targetVy=Math.sin(plane.angle)*plane.speed+flightWorld.gravity;
+      plane.vx+=(targetVx-plane.vx)*.24;
+      plane.vy+=(targetVy-plane.vy)*.24;
     }else{
-      plane.speed*=flightWorld.coastDrag;
-      plane.speed=Math.max(.9,plane.speed);
+      // With no engine there is no forward thrust. Keep the aircraft's
+      // existing momentum, let the controls gently change its flight path,
+      // and continuously accelerate it downward under gravity.
+      let glideSpeed=Math.hypot(plane.vx,plane.vy);
+      if(glideSpeed<.01){
+        plane.vx=Math.cos(plane.angle)*Math.max(.9,plane.speed);
+        plane.vy=Math.sin(plane.angle)*Math.max(.9,plane.speed);
+        glideSpeed=Math.hypot(plane.vx,plane.vy);
+      }
+
+      const velocityAngle=Math.atan2(plane.vy,plane.vx);
+      const angleError=normalAngle(plane.angle-velocityAngle);
+
+      // Aerodynamic steering is deliberately much weaker than powered flight.
+      // Pulling the nose up can trade speed for a brief climb, but cannot
+      // manufacture height indefinitely.
+      const steer=flightWorld.glideSteer*Math.min(1,glideSpeed/3.2);
+      const guidedAngle=velocityAngle+angleError*steer;
+      const controlDrag=Math.min(.004,Math.abs(angleError)*.0014);
+      const retainedSpeed=glideSpeed*(flightWorld.glideDrag-controlDrag);
+
+      plane.vx=Math.cos(guidedAngle)*retainedSpeed;
+      plane.vy=Math.sin(guidedAngle)*retainedSpeed+flightWorld.glideGravity;
+
+      // At low airspeed the nose naturally wants to fall rather than hanging
+      // in a powered-looking climb.
+      const actualSpeed=Math.hypot(plane.vx,plane.vy);
+      if(actualSpeed<1.65){
+        const n=normalAngle(plane.angle);
+        if(n<.18) plane.angle+=.010;
+      }
     }
 
-    const verticalSpeed=Math.sin(plane.angle)*plane.speed+flightWorld.gravity;
-    const horizontalSpeed=Math.cos(plane.angle)*plane.speed;
+    horizontalSpeed=plane.vx;
+    verticalSpeed=plane.vy;
+    plane.speed=Math.hypot(horizontalSpeed,verticalSpeed);
 
     plane.x+=horizontalSpeed;
     plane.y+=verticalSpeed;
@@ -221,6 +270,8 @@ function updateFlight(){
         plane.angle=0;
         plane.landed=true;
         plane.speed=Math.min(plane.speed,3.6);
+        plane.vx=plane.speed;
+        plane.vy=0;
 
         if(runway==="finish"){
           if(hoops.every(h=>h.hit)){
