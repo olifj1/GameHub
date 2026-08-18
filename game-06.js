@@ -63,7 +63,7 @@ const gravityWalls=[
   {id:"p7",x:2520,y:675,w:320,h:26},
   {id:"v4",x:2820,y:28,w:36,h:350},
   {id:"p8",x:2940,y:515,w:280,h:26},
-  {id:"p9",x:3260,y:710,w:250,h:26}
+  {id:"p9",x:3020,y:600,w:180,h:26}
 ];
 
 const gravityStartPad={id:"start",x:82,y:838,w:150,h:18,type:"start"};
@@ -72,6 +72,13 @@ const gravityCheckpoints=[
   {id:"checkpoint-2",x:2585,y:651,w:150,h:18,type:"checkpoint",index:1}
 ];
 const gravityGoalPad={id:"goal",x:3370,y:838,w:155,h:18,type:"goal"};
+
+const gravityStarsBase=[
+  {x:900,y:350,r:17},
+  {x:1900,y:470,r:17},
+  {x:3060,y:390,r:17}
+];
+let gravityStars=[];
 
 const gravityPads=[gravityStartPad,...gravityCheckpoints,gravityGoalPad];
 const landingWalls=gravityWalls.filter(w=>w.w>w.h*2 && w.y>40);
@@ -86,12 +93,13 @@ function resetGravityGame(){
     landed:false,crashed:false,landedOn:"start"
   };
   checkpointVisited=gravityCheckpoints.map(()=>false);
+  gravityStars=gravityStarsBase.map(s=>({...s,collected:false}));
   gravityWorld.cameraX=0;
   gravityWorld.running=true;
   gravityInput.left=gravityInput.right=gravityInput.thrust=false;
   gravityMessage.classList.add("hidden");
   gravityAgain.textContent="Fly again";
-  gravityCollect.textContent=`0/${gravityCheckpoints.length}`;
+  updateGravityGoalHud();
 }
 
 function gravityRectCircleCollision(rect,x,y,r){
@@ -125,6 +133,12 @@ function allCheckpointsComplete(){
   return checkpointVisited.every(Boolean);
 }
 
+function updateGravityGoalHud(){
+  const checks=checkpointVisited.filter(Boolean).length;
+  const stars=gravityStars.filter(s=>s.collected).length;
+  gravityCollect.textContent=`✓ ${checks}/${gravityCheckpoints.length}  ★ ${stars}/${gravityStars.length}`;
+}
+
 function registerLanding(surface){
   rocket.y=surface.y-rocket.radius;
   rocket.vx=0;
@@ -135,7 +149,7 @@ function registerLanding(surface){
 
   if(surface.type==="checkpoint" && !checkpointVisited[surface.index]){
     checkpointVisited[surface.index]=true;
-    gravityCollect.textContent=`${checkpointVisited.filter(Boolean).length}/${gravityCheckpoints.length}`;
+    updateGravityGoalHud();
   }
 
   if(surface.type==="goal"){
@@ -157,7 +171,10 @@ function winGravity(){
   rocket.landed=true;
   gravityAgain.textContent="Fly again";
   gravityMessageTitle.textContent="Route complete!";
-  gravityMessageText.textContent="You stopped at every checkpoint and reached the finish.";
+  const stars=gravityStars.filter(s=>s.collected).length;
+  gravityMessageText.textContent=stars===gravityStars.length
+    ?"Perfect route — every checkpoint and every star!"
+    :`You stopped at every checkpoint and collected ${stars}/${gravityStars.length} stars.`;
   gravityMessage.classList.remove("hidden");
 }
 
@@ -231,6 +248,14 @@ function updateGravity(){
      rocket.y<rocket.radius||rocket.y>GRAVITY_WORLD_H-rocket.radius){
     crashGravity("You hit the edge of the course.");
     return;
+  }
+
+  // Stars are optional exploration rewards and do not replace checkpoints.
+  for(const star of gravityStars){
+    if(!star.collected && Math.hypot(rocket.x-star.x,rocket.y-star.y)<rocket.radius+star.r+5){
+      star.collected=true;
+      updateGravityGoalHud();
+    }
   }
 
   // Pads and every horizontal platform can be landed on.
@@ -367,6 +392,32 @@ function drawPad(pad){
   if(goal) drawFlag(pad.x+pad.w-8,pad.y,"#706bd8","FINISH");
 }
 
+function drawGravityStars(){
+  for(const star of gravityStars){
+    if(star.collected) continue;
+    const pulse=1+Math.sin(performance.now()/260+star.x*.01)*.06;
+    gravityCtx.save();
+    gravityCtx.translate(star.x,star.y);
+    gravityCtx.scale(pulse,pulse);
+    gravityCtx.fillStyle="#f8f3ee";
+    gravityCtx.strokeStyle="#706bd8";
+    gravityCtx.lineWidth=2.6;
+    gravityCtx.lineJoin="round";
+    gravityCtx.beginPath();
+    for(let i=0;i<10;i++){
+      const a=-Math.PI/2+i*Math.PI/5;
+      const r=i%2===0?star.r:star.r*.43;
+      const x=Math.cos(a)*r;
+      const y=Math.sin(a)*r;
+      i===0?gravityCtx.moveTo(x,y):gravityCtx.lineTo(x,y);
+    }
+    gravityCtx.closePath();
+    gravityCtx.fill();
+    gravityCtx.stroke();
+    gravityCtx.restore();
+  }
+}
+
 function drawRocket(){
   gravityCtx.save();
   gravityCtx.translate(rocket.x,rocket.y);
@@ -442,6 +493,7 @@ function drawGravity(){
   withGravityCamera(()=>{
     drawGravityWalls();
     gravityPads.forEach(drawPad);
+    drawGravityStars();
     drawRocket();
   });
   drawGravityProgress();
