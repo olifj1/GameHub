@@ -79,5 +79,10 @@ Hub-wide visual consistency pass; vector home icons; neutral page backgrounds an
 - Program timeline is editable: tap a block to select it, move it earlier/later or delete it; tap a + insertion point then a command to insert at that position.
 
 
-## v1.0.46
+## v1.0.47
 - Logic programme editing: selecting an existing command and pressing a command now replaces it in place; + slots still insert and no selection still appends.
+
+
+## v1.0.47
+- Added Flight: a side-scrolling aeroplane game with engine start/stop, pitch controls, full loops, hoop collection and safe runway landings.
+- Added the new Flight card and line-art aeroplane icon to the GameHub home screen.

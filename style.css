@@ -2324,6 +2324,7 @@ body[data-game-id="game-05"], .game-card[data-game-id="game-05"] { --gh-accent:#
 body[data-game-id="game-06"], .game-card[data-game-id="game-06"] { --gh-accent:#706bd8; }
 body[data-game-id="game-07"], .game-card[data-game-id="game-07"] { --gh-accent:#568a83; }
 body[data-game-id="game-08"], .game-card[data-game-id="game-08"] { --gh-accent:#bd6f72; }
+body[data-game-id="game-09"], .game-card[data-game-id="game-09"] { --gh-accent:#b87068; }
 
 html, body {
   color: var(--gh-ink);
@@ -4409,11 +4410,11 @@ body[data-game-id="game-07"] .carried-crate{
 }
 
 
-/* v1.0.46 — Logic programme follow + win-layer correction */
+/* v1.0.47 — Logic programme follow + win-layer correction */
 body[data-game-id="game-07"] .coding-win-overlay{z-index:100!important;}
 body[data-game-id="game-07"] .coding-win-overlay:not(.hidden){isolation:isolate;}
 
-/* v1.0.46 — dismissible Logic success overlay */
+/* v1.0.47 — dismissible Logic success overlay */
 body[data-game-id="game-07"] .coding-win-overlay{position:absolute!important}
 body[data-game-id="game-07"] .coding-win-close{
   position:absolute;top:8px;right:9px;width:34px;height:34px;padding:0;
@@ -4424,7 +4425,7 @@ body[data-game-id="game-07"] .coding-win-close{
 body[data-game-id="game-07"] .coding-win-close:active{transform:scale(.94)}
 
 
-/* v1.0.46 — Gravity layout, controls and route polish */
+/* v1.0.47 — Gravity layout, controls and route polish */
 body[data-game-id="game-06"] #gravity-screen{
   background:#f5efe9!important;
   color:var(--gh-text)!important;
@@ -4644,14 +4645,14 @@ body[data-game-id="game-06"] .gravity-tuning{display:none!important}
   body[data-game-id="game-06"] .gravity-reset{font-size:9px}
 }
 
-/* v1.0.46 — Gravity combined checkpoint/star HUD */
+/* v1.0.47 — Gravity combined checkpoint/star HUD */
 body[data-game-id="game-06"] .gravity-goals strong{
   font-size:11px!important;
   letter-spacing:-.02em;
 }
 
 
-/* v1.0.46 — Laser Lab visual/playability rebuild */
+/* v1.0.47 — Laser Lab visual/playability rebuild */
 body[data-game-id="game-08"]{
   --laser-accent:#bf6f70;
   --laser-ink:#282d35;
@@ -4951,7 +4952,7 @@ body[data-game-id="game-08"]{
 }
 
 
-/* v1.0.46 — Laser Lab generated-play + orthogonal optics */
+/* v1.0.47 — Laser Lab generated-play + orthogonal optics */
 body[data-game-id="game-08"] .laser-page{
   padding-bottom:max(70px,env(safe-area-inset-bottom));
 }
@@ -5120,7 +5121,7 @@ body[data-game-id="game-08"] .laser-info-pill strong{font-size:13px!important}
 }
 
 
-/* v1.0.46 — Laser exact grid geometry + generated difficulty */
+/* v1.0.47 — Laser exact grid geometry + generated difficulty */
 body[data-game-id="game-08"] .laser-difficulty-row{
   display:grid;
   grid-template-columns:repeat(3,1fr);
@@ -5199,7 +5200,7 @@ body[data-game-id="game-08"] .laser-cell.obstacle::before{
 }
 
 
-/* v1.0.46 — Laser board frame always sits above the grid */
+/* v1.0.47 — Laser board frame always sits above the grid */
 body[data-game-id="game-08"] .laser-board-wrap{
   position:relative!important;
   isolation:isolate;
@@ -5229,7 +5230,7 @@ body[data-game-id="game-08"] .laser-board{
 }
 
 
-/* v1.0.46 — Laser maze walls read as connected wall sections */
+/* v1.0.47 — Laser maze walls read as connected wall sections */
 body[data-game-id="game-08"] .laser-cell.obstacle{
   background:
     repeating-linear-gradient(
@@ -5244,7 +5245,7 @@ body[data-game-id="game-08"] .laser-cell.obstacle::before{
 }
 
 
-/* v1.0.46 — Laser board: full-width frame with true inner clearance */
+/* v1.0.47 — Laser board: full-width frame with true inner clearance */
 body[data-game-id="game-08"] .laser-board-wrap{
   box-sizing:border-box!important;
   width:100%!important;
@@ -5295,7 +5296,7 @@ body[data-game-id="game-08"] .laser-board{
 }
 
 
-/* v1.0.46 — Laser board: equal inner gutter on all four sides */
+/* v1.0.47 — Laser board: equal inner gutter on all four sides */
 body[data-game-id="game-08"] .laser-board-wrap{
   position:relative!important;
   box-sizing:border-box!important;
@@ -5331,4 +5332,182 @@ body[data-game-id="game-08"] .laser-board-wrap::after{
   border:2px solid var(--gh-line-strong);
   border-radius:24px;
   box-sizing:border-box;
+}
+
+
+/* v1.0.47 — Flight */
+body[data-game-id="game-09"] #flight-screen{
+  background:var(--gh-bg)!important;
+  color:var(--gh-ink)!important;
+}
+body[data-game-id="game-09"] .flight-page{
+  width:100%;
+  max-width:560px;
+  min-height:100%;
+  margin:0 auto;
+  padding-bottom:max(82px,env(safe-area-inset-bottom));
+}
+body[data-game-id="game-09"] .flight-header{
+  margin-bottom:13px!important;
+}
+body[data-game-id="game-09"] .flight-hud{
+  width:min(100%,430px);
+  margin:0 auto 9px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:7px;
+}
+body[data-game-id="game-09"] .flight-hud>div{
+  min-height:44px;
+  padding:7px 10px;
+  border:1.5px solid var(--gh-line);
+  border-radius:13px;
+  background:rgba(247,241,235,.84);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+body[data-game-id="game-09"] .flight-hud span{
+  color:var(--gh-muted);
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.11em;
+}
+body[data-game-id="game-09"] .flight-hud strong{
+  color:var(--gh-ink);
+  font-size:15px;
+}
+body[data-game-id="game-09"] #flight-engine-state.on{
+  color:var(--gh-accent);
+}
+body[data-game-id="game-09"] .flight-stage-wrap{
+  position:relative;
+  width:min(100%,430px);
+  aspect-ratio:4/3;
+  margin:0 auto;
+  border:1.5px solid var(--gh-line-strong);
+  border-radius:23px;
+  background:#edf0ee;
+  overflow:hidden;
+}
+body[data-game-id="game-09"] #flight-canvas{
+  display:block;
+  width:100%;
+  height:100%;
+  touch-action:none;
+}
+body[data-game-id="game-09"] .flight-message{
+  position:absolute;
+  inset:0;
+  z-index:10;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  gap:7px;
+  padding:24px;
+  text-align:center;
+  background:rgba(247,241,235,.93);
+  backdrop-filter:blur(5px);
+}
+body[data-game-id="game-09"] .flight-message strong{
+  font-size:27px;
+  color:var(--gh-ink);
+}
+body[data-game-id="game-09"] .flight-message span{
+  max-width:280px;
+  color:var(--gh-muted);
+  font-size:13px;
+  font-weight:700;
+}
+body[data-game-id="game-09"] .flight-message button{
+  min-height:43px;
+  margin-top:5px;
+  padding:0 22px;
+  border:1.5px solid color-mix(in srgb,var(--gh-accent) 72%,var(--gh-ink));
+  border-radius:14px;
+  background:var(--gh-accent);
+  color:white;
+  font-weight:850;
+}
+body[data-game-id="game-09"] .flight-status{
+  width:min(100%,430px);
+  min-height:20px;
+  margin:6px auto;
+  text-align:center;
+  color:var(--gh-muted);
+  font-size:11px;
+  font-weight:750;
+}
+body[data-game-id="game-09"] .flight-controls{
+  width:min(100%,430px);
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:1fr 1.35fr 1fr;
+  gap:8px;
+}
+body[data-game-id="game-09"] .flight-control{
+  min-height:67px;
+  padding:7px 8px 5px;
+  border:1.5px solid var(--gh-line);
+  border-radius:17px;
+  background:var(--gh-surface);
+  color:var(--gh-ink);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+  font-weight:850;
+}
+body[data-game-id="game-09"] .flight-control.engine{
+  color:var(--gh-accent);
+  background:color-mix(in srgb,var(--gh-accent) 9%,var(--gh-surface));
+  border-color:color-mix(in srgb,var(--gh-accent) 55%,var(--gh-line));
+}
+body[data-game-id="game-09"] .flight-control-icon{
+  width:32px;
+  height:32px;
+  display:grid;
+  place-items:center;
+}
+body[data-game-id="game-09"] .flight-control-icon svg{
+  width:100%;
+  height:100%;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2.3;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+body[data-game-id="game-09"] .flight-control small{
+  font-size:8px;
+  letter-spacing:.08em;
+  font-weight:900;
+}
+body[data-game-id="game-09"] .flight-control.pressed{
+  transform:translateY(1px) scale(.985);
+  background:color-mix(in srgb,var(--gh-accent) 11%,var(--gh-surface));
+}
+body[data-game-id="game-09"] .flight-reset{
+  display:block;
+  min-height:38px;
+  margin:8px auto 0;
+  padding:0 18px;
+  border:1.5px solid var(--gh-line);
+  border-radius:13px;
+  background:rgba(247,241,235,.72);
+  color:var(--gh-muted);
+  font-size:11px;
+  font-weight:800;
+}
+@media(max-height:760px){
+  body[data-game-id="game-09"] .flight-header{margin-bottom:7px!important}
+  body[data-game-id="game-09"] .flight-hud{margin-bottom:6px}
+  body[data-game-id="game-09"] .flight-hud>div{min-height:38px;padding:5px 8px}
+  body[data-game-id="game-09"] .flight-stage-wrap{width:min(100%,395px)}
+  body[data-game-id="game-09"] .flight-controls{gap:6px}
+  body[data-game-id="game-09"] .flight-control{min-height:58px}
+  body[data-game-id="game-09"] .flight-control-icon{width:27px;height:27px}
+  body[data-game-id="game-09"] .flight-reset{margin-top:6px;min-height:34px}
 }

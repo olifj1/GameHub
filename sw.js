@@ -1,4 +1,4 @@
-const CACHE = "gamehub-v1.0.46";
+const CACHE = "gamehub-v1.0.47";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -24,7 +24,9 @@ const APP_SHELL = [
   "./game-07.html",
   "./game-07.js",
   "./game-08.html",
-  "./game-08.js"
+  "./game-08.js",
+  "./game-09.html",
+  "./game-09.js"
 ];
 
 self.addEventListener("install", event => {
