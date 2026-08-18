@@ -4,14 +4,33 @@ const $ = selector => document.querySelector(selector);
 const $$ = selector => document.querySelectorAll(selector);
 const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
-// Prevent iOS gesture zoom and unwanted double-tap zoom in the app shell.
+// Prevent pinch/gesture zoom without swallowing legitimate rapid taps.
+// The previous global touchend timer blocked the second quick tap on iOS.
+// CSS touch-action handles double-tap zoom, so input events can pass through.
 document.addEventListener("gesturestart", event => event.preventDefault(), { passive: false });
-let lastTouchEnd = 0;
-document.addEventListener("touchend", event => {
-  const now = Date.now();
-  if (now - lastTouchEnd <= 280) event.preventDefault();
-  lastTouchEnd = now;
-}, { passive: false });
+
+function bindFastPress(element, handler) {
+  if (!element) return;
+  let lastPointerPress = -Infinity;
+
+  element.addEventListener("pointerdown", event => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    lastPointerPress = performance.now();
+    event.preventDefault();
+    if (!element.disabled) handler(event);
+  });
+
+  // Keyboard activation / click fallback. Ignore only the synthetic click
+  // belonging to a pointer press already handled above.
+  element.addEventListener("click", event => {
+    if (performance.now() - lastPointerPress < 700) {
+      event.preventDefault();
+      return;
+    }
+    if (!element.disabled) handler(event);
+  });
+}
+window.bindFastPress = bindFastPress;
 
 function getGameConfig(id) {
   return window.APP_CONFIG?.games?.find(game => game.id === id);
@@ -83,9 +102,8 @@ document.querySelectorAll(".game-info-overlay").forEach(overlay => {
 // Portrait-only game presentation.
 // In landscape we keep the page loaded, but cover it with a simple rotate-device message.
 (function installOrientationGuard() {
-  const prefersLandscape = document.body.dataset.gameId === "game-09";
   const overlay = document.createElement("div");
-  overlay.className = `orientation-guard${prefersLandscape ? " orientation-landscape-preferred" : ""}`;
+  overlay.className = "orientation-guard";
   overlay.setAttribute("role", "status");
   overlay.setAttribute("aria-live", "polite");
   overlay.innerHTML = `
@@ -94,7 +112,7 @@ document.querySelectorAll(".game-info-overlay").forEach(overlay => {
         <span></span>
       </div>
       <strong>Rotate your device</strong>
-      <p>${prefersLandscape ? "Flight works best in landscape." : "GameHub works best in portrait."}</p>
+      <p>GameHub works best in portrait.</p>
     </div>
   `;
   document.body.appendChild(overlay);

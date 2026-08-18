@@ -9,10 +9,10 @@ function formatAnswer(){if(realmCurrent?.kind==="money"){const p=Number(realmDig
 function generateRealm(){if("speechSynthesis"in window)speechSynthesis.cancel();realmCurrent=({money:makeMoney,cooking:makeCooking,distance:makeDistance,time:makeTime})[realmCategory](realmLevel);realmStory.textContent=realmCurrent.story;realmQuestion.textContent=realmCurrent.question;realmDigits="";realmDisplay.textContent=formatAnswer();realmFeedback.className="realm-feedback";realmFeedback.textContent=""}
 function digit(d){if(realmDigits.length<6){realmDigits=(realmDigits+d).replace(/^0+(?=\d)/,"");realmDisplay.textContent=formatAnswer()}}
 function checkRealm(){const v=Number(realmDigits||NaN),ok=Number.isFinite(v)&&v===realmCurrent.answer;realmFeedback.className=`realm-feedback ${ok?"good":"bad"}`;realmFeedback.textContent=ok?"That’s right! ★":"Not quite — have another go."}
-$$('[data-realm-digit]').forEach(b=>{let handled=false;b.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'||e.pointerType==='pen'){handled=true;e.preventDefault();digit(b.dataset.realmDigit)}});b.addEventListener('click',()=>{if(handled){handled=false;return}digit(b.dataset.realmDigit)})});
+$$('[data-realm-digit]').forEach(b=>bindFastPress(b,()=>digit(b.dataset.realmDigit)));
 const realmClear=$("#realm-clear");
 function clearRealmDigit(){realmDigits=realmDigits.slice(0,-1);realmDisplay.textContent=formatAnswer()}
-{let handled=false;realmClear.addEventListener("pointerdown",e=>{if(e.pointerType==="touch"||e.pointerType==="pen"){handled=true;e.preventDefault();clearRealmDigit()}});realmClear.addEventListener("click",()=>{if(handled){handled=false;return}clearRealmDigit()})}
+bindFastPress(realmClear,clearRealmDigit);
 $("#realm-check").addEventListener("click",checkRealm);
 realmCats.forEach(b=>b.addEventListener("click",()=>{realmCategory=b.dataset.realmCategory;realmCats.forEach(x=>x.classList.toggle("active",x===b));generateRealm()}));realmLevels.forEach(b=>b.addEventListener("click",()=>{realmLevel=b.dataset.realmLevel;realmLevels.forEach(x=>x.classList.toggle("active",x===b));generateRealm()}));$("#realm-new").addEventListener("click",generateRealm);
 function loadVoices(){if(!realmVoice)return;let vs=speechSynthesis.getVoices().filter(v=>/^en(-|_)/i.test(v.lang));realmVoice.innerHTML='';vs.forEach((v,i)=>{let o=document.createElement('option');o.value=i;o.textContent=`${v.name} (${v.lang})`;realmVoice.appendChild(o)})}if('speechSynthesis'in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices}

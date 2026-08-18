@@ -57,13 +57,13 @@ function changeChosenNumber(delta) {
   renderNumbers();
 }
 
-numberDown.addEventListener("click", () => changeChosenNumber(-1));
-numberUp.addEventListener("click", () => changeChosenNumber(1));
-tapNumber.addEventListener("click", () => {
+bindFastPress(numberDown, () => changeChosenNumber(-1));
+bindFastPress(numberUp, () => changeChosenNumber(1));
+bindFastPress(tapNumber, () => {
   taps += 1;
   renderNumbers();
 });
-numbersReset.addEventListener("click", () => {
+bindFastPress(numbersReset, () => {
   taps = 0;
   renderNumbers();
 });

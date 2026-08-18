@@ -18,7 +18,7 @@ const flightAgain = $("#flight-again");
 const FW = flightCanvas.width;
 const FH = flightCanvas.height;
 const FLIGHT_WORLD_W = 6900;
-const GROUND_Y = 462;
+const GROUND_Y = 520;
 const START_RUNWAY = {x:45,w:900};
 const FINISH_RUNWAY = {x:5450,w:1250};
 

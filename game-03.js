@@ -335,33 +335,12 @@ durationButtons.forEach(button => {
   button.addEventListener("click", () => setDuration(button.dataset.duration));
 });
 
-function bindImmediatePress(button, handler) {
-  let lastPointerPress = -Infinity;
-
-  button.addEventListener("pointerdown", event => {
-    if (event.button !== undefined && event.button !== 0) return;
-    lastPointerPress = performance.now();
-    event.preventDefault();
-    handler();
-  });
-
-  // Keep keyboard activation and older-browser click fallback, but ignore the
-  // synthetic click that follows a pointer press we have already handled.
-  button.addEventListener("click", event => {
-    if (performance.now() - lastPointerPress < 700) {
-      event.preventDefault();
-      return;
-    }
-    handler();
-  });
-}
-
 digitButtons.forEach(button => {
-  bindImmediatePress(button, () => appendDigit(button.dataset.digit));
+  bindFastPress(button, () => appendDigit(button.dataset.digit));
 });
 
-bindImmediatePress(answerClear, backspaceAnswer);
-bindImmediatePress(answerCheck, checkAnswer);
+bindFastPress(answerClear, backspaceAnswer);
+bindFastPress(answerCheck, checkAnswer);
 newSumButton.addEventListener("click", generateProblem);
 passSumButton.addEventListener("click", passProblem);
 startTestButton.addEventListener("click", startTest);
