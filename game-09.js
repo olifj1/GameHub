@@ -7,6 +7,7 @@ const flightEngineLabel = $("#flight-engine-label");
 const flightReset = $("#flight-reset");
 const flightSpeed = $("#flight-speed");
 const flightHoops = $("#flight-hoops");
+const flightStars = $("#flight-stars");
 const flightEngineState = $("#flight-engine-state");
 const flightStatus = $("#flight-status");
 const flightMessage = $("#flight-message");
@@ -16,10 +17,10 @@ const flightAgain = $("#flight-again");
 
 const FW = flightCanvas.width;
 const FH = flightCanvas.height;
-const FLIGHT_WORLD_W = 6500;
-const GROUND_Y = 520;
-const START_RUNWAY = {x:45,w:720};
-const FINISH_RUNWAY = {x:5650,w:720};
+const FLIGHT_WORLD_W = 6900;
+const GROUND_Y = 462;
+const START_RUNWAY = {x:45,w:900};
+const FINISH_RUNWAY = {x:5450,w:1250};
 
 const flightInput = {up:false,down:false};
 const flightWorld = {
@@ -31,21 +32,32 @@ const flightWorld = {
   acceleration:0.045,
   coastDrag:0.992,
   engineDrag:0.998,
-  glideGravity:0.052,
-  glideDrag:0.9985,
+  glideGravity:0.042,
+  glideDrag:0.9988,
+  maxGlideSpeed:5.45,
   glideSteer:0.028,
   running:true
 };
 
 const hoopTemplate = [
-  {x:1250,y:305,r:48},
-  {x:2220,y:205,r:48},
-  {x:3190,y:355,r:48},
-  {x:4250,y:190,r:48},
-  {x:5200,y:325,r:48}
+  {x:1250,y:300,r:48},
+  {x:2200,y:190,r:48},
+  {x:3150,y:335,r:48},
+  {x:4100,y:175,r:48},
+  {x:5050,y:300,r:48}
+];
+
+const starTemplate = [
+  {x:880,y:345,r:22},
+  {x:1690,y:125,r:22},
+  {x:2670,y:300,r:22},
+  {x:3600,y:125,r:22},
+  {x:4560,y:360,r:22},
+  {x:5300,y:225,r:22}
 ];
 
 let hoops=[];
+let stars=[];
 let plane;
 let cumulativeTurn=0;
 let lastAngle=0;
@@ -68,6 +80,7 @@ function resetFlight(){
     finished:false
   };
   hoops=hoopTemplate.map(h=>({...h,hit:false}));
+  stars=starTemplate.map(s=>({...s,hit:false}));
   flightWorld.cameraX=0;
   flightWorld.running=true;
   flightInput.up=flightInput.down=false;
@@ -95,6 +108,7 @@ function updateFlightHud(){
   flightEngineLabel.textContent=plane.engine?"ENGINE ON":"START ENGINE";
   flightSpeed.textContent=Math.round(plane.speed*28);
   flightHoops.textContent=`${hoops.filter(h=>h.hit).length} / ${hoops.length}`;
+  flightStars.textContent=`${stars.filter(s=>s.hit).length} / ${stars.length}`;
 }
 
 function crashFlight(message){
@@ -115,8 +129,9 @@ function finishFlight(){
   plane.finished=true;
   plane.engine=false;
   updateFlightHud();
-  flightMessageTitle.textContent="Flight complete!";
-  flightMessageText.textContent="All hoops collected and a safe landing.";
+  const starCount=stars.filter(s=>s.hit).length;
+  flightMessageTitle.textContent=starCount===stars.length?"Perfect flight!":"Flight complete!";
+  flightMessageText.textContent=`All hoops and a safe landing — ${starCount}/${stars.length} stars collected.`;
   flightAgain.textContent="Fly again";
   flightMessage.classList.remove("hidden");
 }
@@ -129,8 +144,8 @@ function onRunway(x){
 
 function safeLanding(verticalSpeed){
   const angle=Math.abs(normalAngle(plane.angle));
-  const movingForward=Math.cos(plane.angle)>.80;
-  return angle<0.20 && verticalSpeed<1.25 && plane.speed<5.2 && movingForward;
+  const movingForward=Math.cos(plane.angle)>.70;
+  return angle<0.30 && verticalSpeed<1.75 && plane.speed<6.0 && movingForward;
 }
 
 function updateHoops(){
@@ -141,6 +156,18 @@ function updateHoops(){
       hoop.hit=true;
       flightHoops.textContent=`${hoops.filter(h=>h.hit).length} / ${hoops.length}`;
       flightStatus.textContent=hoops.every(h=>h.hit)?"All hoops — find the finish runway.":"Hoop!";
+    }
+  }
+}
+
+function updateStars(){
+  for(const star of stars){
+    if(star.hit)continue;
+    if(Math.hypot(plane.x-star.x,plane.y-star.y)<star.r+19){
+      star.hit=true;
+      const got=stars.filter(s=>s.hit).length;
+      flightStars.textContent=`${got} / ${stars.length}`;
+      flightStatus.textContent=got===stars.length?"All stars collected!":"Star collected!";
     }
   }
 }
@@ -236,9 +263,29 @@ function updateFlight(){
       plane.vx=Math.cos(guidedAngle)*retainedSpeed;
       plane.vy=Math.sin(guidedAngle)*retainedSpeed+flightWorld.glideGravity;
 
+      // Diving should regain useful speed, but not create an uncontrollable
+      // amount of energy. Aerodynamic drag gives the glide a friendly terminal
+      // speed while preserving the momentum trade-off.
+      let actualSpeed=Math.hypot(plane.vx,plane.vy);
+      if(actualSpeed>flightWorld.maxGlideSpeed){
+        const scale=flightWorld.maxGlideSpeed/actualSpeed;
+        plane.vx*=scale;
+        plane.vy*=scale;
+        actualSpeed=flightWorld.maxGlideSpeed;
+      }
+      plane.vy=Math.min(plane.vy,3.65);
+
+      // A small ground-effect cushion over either runway makes the final flare
+      // readable without turning landing into an automatic action.
+      const runwayBelow=onRunway(plane.x);
+      const altitude=GROUND_Y-(plane.y+23);
+      if(runwayBelow && altitude<72 && altitude>0 && plane.vy>0 &&
+         Math.abs(normalAngle(plane.angle))<.38){
+        plane.vy*=.982;
+      }
+
       // At low airspeed the nose naturally wants to fall rather than hanging
       // in a powered-looking climb.
-      const actualSpeed=Math.hypot(plane.vx,plane.vy);
       if(actualSpeed<1.65){
         const n=normalAngle(plane.angle);
         if(n<.18) plane.angle+=.010;
@@ -304,6 +351,7 @@ function updateFlight(){
   }
 
   updateHoops();
+  updateStars();
 
   // Follow the plane horizontally, keeping some view ahead.
   const wanted=plane.x-FW*.30;
@@ -424,6 +472,33 @@ function drawHoop(hoop,index){
   flightCtx.textAlign="center";
   flightCtx.textBaseline="middle";
   flightCtx.fillText(hoop.hit?"✓":String(index+1),0,1);
+  flightCtx.restore();
+}
+
+function drawStarCollectible(star){
+  flightCtx.save();
+  flightCtx.translate(star.x,star.y);
+  if(star.hit) flightCtx.globalAlpha=.18;
+
+  flightCtx.strokeStyle="#b88a55";
+  flightCtx.fillStyle="#f2dfaa";
+  flightCtx.lineWidth=3;
+  flightCtx.beginPath();
+  for(let i=0;i<10;i++){
+    const a=-Math.PI/2+i*Math.PI/5;
+    const r=i%2===0?star.r:star.r*.44;
+    const x=Math.cos(a)*r,y=Math.sin(a)*r;
+    if(i===0)flightCtx.moveTo(x,y); else flightCtx.lineTo(x,y);
+  }
+  flightCtx.closePath();
+  flightCtx.fill();
+  flightCtx.stroke();
+
+  flightCtx.strokeStyle="rgba(184,138,85,.35)";
+  flightCtx.lineWidth=2;
+  flightCtx.beginPath();
+  flightCtx.arc(0,0,star.r+8,0,Math.PI*2);
+  flightCtx.stroke();
   flightCtx.restore();
 }
 
@@ -568,6 +643,7 @@ function drawFlight(){
   drawRunway(FINISH_RUNWAY,"LAND");
   drawFinishFlag();
   hoops.forEach(drawHoop);
+  stars.forEach(drawStarCollectible);
   drawPlane();
   flightCtx.restore();
 

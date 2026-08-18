@@ -4410,11 +4410,11 @@ body[data-game-id="game-07"] .carried-crate{
 }
 
 
-/* v1.0.49 — Logic programme follow + win-layer correction */
+/* v1.0.50 — Logic programme follow + win-layer correction */
 body[data-game-id="game-07"] .coding-win-overlay{z-index:100!important;}
 body[data-game-id="game-07"] .coding-win-overlay:not(.hidden){isolation:isolate;}
 
-/* v1.0.49 — dismissible Logic success overlay */
+/* v1.0.50 — dismissible Logic success overlay */
 body[data-game-id="game-07"] .coding-win-overlay{position:absolute!important}
 body[data-game-id="game-07"] .coding-win-close{
   position:absolute;top:8px;right:9px;width:34px;height:34px;padding:0;
@@ -4425,7 +4425,7 @@ body[data-game-id="game-07"] .coding-win-close{
 body[data-game-id="game-07"] .coding-win-close:active{transform:scale(.94)}
 
 
-/* v1.0.49 — Gravity layout, controls and route polish */
+/* v1.0.50 — Gravity layout, controls and route polish */
 body[data-game-id="game-06"] #gravity-screen{
   background:#f5efe9!important;
   color:var(--gh-text)!important;
@@ -4645,14 +4645,14 @@ body[data-game-id="game-06"] .gravity-tuning{display:none!important}
   body[data-game-id="game-06"] .gravity-reset{font-size:9px}
 }
 
-/* v1.0.49 — Gravity combined checkpoint/star HUD */
+/* v1.0.50 — Gravity combined checkpoint/star HUD */
 body[data-game-id="game-06"] .gravity-goals strong{
   font-size:11px!important;
   letter-spacing:-.02em;
 }
 
 
-/* v1.0.49 — Laser Lab visual/playability rebuild */
+/* v1.0.50 — Laser Lab visual/playability rebuild */
 body[data-game-id="game-08"]{
   --laser-accent:#bf6f70;
   --laser-ink:#282d35;
@@ -4952,7 +4952,7 @@ body[data-game-id="game-08"]{
 }
 
 
-/* v1.0.49 — Laser Lab generated-play + orthogonal optics */
+/* v1.0.50 — Laser Lab generated-play + orthogonal optics */
 body[data-game-id="game-08"] .laser-page{
   padding-bottom:max(70px,env(safe-area-inset-bottom));
 }
@@ -5121,7 +5121,7 @@ body[data-game-id="game-08"] .laser-info-pill strong{font-size:13px!important}
 }
 
 
-/* v1.0.49 — Laser exact grid geometry + generated difficulty */
+/* v1.0.50 — Laser exact grid geometry + generated difficulty */
 body[data-game-id="game-08"] .laser-difficulty-row{
   display:grid;
   grid-template-columns:repeat(3,1fr);
@@ -5200,7 +5200,7 @@ body[data-game-id="game-08"] .laser-cell.obstacle::before{
 }
 
 
-/* v1.0.49 — Laser board frame always sits above the grid */
+/* v1.0.50 — Laser board frame always sits above the grid */
 body[data-game-id="game-08"] .laser-board-wrap{
   position:relative!important;
   isolation:isolate;
@@ -5230,7 +5230,7 @@ body[data-game-id="game-08"] .laser-board{
 }
 
 
-/* v1.0.49 — Laser maze walls read as connected wall sections */
+/* v1.0.50 — Laser maze walls read as connected wall sections */
 body[data-game-id="game-08"] .laser-cell.obstacle{
   background:
     repeating-linear-gradient(
@@ -5245,7 +5245,7 @@ body[data-game-id="game-08"] .laser-cell.obstacle::before{
 }
 
 
-/* v1.0.49 — Laser board: full-width frame with true inner clearance */
+/* v1.0.50 — Laser board: full-width frame with true inner clearance */
 body[data-game-id="game-08"] .laser-board-wrap{
   box-sizing:border-box!important;
   width:100%!important;
@@ -5296,7 +5296,7 @@ body[data-game-id="game-08"] .laser-board{
 }
 
 
-/* v1.0.49 — Laser board: equal inner gutter on all four sides */
+/* v1.0.50 — Laser board: equal inner gutter on all four sides */
 body[data-game-id="game-08"] .laser-board-wrap{
   position:relative!important;
   box-sizing:border-box!important;
@@ -5335,7 +5335,7 @@ body[data-game-id="game-08"] .laser-board-wrap::after{
 }
 
 
-/* v1.0.49 — Flight */
+/* v1.0.50 — Flight */
 body[data-game-id="game-09"] #flight-screen{
   background:var(--gh-bg)!important;
   color:var(--gh-ink)!important;
@@ -5510,4 +5510,198 @@ body[data-game-id="game-09"] .flight-reset{
   body[data-game-id="game-09"] .flight-control{min-height:58px}
   body[data-game-id="game-09"] .flight-control-icon{width:27px;height:27px}
   body[data-game-id="game-09"] .flight-reset{margin-top:6px;min-height:34px}
+}
+
+
+/* v1.0.50 — Flight is the landscape game */
+@media (orientation: landscape) {
+  body[data-game-id="game-09"] .orientation-guard.orientation-landscape-preferred{
+    display:none!important;
+  }
+
+  body[data-game-id="game-09"] .flight-page{
+    width:100%;
+    max-width:none;
+    height:100dvh;
+    min-height:0;
+    padding:
+      max(8px,env(safe-area-inset-top))
+      max(10px,env(safe-area-inset-right))
+      max(8px,env(safe-area-inset-bottom))
+      max(10px,env(safe-area-inset-left));
+    overflow:hidden;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(170px,205px);
+    grid-template-rows:auto auto auto 1fr auto;
+    gap:6px 10px;
+    align-items:start;
+  }
+
+  body[data-game-id="game-09"] .flight-header{
+    grid-column:2;
+    grid-row:1;
+    margin:0!important;
+    text-align:left;
+    padding:0 2px;
+  }
+  body[data-game-id="game-09"] .flight-header .kicker{
+    margin-bottom:2px;
+    font-size:7px;
+  }
+  body[data-game-id="game-09"] .flight-header h1{
+    font-size:26px;
+    line-height:1;
+  }
+
+  body[data-game-id="game-09"] .flight-hud{
+    grid-column:2;
+    grid-row:2;
+    width:100%;
+    margin:0;
+    grid-template-columns:1fr 1fr;
+    gap:5px;
+  }
+  body[data-game-id="game-09"] .flight-hud>div{
+    min-height:36px;
+    padding:5px 7px;
+    border-radius:11px;
+  }
+  body[data-game-id="game-09"] .flight-hud span{font-size:6.5px}
+  body[data-game-id="game-09"] .flight-hud strong{font-size:12px}
+
+  body[data-game-id="game-09"] .flight-stage-wrap{
+    grid-column:1;
+    grid-row:1 / 6;
+    align-self:center;
+    justify-self:center;
+    width:min(100%,calc((100dvh - 18px) * 16 / 9));
+    max-width:none;
+    max-height:calc(100dvh - 18px);
+    aspect-ratio:16/9;
+    margin:0;
+    border-radius:20px;
+  }
+
+  body[data-game-id="game-09"] .flight-status{
+    grid-column:2;
+    grid-row:3;
+    width:100%;
+    min-height:28px;
+    margin:0;
+    padding:3px 2px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:9px;
+    line-height:1.2;
+  }
+
+  body[data-game-id="game-09"] .flight-controls{
+    grid-column:2;
+    grid-row:4;
+    width:100%;
+    margin:0;
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:1fr 1fr;
+    gap:6px;
+    align-self:stretch;
+  }
+  body[data-game-id="game-09"] .flight-control{
+    min-height:0;
+    height:100%;
+    padding:4px;
+    border-radius:13px;
+  }
+  body[data-game-id="game-09"] .flight-control.engine{
+    grid-column:1 / -1;
+    grid-row:2;
+  }
+  body[data-game-id="game-09"] .flight-control.pitch:first-child{
+    grid-column:1;
+    grid-row:1;
+  }
+  body[data-game-id="game-09"] .flight-control.pitch:last-child{
+    grid-column:2;
+    grid-row:1;
+  }
+  body[data-game-id="game-09"] .flight-control-icon{
+    width:25px;
+    height:25px;
+  }
+  body[data-game-id="game-09"] .flight-control small{
+    font-size:6.5px;
+  }
+
+  body[data-game-id="game-09"] .flight-reset{
+    grid-column:2;
+    grid-row:5;
+    width:100%;
+    min-height:30px;
+    margin:0;
+    padding:0 10px;
+    font-size:9px;
+  }
+}
+
+/* In portrait, Flight gets the opposite instruction from every other game. */
+@media (orientation: portrait) {
+  .orientation-guard.orientation-landscape-preferred{
+    position:fixed;
+    inset:0;
+    z-index:100000;
+    display:flex!important;
+    align-items:center;
+    justify-content:center;
+    padding:
+      max(24px,env(safe-area-inset-top))
+      max(24px,env(safe-area-inset-right))
+      max(24px,env(safe-area-inset-bottom))
+      max(24px,env(safe-area-inset-left));
+    background:var(--gh-bg,#e7dbd2);
+    color:var(--gh-ink,#252b33);
+    text-align:center;
+  }
+  .orientation-guard.orientation-landscape-preferred .orientation-guard-card{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+  }
+  .orientation-guard.orientation-landscape-preferred .orientation-guard-card strong{
+    font-size:clamp(28px,8vw,44px);
+    line-height:1.05;
+    letter-spacing:-.035em;
+    font-weight:850;
+  }
+  .orientation-guard.orientation-landscape-preferred .orientation-guard-card p{
+    margin:0;
+    color:var(--gh-muted,#736d69);
+    font-size:clamp(15px,4vw,20px);
+  }
+  .orientation-guard.orientation-landscape-preferred .orientation-phone{
+    position:relative;
+    width:54px;
+    height:82px;
+    margin-bottom:8px;
+    border:3px solid var(--gh-line-strong,rgba(37,43,51,.72));
+    border-radius:13px;
+    transform:rotate(90deg);
+  }
+  .orientation-guard.orientation-landscape-preferred .orientation-phone::after{
+    content:"";
+    position:absolute;
+    left:50%;
+    bottom:5px;
+    width:5px;
+    height:5px;
+    border-radius:50%;
+    background:var(--gh-line-strong,rgba(37,43,51,.72));
+    transform:translateX(-50%);
+  }
+  .orientation-guard.orientation-landscape-preferred .orientation-phone span{
+    position:absolute;
+    inset:8px 6px 13px;
+    border:2px solid var(--gh-line,rgba(37,43,51,.22));
+    border-radius:5px;
+  }
 }

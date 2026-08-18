@@ -83,8 +83,9 @@ document.querySelectorAll(".game-info-overlay").forEach(overlay => {
 // Portrait-only game presentation.
 // In landscape we keep the page loaded, but cover it with a simple rotate-device message.
 (function installOrientationGuard() {
+  const prefersLandscape = document.body.dataset.gameId === "game-09";
   const overlay = document.createElement("div");
-  overlay.className = "orientation-guard";
+  overlay.className = `orientation-guard${prefersLandscape ? " orientation-landscape-preferred" : ""}`;
   overlay.setAttribute("role", "status");
   overlay.setAttribute("aria-live", "polite");
   overlay.innerHTML = `
@@ -93,7 +94,7 @@ document.querySelectorAll(".game-info-overlay").forEach(overlay => {
         <span></span>
       </div>
       <strong>Rotate your device</strong>
-      <p>GameHub works best in portrait.</p>
+      <p>${prefersLandscape ? "Flight works best in landscape." : "GameHub works best in portrait."}</p>
     </div>
   `;
   document.body.appendChild(overlay);

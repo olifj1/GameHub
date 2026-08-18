@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.0.49">
+  <link rel="stylesheet" href="style.css?v=1.0.50">
   <title>Flight</title>
 </head>
 <body class="modular-game" data-game-id="game-09">
@@ -17,7 +17,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="game-09-info-title">Instructions</h2>
-      <p>Start the engine to accelerate along the runway. Hold Up or Down to pitch the aeroplane through the sky — you can rotate all the way around and fly a loop. Pass through the hoops, then make a gentle, nearly level landing on the finish runway. You can switch the engine off to glide: gravity will pull the flight path downward, so climbing without power costs speed and cannot be sustained. Point the nose down to regain speed before landing.</p>
+      <p>Start the engine to accelerate along the runway. Hold Up or Down to pitch the aeroplane through the sky — you can rotate all the way around and fly a loop. Pass through the hoops, collect any stars you can, then make a gentle, nearly level landing on the finish runway. You can switch the engine off to glide: gravity pulls the flight path downward, climbing costs speed and diving regains it. The stars are optional, so try different routes through the course.</p>
     </div>
   </div>
 
@@ -33,10 +33,11 @@
           <div><span>ENGINE</span><strong id="flight-engine-state">OFF</strong></div>
           <div><span>SPEED</span><strong id="flight-speed">0</strong></div>
           <div><span>HOOPS</span><strong id="flight-hoops">0 / 5</strong></div>
+          <div><span>STARS</span><strong id="flight-stars">0 / 6</strong></div>
         </div>
 
         <div class="flight-stage-wrap">
-          <canvas id="flight-canvas" width="800" height="600" aria-label="Side scrolling aeroplane game"></canvas>
+          <canvas id="flight-canvas" width="960" height="540" aria-label="Side scrolling aeroplane game"></canvas>
           <div class="flight-message hidden" id="flight-message" aria-live="polite">
             <strong id="flight-message-title">Flight complete!</strong>
             <span id="flight-message-text">Great flying.</span>
@@ -74,8 +75,8 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.0.49"></script>
-  <script src="core.js?v=1.0.49"></script>
-  <script src="game-09.js?v=1.0.49"></script>
+  <script src="site-config.js?v=1.0.50"></script>
+  <script src="core.js?v=1.0.50"></script>
+  <script src="game-09.js?v=1.0.50"></script>
 </body>
 </html>
