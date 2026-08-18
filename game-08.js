@@ -376,6 +376,13 @@ function mazeNeighbors(row,col,rows,cols){
   return out;
 }
 
+function routeDirection(a,b){
+  if(b.row<a.row) return 0;
+  if(b.col>a.col) return 1;
+  if(b.row>a.row) return 2;
+  return 3;
+}
+
 function shortestMazePath(start,target,blocks,rows,cols){
   const q=[start];
   const parent=new Map();

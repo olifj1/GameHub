@@ -4409,11 +4409,11 @@ body[data-game-id="game-07"] .carried-crate{
 }
 
 
-/* v1.0.45 — Logic programme follow + win-layer correction */
+/* v1.0.46 — Logic programme follow + win-layer correction */
 body[data-game-id="game-07"] .coding-win-overlay{z-index:100!important;}
 body[data-game-id="game-07"] .coding-win-overlay:not(.hidden){isolation:isolate;}
 
-/* v1.0.45 — dismissible Logic success overlay */
+/* v1.0.46 — dismissible Logic success overlay */
 body[data-game-id="game-07"] .coding-win-overlay{position:absolute!important}
 body[data-game-id="game-07"] .coding-win-close{
   position:absolute;top:8px;right:9px;width:34px;height:34px;padding:0;
@@ -4424,7 +4424,7 @@ body[data-game-id="game-07"] .coding-win-close{
 body[data-game-id="game-07"] .coding-win-close:active{transform:scale(.94)}
 
 
-/* v1.0.45 — Gravity layout, controls and route polish */
+/* v1.0.46 — Gravity layout, controls and route polish */
 body[data-game-id="game-06"] #gravity-screen{
   background:#f5efe9!important;
   color:var(--gh-text)!important;
@@ -4644,14 +4644,14 @@ body[data-game-id="game-06"] .gravity-tuning{display:none!important}
   body[data-game-id="game-06"] .gravity-reset{font-size:9px}
 }
 
-/* v1.0.45 — Gravity combined checkpoint/star HUD */
+/* v1.0.46 — Gravity combined checkpoint/star HUD */
 body[data-game-id="game-06"] .gravity-goals strong{
   font-size:11px!important;
   letter-spacing:-.02em;
 }
 
 
-/* v1.0.45 — Laser Lab visual/playability rebuild */
+/* v1.0.46 — Laser Lab visual/playability rebuild */
 body[data-game-id="game-08"]{
   --laser-accent:#bf6f70;
   --laser-ink:#282d35;
@@ -4951,7 +4951,7 @@ body[data-game-id="game-08"]{
 }
 
 
-/* v1.0.45 — Laser Lab generated-play + orthogonal optics */
+/* v1.0.46 — Laser Lab generated-play + orthogonal optics */
 body[data-game-id="game-08"] .laser-page{
   padding-bottom:max(70px,env(safe-area-inset-bottom));
 }
@@ -5120,7 +5120,7 @@ body[data-game-id="game-08"] .laser-info-pill strong{font-size:13px!important}
 }
 
 
-/* v1.0.45 — Laser exact grid geometry + generated difficulty */
+/* v1.0.46 — Laser exact grid geometry + generated difficulty */
 body[data-game-id="game-08"] .laser-difficulty-row{
   display:grid;
   grid-template-columns:repeat(3,1fr);
@@ -5199,7 +5199,7 @@ body[data-game-id="game-08"] .laser-cell.obstacle::before{
 }
 
 
-/* v1.0.45 — Laser board frame always sits above the grid */
+/* v1.0.46 — Laser board frame always sits above the grid */
 body[data-game-id="game-08"] .laser-board-wrap{
   position:relative!important;
   isolation:isolate;
@@ -5229,7 +5229,7 @@ body[data-game-id="game-08"] .laser-board{
 }
 
 
-/* v1.0.45 — Laser maze walls read as connected wall sections */
+/* v1.0.46 — Laser maze walls read as connected wall sections */
 body[data-game-id="game-08"] .laser-cell.obstacle{
   background:
     repeating-linear-gradient(
@@ -5244,7 +5244,7 @@ body[data-game-id="game-08"] .laser-cell.obstacle::before{
 }
 
 
-/* v1.0.45 — Laser board: full-width frame with true inner clearance */
+/* v1.0.46 — Laser board: full-width frame with true inner clearance */
 body[data-game-id="game-08"] .laser-board-wrap{
   box-sizing:border-box!important;
   width:100%!important;
@@ -5292,4 +5292,43 @@ body[data-game-id="game-08"] .laser-board{
     max-width:430px!important;
     min-width:0!important;
   }
+}
+
+
+/* v1.0.46 — Laser board: equal inner gutter on all four sides */
+body[data-game-id="game-08"] .laser-board-wrap{
+  position:relative!important;
+  box-sizing:border-box!important;
+  width:100%!important;
+  max-width:430px!important;
+  aspect-ratio:1/1!important;
+  padding:12px!important;
+  border-radius:24px!important;
+  background:rgba(247,241,235,.84)!important;
+  overflow:hidden!important;
+}
+
+/* The grid now fills only the wrapper CONTENT box created by padding.
+   No explicit height:100%, which was extending it into the bottom padding. */
+body[data-game-id="game-08"] .laser-board{
+  box-sizing:border-box!important;
+  width:100%!important;
+  height:auto!important;
+  aspect-ratio:1/1!important;
+  margin:0!important;
+  padding:0!important;
+  border-radius:14px!important;
+  overflow:hidden!important;
+}
+
+/* Draw the outer frame above everything, without affecting layout. */
+body[data-game-id="game-08"] .laser-board-wrap::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:50;
+  pointer-events:none;
+  border:2px solid var(--gh-line-strong);
+  border-radius:24px;
+  box-sizing:border-box;
 }
