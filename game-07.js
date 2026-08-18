@@ -19,9 +19,9 @@ const codingWinText = $("#coding-win-text");
 const codingWinClose = $("#coding-win-close");
 
 const levelInfo = {
-  easy:   { rows:5, cols:5, min:5,  open:8, crate:false, max:18 },
-  medium: { rows:6, cols:6, min:8,  open:5, crate:true,  max:25 },
-  hard:   { rows:7, cols:7, min:11, open:3, crate:true,  max:32 }
+  easy:   { rows:5, cols:5, min:5,  open:8, crate:false, crateCount:0, max:18 },
+  medium: { rows:6, cols:6, min:8,  open:5, crate:true,  crateCount:1, max:25 },
+  hard:   { rows:7, cols:7, min:13, open:3, crate:true,  crateCount:2, max:46 }
 };
 const dirs = [[-1,0],[0,1],[1,0],[0,-1]];
 let codingLevel = localStorage.getItem('codingLevel') || 'easy';
@@ -39,6 +39,15 @@ let visualAngle = 0;
 
 const key = (r,c) => `${r},${c}`;
 const info = () => levelInfo[codingLevel];
+const fullDeliveryMask = () => (1 << info().crateCount) - 1;
+const allDeliveredState = s => s.deliveredMask === fullDeliveryMask();
+const initialCodingState = p => ({
+  row:p.start.row,
+  col:p.start.col,
+  dir:0,
+  carrying:-1,
+  deliveredMask:0
+});
 const inBounds = (r,c) => r >= 0 && r < info().rows && c >= 0 && c < info().cols;
 const blocked = (r,c,p=puzzle) => p.obstacles.has(key(r,c));
 const wait = ms => new Promise(resolve => setTimeout(resolve,ms));
@@ -48,29 +57,54 @@ function stepState(st, cmd, p=puzzle){
   const s = {...st};
   if(cmd === 'left'){ s.dir = (s.dir + 3) % 4; return s; }
   if(cmd === 'right'){ s.dir = (s.dir + 1) % 4; return s; }
+
   if(cmd === 'action'){
     if(!info().crate) return {...s, invalid:true};
-    if(!s.carrying && !s.delivered && s.row === p.crate.row && s.col === p.crate.col){ s.carrying=true; return s; }
-    if(s.carrying && s.row === p.drop.row && s.col === p.drop.col){ s.carrying=false; s.delivered=true; return s; }
+
+    // Pick up any undelivered crate on the current square.
+    if(s.carrying === -1){
+      const crateIndex=p.crates.findIndex((crate,i)=>
+        !(s.deliveredMask & (1<<i)) &&
+        s.row===crate.row && s.col===crate.col
+      );
+      if(crateIndex>=0){
+        s.carrying=crateIndex;
+        return s;
+      }
+      return {...s, invalid:true};
+    }
+
+    // Each crate has its own delivery square.
+    const drop=p.drops[s.carrying];
+    if(drop && s.row===drop.row && s.col===drop.col){
+      s.deliveredMask |= (1<<s.carrying);
+      s.carrying=-1;
+      return s;
+    }
     return {...s, invalid:true};
   }
+
   const [dr,dc] = dirs[s.dir];
   const sign = cmd === 'back' ? -1 : 1;
   const nr = s.row + dr*sign, nc = s.col + dc*sign;
   if(!inBounds(nr,nc) || blocked(nr,nc,p)) return {...s, collision:true};
-  s.row=nr; s.col=nc; return s;
+  s.row=nr; s.col=nc;
+  return s;
 }
 
 function shortest(p){
-  const start = {row:p.start.row,col:p.start.col,dir:0,carrying:false,delivered:!info().crate};
+  const start = initialCodingState(p);
   const q=[{s:start,path:[]}], seen=new Set();
   const commands=['forward','back','left','right',...(info().crate?['action']:[])];
+
   while(q.length){
     const {s,path}=q.shift();
-    const sk=`${s.row},${s.col},${s.dir},${+s.carrying},${+s.delivered}`;
+    const sk=`${s.row},${s.col},${s.dir},${s.carrying},${s.deliveredMask}`;
     if(seen.has(sk)) continue;
     seen.add(sk);
-    if(s.row===p.goal.row && s.col===p.goal.col && s.delivered) return path;
+
+    if(s.row===p.goal.row && s.col===p.goal.col && allDeliveredState(s)) return path;
+
     for(const c of commands){
       const n=stepState(s,c,p);
       if(!n.collision && !n.invalid) q.push({s:n,path:[...path,c]});
@@ -107,11 +141,21 @@ function buildCandidate(){
   const obstacles=new Set();
   for(let r=0;r<I.rows;r++) for(let c=0;c<I.cols;c++) if(!routeSet.has(key(r,c))) obstacles.add(key(r,c));
   [...obstacles].sort(()=>Math.random()-.5).slice(0,I.open).forEach(k=>obstacles.delete(k));
-  const p={start,goal,obstacles};
-  if(I.crate){
-    const a=Math.max(1,Math.min(route.length-3,Math.floor(route.length*.3)));
+  const p={start,goal,obstacles,crates:[],drops:[]};
+  if(I.crateCount===1){
+    const a=Math.max(1,Math.min(route.length-3,Math.floor(route.length*.30)));
     const b=Math.max(a+1,Math.min(route.length-2,Math.floor(route.length*.68)));
-    p.crate={...route[a]}; p.drop={...route[b]};
+    p.crates=[{...route[a]}];
+    p.drops=[{...route[b]}];
+  }else if(I.crateCount===2){
+    // Hard mode deliberately requires two separate collect/deliver cycles.
+    const positions=[.18,.38,.58,.78].map(f=>
+      Math.max(1,Math.min(route.length-2,Math.floor(route.length*f)))
+    );
+    for(let i=1;i<positions.length;i++) positions[i]=Math.max(positions[i],positions[i-1]+1);
+    if(positions[3]>=route.length-1) return null;
+    p.crates=[{...route[positions[0]]},{...route[positions[2]]}];
+    p.drops=[{...route[positions[1]]},{...route[positions[3]]}];
   }
   const solution=shortest(p);
   if(!solution || solution.length>I.max) return null;
@@ -120,7 +164,7 @@ function buildCandidate(){
 }
 
 function reset(render=true){
-  puzzle.state={row:puzzle.start.row,col:puzzle.start.col,dir:0,carrying:false,delivered:!info().crate};
+  puzzle.state=initialCodingState(puzzle);
   visualAngle=0;
   if(render) renderBoard();
 }
@@ -136,13 +180,19 @@ function newPuzzle(){
   for(let i=0;i<500 && !puzzle;i++) puzzle=buildCandidate();
   if(!puzzle){
     const I=info();
-    puzzle={start:{row:I.rows-1,col:0},goal:{row:0,col:I.cols-1},obstacles:new Set()};
-    if(I.crate){ puzzle.crate={row:I.rows-2,col:0}; puzzle.drop={row:1,col:I.cols-1}; }
+    puzzle={start:{row:I.rows-1,col:0},goal:{row:0,col:I.cols-1},obstacles:new Set(),crates:[],drops:[]};
+    if(I.crateCount===1){
+      puzzle.crates=[{row:I.rows-2,col:0}];
+      puzzle.drops=[{row:1,col:I.cols-1}];
+    }else if(I.crateCount===2){
+      puzzle.crates=[{row:I.rows-2,col:0},{row:I.rows-3,col:2}];
+      puzzle.drops=[{row:I.rows-4,col:1},{row:1,col:I.cols-2}];
+    }
     puzzle.solution=shortest(puzzle)||[];
   }
   reset(false);
   codingStatus.className='coding-status';
-  codingStatus.textContent=info().crate ? 'Deliver the crate, then reach the flag.' : 'Reach the flag.';
+  codingStatus.textContent=info().crateCount===2 ? 'Deliver both crates, then reach the flag.' : (info().crate ? 'Deliver the crate, then reach the flag.' : 'Reach the flag.');
   renderBoard(); renderProgram(); setEnabled(true);
 }
 
@@ -177,10 +227,10 @@ function commandSvg(cmd, actionKind='action'){
 
 function actionKinds(){
   const kinds=[];
-  let s={row:puzzle.start.row,col:puzzle.start.col,dir:0,carrying:false,delivered:!info().crate};
+  let s=initialCodingState(puzzle);
   for(const cmd of program){
     let kind='action';
-    if(cmd==='action') kind=s.carrying?'drop':'pick';
+    if(cmd==='action') kind=s.carrying!==-1?'drop':'pick';
     kinds.push(kind);
     const n=stepState(s,cmd);
     if(!n.collision&&!n.invalid) s=n;
@@ -190,10 +240,10 @@ function actionKinds(){
 
 function guidePreview(){
   if(!codingGuideOn || running || !program.length) return [];
-  let s={row:puzzle.start.row,col:puzzle.start.col,dir:0,carrying:false,delivered:!info().crate};
+  let s=initialCodingState(puzzle);
   const marks=[];
   for(const cmd of program){
-    const actionKind=cmd==='action'?(s.carrying?'drop':'pick'):null;
+    const actionKind=cmd==='action'?(s.carrying!==-1?'drop':'pick'):null;
     const n=stepState(s,cmd);
     if(n.collision || n.invalid){ marks.push({row:s.row,col:s.col,dir:s.dir,cmd,actionKind,collision:true}); break; }
     s=n;
@@ -225,9 +275,20 @@ function renderBoard(){
       el.innerHTML+='<span class="finish-mark"><svg viewBox="0 0 32 32"><path d="M8 28V5M9 6h14l-3 5 3 5H9"/></svg></span>';
     }
     if(info().crate){
-      if(puzzle.state.delivered && r===puzzle.drop.row && c===puzzle.drop.col) el.innerHTML+=crateSvg('coding-crate delivered');
-      else if(!puzzle.state.carrying && !puzzle.state.delivered && r===puzzle.crate.row && c===puzzle.crate.col) el.innerHTML+=crateSvg();
-      if(r===puzzle.drop.row&&c===puzzle.drop.col) el.innerHTML+=dropSvg();
+      puzzle.crates.forEach((crate,i)=>{
+        const delivered=Boolean(puzzle.state.deliveredMask & (1<<i));
+        const carried=puzzle.state.carrying===i;
+        if(!delivered && !carried && r===crate.row && c===crate.col){
+          el.innerHTML+=crateSvg();
+        }
+        const drop=puzzle.drops[i];
+        if(delivered && r===drop.row && c===drop.col){
+          el.innerHTML+=crateSvg('coding-crate delivered');
+        }
+        if(r===drop.row && c===drop.col){
+          el.innerHTML+=dropSvg();
+        }
+      });
     }
     const mark=[...guide].reverse().find(m=>m.row===r&&m.col===c);
     if(mark) addGuideMarker(el,mark);
@@ -235,7 +296,7 @@ function renderBoard(){
   }
   const rover=document.createElement('div');
   rover.id='coding-rover'; rover.className='coding-forklift';
-  rover.innerHTML=forkliftSvg()+(puzzle.state.carrying?crateSvg('carried-crate'):'');
+  rover.innerHTML=forkliftSvg()+(puzzle.state.carrying!==-1?crateSvg('carried-crate'):'');
   codingBoard.appendChild(rover);
   positionRover(false);
 }
@@ -419,7 +480,7 @@ async function run(){
         }
         temp=n;
         count++;
-        if(temp.row===puzzle.goal.row&&temp.col===puzzle.goal.col&&temp.delivered){
+        if(temp.row===puzzle.goal.row&&temp.col===puzzle.goal.col&&allDeliveredState(temp)){
           reachedGoal=true;
           break;
         }
@@ -467,14 +528,14 @@ async function run(){
     }
 
     done=i;
-    if(puzzle.state.row===puzzle.goal.row&&puzzle.state.col===puzzle.goal.col&&puzzle.state.delivered){
+    if(puzzle.state.row===puzzle.goal.row&&puzzle.state.col===puzzle.goal.col&&allDeliveredState(puzzle.state)){
       finish(i+1); return;
     }
     i++;
   }
 
   renderProgram(-1,done);
-  codingStatus.textContent=info().crate&&!puzzle.state.delivered?'The crate still needs delivering.':'Not at the flag yet.';
+  codingStatus.textContent=info().crate&&!allDeliveredState(puzzle.state)?(info().crateCount===2?'Both crates must be delivered.':'The crate still needs delivering.'):'Not at the flag yet.';
   await wait(450); running=false; reset(); renderProgram(); setEnabled(true);
 }
 
