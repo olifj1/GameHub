@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.0.40">
+  <link rel="stylesheet" href="style.css?v=1.0.41">
   <title>Laser Lab</title>
 </head>
 <body class="modular-game" data-game-id="game-08">
@@ -16,7 +16,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="game-08-info-title">Instructions</h2>
-      <p><strong>Setup:</strong> choose a grid size and place a laser, checkpoints, targets, splitters or blocks. Tap a laser or splitter again to rotate it. Save a layout if you want to reuse it.</p><p><strong>Play:</strong> place mirrors to guide the beam through the checkpoints and into every target. Tap an existing mirror to rotate it; use Erase to remove one.</p>
+      <p><strong>Level Designer:</strong> choose a grid size and place a laser, checkpoints, targets, splitters or blocks. Lasers rotate through up, right, down and left. Splitters have two orientations. Save a layout if you want to reuse it.</p><p><strong>Play:</strong> generated puzzles appear automatically. Place mirrors to turn the beam through 90° and guide it through every checkpoint into the target. Mirrors only have the two useful orientations; there are no diagonal beam directions. Use New level for another puzzle.</p>
     </div>
   </div>
   <main class="screen-wrap">
@@ -27,7 +27,7 @@
 <h1 id="laser-title">Laser Lab</h1>
 </header>
 <div aria-label="Laser Lab mode" class="laser-mode-switch" role="group">
-<button class="laser-mode-button active" data-laser-mode="setup">Setup</button>
+<button class="laser-mode-button active" data-laser-mode="setup">Level Designer</button>
 <button class="laser-mode-button" data-laser-mode="play">Play</button>
 </div>
 <div class="laser-setup-panel" id="laser-setup-panel">
@@ -56,11 +56,11 @@
 </div>
 <div class="laser-play-panel hidden" id="laser-play-panel">
 <div class="laser-tools play-tools">
-<button class="laser-tool active" data-laser-play-tool="mirror"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 25L25 7"/><path d="M9 27L27 9"/><circle cx="8" cy="24" r="2"/><circle cx="24" cy="8" r="2"/></svg></span><span>Mirror</span></button>
+<button class="laser-tool active" data-laser-play-tool="mirror"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 25L25 7"/><path d="M10 27L28 9"/></svg></span><span>Mirror</span></button>
 <button class="laser-tool" data-laser-play-tool="eraser"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 22L20 8l6 6-10 12H9l-3-3 2-1Z"/><path d="M15 25h11M12 18l6 6"/></svg></span><span>Erase</span></button>
-<button class="laser-save-button" id="laser-reset-play">Reset mirrors</button>
+<button class="laser-play-action" id="laser-new-generated" type="button"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 8h7v7H8zM18 8h6v6h-6zM8 18h6v6H8zM19 19h5v5h-5z"/><path d="M24 4v5M21.5 6.5h5"/></svg></span><span>New level</span></button>
+<button class="laser-play-action secondary" id="laser-reset-play" type="button"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 11a10 10 0 1 1-1 9M8 11V5M8 11h6"/></svg></span><span>Reset</span></button>
 </div>
-
 </div>
 <div class="laser-board-wrap">
 <div aria-label="Laser puzzle grid" class="laser-board" id="laser-board"></div>
@@ -80,8 +80,8 @@
 </div>
 </section>
   </main>
-  <script src="site-config.js?v=1.0.40"></script>
-  <script src="core.js?v=1.0.40"></script>
-  <script src="game-08.js?v=1.0.40"></script>
+  <script src="site-config.js?v=1.0.41"></script>
+  <script src="core.js?v=1.0.41"></script>
+  <script src="game-08.js?v=1.0.41"></script>
 </body>
 </html>

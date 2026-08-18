@@ -4409,11 +4409,11 @@ body[data-game-id="game-07"] .carried-crate{
 }
 
 
-/* v1.0.40 — Logic programme follow + win-layer correction */
+/* v1.0.41 — Logic programme follow + win-layer correction */
 body[data-game-id="game-07"] .coding-win-overlay{z-index:100!important;}
 body[data-game-id="game-07"] .coding-win-overlay:not(.hidden){isolation:isolate;}
 
-/* v1.0.40 — dismissible Logic success overlay */
+/* v1.0.41 — dismissible Logic success overlay */
 body[data-game-id="game-07"] .coding-win-overlay{position:absolute!important}
 body[data-game-id="game-07"] .coding-win-close{
   position:absolute;top:8px;right:9px;width:34px;height:34px;padding:0;
@@ -4424,7 +4424,7 @@ body[data-game-id="game-07"] .coding-win-close{
 body[data-game-id="game-07"] .coding-win-close:active{transform:scale(.94)}
 
 
-/* v1.0.40 — Gravity layout, controls and route polish */
+/* v1.0.41 — Gravity layout, controls and route polish */
 body[data-game-id="game-06"] #gravity-screen{
   background:#f5efe9!important;
   color:var(--gh-text)!important;
@@ -4644,14 +4644,14 @@ body[data-game-id="game-06"] .gravity-tuning{display:none!important}
   body[data-game-id="game-06"] .gravity-reset{font-size:9px}
 }
 
-/* v1.0.40 — Gravity combined checkpoint/star HUD */
+/* v1.0.41 — Gravity combined checkpoint/star HUD */
 body[data-game-id="game-06"] .gravity-goals strong{
   font-size:11px!important;
   letter-spacing:-.02em;
 }
 
 
-/* v1.0.40 — Laser Lab visual/playability rebuild */
+/* v1.0.41 — Laser Lab visual/playability rebuild */
 body[data-game-id="game-08"]{
   --laser-accent:#bf6f70;
   --laser-ink:#282d35;
@@ -4948,4 +4948,173 @@ body[data-game-id="game-08"]{
   .laser-board-wrap{width:min(82vw,330px)!important}
   .laser-status{margin-top:4px}
   .laser-info-pill{min-height:34px}
+}
+
+
+/* v1.0.41 — Laser Lab generated-play + orthogonal optics */
+body[data-game-id="game-08"] .laser-page{
+  padding-bottom:max(70px,env(safe-area-inset-bottom));
+}
+body[data-game-id="game-08"] .laser-mode-switch{
+  margin-bottom:7px;
+}
+body[data-game-id="game-08"] .laser-mode-button{
+  font-size:14px;
+}
+body[data-game-id="game-08"] .laser-play-panel{
+  padding:6px!important;
+  margin-bottom:7px!important;
+}
+body[data-game-id="game-08"] .play-tools{
+  display:grid!important;
+  grid-template-columns:1fr 1fr 1.15fr .9fr!important;
+  gap:5px!important;
+}
+body[data-game-id="game-08"] .play-tools .laser-tool,
+body[data-game-id="game-08"] .laser-play-action{
+  min-width:0;
+  min-height:50px!important;
+  padding:4px 3px!important;
+  border:1.5px solid var(--gh-line)!important;
+  border-radius:12px!important;
+  background:var(--gh-surface)!important;
+  color:var(--gh-ink)!important;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+  font-size:8px;
+  font-weight:850;
+}
+body[data-game-id="game-08"] .laser-play-action{
+  background:var(--gh-accent)!important;
+  color:#fff!important;
+  border-color:color-mix(in srgb,var(--gh-accent) 72%,var(--gh-ink))!important;
+}
+body[data-game-id="game-08"] .laser-play-action.secondary{
+  background:var(--gh-surface)!important;
+  color:var(--gh-ink)!important;
+  border-color:var(--gh-line)!important;
+}
+body[data-game-id="game-08"] .laser-play-action .laser-tool-icon svg{
+  stroke:currentColor!important;
+}
+
+/* Fit the whole play area comfortably above mobile browser chrome. */
+body[data-game-id="game-08"] .laser-board-wrap{
+  width:min(100%,350px,calc(100dvh - 365px))!important;
+  min-width:270px!important;
+  max-width:350px!important;
+  aspect-ratio:1/1!important;
+  padding:7px!important;
+  border-radius:22px!important;
+}
+body[data-game-id="game-08"] .laser-board{
+  gap:2px!important;
+  padding:2px!important;
+  border-radius:14px!important;
+}
+body[data-game-id="game-08"] .laser-cell{
+  border-radius:4px!important;
+  box-shadow:inset 0 0 0 1px rgba(74,77,81,.24)!important;
+}
+
+/* Stronger Logic-like obstacles. */
+body[data-game-id="game-08"] .laser-cell.obstacle{
+  background:
+    repeating-linear-gradient(
+      135deg,
+      #c7c8c6 0 7px,
+      #e7e5e1 7px 14px
+    )!important;
+  box-shadow:
+    inset 0 0 0 1.5px #929490,
+    inset 0 0 0 4px rgba(255,255,255,.35)!important;
+}
+body[data-game-id="game-08"] .laser-cell.obstacle::before{
+  content:"";
+  position:absolute;
+  inset:25%;
+  border:1.5px solid rgba(88,91,91,.42);
+  border-radius:2px;
+  transform:rotate(45deg);
+}
+
+/* Base emitter artwork points right; rotate it to match the cardinal beam exactly. */
+body[data-game-id="game-08"] .laser-emitter.dir-0{transform:rotate(-90deg)!important}
+body[data-game-id="game-08"] .laser-emitter.dir-1{transform:rotate(0deg)!important}
+body[data-game-id="game-08"] .laser-emitter.dir-2{transform:rotate(90deg)!important}
+body[data-game-id="game-08"] .laser-emitter.dir-3{transform:rotate(180deg)!important}
+body[data-game-id="game-08"] .laser-emitter.dir-4,
+body[data-game-id="game-08"] .laser-emitter.dir-5,
+body[data-game-id="game-08"] .laser-emitter.dir-6,
+body[data-game-id="game-08"] .laser-emitter.dir-7{transform:none!important}
+
+/* Two mirror orientations only. */
+body[data-game-id="game-08"] .laser-mirror{
+  width:80%!important;height:80%!important;
+}
+body[data-game-id="game-08"] .laser-mirror::before{display:none!important}
+body[data-game-id="game-08"] .laser-mirror svg{
+  width:100%;height:100%;
+  fill:none;
+  stroke:#5e8791;
+  stroke-width:2.4;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+body[data-game-id="game-08"] .laser-mirror.angle-0{transform:rotate(0deg)!important}
+body[data-game-id="game-08"] .laser-mirror.angle-1{transform:rotate(90deg)!important}
+body[data-game-id="game-08"] .laser-mirror.angle-2,
+body[data-game-id="game-08"] .laser-mirror.angle-3,
+body[data-game-id="game-08"] .laser-mirror.angle-4,
+body[data-game-id="game-08"] .laser-mirror.angle-5,
+body[data-game-id="game-08"] .laser-mirror.angle-6,
+body[data-game-id="game-08"] .laser-mirror.angle-7{transform:none!important}
+
+/* Splitter is a branching device, deliberately unlike the mirror. */
+body[data-game-id="game-08"] .laser-splitter{
+  width:82%!important;height:82%!important;
+}
+body[data-game-id="game-08"] .laser-splitter::before,
+body[data-game-id="game-08"] .laser-splitter::after{display:none!important}
+body[data-game-id="game-08"] .laser-splitter svg{
+  width:100%;height:100%;
+  fill:none;
+  stroke:#776f91;
+  stroke-width:2.2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+body[data-game-id="game-08"] .laser-splitter svg path:last-child{
+  fill:color-mix(in srgb,#776f91 12%,var(--gh-surface));
+}
+body[data-game-id="game-08"] .laser-splitter.angle-0{transform:rotate(0deg)!important}
+body[data-game-id="game-08"] .laser-splitter.angle-1{transform:rotate(90deg)!important}
+
+/* Keep status/counters compact. */
+body[data-game-id="game-08"] .laser-status{
+  min-height:17px!important;
+  margin:5px auto 3px!important;
+  font-size:10px!important;
+}
+body[data-game-id="game-08"] .laser-info-pill{
+  min-height:34px!important;
+  padding:4px 7px!important;
+}
+body[data-game-id="game-08"] .laser-info-pill span{font-size:7px!important}
+body[data-game-id="game-08"] .laser-info-pill strong{font-size:13px!important}
+
+@media(max-height:740px){
+  body[data-game-id="game-08"] .laser-header{margin-bottom:5px!important}
+  body[data-game-id="game-08"] .laser-mode-switch{margin-bottom:5px!important}
+  body[data-game-id="game-08"] .laser-mode-button{min-height:34px!important}
+  body[data-game-id="game-08"] .laser-play-panel{margin-bottom:5px!important}
+  body[data-game-id="game-08"] .play-tools .laser-tool,
+  body[data-game-id="game-08"] .laser-play-action{min-height:43px!important}
+  body[data-game-id="game-08"] .laser-board-wrap{
+    width:min(100%,315px,calc(100dvh - 325px))!important;
+    min-width:250px!important;
+  }
 }
