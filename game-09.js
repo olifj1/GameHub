@@ -87,6 +87,7 @@ function resetFlight(){
   cumulativeTurn=0;
   lastAngle=0;
   flightMessage.classList.add("hidden");
+  flightMessage.classList.remove("flight-message-success");
   flightStatus.textContent="Start the engine when you are ready.";
   updateFlightHud();
 }
@@ -117,6 +118,7 @@ function crashFlight(message){
   plane.crashed=true;
   plane.engine=false;
   updateFlightHud();
+  flightMessage.classList.remove("flight-message-success");
   flightMessageTitle.textContent="Crash!";
   flightMessageText.textContent=message;
   flightAgain.textContent="Try again";
@@ -129,11 +131,21 @@ function finishFlight(){
   plane.finished=true;
   plane.engine=false;
   updateFlightHud();
+
   const starCount=stars.filter(s=>s.hit).length;
   flightMessageTitle.textContent=starCount===stars.length?"Perfect flight!":"Flight complete!";
-  flightMessageText.textContent=`All hoops and a safe landing — ${starCount}/${stars.length} stars collected.`;
+  flightMessageText.textContent=`${starCount}/${stars.length} stars collected.`;
   flightAgain.textContent="Fly again";
-  flightMessage.classList.remove("hidden");
+
+  // Keep the touchdown visible first, then show a compact result card rather
+  // than covering the whole flight view.
+  flightMessage.classList.add("flight-message-success");
+  flightMessage.classList.add("hidden");
+  window.setTimeout(()=>{
+    if(plane.finished){
+      flightMessage.classList.remove("hidden");
+    }
+  },650);
 }
 
 function onRunway(x){
