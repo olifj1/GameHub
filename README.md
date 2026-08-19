@@ -79,21 +79,21 @@ Hub-wide visual consistency pass; vector home icons; neutral page backgrounds an
 - Program timeline is editable: tap a block to select it, move it earlier/later or delete it; tap a + insertion point then a command to insert at that position.
 
 
-## v1.0.55
+## v1.0.56
 - Logic programme editing: selecting an existing command and pressing a command now replaces it in place; + slots still insert and no selection still appends.
 
 
-## v1.0.55
+## v1.0.56
 - Added Flight: a side-scrolling aeroplane game with engine start/stop, pitch controls, full loops, hoop collection and safe runway landings.
 - Added the new Flight card and line-art aeroplane icon to the GameHub home screen.
 
 
-## v1.0.55
+## v1.0.56
 - Flight engine-off behaviour now uses momentum and gravity rather than simply running the powered model more slowly.
 - Gliding trades speed for height, diving regains speed, and sustained engine-off climbing is no longer possible.
 
 
-## v1.0.55
+## v1.0.56
 - Flight now runs in landscape and asks the player to rotate to landscape when opened in portrait.
 - Flight canvas widened to 16:9 for much better forward visibility.
 - Final runway lengthened and safe-landing limits made more forgiving.
@@ -101,25 +101,25 @@ Hub-wide visual consistency pass; vector home icons; neutral page backgrounds an
 - Added six optional collectible stars throughout the course and a Stars HUD counter.
 
 
-## v1.0.55
+## v1.0.56
 - Removed the shared 280 ms iOS touch-end suppression that could discard every second rapid tap.
 - Double-tap zoom prevention now uses CSS touch-action rather than blocking valid tap events.
 - Added one shared immediate press helper and applied it to the rapid number controls in Times Tables, Sums and Maths.
 
 
-## v1.0.55
+## v1.0.56
 - Flight returns to portrait orientation so it keeps the Home Screen/full-screen feel on iPhone.
 - Restored the three-across Up / Engine / Down controls for natural two-thumb play.
 - Kept the longer finish runway, easier landing envelope, improved glide physics and collectible stars from the landscape experiment.
 
 
-## v1.0.55
+## v1.0.56
 - Flight win result is now a compact translucent card instead of a full-screen overlay.
 - Successful touchdown remains visible for a short moment before the result appears.
 - Crash messages remain full-screen and prominent.
 
 
-## v1.0.55
+## v1.0.56
 - Flight now lets a successful landing roll naturally to a complete stop before showing the compact result card.
 - Reworked the aircraft into a code-drawn side-on biplane, including the GameHub home icon.
 - Powered flight now uses thrust plus gravity: climbing has a little more energy, but a vertical stall falls rather than hovering, and diving restores control/speed.
@@ -127,9 +127,17 @@ Hub-wide visual consistency pass; vector home icons; neutral page backgrounds an
 - Added Easy / Medium / Hard Flight courses: 2, 4 and 6 rings respectively, with progressively more angled and vertical approaches.
 
 
-## v1.0.55
+## v1.0.56
 - Flight overall travel speed reduced while pitch response was increased, producing calmer forward motion and substantially tighter loops.
 - Powered vertical climbing retains useful momentum a little longer, while low-speed stalls now fall more decisively under gravity.
 - Flight view is slightly zoomed out by increasing the internal 4:3 canvas world area; the biplane appears about 7% smaller and more sky/world is visible.
 - Glide top speed reduced to match the calmer powered-flight pace.
 - Landing limits and the satisfying post-touchdown runway roll are unchanged.
+
+
+## v1.0.56
+- Added Easy / Medium / Hard difficulty selection to Gravity.
+- Easy is a short, sparse launch-to-finish course with no required checkpoint or collectables.
+- Medium uses a longer map with one required checkpoint, three stars and more terrain.
+- Hard uses the full five-screen route with three required checkpoint landings, six stars and a denser mix of high/low platforms and vertical obstacles.
+- Gravity difficulty is remembered between sessions.

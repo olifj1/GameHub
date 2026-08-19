@@ -16,10 +16,11 @@ const gravitySlider = $("#gravity-slider");
 const thrustSlider = $("#thrust-slider");
 const gravityValue = $("#gravity-value");
 const thrustValue = $("#thrust-value");
+const gravityDifficultyButtons = $$("[data-gravity-difficulty]");
 
 const GW = gravityCanvas.width;
 const GH = gravityCanvas.height;
-const GRAVITY_WORLD_W = GW * 5;
+let GRAVITY_WORLD_W = GW * 2.5;
 const GRAVITY_WORLD_H = GH;
 
 const gravityInput = { left:false, right:false, thrust:false };
@@ -43,49 +44,123 @@ gravitySlider.addEventListener("input",updateGravityTuning);
 thrustSlider.addEventListener("input",updateGravityTuning);
 updateGravityTuning();
 
-// Five-screen-wide route. Horizontal pieces are genuine landing surfaces;
-// vertical pieces remain hazards.
-const gravityWalls=[
-  {id:"ceiling",x:0,y:0,w:GRAVITY_WORLD_W,h:28},
-  {id:"floor",x:0,y:872,w:GRAVITY_WORLD_W,h:28},
-  {id:"left-edge",x:0,y:0,w:28,h:GRAVITY_WORLD_H},
-  {id:"right-edge",x:GRAVITY_WORLD_W-28,y:0,w:28,h:GRAVITY_WORLD_H},
+// Difficulty now changes the actual course rather than only the HUD.
+// Easy is deliberately sparse; Medium introduces a checkpoint and optional
+// exploration; Hard uses the full five-screen route with several required stops.
+const GRAVITY_COURSES = {
+  easy:{
+    worldW:1800,
+    start:{id:"start",x:82,y:838,w:150,h:18,type:"start"},
+    goal:{id:"goal",x:1550,y:838,w:155,h:18,type:"goal"},
+    checkpoints:[],
+    stars:[],
+    walls:[
+      {id:"easy-p1",x:560,y:700,w:300,h:26},
+      {id:"easy-v1",x:1010,y:28,w:34,h:220},
+      {id:"easy-p2",x:1160,y:575,w:300,h:26}
+    ]
+  },
 
-  {id:"p1",x:350,y:690,w:270,h:26},
-  {id:"v1",x:660,y:28,w:34,h:300},
-  {id:"p2",x:790,y:470,w:300,h:26},
-  {id:"p3",x:1120,y:735,w:260,h:26},
-  {id:"v2",x:1370,y:28,w:34,h:350},
-  {id:"p4",x:1490,y:565,w:310,h:26},
-  {id:"p5",x:1840,y:735,w:270,h:26},
-  {id:"v3",x:2110,y:28,w:36,h:330},
-  {id:"p6",x:2210,y:455,w:300,h:26},
-  {id:"p7",x:2520,y:675,w:320,h:26},
-  {id:"v4",x:2820,y:28,w:36,h:350},
-  {id:"p8",x:2940,y:515,w:280,h:26},
-  {id:"p9",x:3020,y:600,w:180,h:26}
-];
+  medium:{
+    worldW:2700,
+    start:{id:"start",x:82,y:838,w:150,h:18,type:"start"},
+    goal:{id:"goal",x:2470,y:838,w:155,h:18,type:"goal"},
+    checkpoints:[
+      {id:"checkpoint-1",x:1485,y:696,w:145,h:18,type:"checkpoint"}
+    ],
+    stars:[
+      {x:1010,y:360,r:17},
+      {x:1900,y:420,r:17},
+      {x:2290,y:300,r:17}
+    ],
+    walls:[
+      {id:"medium-p1",x:430,y:700,w:300,h:26},
+      {id:"medium-v1",x:800,y:28,w:34,h:280},
+      {id:"medium-p2",x:930,y:510,w:320,h:26},
+      {id:"medium-p3",x:1420,y:720,w:280,h:26},
+      {id:"medium-v2",x:1760,y:28,w:34,h:320},
+      {id:"medium-p4",x:1890,y:545,w:300,h:26},
+      {id:"medium-p5",x:2240,y:690,w:260,h:26}
+    ]
+  },
 
-const gravityStartPad={id:"start",x:82,y:838,w:150,h:18,type:"start"};
-const gravityCheckpoints=[
-  {id:"checkpoint-1",x:1180,y:711,w:140,h:18,type:"checkpoint",index:0},
-  {id:"checkpoint-2",x:2585,y:651,w:150,h:18,type:"checkpoint",index:1}
-];
-const gravityGoalPad={id:"goal",x:3370,y:838,w:155,h:18,type:"goal"};
+  hard:{
+    worldW:3600,
+    start:{id:"start",x:82,y:838,w:150,h:18,type:"start"},
+    goal:{id:"goal",x:3370,y:838,w:155,h:18,type:"goal"},
+    checkpoints:[
+      {id:"checkpoint-1",x:1180,y:711,w:140,h:18,type:"checkpoint"},
+      {id:"checkpoint-2",x:2345,y:431,w:145,h:18,type:"checkpoint"},
+      {id:"checkpoint-3",x:2695,y:651,w:150,h:18,type:"checkpoint"}
+    ],
+    stars:[
+      {x:900,y:350,r:17},
+      {x:1545,y:430,r:17},
+      {x:1980,y:380,r:17},
+      {x:2470,y:300,r:17},
+      {x:3060,y:390,r:17},
+      {x:3270,y:650,r:17}
+    ],
+    walls:[
+      {id:"hard-p1",x:350,y:690,w:270,h:26},
+      {id:"hard-v1",x:660,y:28,w:34,h:300},
+      {id:"hard-p2",x:790,y:470,w:300,h:26},
+      {id:"hard-p3",x:1120,y:735,w:260,h:26},
+      {id:"hard-v2",x:1370,y:28,w:34,h:350},
+      {id:"hard-p4",x:1490,y:565,w:310,h:26},
+      {id:"hard-floor-v1",x:1840,y:640,w:36,h:232},
+      {id:"hard-p5",x:1940,y:735,w:250,h:26},
+      {id:"hard-v3",x:2180,y:28,w:36,h:330},
+      {id:"hard-p6",x:2290,y:455,w:300,h:26},
+      {id:"hard-p7",x:2620,y:675,w:320,h:26},
+      {id:"hard-v4",x:2920,y:28,w:36,h:350},
+      {id:"hard-p8",x:3040,y:515,w:280,h:26},
+      {id:"hard-p9",x:3150,y:690,w:180,h:26}
+    ]
+  }
+};
 
-const gravityStarsBase=[
-  {x:900,y:350,r:17},
-  {x:1900,y:470,r:17},
-  {x:3060,y:390,r:17}
-];
+let gravityDifficulty=localStorage.getItem("gravityDifficulty")||"easy";
+if(!GRAVITY_COURSES[gravityDifficulty]) gravityDifficulty="easy";
+
+let gravityWalls=[];
+let gravityStartPad=null;
+let gravityCheckpoints=[];
+let gravityGoalPad=null;
+let gravityStarsBase=[];
 let gravityStars=[];
-
-const gravityPads=[gravityStartPad,...gravityCheckpoints,gravityGoalPad];
-const landingWalls=gravityWalls.filter(w=>w.w>w.h*2 && w.y>40);
+let gravityPads=[];
+let landingWalls=[];
 let checkpointVisited=[];
 let rocket;
 
+function applyGravityCourse(){
+  const course=GRAVITY_COURSES[gravityDifficulty];
+  GRAVITY_WORLD_W=course.worldW;
+
+  gravityStartPad={...course.start};
+  gravityGoalPad={...course.goal};
+  gravityCheckpoints=course.checkpoints.map((cp,index)=>({...cp,index}));
+  gravityStarsBase=course.stars.map(star=>({...star}));
+
+  const bounds=[
+    {id:"ceiling",x:0,y:0,w:GRAVITY_WORLD_W,h:28},
+    {id:"floor",x:0,y:872,w:GRAVITY_WORLD_W,h:28},
+    {id:"left-edge",x:0,y:0,w:28,h:GRAVITY_WORLD_H},
+    {id:"right-edge",x:GRAVITY_WORLD_W-28,y:0,w:28,h:GRAVITY_WORLD_H}
+  ];
+
+  gravityWalls=[...bounds,...course.walls.map(w=>({...w}))];
+  gravityPads=[gravityStartPad,...gravityCheckpoints,gravityGoalPad];
+  landingWalls=gravityWalls.filter(w=>w.w>w.h*2 && w.y>40 && w.id!=="floor");
+
+  gravityDifficultyButtons.forEach(button=>{
+    button.classList.toggle("active",button.dataset.gravityDifficulty===gravityDifficulty);
+  });
+}
+
 function resetGravityGame(){
+  applyGravityCourse();
   rocket={
     x:gravityStartPad.x+gravityStartPad.w*.64,
     y:gravityStartPad.y-16,
@@ -136,7 +211,15 @@ function allCheckpointsComplete(){
 function updateGravityGoalHud(){
   const checks=checkpointVisited.filter(Boolean).length;
   const stars=gravityStars.filter(s=>s.collected).length;
-  gravityCollect.textContent=`✓ ${checks}/${gravityCheckpoints.length}  ★ ${stars}/${gravityStars.length}`;
+
+  if(gravityCheckpoints.length===0 && gravityStars.length===0){
+    gravityCollect.textContent="FINISH";
+  }else{
+    const parts=[];
+    if(gravityCheckpoints.length) parts.push(`✓ ${checks}/${gravityCheckpoints.length}`);
+    if(gravityStars.length) parts.push(`★ ${stars}/${gravityStars.length}`);
+    gravityCollect.textContent=parts.join("  ");
+  }
 }
 
 function registerLanding(surface){
@@ -172,9 +255,13 @@ function winGravity(){
   gravityAgain.textContent="Fly again";
   gravityMessageTitle.textContent="Route complete!";
   const stars=gravityStars.filter(s=>s.collected).length;
-  gravityMessageText.textContent=stars===gravityStars.length
-    ?"Perfect route — every checkpoint and every star!"
-    :`You stopped at every checkpoint and collected ${stars}/${gravityStars.length} stars.`;
+  if(gravityCheckpoints.length===0 && gravityStars.length===0){
+    gravityMessageText.textContent="Launch to landing complete!";
+  }else{
+    gravityMessageText.textContent=stars===gravityStars.length
+      ?"Perfect route — every checkpoint and every star!"
+      :`You stopped at every checkpoint and collected ${stars}/${gravityStars.length} stars.`;
+  }
   gravityMessage.classList.remove("hidden");
 }
 
@@ -543,6 +630,14 @@ document.addEventListener("keyup",e=>{
   if(e.key==="ArrowLeft"||e.key.toLowerCase()==="a")gravityInput.left=false;
   if(e.key==="ArrowRight"||e.key.toLowerCase()==="d")gravityInput.right=false;
   if(e.key==="ArrowUp"||e.key===" ")gravityInput.thrust=false;
+});
+
+gravityDifficultyButtons.forEach(button=>{
+  bindFastPress(button,()=>{
+    gravityDifficulty=button.dataset.gravityDifficulty;
+    localStorage.setItem("gravityDifficulty",gravityDifficulty);
+    resetGravityGame();
+  });
 });
 
 gravityReset.addEventListener("click",resetGravityGame);
