@@ -13,6 +13,7 @@ const clockTicks = $("#clock-ticks");
 const cycleSun = $("#cycle-sun");
 const cycleTimeLabel = $("#cycle-time-label");
 const clockModeButtons = $$("[data-clock-mode]");
+const clockTestRow = $("#clock-test-row");
 const clockTestCard = $("#clock-test-card");
 const clockTestTarget = $("#clock-test-target");
 const clockTestFeedback = $("#clock-test-feedback");
@@ -83,11 +84,12 @@ function newClockTest(){
   let nextHour,nextMinute,nextKey;
 
   // Use five-minute increments for a child-friendly first test mode.
+  // Avoid 12:00 because every question deliberately starts there.
   do{
     nextHour=Math.floor(Math.random()*12)+1;
     nextMinute=Math.floor(Math.random()*12)*5;
     nextKey=`${nextHour}:${nextMinute}`;
-  }while(nextKey===previous);
+  }while(nextKey===previous || (nextHour===12 && nextMinute===0));
 
   clockTestHour=nextHour;
   clockTestMinute=nextMinute;
@@ -97,18 +99,11 @@ function newClockTest(){
   clockTestFeedback.classList.remove("good","bad");
   clockTestAction.textContent="Check";
 
-  // Start each question from a different time, but avoid accidentally
-  // presenting the correct answer immediately.
-  let startHour,startMinute;
-  do{
-    startHour=Math.floor(Math.random()*12)+1;
-    startMinute=Math.floor(Math.random()*12)*5;
-  }while(startHour===clockTestHour && startMinute===clockTestMinute);
-
-  hour=startHour;
-  minute=startMinute;
-  hourSlider.value=hour;
-  minuteSlider.value=minute;
+  // Give every question the same clear starting point.
+  hour=12;
+  minute=0;
+  hourSlider.value=12;
+  minuteSlider.value=0;
   renderClock();
 }
 
@@ -122,8 +117,7 @@ function setClockMode(mode){
   });
 
   clockPage.classList.toggle("clock-test-mode",testing);
-  clockTestCard.classList.toggle("hidden",!testing);
-  clockTestAction.classList.toggle("hidden",!testing);
+  clockTestRow.classList.toggle("hidden",!testing);
 
   if(testing){
     newClockTest();

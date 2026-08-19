@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.0.57">
+  <link rel="stylesheet" href="style.css?v=1.0.60">
   <title>Tell the Time</title>
 </head>
 <body class="modular-game" data-game-id="game-02">
@@ -32,10 +32,13 @@
   <button class="clock-mode" data-clock-mode="test" type="button">Test</button>
 </div>
 
-<div class="clock-test-card hidden" id="clock-test-card" aria-live="polite">
-  <span class="clock-test-kicker">SET THE CLOCK TO</span>
-  <strong class="clock-test-target" id="clock-test-target">07:30</strong>
-  <span class="clock-test-feedback" id="clock-test-feedback">Move the hands, then check your answer.</span>
+<div class="clock-test-row hidden" id="clock-test-row">
+  <div class="clock-test-card" id="clock-test-card" aria-live="polite">
+    <span class="clock-test-kicker">SET THE CLOCK TO</span>
+    <strong class="clock-test-target" id="clock-test-target">07:30</strong>
+    <span class="clock-test-feedback" id="clock-test-feedback">Move the hands, then check your answer.</span>
+  </div>
+  <button class="clock-test-action" id="clock-test-action" type="button">Check</button>
 </div>
 
 <div class="clock-stage">
@@ -111,12 +114,11 @@
 <div class="range-ends"><span>00</span><span>30</span><span>60</span></div>
 </div>
 </div>
-<button class="clock-test-action hidden" id="clock-test-action" type="button">Check</button>
 </div>
 </section>
   </main>
-  <script src="site-config.js?v=1.0.57"></script>
-  <script src="core.js?v=1.0.57"></script>
-  <script src="game-02.js?v=1.0.57"></script>
+  <script src="site-config.js?v=1.0.60"></script>
+  <script src="core.js?v=1.0.60"></script>
+  <script src="game-02.js?v=1.0.60"></script>
 </body>
 </html>

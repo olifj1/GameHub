@@ -49,6 +49,7 @@ updateGravityTuning();
 // exploration; Hard uses the full five-screen route with several required stops.
 const GRAVITY_COURSES = {
   easy:{
+    gravity:0.010,
     worldW:1800,
     start:{id:"start",x:82,y:838,w:150,h:18,type:"start"},
     goal:{id:"goal",x:1550,y:838,w:155,h:18,type:"goal"},
@@ -62,6 +63,7 @@ const GRAVITY_COURSES = {
   },
 
   medium:{
+    gravity:0.015,
     worldW:2700,
     start:{id:"start",x:82,y:838,w:150,h:18,type:"start"},
     goal:{id:"goal",x:2470,y:838,w:155,h:18,type:"goal"},
@@ -85,6 +87,7 @@ const GRAVITY_COURSES = {
   },
 
   hard:{
+    gravity:0.020,
     worldW:3600,
     start:{id:"start",x:82,y:838,w:150,h:18,type:"start"},
     goal:{id:"goal",x:3370,y:838,w:155,h:18,type:"goal"},
@@ -133,10 +136,16 @@ let gravityPads=[];
 let landingWalls=[];
 let checkpointVisited=[];
 let rocket;
+let gravityWinTimer=null;
 
 function applyGravityCourse(){
   const course=GRAVITY_COURSES[gravityDifficulty];
   GRAVITY_WORLD_W=course.worldW;
+
+  // Each difficulty has its own baseline gravity. The settings slider remains
+  // available afterwards if the player wants to tune it manually.
+  gravitySlider.value=course.gravity.toFixed(3);
+  updateGravityTuning();
 
   gravityStartPad={...course.start};
   gravityGoalPad={...course.goal};
@@ -160,12 +169,18 @@ function applyGravityCourse(){
 }
 
 function resetGravityGame(){
+  if(gravityWinTimer){
+    clearTimeout(gravityWinTimer);
+    gravityWinTimer=null;
+  }
+
   applyGravityCourse();
   rocket={
     x:gravityStartPad.x+gravityStartPad.w*.64,
     y:gravityStartPad.y-16,
     vx:0,vy:0,angle:0,radius:16,
-    landed:false,crashed:false,landedOn:"start"
+    landed:false,crashed:false,landedOn:"start",
+    finishPending:false
   };
   checkpointVisited=gravityCheckpoints.map(()=>false);
   gravityStars=gravityStarsBase.map(s=>({...s,collected:false}));
@@ -173,6 +188,7 @@ function resetGravityGame(){
   gravityWorld.running=true;
   gravityInput.left=gravityInput.right=gravityInput.thrust=false;
   gravityMessage.classList.add("hidden");
+  gravityMessage.classList.remove("gravity-message-success");
   gravityAgain.textContent="Fly again";
   updateGravityGoalHud();
 }
@@ -198,6 +214,7 @@ function crashGravity(reason="Rocket crashed"){
   if(!gravityWorld.running)return;
   gravityWorld.running=false;
   rocket.crashed=true;
+  gravityMessage.classList.remove("gravity-message-success");
   gravityAgain.textContent="Fly again";
   gravityMessageTitle.textContent="Crash!";
   gravityMessageText.textContent=reason;
@@ -249,20 +266,37 @@ function registerLanding(surface){
 }
 
 function winGravity(){
-  if(!gravityWorld.running)return;
-  gravityWorld.running=false;
+  if(!gravityWorld.running||rocket.finishPending)return;
+
+  // Keep the successful touchdown unobstructed first.
   rocket.landed=true;
-  gravityAgain.textContent="Fly again";
-  gravityMessageTitle.textContent="Route complete!";
-  const stars=gravityStars.filter(s=>s.collected).length;
-  if(gravityCheckpoints.length===0 && gravityStars.length===0){
-    gravityMessageText.textContent="Launch to landing complete!";
-  }else{
-    gravityMessageText.textContent=stars===gravityStars.length
-      ?"Perfect route — every checkpoint and every star!"
-      :`You stopped at every checkpoint and collected ${stars}/${gravityStars.length} stars.`;
-  }
-  gravityMessage.classList.remove("hidden");
+  rocket.finishPending=true;
+  rocket.vx=0;
+  rocket.vy=0;
+  rocket.angle=0;
+
+  gravityWinTimer=setTimeout(()=>{
+    gravityWinTimer=null;
+    if(!rocket.finishPending)return;
+
+    gravityWorld.running=false;
+    rocket.finishPending=false;
+
+    gravityAgain.textContent="Fly again";
+    gravityMessageTitle.textContent="Route complete!";
+
+    const stars=gravityStars.filter(s=>s.collected).length;
+    if(gravityCheckpoints.length===0 && gravityStars.length===0){
+      gravityMessageText.textContent="Launch to landing complete!";
+    }else{
+      gravityMessageText.textContent=stars===gravityStars.length
+        ?"Perfect route — every checkpoint and every star!"
+        :`All checkpoints — ${stars}/${gravityStars.length} stars collected.`;
+    }
+
+    gravityMessage.classList.add("gravity-message-success");
+    gravityMessage.classList.remove("hidden");
+  },750);
 }
 
 function crossingTop(surface,prevY){
@@ -295,6 +329,13 @@ function updateGravity(){
     rocket.angle=0;
     rocket.vx=0;
     rocket.vy=0;
+
+    if(rocket.finishPending){
+      const wanted=rocket.x-GW*.30;
+      gravityWorld.cameraX+=(wanted-gravityWorld.cameraX)*.06;
+      gravityWorld.cameraX=Math.max(0,Math.min(GRAVITY_WORLD_W-GW,gravityWorld.cameraX));
+      return;
+    }
 
     if(!gravityInput.thrust){
       const wanted=rocket.x-GW*.30;
