@@ -4410,11 +4410,11 @@ body[data-game-id="game-07"] .carried-crate{
 }
 
 
-/* v1.0.54 — Logic programme follow + win-layer correction */
+/* v1.0.55 — Logic programme follow + win-layer correction */
 body[data-game-id="game-07"] .coding-win-overlay{z-index:100!important;}
 body[data-game-id="game-07"] .coding-win-overlay:not(.hidden){isolation:isolate;}
 
-/* v1.0.54 — dismissible Logic success overlay */
+/* v1.0.55 — dismissible Logic success overlay */
 body[data-game-id="game-07"] .coding-win-overlay{position:absolute!important}
 body[data-game-id="game-07"] .coding-win-close{
   position:absolute;top:8px;right:9px;width:34px;height:34px;padding:0;
@@ -4425,7 +4425,7 @@ body[data-game-id="game-07"] .coding-win-close{
 body[data-game-id="game-07"] .coding-win-close:active{transform:scale(.94)}
 
 
-/* v1.0.54 — Gravity layout, controls and route polish */
+/* v1.0.55 — Gravity layout, controls and route polish */
 body[data-game-id="game-06"] #gravity-screen{
   background:#f5efe9!important;
   color:var(--gh-text)!important;
@@ -4645,14 +4645,14 @@ body[data-game-id="game-06"] .gravity-tuning{display:none!important}
   body[data-game-id="game-06"] .gravity-reset{font-size:9px}
 }
 
-/* v1.0.54 — Gravity combined checkpoint/star HUD */
+/* v1.0.55 — Gravity combined checkpoint/star HUD */
 body[data-game-id="game-06"] .gravity-goals strong{
   font-size:11px!important;
   letter-spacing:-.02em;
 }
 
 
-/* v1.0.54 — Laser Lab visual/playability rebuild */
+/* v1.0.55 — Laser Lab visual/playability rebuild */
 body[data-game-id="game-08"]{
   --laser-accent:#bf6f70;
   --laser-ink:#282d35;
@@ -4952,7 +4952,7 @@ body[data-game-id="game-08"]{
 }
 
 
-/* v1.0.54 — Laser Lab generated-play + orthogonal optics */
+/* v1.0.55 — Laser Lab generated-play + orthogonal optics */
 body[data-game-id="game-08"] .laser-page{
   padding-bottom:max(70px,env(safe-area-inset-bottom));
 }
@@ -5121,7 +5121,7 @@ body[data-game-id="game-08"] .laser-info-pill strong{font-size:13px!important}
 }
 
 
-/* v1.0.54 — Laser exact grid geometry + generated difficulty */
+/* v1.0.55 — Laser exact grid geometry + generated difficulty */
 body[data-game-id="game-08"] .laser-difficulty-row{
   display:grid;
   grid-template-columns:repeat(3,1fr);
@@ -5200,7 +5200,7 @@ body[data-game-id="game-08"] .laser-cell.obstacle::before{
 }
 
 
-/* v1.0.54 — Laser board frame always sits above the grid */
+/* v1.0.55 — Laser board frame always sits above the grid */
 body[data-game-id="game-08"] .laser-board-wrap{
   position:relative!important;
   isolation:isolate;
@@ -5230,7 +5230,7 @@ body[data-game-id="game-08"] .laser-board{
 }
 
 
-/* v1.0.54 — Laser maze walls read as connected wall sections */
+/* v1.0.55 — Laser maze walls read as connected wall sections */
 body[data-game-id="game-08"] .laser-cell.obstacle{
   background:
     repeating-linear-gradient(
@@ -5245,7 +5245,7 @@ body[data-game-id="game-08"] .laser-cell.obstacle::before{
 }
 
 
-/* v1.0.54 — Laser board: full-width frame with true inner clearance */
+/* v1.0.55 — Laser board: full-width frame with true inner clearance */
 body[data-game-id="game-08"] .laser-board-wrap{
   box-sizing:border-box!important;
   width:100%!important;
@@ -5296,7 +5296,7 @@ body[data-game-id="game-08"] .laser-board{
 }
 
 
-/* v1.0.54 — Laser board: equal inner gutter on all four sides */
+/* v1.0.55 — Laser board: equal inner gutter on all four sides */
 body[data-game-id="game-08"] .laser-board-wrap{
   position:relative!important;
   box-sizing:border-box!important;
@@ -5335,7 +5335,7 @@ body[data-game-id="game-08"] .laser-board-wrap::after{
 }
 
 
-/* v1.0.54 — Flight */
+/* v1.0.55 — Flight */
 body[data-game-id="game-09"] #flight-screen{
   background:var(--gh-bg)!important;
   color:var(--gh-ink)!important;
@@ -5513,7 +5513,7 @@ body[data-game-id="game-09"] .flight-reset{
 }
 
 
-/* v1.0.54 — Flight is the landscape game */
+/* v1.0.55 — Flight is the landscape game */
 @media (orientation: landscape) {
   body[data-game-id="game-09"] .orientation-guard.orientation-landscape-preferred{
     display:none!important;
@@ -5707,7 +5707,7 @@ body[data-game-id="game-09"] .flight-reset{
 }
 
 
-/* v1.0.54 — rapid taps are valid input, not a double-tap gesture */
+/* v1.0.55 — rapid taps are valid input, not a double-tap gesture */
 button,
 a,
 select,
@@ -5717,7 +5717,7 @@ input:not([type="range"]),
 }
 
 
-/* v1.0.54 — Flight returns to portrait.
+/* v1.0.55 — Flight returns to portrait.
    Keep the normal GameHub portrait orientation guard and the original
    thumb-friendly three-control layout. */
 @media (orientation: landscape) {
@@ -5850,7 +5850,7 @@ input:not([type="range"]),
 }
 
 
-/* v1.0.54 — Flight success leaves the landing visible */
+/* v1.0.55 — Flight success leaves the landing visible */
 body[data-game-id="game-09"] .flight-message.flight-message-success{
   inset:12px 12px auto auto;
   width:min(62%,245px);
@@ -5887,7 +5887,7 @@ body[data-game-id="game-09"] .flight-message.flight-message-success button{
 }
 
 
-/* v1.0.54 — Flight difficulty and compact portrait rhythm */
+/* v1.0.55 — Flight difficulty and compact portrait rhythm */
 body[data-game-id="game-09"] .flight-difficulty-row{
   width:min(100%,430px);
   margin:0 auto 7px;

@@ -19,25 +19,33 @@ const flightDifficultyButtons = $$(".flight-difficulty");
 const FW = flightCanvas.width;
 const FH = flightCanvas.height;
 const FLIGHT_WORLD_W = 6900;
-const GROUND_Y = 520;
+const GROUND_Y = 565;
 const START_RUNWAY = {x:45,w:900};
 const FINISH_RUNWAY = {x:5450,w:1250};
 
 const flightInput = {up:false,down:false};
 const flightWorld = {
   cameraX:0,
-  pitchRate:0.038,
-  maxSpeed:6.25,
-  cruiseSpeed:5.15,
-  acceleration:0.050,
-  poweredThrust:0.086,
-  poweredGravity:0.092,
-  poweredDrag:0.990,
-  poweredSteer:0.075,
+
+  // v1.0.55: lower travel speed but faster pitch response. This makes the
+  // aeroplane feel calmer across the level while producing much tighter loops.
+  pitchRate:0.046,
+  maxSpeed:5.30,
+  cruiseSpeed:4.35,
+  acceleration:0.044,
+
+  // Keep vertical climbs useful without turning the extra climb authority into
+  // extra horizontal speed. Gravity still wins eventually in a true vertical
+  // climb, so a stall can develop and the aircraft can fall back into a dive.
+  poweredThrust:0.078,
+  poweredGravity:0.082,
+  poweredDrag:0.989,
+  poweredSteer:0.100,
+
   glideGravity:0.042,
   glideDrag:0.9988,
-  maxGlideSpeed:5.45,
-  glideSteer:0.028,
+  maxGlideSpeed:4.85,
+  glideSteer:0.031,
   running:true
 };
 
@@ -340,10 +348,10 @@ function updateFlight(){
       // Near a powered stall, gravity wins decisively instead of allowing the
       // aircraft to hover in place. Pointing the nose down then rebuilds speed.
       actualSpeed=Math.hypot(plane.vx,plane.vy);
-      if(actualSpeed<1.15){
-        plane.vy+=0.032;
+      if(actualSpeed<1.25){
+        plane.vy+=0.040;
         const nose=normalAngle(plane.angle);
-        if(nose<.25) plane.angle+=.008;
+        if(nose<.30) plane.angle+=.010;
       }
     }else{
       // With no engine there is no forward thrust. Keep the aircraft's
