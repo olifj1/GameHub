@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.0.53">
+  <link rel="stylesheet" href="style.css?v=1.0.54">
   <title>Flight</title>
 </head>
 <body class="modular-game" data-game-id="game-09">
@@ -17,7 +17,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="game-09-info-title">Instructions</h2>
-      <p>Start the engine to accelerate along the runway. Hold Up or Down to pitch the aeroplane through the sky — you can rotate all the way around and fly a loop. Pass through the hoops, collect any stars you can, then make a gentle, nearly level landing on the finish runway. You can switch the engine off to glide: gravity pulls the flight path downward, climbing costs speed and diving regains it. The stars are optional, so try different routes through the course.</p>
+      <p>Choose a difficulty, start the engine and use Up or Down to pitch the biplane. Fly through every numbered ring in the direction it points, collect any optional stars, then make a gentle landing on the finish runway. Easy has two simple rings; Medium adds more rings and angled approaches; Hard uses six rings including steep and vertical approaches. Climbing uses momentum, and if you run out of speed gravity will pull you back down so you can point downhill and recover.</p>
     </div>
   </div>
 
@@ -29,11 +29,17 @@
           <h1 id="flight-title">Flight</h1>
         </header>
 
+        <div class="flight-difficulty-row" role="group" aria-label="Flight difficulty">
+          <button class="flight-difficulty active" data-flight-difficulty="easy" type="button">Easy</button>
+          <button class="flight-difficulty" data-flight-difficulty="medium" type="button">Medium</button>
+          <button class="flight-difficulty" data-flight-difficulty="hard" type="button">Hard</button>
+        </div>
+
         <div class="flight-hud" aria-label="Flight information">
           <div><span>ENGINE</span><strong id="flight-engine-state">OFF</strong></div>
           <div><span>SPEED</span><strong id="flight-speed">0</strong></div>
-          <div><span>HOOPS</span><strong id="flight-hoops">0 / 5</strong></div>
-          <div><span>STARS</span><strong id="flight-stars">0 / 6</strong></div>
+          <div><span>HOOPS</span><strong id="flight-hoops">0 / 2</strong></div>
+          <div><span>STARS</span><strong id="flight-stars">0 / 3</strong></div>
         </div>
 
         <div class="flight-stage-wrap">
@@ -75,8 +81,8 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.0.53"></script>
-  <script src="core.js?v=1.0.53"></script>
-  <script src="game-09.js?v=1.0.53"></script>
+  <script src="site-config.js?v=1.0.54"></script>
+  <script src="core.js?v=1.0.54"></script>
+  <script src="game-09.js?v=1.0.54"></script>
 </body>
 </html>

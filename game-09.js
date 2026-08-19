@@ -14,6 +14,7 @@ const flightMessage = $("#flight-message");
 const flightMessageTitle = $("#flight-message-title");
 const flightMessageText = $("#flight-message-text");
 const flightAgain = $("#flight-again");
+const flightDifficultyButtons = $$(".flight-difficulty");
 
 const FW = flightCanvas.width;
 const FH = flightCanvas.height;
@@ -26,12 +27,13 @@ const flightInput = {up:false,down:false};
 const flightWorld = {
   cameraX:0,
   pitchRate:0.038,
-  gravity:0.16,
-  maxSpeed:6.1,
-  cruiseSpeed:5.0,
-  acceleration:0.045,
-  coastDrag:0.992,
-  engineDrag:0.998,
+  maxSpeed:6.25,
+  cruiseSpeed:5.15,
+  acceleration:0.050,
+  poweredThrust:0.086,
+  poweredGravity:0.092,
+  poweredDrag:0.990,
+  poweredSteer:0.075,
   glideGravity:0.042,
   glideDrag:0.9988,
   maxGlideSpeed:5.45,
@@ -39,22 +41,58 @@ const flightWorld = {
   running:true
 };
 
-const hoopTemplate = [
-  {x:1250,y:300,r:48},
-  {x:2200,y:190,r:48},
-  {x:3150,y:335,r:48},
-  {x:4100,y:175,r:48},
-  {x:5050,y:300,r:48}
-];
+const FLIGHT_COURSES = {
+  easy:{
+    hoops:[
+      {x:1850,y:300,r:50,angle:0},
+      {x:4050,y:220,r:50,angle:0}
+    ],
+    stars:[
+      {x:1050,y:350,r:22},
+      {x:2850,y:150,r:22},
+      {x:4950,y:330,r:22}
+    ],
+    ringTolerance:1.05
+  },
+  medium:{
+    hoops:[
+      {x:1250,y:320,r:49,angle:0},
+      {x:2350,y:190,r:49,angle:-0.55},
+      {x:3550,y:330,r:49,angle:0.50},
+      {x:4850,y:205,r:49,angle:0}
+    ],
+    stars:[
+      {x:900,y:365,r:22},
+      {x:1850,y:120,r:22},
+      {x:3000,y:260,r:22},
+      {x:4200,y:120,r:22},
+      {x:5250,y:335,r:22}
+    ],
+    ringTolerance:0.90
+  },
+  hard:{
+    hoops:[
+      {x:1050,y:330,r:48,angle:0},
+      {x:1900,y:195,r:48,angle:-0.80},
+      {x:2750,y:285,r:48,angle:-Math.PI/2},
+      {x:3650,y:160,r:48,angle:0.72},
+      {x:4450,y:315,r:48,angle:Math.PI/2},
+      {x:5200,y:205,r:48,angle:-0.45}
+    ],
+    stars:[
+      {x:820,y:380,r:22},
+      {x:1500,y:125,r:22},
+      {x:2350,y:360,r:22},
+      {x:3250,y:105,r:22},
+      {x:4100,y:385,r:22},
+      {x:5000,y:115,r:22}
+    ],
+    ringTolerance:0.78
+  }
+};
 
-const starTemplate = [
-  {x:880,y:345,r:22},
-  {x:1690,y:125,r:22},
-  {x:2670,y:300,r:22},
-  {x:3600,y:125,r:22},
-  {x:4560,y:360,r:22},
-  {x:5300,y:225,r:22}
-];
+let flightDifficulty=localStorage.getItem("flightDifficulty")||"easy";
+if(!FLIGHT_COURSES[flightDifficulty]) flightDifficulty="easy";
 
 let hoops=[];
 let stars=[];
@@ -77,10 +115,13 @@ function resetFlight(){
     engine:false,
     landed:true,
     crashed:false,
-    finished:false
+    finished:false,
+    finishPending:false
   };
-  hoops=hoopTemplate.map(h=>({...h,hit:false}));
-  stars=starTemplate.map(s=>({...s,hit:false}));
+  const course=FLIGHT_COURSES[flightDifficulty];
+  hoops=course.hoops.map(h=>({...h,hit:false}));
+  stars=course.stars.map(s=>({...s,hit:false}));
+  flightDifficultyButtons.forEach(button=>button.classList.toggle("active",button.dataset.flightDifficulty===flightDifficulty));
   flightWorld.cameraX=0;
   flightWorld.running=true;
   flightInput.up=flightInput.down=false;
@@ -88,12 +129,12 @@ function resetFlight(){
   lastAngle=0;
   flightMessage.classList.add("hidden");
   flightMessage.classList.remove("flight-message-success");
-  flightStatus.textContent="Start the engine when you are ready.";
+  flightStatus.textContent=`${flightDifficulty[0].toUpperCase()+flightDifficulty.slice(1)} — start the engine when you are ready.`;
   updateFlightHud();
 }
 
 function toggleEngine(){
-  if(!flightWorld.running)return;
+  if(!flightWorld.running||plane.finishPending)return;
   plane.engine=!plane.engine;
   if(plane.engine){
     flightStatus.textContent=plane.landed?"Engine started — build some speed.":"Engine on.";
@@ -129,23 +170,22 @@ function finishFlight(){
   if(!flightWorld.running)return;
   flightWorld.running=false;
   plane.finished=true;
+  plane.finishPending=false;
   plane.engine=false;
+  plane.speed=0;
+  plane.vx=0;
+  plane.vy=0;
   updateFlightHud();
 
   const starCount=stars.filter(s=>s.hit).length;
   flightMessageTitle.textContent=starCount===stars.length?"Perfect flight!":"Flight complete!";
   flightMessageText.textContent=`${starCount}/${stars.length} stars collected.`;
   flightAgain.textContent="Fly again";
-
-  // Keep the touchdown visible first, then show a compact result card rather
-  // than covering the whole flight view.
   flightMessage.classList.add("flight-message-success");
   flightMessage.classList.add("hidden");
   window.setTimeout(()=>{
-    if(plane.finished){
-      flightMessage.classList.remove("hidden");
-    }
-  },650);
+    if(plane.finished) flightMessage.classList.remove("hidden");
+  },300);
 }
 
 function onRunway(x){
@@ -161,13 +201,23 @@ function safeLanding(verticalSpeed){
 }
 
 function updateHoops(){
+  const course=FLIGHT_COURSES[flightDifficulty];
+  const travelAngle=Math.hypot(plane.vx,plane.vy)>.35?Math.atan2(plane.vy,plane.vx):plane.angle;
+
   for(const hoop of hoops){
     if(hoop.hit)continue;
     const dx=plane.x-hoop.x,dy=plane.y-hoop.y;
-    if(Math.hypot(dx,dy)<hoop.r*.72){
+    const ca=Math.cos(hoop.angle),sa=Math.sin(hoop.angle);
+    const along=dx*ca+dy*sa;
+    const across=-dx*sa+dy*ca;
+    const aligned=Math.abs(normalAngle(travelAngle-hoop.angle))<course.ringTolerance;
+
+    // The opening is broad across the ring but narrow in its travel direction,
+    // so angled and vertical rings genuinely ask for a different approach.
+    if(Math.abs(along)<hoop.r*.62 && Math.abs(across)<hoop.r*.68 && aligned){
       hoop.hit=true;
       flightHoops.textContent=`${hoops.filter(h=>h.hit).length} / ${hoops.length}`;
-      flightStatus.textContent=hoops.every(h=>h.hit)?"All hoops — find the finish runway.":"Hoop!";
+      flightStatus.textContent=hoops.every(h=>h.hit)?"All rings — find the finish runway.":"Ring!";
     }
   }
 }
@@ -190,6 +240,24 @@ function updateFlight(){
   const wasLanded=plane.landed;
 
   if(plane.landed){
+    // A completed flight is not frozen at touchdown: let the biplane roll
+    // naturally to a satisfying stop before showing the result.
+    if(plane.finishPending){
+      plane.engine=false;
+      plane.angle=0;
+      plane.speed*=.968;
+      if(plane.speed<.055){
+        plane.speed=0;
+        plane.vx=0;
+        plane.vy=0;
+        finishFlight();
+        return;
+      }
+      plane.vx=plane.speed;
+      plane.vy=0;
+      plane.x+=plane.speed;
+      plane.y=GROUND_Y-23;
+    }else{
     // On the runway the aeroplane stays essentially level. Once it has enough
     // speed, Up lets the nose rise and breaks ground naturally.
     if(plane.engine){
@@ -223,6 +291,7 @@ function updateFlight(){
       plane.y=GROUND_Y-23;
       plane.angle=Math.max(-0.10,Math.min(.08,plane.angle));
     }
+    }
   }
 
   if(!plane.landed){
@@ -240,16 +309,42 @@ function updateFlight(){
     let horizontalSpeed=plane.vx;
 
     if(plane.engine){
-      // Powered flight remains responsive and arcade-like: the velocity is
-      // pulled quite strongly toward the direction the nose is pointing.
-      plane.speed+=(flightWorld.cruiseSpeed-plane.speed)*.016;
-      plane.speed=Math.min(flightWorld.maxSpeed,plane.speed);
-      plane.speed*=flightWorld.engineDrag;
+      // Powered flight now has actual thrust and gravity. Horizontal flight is
+      // a little stronger, steep climbs keep their energy longer, but a truly
+      // vertical climb will eventually run out of momentum and fall back.
+      let poweredSpeed=Math.hypot(plane.vx,plane.vy);
+      if(poweredSpeed<.05){
+        plane.vx=Math.cos(plane.angle)*Math.max(1.0,plane.speed);
+        plane.vy=Math.sin(plane.angle)*Math.max(1.0,plane.speed);
+        poweredSpeed=Math.hypot(plane.vx,plane.vy);
+      }
 
-      const targetVx=Math.cos(plane.angle)*plane.speed;
-      const targetVy=Math.sin(plane.angle)*plane.speed+flightWorld.gravity;
-      plane.vx+=(targetVx-plane.vx)*.24;
-      plane.vy+=(targetVy-plane.vy)*.24;
+      const velocityAngle=Math.atan2(plane.vy,plane.vx);
+      const angleError=normalAngle(plane.angle-velocityAngle);
+      const guidedAngle=velocityAngle+angleError*flightWorld.poweredSteer;
+      plane.vx=Math.cos(guidedAngle)*poweredSpeed;
+      plane.vy=Math.sin(guidedAngle)*poweredSpeed;
+
+      plane.vx+=Math.cos(plane.angle)*flightWorld.poweredThrust;
+      plane.vy+=Math.sin(plane.angle)*flightWorld.poweredThrust+flightWorld.poweredGravity;
+      plane.vx*=flightWorld.poweredDrag;
+      plane.vy*=flightWorld.poweredDrag;
+
+      let actualSpeed=Math.hypot(plane.vx,plane.vy);
+      if(actualSpeed>flightWorld.maxSpeed){
+        const scale=flightWorld.maxSpeed/actualSpeed;
+        plane.vx*=scale;
+        plane.vy*=scale;
+      }
+
+      // Near a powered stall, gravity wins decisively instead of allowing the
+      // aircraft to hover in place. Pointing the nose down then rebuilds speed.
+      actualSpeed=Math.hypot(plane.vx,plane.vy);
+      if(actualSpeed<1.15){
+        plane.vy+=0.032;
+        const nose=normalAngle(plane.angle);
+        if(nose<.25) plane.angle+=.008;
+      }
     }else{
       // With no engine there is no forward thrust. Keep the aircraft's
       // existing momentum, let the controls gently change its flight path,
@@ -334,11 +429,13 @@ function updateFlight(){
 
         if(runway==="finish"){
           if(hoops.every(h=>h.hit)){
-            finishFlight();
-            return;
+            plane.finishPending=true;
+            plane.engine=false;
+            flightStatus.textContent="Great landing — rolling to a stop.";
+          }else{
+            const left=hoops.filter(h=>!h.hit).length;
+            flightStatus.textContent=`Safe landing — ${left} ring${left===1?"":"s"} still to fly through.`;
           }
-          const left=hoops.filter(h=>!h.hit).length;
-          flightStatus.textContent=`Safe landing — ${left} hoop${left===1?"":"s"} still to fly through.`;
         }else{
           flightStatus.textContent="Safe landing.";
         }
@@ -466,24 +563,47 @@ function drawRunway(runway,label){
 function drawHoop(hoop,index){
   flightCtx.save();
   flightCtx.translate(hoop.x,hoop.y);
+  flightCtx.rotate(hoop.angle);
 
-  flightCtx.strokeStyle=hoop.hit?"rgba(85,139,128,.28)":"#568a83";
+  const main=hoop.hit?"rgba(85,139,128,.27)":"#568a83";
+  const soft=hoop.hit?"rgba(85,139,128,.14)":"rgba(86,138,131,.28)";
+
+  // Local X is the direction of travel; the ring plane sits across it. This
+  // makes an upward-pointing ring visibly rotate into a horizontal oval.
+  flightCtx.strokeStyle=main;
   flightCtx.lineWidth=8;
   flightCtx.beginPath();
-  flightCtx.arc(0,0,hoop.r,0,Math.PI*2);
+  flightCtx.ellipse(0,0,hoop.r*.56,hoop.r,0,0,Math.PI*2);
   flightCtx.stroke();
 
-  flightCtx.strokeStyle=hoop.hit?"rgba(85,139,128,.18)":"rgba(86,138,131,.32)";
+  flightCtx.strokeStyle=soft;
   flightCtx.lineWidth=2;
   flightCtx.beginPath();
-  flightCtx.arc(0,0,hoop.r+10,0,Math.PI*2);
+  flightCtx.ellipse(0,0,hoop.r*.56+9,hoop.r+9,0,0,Math.PI*2);
   flightCtx.stroke();
 
-  flightCtx.fillStyle=hoop.hit?"rgba(85,139,128,.40)":"#568a83";
-  flightCtx.font="850 14px system-ui";
+  // Direction cue through the middle of the opening.
+  flightCtx.strokeStyle=main;
+  flightCtx.lineWidth=3;
+  flightCtx.lineCap="round";
+  flightCtx.lineJoin="round";
+  flightCtx.beginPath();
+  flightCtx.moveTo(-12,0);
+  flightCtx.lineTo(13,0);
+  flightCtx.moveTo(6,-6);
+  flightCtx.lineTo(13,0);
+  flightCtx.lineTo(6,6);
+  flightCtx.stroke();
+
+  flightCtx.restore();
+
+  flightCtx.save();
+  flightCtx.translate(hoop.x,hoop.y-hoop.r-15);
+  flightCtx.fillStyle=hoop.hit?"rgba(85,139,128,.38)":"#568a83";
+  flightCtx.font="850 13px system-ui";
   flightCtx.textAlign="center";
   flightCtx.textBaseline="middle";
-  flightCtx.fillText(hoop.hit?"✓":String(index+1),0,1);
+  flightCtx.fillText(hoop.hit?"✓":String(index+1),0,0);
   flightCtx.restore();
 }
 
@@ -540,80 +660,107 @@ function drawPlane(){
   flightCtx.lineJoin="round";
   flightCtx.lineCap="round";
 
-  // engine motion mark
-  if(plane.engine&&flightWorld.running){
-    flightCtx.strokeStyle="rgba(184,112,104,.60)";
-    flightCtx.lineWidth=3;
-    flightCtx.beginPath();
-    flightCtx.moveTo(-31,-4);
-    flightCtx.lineTo(-45,-4);
-    flightCtx.moveTo(-33,4);
-    flightCtx.lineTo(-42,4);
-    flightCtx.stroke();
-  }
+  const ink="#343b43";
+  const body="#f7f2ec";
+  const wing="#d9e3e0";
+  const accent="#b87068";
 
-  // clean side-view aeroplane
-  flightCtx.fillStyle="#f7f2ec";
-  flightCtx.strokeStyle="#343b43";
+  flightCtx.strokeStyle=ink;
   flightCtx.lineWidth=3;
+
+  // Classic side-on biplane fuselage.
+  flightCtx.fillStyle=body;
   flightCtx.beginPath();
-  flightCtx.moveTo(-31,0);
-  flightCtx.lineTo(-10,-7);
-  flightCtx.lineTo(18,-7);
-  flightCtx.quadraticCurveTo(32,-5,38,0);
-  flightCtx.quadraticCurveTo(30,7,17,8);
-  flightCtx.lineTo(-10,8);
+  flightCtx.moveTo(-30,2);
+  flightCtx.lineTo(-18,-6);
+  flightCtx.lineTo(17,-7);
+  flightCtx.quadraticCurveTo(29,-6,34,-1);
+  flightCtx.quadraticCurveTo(29,7,16,8);
+  flightCtx.lineTo(-18,8);
   flightCtx.closePath();
   flightCtx.fill();
   flightCtx.stroke();
 
-  // wing
-  flightCtx.fillStyle="#d9e3e0";
+  // Tail fin and tailplane.
+  flightCtx.fillStyle=accent;
   flightCtx.beginPath();
-  flightCtx.moveTo(-2,-3);
-  flightCtx.lineTo(13,-22);
-  flightCtx.lineTo(20,-20);
-  flightCtx.lineTo(10,1);
-  flightCtx.closePath();
-  flightCtx.fill();
-  flightCtx.stroke();
-
-  flightCtx.beginPath();
-  flightCtx.moveTo(-4,5);
-  flightCtx.lineTo(13,20);
-  flightCtx.lineTo(19,18);
-  flightCtx.lineTo(9,4);
-  flightCtx.closePath();
-  flightCtx.fill();
-  flightCtx.stroke();
-
-  // tail
-  flightCtx.fillStyle="#b87068";
-  flightCtx.beginPath();
-  flightCtx.moveTo(-22,-4);
+  flightCtx.moveTo(-24,-4);
   flightCtx.lineTo(-29,-18);
-  flightCtx.lineTo(-18,-16);
-  flightCtx.lineTo(-10,-5);
+  flightCtx.lineTo(-18,-15);
+  flightCtx.lineTo(-11,-4);
+  flightCtx.closePath();
+  flightCtx.fill();
+  flightCtx.stroke();
+  flightCtx.beginPath();
+  flightCtx.moveTo(-29,1);
+  flightCtx.lineTo(-38,-3);
+  flightCtx.lineTo(-37,5);
+  flightCtx.lineTo(-22,6);
   flightCtx.closePath();
   flightCtx.fill();
   flightCtx.stroke();
 
-  // cockpit
+  // Two wings and their struts make the silhouette clearly biplane.
+  flightCtx.fillStyle=wing;
+  flightCtx.beginPath();
+  flightCtx.roundRect(-13,-19,38,6,3);
+  flightCtx.fill();
+  flightCtx.stroke();
+  flightCtx.beginPath();
+  flightCtx.roundRect(-15,8,40,6,3);
+  flightCtx.fill();
+  flightCtx.stroke();
+
+  flightCtx.strokeStyle=ink;
+  flightCtx.lineWidth=2;
+  flightCtx.beginPath();
+  flightCtx.moveTo(-7,-13); flightCtx.lineTo(-5,8);
+  flightCtx.moveTo(14,-13); flightCtx.lineTo(12,8);
+  flightCtx.moveTo(-7,-13); flightCtx.lineTo(12,8);
+  flightCtx.moveTo(14,-13); flightCtx.lineTo(-5,8);
+  flightCtx.stroke();
+
+  // Cockpit.
   flightCtx.fillStyle="#d6e1e4";
+  flightCtx.strokeStyle=ink;
+  flightCtx.lineWidth=2.5;
   flightCtx.beginPath();
-  flightCtx.moveTo(14,-7);
-  flightCtx.quadraticCurveTo(23,-13,29,-5);
-  flightCtx.lineTo(26,-3);
-  flightCtx.lineTo(15,-3);
+  flightCtx.arc(9,-8,6,Math.PI,0);
+  flightCtx.lineTo(15,-5);
+  flightCtx.lineTo(3,-5);
   flightCtx.closePath();
   flightCtx.fill();
   flightCtx.stroke();
 
-  // landing wheels, useful orientation cue
-  flightCtx.fillStyle="#343b43";
+  // Nose and propeller.
+  flightCtx.fillStyle=accent;
   flightCtx.beginPath();
-  flightCtx.arc(-5,12,4,0,Math.PI*2);
-  flightCtx.arc(21,11,4,0,Math.PI*2);
+  flightCtx.roundRect(27,-5,7,10,3);
+  flightCtx.fill();
+  flightCtx.stroke();
+
+  flightCtx.strokeStyle=plane.engine&&flightWorld.running?"rgba(184,112,104,.62)":ink;
+  flightCtx.lineWidth=plane.engine&&flightWorld.running?5:3;
+  flightCtx.beginPath();
+  flightCtx.moveTo(36,-15);
+  flightCtx.lineTo(36,15);
+  flightCtx.stroke();
+  flightCtx.fillStyle=ink;
+  flightCtx.beginPath();
+  flightCtx.arc(36,0,3.2,0,Math.PI*2);
+  flightCtx.fill();
+
+  // Undercarriage.
+  flightCtx.strokeStyle=ink;
+  flightCtx.lineWidth=2;
+  flightCtx.beginPath();
+  flightCtx.moveTo(-3,10); flightCtx.lineTo(-6,17);
+  flightCtx.moveTo(17,10); flightCtx.lineTo(20,17);
+  flightCtx.stroke();
+  flightCtx.fillStyle=ink;
+  flightCtx.beginPath();
+  flightCtx.arc(-6,18,4,0,Math.PI*2);
+  flightCtx.arc(20,18,4,0,Math.PI*2);
   flightCtx.fill();
 
   flightCtx.restore();
@@ -682,6 +829,14 @@ function bindHold(button,key){
 
 bindHold(flightUp,"up");
 bindHold(flightDown,"down");
+
+flightDifficultyButtons.forEach(button=>{
+  bindFastPress(button,()=>{
+    flightDifficulty=button.dataset.flightDifficulty;
+    localStorage.setItem("flightDifficulty",flightDifficulty);
+    resetFlight();
+  });
+});
 
 let enginePointer=0;
 flightEngineButton.addEventListener("pointerdown",e=>{
