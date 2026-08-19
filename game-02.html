@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.0.63">
+  <link rel="stylesheet" href="style.css?v=1.0.64">
   <title>Tell the Time</title>
 </head>
 <body class="modular-game" data-game-id="game-02">
@@ -63,6 +63,25 @@
   <svg class="day-cycle" viewBox="0 0 420 150" role="img" aria-labelledby="day-cycle-title">
     <title id="day-cycle-title">Sun position through the day and night</title>
 
+    <g class="cycle-zones" aria-hidden="true">
+      <g class="cycle-zone-group cycle-zone-group-morning active" data-cycle-zone="morning">
+        <path class="cycle-zone" d="M48 76 C92 25 150 14 210 20"></path>
+        <text class="cycle-zone-label" x="120" y="36" text-anchor="middle">Morning</text>
+      </g>
+      <g class="cycle-zone-group cycle-zone-group-afternoon" data-cycle-zone="afternoon">
+        <path class="cycle-zone" d="M210 20 C270 14 328 25 372 76"></path>
+        <text class="cycle-zone-label" x="300" y="36" text-anchor="middle">Afternoon</text>
+      </g>
+      <g class="cycle-zone-group cycle-zone-group-evening" data-cycle-zone="evening">
+        <path class="cycle-zone" d="M372 76 C328 127 270 138 210 132"></path>
+        <text class="cycle-zone-label" x="305" y="126" text-anchor="middle">Evening</text>
+      </g>
+      <g class="cycle-zone-group cycle-zone-group-night" data-cycle-zone="night">
+        <path class="cycle-zone" d="M210 132 C150 138 92 127 48 76"></path>
+        <text class="cycle-zone-label" x="118" y="126" text-anchor="middle">Night</text>
+      </g>
+    </g>
+
     <path class="cycle-orbit cycle-orbit-day" d="M45 76 C90 13 330 13 375 76"></path>
     <path class="cycle-orbit cycle-orbit-night" d="M375 76 C330 139 90 139 45 76"></path>
     <line class="cycle-horizon" x1="28" y1="76" x2="392" y2="76"></line>
@@ -98,7 +117,7 @@
     </g>
   </svg>
   <div class="cycle-caption">
-    <span>Sunrise</span><span>Day</span><span>Sunset</span><span>Night</span>
+    <span>Morning</span><span>Afternoon</span><span>Evening</span><span>Night</span>
   </div>
 </div>
 
@@ -117,8 +136,8 @@
 </div>
 </section>
   </main>
-  <script src="site-config.js?v=1.0.63"></script>
-  <script src="core.js?v=1.0.63"></script>
-  <script src="game-02.js?v=1.0.63"></script>
+  <script src="site-config.js?v=1.0.64"></script>
+  <script src="core.js?v=1.0.64"></script>
+  <script src="game-02.js?v=1.0.64"></script>
 </body>
 </html>

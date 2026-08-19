@@ -12,6 +12,7 @@ const clockScreen = $("#clock-screen");
 const clockTicks = $("#clock-ticks");
 const cycleSun = $("#cycle-sun");
 const cycleTimeLabel = $("#cycle-time-label");
+const cycleZoneGroups = $$("[data-cycle-zone]");
 const clockModeButtons = $$("[data-clock-mode]");
 const clockTestRow = $("#clock-test-row");
 const clockTestCard = $("#clock-test-card");
@@ -72,6 +73,14 @@ function labelForTime(decimalHour) {
   if (decimalHour < 20) return "Sunset";
   if (decimalHour < 22) return "Evening";
   return "Night";
+}
+
+function cycleZoneForTime(decimalHour) {
+  if (decimalHour < 5) return "night";
+  if (decimalHour < 12) return "morning";
+  if (decimalHour < 17) return "afternoon";
+  if (decimalHour < 22) return "evening";
+  return "night";
 }
 
 
@@ -192,6 +201,11 @@ function renderClock() {
   cycleSun.classList.toggle("below-horizon", decimalHour < 6 || decimalHour >= 18);
 
   cycleTimeLabel.textContent = `${hh}:${mm}`;
+
+  const activeZone = cycleZoneForTime(decimalHour);
+  cycleZoneGroups.forEach(group => {
+    group.classList.toggle("active", group.dataset.cycleZone === activeZone);
+  });
 
   if(clockMode==="explore"){
     localStorage.setItem("clockHour", hour === 24 ? 0 : hour);
