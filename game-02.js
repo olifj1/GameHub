@@ -12,6 +12,12 @@ const clockScreen = $("#clock-screen");
 const clockTicks = $("#clock-ticks");
 const cycleSun = $("#cycle-sun");
 const cycleTimeLabel = $("#cycle-time-label");
+const clockModeButtons = $$("[data-clock-mode]");
+const clockTestCard = $("#clock-test-card");
+const clockTestTarget = $("#clock-test-target");
+const clockTestFeedback = $("#clock-test-feedback");
+const clockTestAction = $("#clock-test-action");
+const clockPage = $("#clock-page");
 
 for (let i = 0; i < 60; i++) {
   const angle = i * 6 * Math.PI / 180;
@@ -49,6 +55,13 @@ let minute = Number(localStorage.getItem("clockMinute") || 0);
 hourSlider.value = hour;
 minuteSlider.value = minute;
 
+let clockMode = localStorage.getItem("clockMode") || "explore";
+if(!["explore","test"].includes(clockMode)) clockMode="explore";
+
+let clockTestHour = 7;
+let clockTestMinute = 30;
+let clockTestSolved = false;
+
 function labelForTime(decimalHour) {
   if (decimalHour < 5) return "Night";
   if (decimalHour < 7) return "Sunrise";
@@ -58,6 +71,89 @@ function labelForTime(decimalHour) {
   if (decimalHour < 20) return "Sunset";
   if (decimalHour < 22) return "Evening";
   return "Night";
+}
+
+
+function formatClockTime(h,m){
+  return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
+}
+
+function newClockTest(){
+  const previous=`${clockTestHour}:${clockTestMinute}`;
+  let nextHour,nextMinute,nextKey;
+
+  // Use five-minute increments for a child-friendly first test mode.
+  do{
+    nextHour=Math.floor(Math.random()*12)+1;
+    nextMinute=Math.floor(Math.random()*12)*5;
+    nextKey=`${nextHour}:${nextMinute}`;
+  }while(nextKey===previous);
+
+  clockTestHour=nextHour;
+  clockTestMinute=nextMinute;
+  clockTestSolved=false;
+  clockTestTarget.textContent=formatClockTime(clockTestHour,clockTestMinute);
+  clockTestFeedback.textContent="Move the hands, then check your answer.";
+  clockTestFeedback.classList.remove("good","bad");
+  clockTestAction.textContent="Check";
+
+  // Start each question from a different time, but avoid accidentally
+  // presenting the correct answer immediately.
+  let startHour,startMinute;
+  do{
+    startHour=Math.floor(Math.random()*12)+1;
+    startMinute=Math.floor(Math.random()*12)*5;
+  }while(startHour===clockTestHour && startMinute===clockTestMinute);
+
+  hour=startHour;
+  minute=startMinute;
+  hourSlider.value=hour;
+  minuteSlider.value=minute;
+  renderClock();
+}
+
+function setClockMode(mode){
+  clockMode=mode;
+  localStorage.setItem("clockMode",clockMode);
+  const testing=clockMode==="test";
+
+  clockModeButtons.forEach(button=>{
+    button.classList.toggle("active",button.dataset.clockMode===clockMode);
+  });
+
+  clockPage.classList.toggle("clock-test-mode",testing);
+  clockTestCard.classList.toggle("hidden",!testing);
+  clockTestAction.classList.toggle("hidden",!testing);
+
+  if(testing){
+    newClockTest();
+  }else{
+    clockTestSolved=false;
+    clockTestFeedback.classList.remove("good","bad");
+    renderClock();
+  }
+}
+
+function checkClockTest(){
+  if(clockTestSolved){
+    newClockTest();
+    return;
+  }
+
+  const selectedHour=((hour===24?0:hour)%12)||12;
+  const selectedMinute=minute===60?0:minute;
+  const correct=selectedHour===clockTestHour && selectedMinute===clockTestMinute;
+
+  clockTestFeedback.classList.remove("good","bad");
+  if(correct){
+    clockTestSolved=true;
+    clockTestFeedback.textContent="Correct — well done!";
+    clockTestFeedback.classList.add("good");
+    clockTestAction.textContent="New time";
+  }else{
+    clockTestFeedback.textContent="Not quite — adjust the hands and try again.";
+    clockTestFeedback.classList.add("bad");
+  }
 }
 
 function renderClock() {
@@ -86,18 +182,34 @@ function renderClock() {
 
   cycleTimeLabel.textContent = `${hh}:${mm}`;
 
-  localStorage.setItem("clockHour", hour === 24 ? 0 : hour);
-  localStorage.setItem("clockMinute", minute);
+  if(clockMode==="explore"){
+    localStorage.setItem("clockHour", hour === 24 ? 0 : hour);
+    localStorage.setItem("clockMinute", minute);
+  }
 }
 
 hourSlider.addEventListener("input", () => {
   hour = Number(hourSlider.value);
+  if(clockMode==="test" && !clockTestSolved){
+    clockTestFeedback.textContent="Move the hands, then check your answer.";
+    clockTestFeedback.classList.remove("good","bad");
+  }
   renderClock();
 });
 
 minuteSlider.addEventListener("input", () => {
   minute = Number(minuteSlider.value);
+  if(clockMode==="test" && !clockTestSolved){
+    clockTestFeedback.textContent="Move the hands, then check your answer.";
+    clockTestFeedback.classList.remove("good","bad");
+  }
   renderClock();
 });
 
+clockModeButtons.forEach(button=>{
+  bindFastPress(button,()=>setClockMode(button.dataset.clockMode));
+});
+bindFastPress(clockTestAction,checkClockTest);
+
 renderClock();
+setClockMode(clockMode);
