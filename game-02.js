@@ -79,14 +79,28 @@ function formatClockTime(h,m){
   return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
 }
 
+function clockQuestionPeriod(h){
+  if(h < 5) return "at night";
+  if(h < 12) return "in the morning";
+  if(h < 17) return "in the afternoon";
+  if(h < 22) return "in the evening";
+  return "at night";
+}
+
+function formatClockQuestion(h,m){
+  const displayHour=(h%12)||12;
+  return `${displayHour}:${String(m).padStart(2,"0")} ${clockQuestionPeriod(h)}`;
+}
+
 function newClockTest(){
   const previous=`${clockTestHour}:${clockTestMinute}`;
   let nextHour,nextMinute,nextKey;
 
-  // Use five-minute increments for a child-friendly first test mode.
-  // Avoid 12:00 because every question deliberately starts there.
+  // Generate a genuine time across the whole 24-hour day. The wording tells
+  // the child which matching analogue-clock position belongs to this question.
+  // Keep five-minute increments, and avoid 12:00 because every question starts there.
   do{
-    nextHour=Math.floor(Math.random()*12)+1;
+    nextHour=Math.floor(Math.random()*24);
     nextMinute=Math.floor(Math.random()*12)*5;
     nextKey=`${nextHour}:${nextMinute}`;
   }while(nextKey===previous || (nextHour===12 && nextMinute===0));
@@ -94,12 +108,12 @@ function newClockTest(){
   clockTestHour=nextHour;
   clockTestMinute=nextMinute;
   clockTestSolved=false;
-  clockTestTarget.textContent=formatClockTime(clockTestHour,clockTestMinute);
+  clockTestTarget.textContent=formatClockQuestion(clockTestHour,clockTestMinute);
   clockTestFeedback.textContent="Move the hands, then check your answer.";
   clockTestFeedback.classList.remove("good","bad");
   clockTestAction.textContent="Check";
 
-  // Give every question the same clear starting point.
+  // Give every question the same clear starting point: midday 12:00.
   hour=12;
   minute=0;
   hourSlider.value=12;
@@ -134,9 +148,12 @@ function checkClockTest(){
     return;
   }
 
-  const selectedHour=((hour===24?0:hour)%12)||12;
+  // Test the actual point in the 24-hour day, not just the matching
+  // analogue hand position. For example, 08:35 and 20:35 are different answers.
+  const selectedHour=(hour===24?0:hour);
   const selectedMinute=minute===60?0:minute;
-  const correct=selectedHour===clockTestHour && selectedMinute===clockTestMinute;
+  const correctedHour=minute===60?(selectedHour+1)%24:selectedHour;
+  const correct=correctedHour===clockTestHour && selectedMinute===clockTestMinute;
 
   clockTestFeedback.classList.remove("good","bad");
   if(correct){
