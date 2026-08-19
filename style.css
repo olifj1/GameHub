@@ -4410,11 +4410,11 @@ body[data-game-id="game-07"] .carried-crate{
 }
 
 
-/* v1.0.65 — Logic programme follow + win-layer correction */
+/* v1.0.66 — Logic programme follow + win-layer correction */
 body[data-game-id="game-07"] .coding-win-overlay{z-index:100!important;}
 body[data-game-id="game-07"] .coding-win-overlay:not(.hidden){isolation:isolate;}
 
-/* v1.0.65 — dismissible Logic success overlay */
+/* v1.0.66 — dismissible Logic success overlay */
 body[data-game-id="game-07"] .coding-win-overlay{position:absolute!important}
 body[data-game-id="game-07"] .coding-win-close{
   position:absolute;top:8px;right:9px;width:34px;height:34px;padding:0;
@@ -4425,7 +4425,7 @@ body[data-game-id="game-07"] .coding-win-close{
 body[data-game-id="game-07"] .coding-win-close:active{transform:scale(.94)}
 
 
-/* v1.0.65 — Gravity layout, controls and route polish */
+/* v1.0.66 — Gravity layout, controls and route polish */
 body[data-game-id="game-06"] #gravity-screen{
   background:#f5efe9!important;
   color:var(--gh-text)!important;
@@ -4645,14 +4645,14 @@ body[data-game-id="game-06"] .gravity-tuning{display:none!important}
   body[data-game-id="game-06"] .gravity-reset{font-size:9px}
 }
 
-/* v1.0.65 — Gravity combined checkpoint/star HUD */
+/* v1.0.66 — Gravity combined checkpoint/star HUD */
 body[data-game-id="game-06"] .gravity-goals strong{
   font-size:11px!important;
   letter-spacing:-.02em;
 }
 
 
-/* v1.0.65 — Laser Lab visual/playability rebuild */
+/* v1.0.66 — Laser Lab visual/playability rebuild */
 body[data-game-id="game-08"]{
   --laser-accent:#bf6f70;
   --laser-ink:#282d35;
@@ -4952,7 +4952,7 @@ body[data-game-id="game-08"]{
 }
 
 
-/* v1.0.65 — Laser Lab generated-play + orthogonal optics */
+/* v1.0.66 — Laser Lab generated-play + orthogonal optics */
 body[data-game-id="game-08"] .laser-page{
   padding-bottom:max(70px,env(safe-area-inset-bottom));
 }
@@ -5121,7 +5121,7 @@ body[data-game-id="game-08"] .laser-info-pill strong{font-size:13px!important}
 }
 
 
-/* v1.0.65 — Laser exact grid geometry + generated difficulty */
+/* v1.0.66 — Laser exact grid geometry + generated difficulty */
 body[data-game-id="game-08"] .laser-difficulty-row{
   display:grid;
   grid-template-columns:repeat(3,1fr);
@@ -5200,7 +5200,7 @@ body[data-game-id="game-08"] .laser-cell.obstacle::before{
 }
 
 
-/* v1.0.65 — Laser board frame always sits above the grid */
+/* v1.0.66 — Laser board frame always sits above the grid */
 body[data-game-id="game-08"] .laser-board-wrap{
   position:relative!important;
   isolation:isolate;
@@ -5230,7 +5230,7 @@ body[data-game-id="game-08"] .laser-board{
 }
 
 
-/* v1.0.65 — Laser maze walls read as connected wall sections */
+/* v1.0.66 — Laser maze walls read as connected wall sections */
 body[data-game-id="game-08"] .laser-cell.obstacle{
   background:
     repeating-linear-gradient(
@@ -5245,7 +5245,7 @@ body[data-game-id="game-08"] .laser-cell.obstacle::before{
 }
 
 
-/* v1.0.65 — Laser board: full-width frame with true inner clearance */
+/* v1.0.66 — Laser board: full-width frame with true inner clearance */
 body[data-game-id="game-08"] .laser-board-wrap{
   box-sizing:border-box!important;
   width:100%!important;
@@ -5296,7 +5296,7 @@ body[data-game-id="game-08"] .laser-board{
 }
 
 
-/* v1.0.65 — Laser board: equal inner gutter on all four sides */
+/* v1.0.66 — Laser board: equal inner gutter on all four sides */
 body[data-game-id="game-08"] .laser-board-wrap{
   position:relative!important;
   box-sizing:border-box!important;
@@ -5335,7 +5335,7 @@ body[data-game-id="game-08"] .laser-board-wrap::after{
 }
 
 
-/* v1.0.65 — Flight */
+/* v1.0.66 — Flight */
 body[data-game-id="game-09"] #flight-screen{
   background:var(--gh-bg)!important;
   color:var(--gh-ink)!important;
@@ -5513,7 +5513,7 @@ body[data-game-id="game-09"] .flight-reset{
 }
 
 
-/* v1.0.65 — Flight is the landscape game */
+/* v1.0.66 — Flight is the landscape game */
 @media (orientation: landscape) {
   body[data-game-id="game-09"] .orientation-guard.orientation-landscape-preferred{
     display:none!important;
@@ -5707,7 +5707,7 @@ body[data-game-id="game-09"] .flight-reset{
 }
 
 
-/* v1.0.65 — rapid taps are valid input, not a double-tap gesture */
+/* v1.0.66 — rapid taps are valid input, not a double-tap gesture */
 button,
 a,
 select,
@@ -5717,7 +5717,7 @@ input:not([type="range"]),
 }
 
 
-/* v1.0.65 — Flight returns to portrait.
+/* v1.0.66 — Flight returns to portrait.
    Keep the normal GameHub portrait orientation guard and the original
    thumb-friendly three-control layout. */
 @media (orientation: landscape) {
@@ -5850,7 +5850,7 @@ input:not([type="range"]),
 }
 
 
-/* v1.0.65 — Flight success leaves the landing visible */
+/* v1.0.66 — Flight success leaves the landing visible */
 body[data-game-id="game-09"] .flight-message.flight-message-success{
   inset:12px 12px auto auto;
   width:min(62%,245px);
@@ -5887,7 +5887,7 @@ body[data-game-id="game-09"] .flight-message.flight-message-success button{
 }
 
 
-/* v1.0.65 — Flight difficulty and compact portrait rhythm */
+/* v1.0.66 — Flight difficulty and compact portrait rhythm */
 body[data-game-id="game-09"] .flight-difficulty-row{
   width:min(100%,430px);
   margin:0 auto 7px;
@@ -5915,7 +5915,7 @@ body[data-game-id="game-09"] .flight-difficulty.active{
 }
 
 
-/* v1.0.65 — Gravity difficulty */
+/* v1.0.66 — Gravity difficulty */
 body[data-game-id="game-06"] .gravity-difficulty-row{
   flex:0 0 auto;
   width:min(100%,430px);
@@ -5961,7 +5961,7 @@ body[data-game-id="game-06"] .gravity-stage-wrap{
 }
 
 
-/* v1.0.65 — Tell the Time Explore / Test mode */
+/* v1.0.66 — Tell the Time Explore / Test mode */
 body[data-game-id="game-02"] .clock-mode-switch{
   width:min(100%,430px);
   margin:0 auto 7px;
@@ -6106,7 +6106,7 @@ body[data-game-id="game-02"] .clock-test-mode .clock-controls-card{
 }
 
 
-/* v1.0.65 — Gravity successful landing remains visible */
+/* v1.0.66 — Gravity successful landing remains visible */
 body[data-game-id="game-06"] .gravity-message.gravity-message-success{
   inset:12px 12px auto auto!important;
   width:min(66%,250px)!important;
@@ -6143,7 +6143,7 @@ body[data-game-id="game-06"] .gravity-message.gravity-message-success button{
 }
 
 
-/* v1.0.65 — Tell the Time Test layout fits without a bottom action row */
+/* v1.0.66 — Tell the Time Test layout fits without a bottom action row */
 body[data-game-id="game-02"] .clock-test-row{
   width:min(100%,430px);
   margin:0 auto 5px;
@@ -6264,7 +6264,7 @@ body[data-game-id="game-02"] .clock-test-mode .slider-row{
 }
 
 
-/* v1.0.65 — Tell the Time Explore layout tightening
+/* v1.0.66 — Tell the Time Explore layout tightening
    Match the compactness of Test mode without materially changing the design. */
 body[data-game-id="game-02"] #clock-page:not(.clock-test-mode) .clock-stage{
   width:min(74vw,310px)!important;
@@ -6338,7 +6338,7 @@ body[data-game-id="game-02"] #clock-page:not(.clock-test-mode) .slider-row{
 }
 
 
-/* v1.0.65 — Tell the Time questions include time of day */
+/* v1.0.66 — Tell the Time questions include time of day */
 body[data-game-id="game-02"] .clock-test-row .clock-test-target{
   font-size:clamp(19px,5.4vw,24px);
   line-height:1.12;
@@ -6355,7 +6355,7 @@ body[data-game-id="game-02"] .clock-test-row .clock-test-target{
 }
 
 
-/* v1.0.65 — Match Explore analogue-clock scale to Test */
+/* v1.0.66 — Match Explore analogue-clock scale to Test */
 body[data-game-id="game-02"] #clock-page:not(.clock-test-mode) .clock-stage{
   width:min(64vw,265px)!important;
   margin-top:2px!important;
@@ -6374,58 +6374,126 @@ body[data-game-id="game-02"] #clock-page:not(.clock-test-mode) .clock-stage{
 }
 
 
-/* v1.0.65 — Tell the Time day-cycle zones */
+/* v1.0.66 — Tell the Time day-cycle zones */
 .cycle-zones {
-  pointer-events: none;
+  pointer-events:none;
 }
 
-.cycle-zone-group {
-  opacity: 1;
+.cycle-hatch-line {
+  stroke:rgba(67,64,61,.34);
+  stroke-width:1;
+  vector-effect:non-scaling-stroke;
 }
 
 .cycle-zone-group .cycle-zone {
-  stroke: none;
-  opacity: .58;
+  opacity:.30;
 }
 
 .cycle-zone-group .cycle-zone-label {
-  font: 700 10px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  letter-spacing: .04em;
-  fill: rgba(92, 88, 84, .78);
-  opacity: .92;
+  font:700 10px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  letter-spacing:.04em;
+  fill:rgba(86,82,79,.76);
+  opacity:.92;
+  paint-order:stroke;
+  stroke:rgba(247,241,235,.94);
+  stroke-width:3px;
+  stroke-linejoin:round;
 }
 
 .cycle-zone-group.active .cycle-zone {
-  opacity: .88;
+  opacity:.52;
 }
 
 .cycle-zone-group.active .cycle-zone-label {
-  fill: rgba(46, 48, 55, .96);
-  font-weight: 800;
+  fill:rgba(42,44,50,.96);
+  font-weight:800;
 }
 
-.cycle-zone-group-morning .cycle-zone {
-  fill: rgba(86, 83, 78, .06);
-}
+/* Neutral hatching throughout. Slight density differences distinguish the
+   quarters without introducing a colour code. */
+.cycle-zone-group-morning .cycle-zone { opacity:.24; }
+.cycle-zone-group-afternoon .cycle-zone { opacity:.28; }
+.cycle-zone-group-evening .cycle-zone { opacity:.32; }
+.cycle-zone-group-night .cycle-zone { opacity:.36; }
 
-.cycle-zone-group-afternoon .cycle-zone {
-  fill: rgba(86, 83, 78, .09);
-}
+.cycle-zone-group-morning.active .cycle-zone,
+.cycle-zone-group-afternoon.active .cycle-zone,
+.cycle-zone-group-evening.active .cycle-zone,
+.cycle-zone-group-night.active .cycle-zone { opacity:.50; }
 
-.cycle-zone-group-evening .cycle-zone {
-  fill: rgba(86, 83, 78, .12);
-}
+.cycle-caption { display:none; }
 
-.cycle-zone-group-night .cycle-zone {
-  fill: rgba(86, 83, 78, .16);
-}
-
-.cycle-caption {
-  display: none;
-}
-
-@media (max-height: 760px) {
+@media (max-height:760px) {
   .cycle-zone-group .cycle-zone-label {
-    font-size: 9px;
+    font-size:9px;
+    stroke-width:2.6px;
+  }
+}
+
+
+/* v1.0.67 — Tell the Time Explore dual digital clocks */
+body[data-game-id="game-02"] .clock-readouts{
+  width:min(100%,430px);
+  margin:4px auto 0;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  align-items:start;
+}
+
+body[data-game-id="game-02"] .clock-readout{
+  min-width:0;
+  text-align:center;
+}
+
+body[data-game-id="game-02"] .clock-readout-kicker{
+  display:block;
+  margin-bottom:2px;
+  color:var(--gh-muted);
+  font-size:10px;
+  font-weight:850;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+
+body[data-game-id="game-02"] .clock-readouts .digital-time{
+  display:block;
+  margin:0;
+  color:var(--gh-ink);
+  font-size:clamp(30px,8.4vw,42px)!important;
+  line-height:1;
+  font-weight:850;
+  letter-spacing:-.03em;
+  white-space:nowrap;
+}
+
+body[data-game-id="game-02"] .clock-test-mode .clock-readouts{
+  display:none!important;
+}
+
+body[data-game-id="game-02"] #clock-page:not(.clock-test-mode) .day-label{
+  margin-top:4px!important;
+}
+
+@media(max-height:820px){
+  body[data-game-id="game-02"] .clock-readouts{
+    gap:8px;
+    margin-top:3px;
+  }
+  body[data-game-id="game-02"] .clock-readout-kicker{
+    font-size:9px;
+    margin-bottom:1px;
+  }
+  body[data-game-id="game-02"] .clock-readouts .digital-time{
+    font-size:clamp(26px,7.8vw,36px)!important;
+  }
+}
+
+@media(max-width:370px){
+  body[data-game-id="game-02"] .clock-readouts{
+    gap:6px;
+  }
+  body[data-game-id="game-02"] .clock-readouts .digital-time{
+    font-size:clamp(24px,7.1vw,32px)!important;
   }
 }

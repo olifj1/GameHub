@@ -6,7 +6,9 @@ const hourReadout = $("#hour-readout");
 const minuteReadout = $("#minute-readout");
 const hourHand = $("#hour-hand");
 const minuteHand = $("#minute-hand");
-const digitalTime = $("#digital-time");
+const digitalTime12 = $("#digital-time-12");
+const digitalTime24 = $("#digital-time-24");
+const clockReadouts = $("#clock-readouts");
 const dayLabel = $("#day-label");
 const clockScreen = $("#clock-screen");
 const clockTicks = $("#clock-ticks");
@@ -187,7 +189,10 @@ function renderClock() {
 
   const hh = String(carriedHour).padStart(2, "0");
   const mm = String(minute === 60 ? 0 : minute).padStart(2, "0");
-  digitalTime.textContent = `${hh}:${mm}`;
+  const displayHour12 = (carriedHour % 12) || 12;
+  const period = carriedHour < 12 ? "AM" : "PM";
+  digitalTime12.textContent = `${displayHour12}:${mm} ${period}`;
+  digitalTime24.textContent = `${hh}:${mm}`;
   hourReadout.textContent = String(hour === 24 ? 0 : hour).padStart(2, "0");
   minuteReadout.textContent = String(minute).padStart(2, "0");
   dayLabel.textContent = labelForTime(decimalHour);

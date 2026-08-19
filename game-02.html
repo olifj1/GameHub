@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.0.65">
+  <link rel="stylesheet" href="style.css?v=1.0.67">
   <title>Tell the Time</title>
 </head>
 <body class="modular-game" data-game-id="game-02">
@@ -52,7 +52,16 @@
 <circle class="clock-pin" cx="150" cy="150" r="8"></circle>
 </svg>
 </div>
-<div class="digital-time" id="digital-time">12:00</div>
+<div class="clock-readouts" id="clock-readouts" aria-label="Digital clock readouts">
+  <div class="clock-readout">
+    <span class="clock-readout-kicker">12 hour</span>
+    <strong class="digital-time" id="digital-time-12">12:00 PM</strong>
+  </div>
+  <div class="clock-readout">
+    <span class="clock-readout-kicker">24 hour</span>
+    <strong class="digital-time" id="digital-time-24">12:00</strong>
+  </div>
+</div>
 <div class="day-label" id="day-label">Midday</div>
 
 <div class="day-cycle-card" aria-label="Position of the sun through a full day">
@@ -63,22 +72,41 @@
   <svg class="day-cycle" viewBox="0 0 420 150" role="img" aria-labelledby="day-cycle-title">
     <title id="day-cycle-title">Sun position through the day and night</title>
 
-    <g class="cycle-zones" aria-hidden="true">
+    <defs>
+      <clipPath id="cycle-zone-clip">
+        <path d="M45 76 C90 13 330 13 375 76 C330 139 90 139 45 76 Z"></path>
+      </clipPath>
+
+      <pattern id="cycle-hatch-morning" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(34)">
+        <line x1="0" y1="0" x2="0" y2="9" class="cycle-hatch-line"></line>
+      </pattern>
+      <pattern id="cycle-hatch-afternoon" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(-34)">
+        <line x1="0" y1="0" x2="0" y2="10" class="cycle-hatch-line"></line>
+      </pattern>
+      <pattern id="cycle-hatch-evening" width="11" height="11" patternUnits="userSpaceOnUse" patternTransform="rotate(58)">
+        <line x1="0" y1="0" x2="0" y2="11" class="cycle-hatch-line"></line>
+      </pattern>
+      <pattern id="cycle-hatch-night" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(-58)">
+        <line x1="0" y1="0" x2="0" y2="8" class="cycle-hatch-line"></line>
+      </pattern>
+    </defs>
+
+    <g class="cycle-zones" clip-path="url(#cycle-zone-clip)" aria-hidden="true">
       <g class="cycle-zone-group cycle-zone-group-morning active" data-cycle-zone="morning">
-        <path class="cycle-zone" d="M45 76 C90 13 150 13 210 20 L210 76 L45 76 Z"></path>
-        <text class="cycle-zone-label" x="126" y="38" text-anchor="middle">Morning</text>
+        <rect class="cycle-zone" x="45" y="12" width="165" height="64" fill="url(#cycle-hatch-morning)"></rect>
+        <text class="cycle-zone-label" x="126" y="52" text-anchor="middle">Morning</text>
       </g>
       <g class="cycle-zone-group cycle-zone-group-afternoon" data-cycle-zone="afternoon">
-        <path class="cycle-zone" d="M210 20 C270 13 330 13 375 76 L210 76 L210 20 Z"></path>
-        <text class="cycle-zone-label" x="294" y="38" text-anchor="middle">Afternoon</text>
+        <rect class="cycle-zone" x="210" y="12" width="165" height="64" fill="url(#cycle-hatch-afternoon)"></rect>
+        <text class="cycle-zone-label" x="294" y="52" text-anchor="middle">Afternoon</text>
       </g>
       <g class="cycle-zone-group cycle-zone-group-evening" data-cycle-zone="evening">
-        <path class="cycle-zone" d="M375 76 C330 139 270 139 210 132 L210 76 L375 76 Z"></path>
-        <text class="cycle-zone-label" x="298" y="122" text-anchor="middle">Evening</text>
+        <rect class="cycle-zone" x="210" y="76" width="165" height="64" fill="url(#cycle-hatch-evening)"></rect>
+        <text class="cycle-zone-label" x="298" y="108" text-anchor="middle">Evening</text>
       </g>
       <g class="cycle-zone-group cycle-zone-group-night" data-cycle-zone="night">
-        <path class="cycle-zone" d="M210 132 C150 139 90 139 45 76 L210 76 L210 132 Z"></path>
-        <text class="cycle-zone-label" x="122" y="122" text-anchor="middle">Night</text>
+        <rect class="cycle-zone" x="45" y="76" width="165" height="64" fill="url(#cycle-hatch-night)"></rect>
+        <text class="cycle-zone-label" x="122" y="108" text-anchor="middle">Night</text>
       </g>
     </g>
 
@@ -133,8 +161,8 @@
 </div>
 </section>
   </main>
-  <script src="site-config.js?v=1.0.65"></script>
-  <script src="core.js?v=1.0.65"></script>
-  <script src="game-02.js?v=1.0.65"></script>
+  <script src="site-config.js?v=1.0.67"></script>
+  <script src="core.js?v=1.0.67"></script>
+  <script src="game-02.js?v=1.0.67"></script>
 </body>
 </html>
