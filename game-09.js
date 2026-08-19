@@ -27,7 +27,7 @@ const flightInput = {up:false,down:false};
 const flightWorld = {
   cameraX:0,
 
-  // v1.0.62: lower travel speed but faster pitch response. This makes the
+  // v1.0.63: lower travel speed but faster pitch response. This makes the
   // aeroplane feel calmer across the level while producing much tighter loops.
   pitchRate:0.046,
   maxSpeed:5.30,
