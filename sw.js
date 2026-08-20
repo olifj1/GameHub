@@ -1,4 +1,4 @@
-const CACHE = "gamehub-v1.0.66";
+const CACHE = "gamehub-v1.0.68";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -44,6 +44,7 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
+
   event.respondWith(
     fetch(event.request, { cache: "no-store" })
       .then(response => {
@@ -53,6 +54,23 @@ self.addEventListener("fetch", event => {
         }
         return response;
       })
-      .catch(() => caches.match(event.request).then(cached => cached || caches.match("./index.html")))
+      .catch(async () => {
+        // HTML uses cache-busting query strings such as style.css?v=1.0.68,
+        // while APP_SHELL pre-caches the same files without the query string.
+        // ignoreSearch lets those pre-cached assets satisfy offline requests.
+        const cached = await caches.match(event.request, { ignoreSearch: true });
+        if (cached) return cached;
+
+        if (event.request.mode === "navigate") {
+          const home = await caches.match("./index.html", { ignoreSearch: true });
+          if (home) return home;
+        }
+
+        return new Response("Offline", {
+          status: 503,
+          statusText: "Offline",
+          headers: { "Content-Type": "text/plain" }
+        });
+      })
   );
 });

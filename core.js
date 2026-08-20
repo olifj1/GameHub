@@ -55,8 +55,9 @@ applyConfiguredNames();
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
     try {
-      const swUrl = new URL("../sw.js", document.currentScript?.src || new URL("core.js", location.href));
-      const registration = await navigator.serviceWorker.register(swUrl.pathname);
+      // Keep the worker inside the GitHub Pages project directory.
+      // Using ../sw.js here escapes /GameHub/ and breaks registration.
+      const registration = await navigator.serviceWorker.register("./sw.js", { scope: "./" });
       await registration.update();
       document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") registration.update();

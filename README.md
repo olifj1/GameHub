@@ -190,5 +190,11 @@ Hub-wide visual consistency pass; vector home icons; neutral page backgrounds an
 - The current zone highlights automatically as the time changes, making the part of the day easier to read at a glance.
 
 
-Version 1.0.67
+Version 1.0.68
 - Tell the Time: Explore mode now shows matching 12-hour and 24-hour digital clocks side by side at the same size.
+
+
+## v1.0.68
+- Fixed GameHub offline/PWA registration on GitHub Pages: the service worker now registers from `./sw.js` inside the `/GameHub/` project path instead of incorrectly resolving to the site root.
+- Offline cache lookup now ignores cache-busting query strings, so pre-cached files such as `style.css` and game scripts still load when HTML requests `?v=...` versions.
+- Kept network-first updating while making a fresh Home Screen install reliably usable offline.

@@ -6431,7 +6431,7 @@ body[data-game-id="game-02"] #clock-page:not(.clock-test-mode) .clock-stage{
 }
 
 
-/* v1.0.67 — Tell the Time Explore dual digital clocks */
+/* v1.0.68 — Tell the Time Explore dual digital clocks */
 body[data-game-id="game-02"] .clock-readouts{
   width:min(100%,430px);
   margin:4px auto 0;
