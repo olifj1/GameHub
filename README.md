@@ -198,3 +198,16 @@ Version 1.0.68
 - Fixed GameHub offline/PWA registration on GitHub Pages: the service worker now registers from `./sw.js` inside the `/GameHub/` project path instead of incorrectly resolving to the site root.
 - Offline cache lookup now ignores cache-busting query strings, so pre-cached files such as `style.css` and game scripts still load when HTML requests `?v=...` versions.
 - Kept network-first updating while making a fresh Home Screen install reliably usable offline.
+
+## v1.1.0
+- Laser Lab cleanup: replaced the old split designer/play state with one shared level model and removed obsolete generator helpers/solution state.
+- Level Designer can now place every fixed board component used by play: laser, checkpoints, targets, mirrors, splitters and blocks.
+- Added player inventory settings for mirrors and splitters plus an optional 5-star par target.
+- Added **Play this level** so a designed or loaded level can be tested directly with its configured player inventory.
+- Play mode now lets the player place and rotate splitters as well as mirrors; both obey inventory limits and can be erased/repositioned.
+- Generated Medium/Hard levels no longer pre-place the important splitters. The generator creates branch targets but leaves splitter placement/orientation to the player.
+- Generated difficulty now uses longer minimum routes and fewer guiding checkpoints; Hard has no checkpoints, so targets and maze geometry carry more of the reasoning.
+- Added 5-star par scoring based on final player-piece count. Generated levels know their construction par; designed levels can define their own.
+- Laser Lab writes best-star/best-piece results into a generic `gameHubProgress` localStorage object as groundwork for a future GameHub-wide completion display.
+- Existing Laser Lab v1 saved layouts remain loadable; old saved splitters are treated as fixed splitters.
+- Updated app cache/version references to v1.1.0.
