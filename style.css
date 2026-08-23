@@ -6608,3 +6608,33 @@ body[data-game-id="game-08"] .laser-result-stars{
   body[data-game-id="game-08"] .play-tools .laser-tool,
   body[data-game-id="game-08"] .laser-play-action{min-height:42px!important}
 }
+
+
+/* v1.1.1 — Logic exact cross-device board geometry */
+body[data-game-id="game-07"] .coding-board-wrap{
+  /* Logic is now a square grid at every difficulty.  Older rules still
+     reserved space using the original 6:7 board ratio, which made the frame
+     scale differently on taller iPad viewports. */
+  width:min(100%,430px,calc(100dvh - 385px))!important;
+  min-width:190px;
+  overflow:visible;
+}
+body[data-game-id="game-07"] .coding-board{
+  width:100%!important;
+  aspect-ratio:1 / 1!important;
+  overflow:visible!important;
+}
+body[data-game-id="game-07"] .coding-board .grid-cell{
+  min-width:0!important;
+  min-height:0!important;
+}
+body[data-game-id="game-07"] .coding-forklift{
+  /* JS supplies exact pixel dimensions from the rendered cell. */
+  max-width:none!important;
+  max-height:none!important;
+}
+@media(max-height:850px){
+  body[data-game-id="game-07"] .coding-board-wrap{
+    width:min(100%,390px,calc(100dvh - 335px))!important;
+  }
+}

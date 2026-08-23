@@ -211,3 +211,11 @@ Version 1.0.68
 - Laser Lab writes best-star/best-piece results into a generic `gameHubProgress` localStorage object as groundwork for a future GameHub-wide completion display.
 - Existing Laser Lab v1 saved layouts remain loadable; old saved splitters are treated as fixed splitters.
 - Updated app cache/version references to v1.1.0.
+
+## v1.1.1
+
+- Logic board geometry now uses the true square grid shape at every responsive breakpoint instead of retaining the older 6:7 sizing calculation.
+- Logic forklift position and size are anchored to the actual rendered grid cell, preventing iPhone/iPad padding-and-gap drift and keeping the vehicle centred after resize/orientation changes.
+- Logic program entry limit increased from 32 to 64 commands. Hard generated puzzles can legitimately require up to 46 commands, so the old 32-command editor cap could make valid levels impossible to enter.
+- Updated cache/version references to v1.1.1.
+

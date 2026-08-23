@@ -23,6 +23,7 @@ const levelInfo = {
   medium: { rows:6, cols:6, min:8,  open:5, crate:true,  crateCount:1, max:25 },
   hard:   { rows:7, cols:7, min:13, open:3, crate:true,  crateCount:2, max:46 }
 };
+const PROGRAM_LIMIT = 64;
 const dirs = [[-1,0],[0,1],[1,0],[0,-1]];
 let codingLevel = localStorage.getItem('codingLevel') || 'easy';
 if (!levelInfo[codingLevel]) codingLevel = 'easy';
@@ -268,6 +269,8 @@ function renderBoard(){
   for(let r=0;r<I.rows;r++) for(let c=0;c<I.cols;c++){
     const el=document.createElement('div');
     el.className='grid-cell';
+    el.dataset.row=r;
+    el.dataset.col=c;
     if(puzzle.obstacles.has(key(r,c))) el.classList.add('obstacle');
     if(r===puzzle.start.row&&c===puzzle.start.col) el.classList.add('start-cell');
     if(r===puzzle.goal.row&&c===puzzle.goal.col){
@@ -301,13 +304,28 @@ function renderBoard(){
   positionRover(false);
 }
 
-function positionRover(anim=true,duration=500){
-  const rover=$("#coding-rover"); if(!rover) return;
+function cellForState(st=puzzle?.state){
+  if(!st) return null;
+  return codingBoard.querySelector(`.grid-cell[data-row="${st.row}"][data-col="${st.col}"]`);
+}
+
+function positionRover(anim=true,duration=500,st=puzzle?.state){
+  const rover=$("#coding-rover");
+  const cell=cellForState(st);
+  if(!rover || !cell) return;
+
+  // Anchor the vehicle to the actual rendered cell geometry.  The board has
+  // fixed-pixel padding and gaps, so percentage-of-board maths drifts as the
+  // board changes size (most noticeably between iPhone and iPad).
+  const cellWidth=cell.offsetWidth;
+  const cellHeight=cell.offsetHeight;
+  const vehicleScale=.72;
   rover.classList.toggle('animate',anim);
   rover.style.setProperty('--motion-duration',`${duration}ms`);
-  const x=(puzzle.state.col+.5)*100/info().cols;
-  const y=(puzzle.state.row+.5)*100/info().rows;
-  rover.style.left=x+'%'; rover.style.top=y+'%';
+  rover.style.width=`${cellWidth*vehicleScale}px`;
+  rover.style.height=`${cellHeight*vehicleScale}px`;
+  rover.style.left=`${cell.offsetLeft + cellWidth/2}px`;
+  rover.style.top=`${cell.offsetTop + cellHeight/2}px`;
   rover.style.transform=`translate(-50%,-50%) rotate(${visualAngle}deg)`;
 }
 
@@ -320,13 +338,7 @@ async function driveSegment(targetState,count,startIndex,doneBefore){
 
   puzzle.state=targetState;
   const duration=900*count;
-  rover.classList.add('animate');
-  rover.style.setProperty('--motion-duration',`${duration}ms`);
-  const x=(puzzle.state.col+.5)*100/info().cols;
-  const y=(puzzle.state.row+.5)*100/info().rows;
-  rover.style.left=x+'%';
-  rover.style.top=y+'%';
-  rover.style.transform=`translate(-50%,-50%) rotate(${visualAngle}deg)`;
+  positionRover(true,duration,targetState);
 
   // Keep the programme strip following the square currently being travelled.
   // This does not alter the vehicle animation, so the straight run remains continuous.
@@ -405,7 +417,10 @@ function add(c){
     return;
   }
 
-  if(program.length>=32)return;
+  if(program.length>=PROGRAM_LIMIT){
+    codingStatus.textContent=`Program limit reached (${PROGRAM_LIMIT} commands).`;
+    return;
+  }
 
   if(insertIndex!==null){
     const insertedAt=insertIndex;
@@ -615,4 +630,20 @@ if(codingGuideToggle){
   });
 }
 codingLevelButtons.forEach(b=>b.classList.toggle('active',b.dataset.codingLevel===codingLevel));
+
+// Pixel-anchored rover geometry needs to be refreshed when the board changes
+// size (rotation, split view, iPad/iPhone viewport differences, browser chrome).
+let roverResizeFrame=0;
+function syncRoverGeometry(){
+  cancelAnimationFrame(roverResizeFrame);
+  roverResizeFrame=requestAnimationFrame(()=>positionRover(false));
+}
+if('ResizeObserver' in window){
+  const codingBoardResizeObserver=new ResizeObserver(syncRoverGeometry);
+  codingBoardResizeObserver.observe(codingBoard);
+}else{
+  window.addEventListener('resize',syncRoverGeometry,{passive:true});
+}
+window.addEventListener('orientationchange',syncRoverGeometry,{passive:true});
+
 newPuzzle();
