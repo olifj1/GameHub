@@ -1,5 +1,7 @@
-// Laser Lab v1.1.3
+// Laser Lab v1.1.4
 // One board model is shared by the designer, saved levels and generated play.
+// Mirrors/splitters placed in the Designer describe the intended solution;
+// they are hidden while testing a designed level so the player can rebuild it.
 
 const laserBoard = $("#laser-board");
 const laserBeamLayer = $("#laser-beam-layer");
@@ -108,18 +110,16 @@ function clearPlayerPieces() {
 function playerPieceCount() {
   return laserPlayerMirrors.size + laserPlayerSplitters.size;
 }
-function fixedPieceAt(key) {
-  if (laserLevel.fixedMirrors.has(key)) return "mirror";
-  if (laserLevel.fixedSplitters.has(key)) return "splitter";
-  return null;
+function hideDesignerSolutionOptics() {
+  return laserMode === "play" && laserPlaySource === "designed";
 }
 function activeMirrorAt(key) {
-  if (laserLevel.fixedMirrors.has(key)) return laserLevel.fixedMirrors.get(key);
+  if (!hideDesignerSolutionOptics() && laserLevel.fixedMirrors.has(key)) return laserLevel.fixedMirrors.get(key);
   if (laserPlayerMirrors.has(key)) return laserPlayerMirrors.get(key);
   return null;
 }
 function activeSplitterAt(key) {
-  if (laserLevel.fixedSplitters.has(key)) return laserLevel.fixedSplitters.get(key);
+  if (!hideDesignerSolutionOptics() && laserLevel.fixedSplitters.has(key)) return laserLevel.fixedSplitters.get(key);
   if (laserPlayerSplitters.has(key)) return laserPlayerSplitters.get(key);
   return null;
 }
@@ -216,12 +216,14 @@ function clearLaserCell(row, col) {
 
 function cellHasFixedObject(row, col) {
   const key = laserKey(row, col);
+  const designerOpticHere = !hideDesignerSolutionOptics() && (
+    laserLevel.fixedMirrors.has(key) || laserLevel.fixedSplitters.has(key)
+  );
   return !!(
     (laserLevel.emitter && laserLevel.emitter.row === row && laserLevel.emitter.col === col) ||
     laserLevel.checkpoints.some(x => x.row === row && x.col === col) ||
     laserLevel.targets.some(x => x.row === row && x.col === col) ||
-    laserLevel.fixedMirrors.has(key) ||
-    laserLevel.fixedSplitters.has(key) ||
+    designerOpticHere ||
     laserLevel.blocks.has(key)
   );
 }
@@ -366,11 +368,17 @@ function renderLaserBoard() {
         cell.appendChild(c);
       }
 
-      if (laserLevel.fixedMirrors.has(key)) cell.appendChild(makeMirrorElement(laserLevel.fixedMirrors.get(key), true));
-      else if (laserPlayerMirrors.has(key)) cell.appendChild(makeMirrorElement(laserPlayerMirrors.get(key), false));
+      if (!hideDesignerSolutionOptics() && laserLevel.fixedMirrors.has(key)) {
+        cell.appendChild(makeMirrorElement(laserLevel.fixedMirrors.get(key), true));
+      } else if (laserPlayerMirrors.has(key)) {
+        cell.appendChild(makeMirrorElement(laserPlayerMirrors.get(key), false));
+      }
 
-      if (laserLevel.fixedSplitters.has(key)) cell.appendChild(makeSplitterElement(laserLevel.fixedSplitters.get(key), true));
-      else if (laserPlayerSplitters.has(key)) cell.appendChild(makeSplitterElement(laserPlayerSplitters.get(key), false));
+      if (!hideDesignerSolutionOptics() && laserLevel.fixedSplitters.has(key)) {
+        cell.appendChild(makeSplitterElement(laserLevel.fixedSplitters.get(key), true));
+      } else if (laserPlayerSplitters.has(key)) {
+        cell.appendChild(makeSplitterElement(laserPlayerSplitters.get(key), false));
+      }
 
       cell.addEventListener("click", () => {
         if (laserMode === "setup") handleLaserSetupTap(row, col);
@@ -852,7 +860,7 @@ function playDesignedLevel() {
   clearPlayerPieces();
   laserPlaySource = "designed";
   setLaserMode("play", { generate: false });
-  laserStatus.textContent = "Designed level: place the player pieces to solve it.";
+  laserStatus.textContent = "Designed level: the solution optics are hidden. Rebuild the route with the player pieces.";
 }
 
 function serializeLaserLevel() {
@@ -886,8 +894,9 @@ function deserializeLaserLevel(data) {
     savedEmitter.dir = ((savedEmitter.dir % 4) + 4) % 4;
   }
 
-  // v1 saved splitters were fixed pieces. v2 names them explicitly and also
-  // saves fixed mirrors plus the player's inventory/par.
+  // Older saves stored Designer optics under the fixedMirrors/fixedSplitters names.
+  // They are retained for file compatibility, but in designed play they act as
+  // the hidden reference solution rather than pre-placed player pieces.
   const rawSplitters = Array.isArray(data.fixedSplitters) ? data.fixedSplitters : (Array.isArray(data.splitters) ? data.splitters : []);
   const rawMirrors = Array.isArray(data.fixedMirrors) ? data.fixedMirrors : [];
 

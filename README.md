@@ -234,3 +234,11 @@ Version 1.0.68
 - Added a confirmation before clearing a non-empty current design.
 - Changing Designer grid size now uses the same confirmation instead of silently wiping the current board.
 - Updated cache/version references to v1.1.3.
+
+## v1.1.4
+
+- Laser Lab Designer mirrors and splitters now represent the intended solution layout when testing a designed level.
+- Pressing **Play this level** hides all Designer-placed mirrors and splitters while preserving them in the Designer.
+- Player pieces can be placed back onto those same cells during the test.
+- Returning to Level Designer shows the original solution optics again.
+- Updated Laser Lab help text and cache/version references to v1.1.4.
