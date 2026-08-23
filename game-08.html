@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.1.1">
+  <link rel="stylesheet" href="style.css?v=1.1.3">
   <title>Laser Lab</title>
 </head>
 <body class="modular-game" data-game-id="game-08">
@@ -67,6 +67,12 @@
             <button class="laser-save-button" id="laser-load-level" type="button">Load</button>
             <button class="laser-save-button danger" id="laser-delete-level" type="button">Delete</button>
           </div>
+          <div class="laser-transfer-row">
+            <button class="laser-save-button secondary" id="laser-new-designer" type="button">New level</button>
+            <button class="laser-save-button secondary" id="laser-export-level" type="button">Export selected</button>
+            <button class="laser-save-button secondary" id="laser-import-level" type="button">Import level</button>
+            <input id="laser-import-file" type="file" accept=".json,.laser.json,application/json" hidden>
+          </div>
         </div>
 
         <div class="laser-play-panel hidden" id="laser-play-panel">
@@ -110,8 +116,8 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.1.1"></script>
-  <script src="core.js?v=1.1.1"></script>
-  <script src="game-08.js?v=1.1.1"></script>
+  <script src="site-config.js?v=1.1.3"></script>
+  <script src="core.js?v=1.1.3"></script>
+  <script src="game-08.js?v=1.1.3"></script>
 </body>
 </html>

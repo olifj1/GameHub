@@ -1,4 +1,4 @@
-// Laser Lab v1.1.0
+// Laser Lab v1.1.3
 // One board model is shared by the designer, saved levels and generated play.
 
 const laserBoard = $("#laser-board");
@@ -18,9 +18,13 @@ const laserResultStars = $("#laser-result-stars");
 const laserResultText = $("#laser-result-text");
 const laserLevelName = $("#laser-level-name");
 const laserSaveButton = $("#laser-save-level");
+const laserNewDesigner = $("#laser-new-designer");
 const laserSavedLevels = $("#laser-saved-levels");
 const laserLoadButton = $("#laser-load-level");
 const laserDeleteButton = $("#laser-delete-level");
+const laserExportButton = $("#laser-export-level");
+const laserImportButton = $("#laser-import-level");
+const laserImportFile = $("#laser-import-file");
 const laserPlayDesigned = $("#laser-play-designed");
 const laserDesignMirrors = $("#laser-design-mirrors");
 const laserDesignSplitters = $("#laser-design-splitters");
@@ -134,18 +138,51 @@ function syncLevelSettingsFromDesigner() {
   laserLevel.par = clampInt(laserDesignPar.value, 0, 40, 0);
 }
 
-function setLaserGridSize(sizeName) {
+function laserDesignerHasWork() {
+  const mirrors = clampInt(laserDesignMirrors.value, 0, 30, 6);
+  const splitters = clampInt(laserDesignSplitters.value, 0, 8, 1);
+  const par = clampInt(laserDesignPar.value, 0, 40, 0);
+  return !!(
+    laserLevelName.value.trim() ||
+    laserLevel.emitter ||
+    laserLevel.checkpoints.length ||
+    laserLevel.targets.length ||
+    laserLevel.fixedMirrors.size ||
+    laserLevel.fixedSplitters.size ||
+    laserLevel.blocks.size ||
+    mirrors !== 6 ||
+    splitters !== 1 ||
+    par !== 0
+  );
+}
+
+function resetLaserDesigner(sizeName = laserGridSize) {
   laserGridSize = sizeName;
   const size = laserGridSizes[sizeName];
   laserRowsCount = size.rows;
   laserColsCount = size.cols;
   laserLevel = newLaserLevel();
   clearPlayerPieces();
+  laserLevelName.value = "";
+  laserSavedLevels.value = "";
   syncDesignerSettingsFromLevel();
   laserSizeButtons.forEach(b => b.classList.toggle("active", b.dataset.laserSize === sizeName));
   laserResult.classList.add("hidden");
-  renderLaserBoard();
-  traceLaser();
+  setLaserMode("setup", { generate: false });
+  laserStatus.textContent = "New blank level. Saved levels have not been changed.";
+}
+
+function confirmNewLaserDesigner(sizeName = laserGridSize) {
+  if (laserDesignerHasWork()) {
+    const okay = window.confirm("Start a new level? The current designer board will be cleared. Your saved levels will not be changed.");
+    if (!okay) return false;
+  }
+  resetLaserDesigner(sizeName);
+  return true;
+}
+
+function setLaserGridSize(sizeName) {
+  resetLaserDesigner(sizeName);
 }
 
 function setLaserMode(mode, options = {}) {
@@ -880,6 +917,94 @@ function getSavedLaserLevels() {
   catch { return {}; }
 }
 function storeSavedLaserLevels(levels) { localStorage.setItem("laserLabSavedLevels", JSON.stringify(levels)); }
+
+function laserSafeFileName(name) {
+  const cleaned = String(name || "Laser Lab Level")
+    .trim()
+    .replace(/[\\/:*?"<>|]+/g, "-")
+    .replace(/\s+/g, " ")
+    .slice(0, 60);
+  return cleaned || "Laser Lab Level";
+}
+
+async function exportLaserLevel() {
+  const levels = getSavedLaserLevels();
+  const selectedName = laserSavedLevels.value;
+  const data = selectedName && levels[selectedName] ? levels[selectedName] : serializeLaserLevel();
+  const levelName = data.name || selectedName || "Laser Lab Level";
+  const fileName = `${laserSafeFileName(levelName)}.laser.json`;
+  const json = JSON.stringify(data, null, 2);
+
+  try {
+    const file = new File([json], fileName, { type: "application/json" });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: levelName,
+        text: "GameHub Laser Lab level"
+      });
+      laserStatus.textContent = `Exported "${levelName}".`;
+      return;
+    }
+  } catch (error) {
+    if (error?.name === "AbortError") return;
+    console.warn("Laser Lab share export failed; falling back to download.", error);
+  }
+
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  laserStatus.textContent = `Exported "${levelName}".`;
+}
+
+function uniqueImportedLaserName(baseName, levels) {
+  const base = String(baseName || "Imported Laser Level").trim() || "Imported Laser Level";
+  if (!levels[base]) return base;
+  let number = 2;
+  let candidate = `${base} (imported)`;
+  while (levels[candidate]) {
+    candidate = `${base} (imported ${number})`;
+    number += 1;
+  }
+  return candidate;
+}
+
+async function importLaserLevelFile(file) {
+  if (!file) return;
+  try {
+    const raw = await file.text();
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Invalid level data");
+    if (!data.emitter && !Array.isArray(data.targets) && !Array.isArray(data.checkpoints)) throw new Error("Not a Laser Lab level");
+
+    const levels = getSavedLaserLevels();
+    const importedName = uniqueImportedLaserName(data.name || file.name.replace(/\.laser\.json$|\.json$/i, ""), levels);
+    const imported = { ...data, name: importedName };
+
+    // Deserialising normalises older level formats before we save the imported copy.
+    deserializeLaserLevel(imported);
+    const normalised = serializeLaserLevel();
+    normalised.name = importedName;
+    levels[importedName] = normalised;
+    storeSavedLaserLevels(levels);
+    refreshSavedLaserLevels();
+    laserSavedLevels.value = importedName;
+    laserLevelName.value = importedName;
+    laserStatus.textContent = `Imported "${importedName}".`;
+  } catch (error) {
+    console.warn("Laser Lab level import failed.", error);
+    laserStatus.textContent = "Could not import that Laser Lab level.";
+  } finally {
+    laserImportFile.value = "";
+  }
+}
+
 function refreshSavedLaserLevels() {
   const levels = getSavedLaserLevels();
   laserSavedLevels.innerHTML = '<option value="">Saved levels…</option>';
@@ -896,7 +1021,11 @@ laserModeButtons.forEach(b => b.addEventListener("click", () => {
   else setLaserMode("setup", { generate: false });
 }));
 
-laserSizeButtons.forEach(b => b.addEventListener("click", () => setLaserGridSize(b.dataset.laserSize)));
+laserSizeButtons.forEach(b => b.addEventListener("click", () => {
+  const nextSize = b.dataset.laserSize;
+  if (nextSize === laserGridSize) return;
+  confirmNewLaserDesigner(nextSize);
+}));
 
 laserSetupTools.forEach(b => b.addEventListener("click", () => {
   laserSetupTool = b.dataset.laserTool;
@@ -926,6 +1055,7 @@ laserDifficultyButtons.forEach(b => {
   });
 });
 
+laserNewDesigner.addEventListener("click", () => confirmNewLaserDesigner(laserGridSize));
 laserPlayDesigned.addEventListener("click", playDesignedLevel);
 laserNewGenerated.addEventListener("click", generateLaserLevel);
 laserResetPlay.addEventListener("click", () => {
@@ -953,6 +1083,10 @@ laserLoadButton.addEventListener("click", () => {
   deserializeLaserLevel(levels[name]);
   laserStatus.textContent = `Loaded "${name}".`;
 });
+
+laserExportButton.addEventListener("click", exportLaserLevel);
+laserImportButton.addEventListener("click", () => laserImportFile.click());
+laserImportFile.addEventListener("change", () => importLaserLevelFile(laserImportFile.files?.[0]));
 
 laserDeleteButton.addEventListener("click", () => {
   const name = laserSavedLevels.value;

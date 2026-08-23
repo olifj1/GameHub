@@ -4795,6 +4795,17 @@ body[data-game-id="game-08"]{
   color:#9b5555!important;
   border-color:#b98a88!important;
 }
+.laser-transfer-row{
+  margin-top:5px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:5px;
+}
+.laser-save-button.secondary{
+  background:var(--gh-surface)!important;
+  color:var(--gh-ink)!important;
+  border-color:var(--gh-line-strong)!important;
+}
 
 /* Square board, visually matched to Logic. */
 .laser-board-wrap{
@@ -6637,4 +6648,13 @@ body[data-game-id="game-07"] .coding-forklift{
   body[data-game-id="game-07"] .coding-board-wrap{
     width:min(100%,390px,calc(100dvh - 335px))!important;
   }
+}
+
+
+/* v1.1.3 — Laser Lab new-level workflow */
+body[data-game-id="game-08"] .laser-transfer-row{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+body[data-game-id="game-08"] #laser-new-designer{
+  font-weight:850;
 }

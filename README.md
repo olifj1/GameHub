@@ -219,3 +219,18 @@ Version 1.0.68
 - Logic program entry limit increased from 32 to 64 commands. Hard generated puzzles can legitimately require up to 46 commands, so the old 32-command editor cap could make valid levels impossible to enter.
 - Updated cache/version references to v1.1.1.
 
+
+## v1.1.2
+
+- Laser Lab Designer can export a saved level as a portable `.laser.json` file. On supported iPhone/iPad browsers it opens the system share sheet so the file can be saved to Files or shared directly; other browsers fall back to a normal download.
+- Added Laser Lab level import. Imported files are normalised to the current level format, added to Saved Levels, and loaded into the Designer ready to test or edit.
+- Import uses duplicate-safe names so an existing saved design is not silently overwritten.
+- Updated cache/version references to v1.1.2.
+
+
+## v1.1.3
+- Added a clear **New level** action to Laser Lab Level Designer.
+- New level resets only the current working design and leaves all saved levels untouched.
+- Added a confirmation before clearing a non-empty current design.
+- Changing Designer grid size now uses the same confirmation instead of silently wiping the current board.
+- Updated cache/version references to v1.1.3.
