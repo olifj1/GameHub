@@ -264,3 +264,15 @@ Version 1.0.68
 - Redesigned laser, mirrors, splitter, targets and toolbar controls as cleaner line-art graphics.
 - Obstacle islands now use neutral diagonal hatching inspired by Tell the Time's graphic treatment instead of filled game-like blocks.
 - Updated cache/version references to v1.2.1.
+
+## v1.2.2
+
+- Replaced Laser Lab Freeform's small set of repeated hand-built layouts with a solution-first procedural generator; the original grid Laser Lab remains unchanged.
+- Laser emitters can now begin on any of the four board edges, and targets can appear around any edge rather than always reading left-to-right.
+- Enforced broad separation rules: generated targets stay roughly half a board or more from the emitter, and coloured targets stay well separated from one another.
+- Every generated target has its direct line of sight from the emitter blocked by at least one island, so simply rotating the source straight at a target cannot solve the level.
+- Levels are generated from a hidden valid optical route first. Easy uses one or two reflection points; Medium adds a splitter and a branch reflection; Hard uses both colour branches and several meaningful reflections.
+- Obstacle islands are then built around the hidden route, with varied shapes/sizes and a spread-biased placement pass so they occupy edges/corners as well as the middle of the board.
+- Generated levels are rejected unless the hidden solution succeeds through the same live beam tracer used during play, preventing unsolvable random layouts from being accepted.
+- The initial laser angle is deliberately offset from the hidden route, keeping source rotation as part of the puzzle.
+- Updated cache/version references to v1.2.2.

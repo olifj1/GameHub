@@ -6660,7 +6660,7 @@ body[data-game-id="game-08"] #laser-new-designer{
   font-weight:850;
 }
 
-/* v1.2.1 — Laser Lab Freeform visual + rotation pass */
+/* v1.2.2 — Laser Lab Freeform visual + rotation pass */
 body[data-game-id="game-10"] .laserflow-screen{
   background:var(--gh-bg)!important;
   color:var(--gh-ink);

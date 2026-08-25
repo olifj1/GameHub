@@ -148,11 +148,495 @@
     return JSON.parse(JSON.stringify(value));
   }
 
-  // v1.2.1 keeps the existing hand-built layouts intact, but centres the
-  // original 1000×620 play area inside the new square 1000×1000 board.
-  // That preserves the islands' proportions and creates useful routing space
-  // above and below them instead of stretching the artwork.
-  function squareLevel(source) {
+  function rand(min, max) {
+    return min + Math.random() * (max - min);
+  }
+
+  function randInt(min, max) {
+    return Math.floor(rand(min, max + 1));
+  }
+
+  function pick(items) {
+    return items[Math.floor(Math.random() * items.length)];
+  }
+
+  function shuffled(items) {
+    const copy = items.slice();
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  function distance(a, b) {
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  }
+
+  function angleBetween(a, b) {
+    return Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+  }
+
+  function angleDifference(a, b) {
+    let delta = (b - a) % 360;
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+    return delta;
+  }
+
+  function turnAmount(a, b, c) {
+    return Math.abs(angleDifference(angleBetween(a, b), angleBetween(b, c)));
+  }
+
+  function pointAlong(point, angle, amount) {
+    const d = unitFromAngle(angle);
+    return { x: point.x + d.x * amount, y: point.y + d.y * amount };
+  }
+
+  function insideBoard(point, margin = 80) {
+    return point.x >= margin && point.x <= W - margin && point.y >= margin && point.y <= H - margin;
+  }
+
+  function randomInteriorPoint(margin = 130) {
+    return { x: rand(margin, W - margin), y: rand(margin, H - margin) };
+  }
+
+  function randomEdgePoint(side = pick(["left", "right", "top", "bottom"]), inset = 72) {
+    const along = rand(120, 880);
+    if (side === "left") return { x: inset, y: along, side };
+    if (side === "right") return { x: W - inset, y: along, side };
+    if (side === "top") return { x: along, y: inset, side };
+    return { x: along, y: H - inset, side };
+  }
+
+  function rayDistanceToInsetBox(origin, angle, inset = 72) {
+    const d = unitFromAngle(angle);
+    const hits = [];
+    if (d.x > 1e-7) hits.push((W - inset - origin.x) / d.x);
+    if (d.x < -1e-7) hits.push((inset - origin.x) / d.x);
+    if (d.y > 1e-7) hits.push((H - inset - origin.y) / d.y);
+    if (d.y < -1e-7) hits.push((inset - origin.y) / d.y);
+    const valid = hits.filter(value => value > 0);
+    return valid.length ? Math.min(...valid) : 0;
+  }
+
+  function pointNearEdgeAlongRay(origin, angle, inset = 72) {
+    const amount = rayDistanceToInsetBox(origin, angle, inset);
+    return amount > 0 ? pointAlong(origin, angle, amount) : null;
+  }
+
+  function mirrorAngleFor(inAngle, outAngle) {
+    return normaliseAngle(inAngle + angleDifference(inAngle, outAngle) / 2);
+  }
+
+  function pointSegmentDistance(point, a, b) {
+    const vx = b.x - a.x;
+    const vy = b.y - a.y;
+    const len2 = vx * vx + vy * vy;
+    if (len2 <= 1e-8) return distance(point, a);
+    const t = clamp(((point.x - a.x) * vx + (point.y - a.y) * vy) / len2, 0, 1);
+    return Math.hypot(point.x - (a.x + vx * t), point.y - (a.y + vy * t));
+  }
+
+  function segmentPairs(paths) {
+    const result = [];
+    paths.forEach(path => {
+      for (let i = 0; i < path.length - 1; i++) result.push({ a: path[i], b: path[i + 1] });
+    });
+    return result;
+  }
+
+  function samePoint(a, b, tolerance = 1) {
+    return distance(a, b) <= tolerance;
+  }
+
+  function routeGeometryIsClean(paths, solutionNodes, routeTargets) {
+    const segments = segmentPairs(paths);
+    if (segments.some(segment => distance(segment.a, segment.b) < 145)) return false;
+
+    for (const path of paths) {
+      for (let i = 1; i < path.length - 1; i++) {
+        const amount = turnAmount(path[i - 1], path[i], path[i + 1]);
+        if (amount < 28 || amount > 155) return false;
+      }
+    }
+
+    for (const segment of segments) {
+      for (const node of solutionNodes) {
+        if (samePoint(node, segment.a) || samePoint(node, segment.b)) continue;
+        if (pointSegmentDistance(node, segment.a, segment.b) < 72) return false;
+      }
+      for (const target of routeTargets) {
+        if (samePoint(target, segment.b)) continue;
+        if (pointSegmentDistance(target, segment.a, segment.b) < TARGET_RADIUS + 18) return false;
+      }
+    }
+    return true;
+  }
+
+  function segmentIntersection(a, b, c, d) {
+    const r = { x: b.x - a.x, y: b.y - a.y };
+    const s = { x: d.x - c.x, y: d.y - c.y };
+    const denom = cross(r, s);
+    if (Math.abs(denom) < 1e-8) return false;
+    const q = { x: c.x - a.x, y: c.y - a.y };
+    const t = cross(q, s) / denom;
+    const u = cross(q, r) / denom;
+    return t >= 0 && t <= 1 && u >= 0 && u <= 1;
+  }
+
+  function segmentIntersectsPolygon(a, b, polygon) {
+    if (pointInPolygon(a, polygon) || pointInPolygon(b, polygon)) return true;
+    for (let i = 0; i < polygon.length; i++) {
+      const c = { x: polygon[i][0], y: polygon[i][1] };
+      const next = polygon[(i + 1) % polygon.length];
+      const d = { x: next[0], y: next[1] };
+      if (segmentIntersection(a, b, c, d)) return true;
+    }
+    return false;
+  }
+
+  function makeIslandPolygon(cx, cy, radiusX, radiusY) {
+    const count = randInt(6, 9);
+    const rotation = rand(0, Math.PI * 2);
+    const points = [];
+    for (let i = 0; i < count; i++) {
+      const a = rotation + i * Math.PI * 2 / count;
+      const jitter = rand(0.78, 1.15);
+      points.push([
+        cx + Math.cos(a) * radiusX * jitter,
+        cy + Math.sin(a) * radiusY * jitter
+      ]);
+    }
+    return points;
+  }
+
+  function islandCandidateClear(spec, routeSegments, keyPoints, existing) {
+    const radius = Math.max(spec.rx, spec.ry) * 1.18;
+    if (spec.x - radius < 42 || spec.x + radius > W - 42 || spec.y - radius < 42 || spec.y + radius > H - 42) return false;
+    if (routeSegments.some(segment => pointSegmentDistance(spec, segment.a, segment.b) < radius + 30)) return false;
+    if (keyPoints.some(point => distance(spec, point) < radius + 58)) return false;
+    if (existing.some(other => distance(spec, other) < radius + Math.max(other.rx, other.ry) * 1.1 + 36)) return false;
+    return true;
+  }
+
+  function makeLineOfSightBlocker(emitterPoint, target, routeSegments, keyPoints, existing, sizeScale = 1) {
+    const fractions = shuffled([0.34, 0.43, 0.52, 0.61, 0.69]);
+    for (const fraction of fractions) {
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const x = emitterPoint.x + (target.x - emitterPoint.x) * clamp(fraction + rand(-0.045, 0.045), 0.28, 0.74);
+        const y = emitterPoint.y + (target.y - emitterPoint.y) * clamp(fraction + rand(-0.045, 0.045), 0.28, 0.74);
+        const rx = rand(56, 78) * sizeScale;
+        const ry = rand(48, 86) * sizeScale;
+        const spec = { x, y, rx, ry };
+        if (!islandCandidateClear(spec, routeSegments, keyPoints, existing)) continue;
+        spec.polygon = makeIslandPolygon(x, y, rx, ry);
+        if (!segmentIntersectsPolygon(emitterPoint, target, spec.polygon)) continue;
+        return spec;
+      }
+    }
+    return null;
+  }
+
+  function addSpreadIslands(existing, desiredCount, routeSegments, keyPoints, difficultyName) {
+    const radiusRanges = difficultyName === "easy" ? [48, 92] : difficultyName === "medium" ? [48, 108] : [45, 122];
+    while (existing.length < desiredCount) {
+      let best = null;
+      let bestScore = -Infinity;
+      for (let attempt = 0; attempt < 70; attempt++) {
+        const rx = rand(radiusRanges[0], radiusRanges[1]);
+        const ry = rand(radiusRanges[0] * 0.78, radiusRanges[1] * 1.05);
+        const spec = {
+          x: rand(85 + rx, W - 85 - rx),
+          y: rand(85 + ry, H - 85 - ry),
+          rx,
+          ry
+        };
+        if (!islandCandidateClear(spec, routeSegments, keyPoints, existing)) continue;
+        const nearestIsland = existing.length ? Math.min(...existing.map(other => distance(spec, other))) : 500;
+        const edgeVariety = Math.min(spec.x, W - spec.x, spec.y, H - spec.y);
+        const score = nearestIsland + rand(0, 120) - Math.abs(edgeVariety - rand(150, 320)) * 0.18;
+        if (score > bestScore) {
+          best = spec;
+          bestScore = score;
+        }
+      }
+      if (!best) break;
+      best.polygon = makeIslandPolygon(best.x, best.y, best.rx, best.ry);
+      existing.push(best);
+    }
+    return existing;
+  }
+
+  function buildIslandsForSolution(emitterPoint, routeTargets, paths, solutionNodes, difficultyName) {
+    const routeSegments = segmentPairs(paths);
+    const keyPoints = [emitterPoint, ...routeTargets, ...solutionNodes];
+    const specs = [];
+    const blockerScale = difficultyName === "hard" ? 1.05 : 1;
+
+    for (const target of routeTargets) {
+      const blocker = makeLineOfSightBlocker(emitterPoint, target, routeSegments, keyPoints, specs, blockerScale);
+      if (!blocker) return null;
+      specs.push(blocker);
+    }
+
+    const desired = difficultyName === "easy" ? randInt(3, 5) : difficultyName === "medium" ? randInt(5, 7) : randInt(7, 9);
+    addSpreadIslands(specs, desired, routeSegments, keyPoints, difficultyName);
+
+    const polygons = specs.map(spec => spec.polygon);
+    if (polygons.length < Math.max(3, desired - 1)) return null;
+    if (routeSegments.some(segment => polygons.some(polygon => segmentIntersectsPolygon(segment.a, segment.b, polygon)))) return null;
+    if (routeTargets.some(target => !polygons.some(polygon => segmentIntersectsPolygon(emitterPoint, target, polygon)))) return null;
+    return polygons;
+  }
+
+  function chooseEmitterForFirstNode(firstNode) {
+    for (let attempt = 0; attempt < 80; attempt++) {
+      const point = randomEdgePoint();
+      if (distance(point, firstNode) < 300) continue;
+      return point;
+    }
+    return randomEdgePoint("left");
+  }
+
+  function chooseTargetAfterMirror(mirrorPoint, incomingAngle, emitterPoint, otherTargets = []) {
+    for (let attempt = 0; attempt < 120; attempt++) {
+      const target = randomEdgePoint();
+      if (distance(mirrorPoint, target) < 260) continue;
+      if (distance(emitterPoint, target) < 500) continue;
+      if (otherTargets.some(other => distance(other, target) < 290)) continue;
+      const turn = Math.abs(angleDifference(incomingAngle, angleBetween(mirrorPoint, target)));
+      if (turn < 34 || turn > 150) continue;
+      return target;
+    }
+    return null;
+  }
+
+  function perturbStartingAngle(solutionAngle, difficultyName) {
+    const amount = difficultyName === "easy" ? rand(12, 24) : difficultyName === "medium" ? rand(18, 32) : rand(22, 38);
+    return normaliseAngle(solutionAngle + (Math.random() < 0.5 ? -amount : amount));
+  }
+
+  function generateEasyCandidate() {
+    const mirrorCount = Math.random() < 0.42 ? 1 : 2;
+    for (let attempt = 0; attempt < 160; attempt++) {
+      const emitterPoint = randomEdgePoint();
+      let target = null;
+      for (let targetAttempt = 0; targetAttempt < 60; targetAttempt++) {
+        const candidate = randomEdgePoint();
+        if (distance(emitterPoint, candidate) >= 560) {
+          target = candidate;
+          break;
+        }
+      }
+      if (!target) continue;
+
+      const mirrors = [];
+      for (let i = 0; i < mirrorCount; i++) mirrors.push(randomInteriorPoint(155));
+      const path = [emitterPoint, ...mirrors, target];
+      const solutionNodes = mirrors.map((point, index) => ({
+        id: `solution-m${index + 1}`,
+        type: "mirror",
+        x: point.x,
+        y: point.y,
+        angle: mirrorAngleFor(angleBetween(path[index], point), angleBetween(point, path[index + 2]))
+      }));
+      const routeTargets = [{ id: "w1", x: target.x, y: target.y, colour: "white", label: "W" }];
+      if (!routeGeometryIsClean([path], solutionNodes, routeTargets)) continue;
+
+      const islandsForLevel = buildIslandsForSolution(emitterPoint, routeTargets, [path], solutionNodes, "easy");
+      if (!islandsForLevel) continue;
+      const solutionAngle = angleBetween(emitterPoint, mirrors[0]);
+      return {
+        emitter: { x: emitterPoint.x, y: emitterPoint.y, angle: perturbStartingAngle(solutionAngle, "easy") },
+        targets: routeTargets,
+        islands: islandsForLevel,
+        inventory: { mirrors: mirrorCount + 1, splitters: 0 },
+        par: mirrorCount,
+        solution: { emitterAngle: solutionAngle, nodes: solutionNodes }
+      };
+    }
+    return null;
+  }
+
+  function generateMediumCandidate() {
+    for (let attempt = 0; attempt < 220; attempt++) {
+      const splitterPoint = randomInteriorPoint(270);
+      const incomingAngle = rand(-180, 180);
+      const preMirror = pointAlong(splitterPoint, incomingAngle + 180, rand(185, 265));
+      if (!insideBoard(preMirror, 125)) continue;
+      const emitterPoint = chooseEmitterForFirstNode(preMirror);
+      const preTurn = Math.abs(angleDifference(angleBetween(emitterPoint, preMirror), incomingAngle));
+      if (preTurn < 34 || preTurn > 150) continue;
+
+      const blueAngle = normaliseAngle(incomingAngle + (Math.random() < 0.5 ? -1 : 1) * rand(58, 124));
+      const branchWithMirror = Math.random() < 0.5 ? "red" : "blue";
+      let redTarget = null;
+      let blueTarget = null;
+      let branchMirror = null;
+      const solutionNodes = [];
+
+      if (branchWithMirror === "red") {
+        const directBlue = pointNearEdgeAlongRay(splitterPoint, blueAngle);
+        if (!directBlue || distance(splitterPoint, directBlue) < 300 || distance(emitterPoint, directBlue) < 500) continue;
+        blueTarget = { id: "b1", x: directBlue.x, y: directBlue.y, colour: "blue", label: "B" };
+        const redMirrorPoint = pointAlong(splitterPoint, incomingAngle, rand(180, 270));
+        if (!insideBoard(redMirrorPoint, 125)) continue;
+        const targetPoint = chooseTargetAfterMirror(redMirrorPoint, incomingAngle, emitterPoint, [blueTarget]);
+        if (!targetPoint) continue;
+        redTarget = { id: "r1", x: targetPoint.x, y: targetPoint.y, colour: "red", label: "R" };
+        branchMirror = {
+          id: "solution-red-mirror", type: "mirror", x: redMirrorPoint.x, y: redMirrorPoint.y,
+          angle: mirrorAngleFor(incomingAngle, angleBetween(redMirrorPoint, redTarget))
+        };
+      } else {
+        const directRed = pointNearEdgeAlongRay(splitterPoint, incomingAngle);
+        if (!directRed || distance(splitterPoint, directRed) < 300 || distance(emitterPoint, directRed) < 500) continue;
+        redTarget = { id: "r1", x: directRed.x, y: directRed.y, colour: "red", label: "R" };
+        const blueMirrorPoint = pointAlong(splitterPoint, blueAngle, rand(180, 270));
+        if (!insideBoard(blueMirrorPoint, 125)) continue;
+        const targetPoint = chooseTargetAfterMirror(blueMirrorPoint, blueAngle, emitterPoint, [redTarget]);
+        if (!targetPoint) continue;
+        blueTarget = { id: "b1", x: targetPoint.x, y: targetPoint.y, colour: "blue", label: "B" };
+        branchMirror = {
+          id: "solution-blue-mirror", type: "mirror", x: blueMirrorPoint.x, y: blueMirrorPoint.y,
+          angle: mirrorAngleFor(blueAngle, angleBetween(blueMirrorPoint, blueTarget))
+        };
+      }
+
+      if (distance(redTarget, blueTarget) < 290) continue;
+      const preNode = {
+        id: "solution-pre-mirror", type: "mirror", x: preMirror.x, y: preMirror.y,
+        angle: mirrorAngleFor(angleBetween(emitterPoint, preMirror), incomingAngle)
+      };
+      const splitterNode = {
+        id: "solution-splitter", type: "splitter", x: splitterPoint.x, y: splitterPoint.y,
+        angle: mirrorAngleFor(incomingAngle, blueAngle)
+      };
+      solutionNodes.push(preNode, splitterNode, branchMirror);
+
+      const prePath = [emitterPoint, preMirror, splitterPoint];
+      const redPath = branchWithMirror === "red"
+        ? [splitterPoint, { x: branchMirror.x, y: branchMirror.y }, redTarget]
+        : [splitterPoint, redTarget];
+      const bluePath = branchWithMirror === "blue"
+        ? [splitterPoint, { x: branchMirror.x, y: branchMirror.y }, blueTarget]
+        : [splitterPoint, blueTarget];
+      const paths = [prePath, redPath, bluePath];
+      const routeTargets = [redTarget, blueTarget];
+      if (!routeGeometryIsClean(paths, solutionNodes, routeTargets)) continue;
+
+      const islandsForLevel = buildIslandsForSolution(emitterPoint, routeTargets, paths, solutionNodes, "medium");
+      if (!islandsForLevel) continue;
+      const solutionAngle = angleBetween(emitterPoint, preMirror);
+      return {
+        emitter: { x: emitterPoint.x, y: emitterPoint.y, angle: perturbStartingAngle(solutionAngle, "medium") },
+        targets: routeTargets,
+        islands: islandsForLevel,
+        inventory: { mirrors: 3, splitters: 1 },
+        par: 3,
+        solution: { emitterAngle: solutionAngle, nodes: solutionNodes }
+      };
+    }
+    return null;
+  }
+
+  function generateHardCandidate() {
+    for (let attempt = 0; attempt < 280; attempt++) {
+      const splitterPoint = randomInteriorPoint(270);
+      const incomingAngle = rand(-180, 180);
+      const lastPreMirror = pointAlong(splitterPoint, incomingAngle + 180, rand(185, 260));
+      if (!insideBoard(lastPreMirror, 125)) continue;
+
+      const useTwoPreMirrors = Math.random() < 0.48;
+      let firstPreMirror = null;
+      let emitterPoint = null;
+      if (useTwoPreMirrors) {
+        for (let preAttempt = 0; preAttempt < 80; preAttempt++) {
+          const candidate = randomInteriorPoint(145);
+          if (distance(candidate, lastPreMirror) < 190) continue;
+          const secondTurn = Math.abs(angleDifference(angleBetween(candidate, lastPreMirror), incomingAngle));
+          if (secondTurn < 32 || secondTurn > 150) continue;
+          const emitterCandidate = chooseEmitterForFirstNode(candidate);
+          const firstTurn = Math.abs(angleDifference(angleBetween(emitterCandidate, candidate), angleBetween(candidate, lastPreMirror)));
+          if (firstTurn < 32 || firstTurn > 150) continue;
+          firstPreMirror = candidate;
+          emitterPoint = emitterCandidate;
+          break;
+        }
+        if (!firstPreMirror || !emitterPoint) continue;
+      } else {
+        emitterPoint = chooseEmitterForFirstNode(lastPreMirror);
+        const preTurn = Math.abs(angleDifference(angleBetween(emitterPoint, lastPreMirror), incomingAngle));
+        if (preTurn < 32 || preTurn > 150) continue;
+      }
+
+      const blueAngle = normaliseAngle(incomingAngle + (Math.random() < 0.5 ? -1 : 1) * rand(62, 132));
+      const redMirrorPoint = pointAlong(splitterPoint, incomingAngle, rand(180, 265));
+      const blueMirrorPoint = pointAlong(splitterPoint, blueAngle, rand(180, 265));
+      if (!insideBoard(redMirrorPoint, 120) || !insideBoard(blueMirrorPoint, 120)) continue;
+      if (distance(redMirrorPoint, blueMirrorPoint) < 190) continue;
+
+      const redTargetPoint = chooseTargetAfterMirror(redMirrorPoint, incomingAngle, emitterPoint);
+      if (!redTargetPoint) continue;
+      const redTarget = { id: "r1", x: redTargetPoint.x, y: redTargetPoint.y, colour: "red", label: "R" };
+      const blueTargetPoint = chooseTargetAfterMirror(blueMirrorPoint, blueAngle, emitterPoint, [redTarget]);
+      if (!blueTargetPoint) continue;
+      const blueTarget = { id: "b1", x: blueTargetPoint.x, y: blueTargetPoint.y, colour: "blue", label: "B" };
+      if (distance(redTarget, blueTarget) < 310) continue;
+
+      const solutionNodes = [];
+      if (useTwoPreMirrors) {
+        solutionNodes.push({
+          id: "solution-pre-a", type: "mirror", x: firstPreMirror.x, y: firstPreMirror.y,
+          angle: mirrorAngleFor(angleBetween(emitterPoint, firstPreMirror), angleBetween(firstPreMirror, lastPreMirror))
+        });
+      }
+      solutionNodes.push({
+        id: "solution-pre-b", type: "mirror", x: lastPreMirror.x, y: lastPreMirror.y,
+        angle: mirrorAngleFor(angleBetween(useTwoPreMirrors ? firstPreMirror : emitterPoint, lastPreMirror), incomingAngle)
+      });
+      solutionNodes.push({
+        id: "solution-splitter", type: "splitter", x: splitterPoint.x, y: splitterPoint.y,
+        angle: mirrorAngleFor(incomingAngle, blueAngle)
+      });
+      solutionNodes.push({
+        id: "solution-red-mirror", type: "mirror", x: redMirrorPoint.x, y: redMirrorPoint.y,
+        angle: mirrorAngleFor(incomingAngle, angleBetween(redMirrorPoint, redTarget))
+      });
+      solutionNodes.push({
+        id: "solution-blue-mirror", type: "mirror", x: blueMirrorPoint.x, y: blueMirrorPoint.y,
+        angle: mirrorAngleFor(blueAngle, angleBetween(blueMirrorPoint, blueTarget))
+      });
+
+      const prePath = useTwoPreMirrors
+        ? [emitterPoint, firstPreMirror, lastPreMirror, splitterPoint]
+        : [emitterPoint, lastPreMirror, splitterPoint];
+      const redPath = [splitterPoint, redMirrorPoint, redTarget];
+      const bluePath = [splitterPoint, blueMirrorPoint, blueTarget];
+      const paths = [prePath, redPath, bluePath];
+      const routeTargets = [redTarget, blueTarget];
+      if (!routeGeometryIsClean(paths, solutionNodes, routeTargets)) continue;
+
+      const islandsForLevel = buildIslandsForSolution(emitterPoint, routeTargets, paths, solutionNodes, "hard");
+      if (!islandsForLevel) continue;
+      const firstNode = useTwoPreMirrors ? firstPreMirror : lastPreMirror;
+      const solutionAngle = angleBetween(emitterPoint, firstNode);
+      const hiddenMirrorCount = solutionNodes.filter(node => node.type === "mirror").length;
+      const parValue = solutionNodes.length;
+      return {
+        emitter: { x: emitterPoint.x, y: emitterPoint.y, angle: perturbStartingAngle(solutionAngle, "hard") },
+        targets: routeTargets,
+        islands: islandsForLevel,
+        inventory: { mirrors: Math.min(5, hiddenMirrorCount + 1), splitters: 1 },
+        par: parValue,
+        solution: { emitterAngle: solutionAngle, nodes: solutionNodes }
+      };
+    }
+    return null;
+  }
+
+  function squareFallbackLevel(source) {
     const level = deepClone(source);
     level.emitter.y += LEVEL_Y_OFFSET;
     level.targets.forEach(target => { target.y += LEVEL_Y_OFFSET; });
@@ -160,17 +644,52 @@
     return level;
   }
 
+  function solutionPasses(level) {
+    if (!level?.solution) return true;
+    const previous = {
+      emitter, targets, islands, nodes,
+      targetHits, wrongHits
+    };
+    try {
+      emitter = { ...deepClone(level.emitter), angle: level.solution.emitterAngle };
+      targets = deepClone(level.targets);
+      islands = deepClone(level.islands);
+      nodes = deepClone(level.solution.nodes);
+      traceBeams();
+      return targetHits.size === targets.length && wrongHits.size === 0;
+    } catch (_) {
+      return false;
+    } finally {
+      emitter = previous.emitter;
+      targets = previous.targets;
+      islands = previous.islands;
+      nodes = previous.nodes;
+      targetHits = previous.targetHits;
+      wrongHits = previous.wrongHits;
+    }
+  }
+
+  function generateLevel(difficultyName) {
+    const generator = difficultyName === "easy" ? generateEasyCandidate : difficultyName === "medium" ? generateMediumCandidate : generateHardCandidate;
+    for (let attempt = 0; attempt < 24; attempt++) {
+      const level = generator();
+      if (level && solutionPasses(level)) return level;
+    }
+
+    // A known-good layout remains as an emergency fallback only. Normal play
+    // should always come from the freeform solution-first generator above.
+    const set = levelSets[difficultyName];
+    return squareFallbackLevel(set[randInt(0, set.length - 1)]);
+  }
+
   function setDifficulty(next) {
     difficulty = next;
     difficultyButtons.forEach(button => button.classList.toggle("active", button.dataset.flowDifficulty === next));
-    newLevel(true);
+    newLevel();
   }
 
-  function newLevel(first = false) {
-    const set = levelSets[difficulty];
-    const index = first ? levelCounter[difficulty] % set.length : (levelCounter[difficulty] + 1) % set.length;
-    levelCounter[difficulty] = index;
-    baseLevel = squareLevel(set[index]);
+  function newLevel() {
+    baseLevel = generateLevel(difficulty);
     resetLevel();
   }
 
