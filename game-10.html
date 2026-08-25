@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#e7dbd2">
+  <link rel="stylesheet" href="style.css?v=1.2.0">
+  <title>Laser Lab Freeform</title>
+</head>
+<body class="modular-game" data-game-id="game-10">
+  <a class="game-home-button" href="index.html" aria-label="Back to games">← Games</a>
+  <button class="game-info-button" type="button" aria-label="How to play" aria-haspopup="dialog">i</button>
+  <div class="game-info-overlay" hidden>
+    <div class="game-info-dialog" role="dialog" aria-modal="true" aria-labelledby="game-10-info-title">
+      <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
+      <p class="kicker">HOW TO PLAY</p>
+      <h2 id="game-10-info-title">Laser Lab Freeform</h2>
+      <p>Rotate the laser, then add mirrors and splitters anywhere on the board. Drag a piece to move it and drag its round handle to rotate it. The light updates while you move.</p>
+      <p>Mirrors obey the angle of reflection: changing a mirror by a small amount changes the outgoing beam by twice that amount.</p>
+      <p>A splitter sends a <strong>red</strong> beam straight on and reflects a <strong>blue</strong> beam. Coloured targets only light when the matching colour reaches them.</p>
+    </div>
+  </div>
+
+  <main class="screen-wrap">
+    <section class="screen active laserflow-screen" aria-labelledby="laserflow-title">
+      <div class="page laserflow-page">
+        <header class="page-header laserflow-header">
+          <p class="kicker" data-site-name="">GameHub</p>
+          <h1 id="laserflow-title">Laser Lab Freeform</h1>
+        </header>
+
+        <div class="laserflow-difficulty" role="group" aria-label="Difficulty">
+          <button class="laserflow-difficulty-button active" data-flow-difficulty="easy" type="button">Easy</button>
+          <button class="laserflow-difficulty-button" data-flow-difficulty="medium" type="button">Medium</button>
+          <button class="laserflow-difficulty-button" data-flow-difficulty="hard" type="button">Hard</button>
+        </div>
+
+        <div class="laserflow-toolbar">
+          <button class="laserflow-tool" id="laserflow-add-mirror" type="button">
+            <span class="laserflow-tool-icon mirror-icon" aria-hidden="true"></span>
+            <span>Mirror</span>
+            <strong id="laserflow-mirrors-left">0 / 0</strong>
+          </button>
+          <button class="laserflow-tool" id="laserflow-add-splitter" type="button">
+            <span class="laserflow-tool-icon splitter-icon" aria-hidden="true"></span>
+            <span>Splitter</span>
+            <strong id="laserflow-splitters-left">0 / 0</strong>
+          </button>
+          <button class="laserflow-tool secondary" id="laserflow-delete" type="button" disabled>
+            <span class="laserflow-tool-icon delete-icon" aria-hidden="true">×</span>
+            <span>Remove</span>
+            <strong>selected</strong>
+          </button>
+          <button class="laserflow-tool secondary" id="laserflow-reset" type="button">
+            <span class="laserflow-tool-icon reset-icon" aria-hidden="true">↺</span>
+            <span>Reset</span>
+            <strong>level</strong>
+          </button>
+          <button class="laserflow-tool accent" id="laserflow-new" type="button">
+            <span class="laserflow-tool-icon new-icon" aria-hidden="true">＋</span>
+            <span>New</span>
+            <strong>layout</strong>
+          </button>
+        </div>
+
+        <div class="laserflow-board-shell">
+          <svg id="laserflow-board" class="laserflow-board" viewBox="0 0 1000 620" role="img" aria-label="Freeform laser puzzle"></svg>
+          <div class="laserflow-result hidden" id="laserflow-result" aria-live="polite">
+            <span id="laserflow-result-stars">★★★★★</span>
+            <strong>All targets matched!</strong>
+            <small id="laserflow-result-text">Nice routing.</small>
+          </div>
+        </div>
+
+        <div class="laserflow-status" id="laserflow-status">Rotate the laser or add a mirror.</div>
+        <div class="laserflow-info-row">
+          <div><span>TARGETS</span><strong id="laserflow-target-count">0 / 0</strong></div>
+          <div><span>PIECES</span><strong id="laserflow-piece-count">0 / 0</strong></div>
+          <div><span>5★ PAR</span><strong id="laserflow-par">—</strong></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="site-config.js?v=1.2.0"></script>
+  <script src="core.js?v=1.2.0"></script>
+  <script src="game-10.js?v=1.2.0"></script>
+</body>
+</html>

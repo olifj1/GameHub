@@ -242,3 +242,14 @@ Version 1.0.68
 - Player pieces can be placed back onto those same cells during the test.
 - Returning to Level Designer shows the original solution optics again.
 - Updated Laser Lab help text and cache/version references to v1.1.4.
+
+## v1.2.0
+
+- Added **Laser Lab Freeform** as a separate experimental game; the original grid-based Laser Lab remains intact.
+- Freeform optics use one scalable SVG coordinate system rather than grid cells, so interaction and beam geometry scale consistently across iPhone and iPad.
+- The laser rotates continuously using a drag handle. Player mirrors and splitters can be added, freely dragged and continuously rotated with live beam tracing while moving.
+- Replaced tile blocks/checkpoints with larger irregular obstacle islands and placed targets toward the opposite side of the board.
+- Mirrors use continuous reflection geometry rather than fixed 90-degree turns.
+- The splitter acts as a simple colour prism: the incoming beam becomes a red straight-through branch and a blue reflected branch. Red/blue targets only activate for matching light and also carry R/B labels.
+- Added Easy/Medium/Hard experimental layouts, limited piece inventories, Reset/New controls, and first-pass piece-count par scoring.
+- Added the new game to the Home screen and offline PWA cache.
