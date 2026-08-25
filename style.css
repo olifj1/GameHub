@@ -2325,6 +2325,7 @@ body[data-game-id="game-06"], .game-card[data-game-id="game-06"] { --gh-accent:#
 body[data-game-id="game-07"], .game-card[data-game-id="game-07"] { --gh-accent:#568a83; }
 body[data-game-id="game-08"], .game-card[data-game-id="game-08"] { --gh-accent:#bd6f72; }
 body[data-game-id="game-09"], .game-card[data-game-id="game-09"] { --gh-accent:#b87068; }
+body[data-game-id="game-10"], .game-card[data-game-id="game-10"] { --gh-accent:#6683a8; }
 
 html, body {
   color: var(--gh-ink);
@@ -6659,70 +6660,539 @@ body[data-game-id="game-08"] #laser-new-designer{
   font-weight:850;
 }
 
-/* v1.2.0 — Laser Lab Freeform */
-.laserflow-screen{
-  background:
-    radial-gradient(circle at 82% 6%,rgba(255,255,255,.09),transparent 25%),
-    linear-gradient(180deg,#172338 0%,#0b1422 100%);
-  color:#f6fbff;
+/* v1.2.1 — Laser Lab Freeform visual + rotation pass */
+body[data-game-id="game-10"] .laserflow-screen{
+  background:var(--gh-bg)!important;
+  color:var(--gh-ink);
 }
-.laserflow-page{max-width:620px;margin:0 auto;padding-bottom:max(22px,env(safe-area-inset-bottom))}
-.laserflow-header{margin-bottom:9px}
-.laserflow-header h1{font-size:clamp(28px,7.2vw,39px)}
-.laserflow-difficulty{width:min(100%,520px);margin:0 auto 7px;padding:4px;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;border-radius:15px;background:rgba(255,255,255,.08)}
-.laserflow-difficulty-button{min-height:38px;border:0;border-radius:11px;background:transparent;color:rgba(246,251,255,.62);font-weight:850}
-.laserflow-difficulty-button.active{background:rgba(255,255,255,.16);color:#fff}
-.laserflow-toolbar{width:min(100%,520px);margin:0 auto 7px;display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
-.laserflow-tool{min-width:0;min-height:55px;border:1px solid rgba(255,255,255,.08);border-radius:13px;background:rgba(255,255,255,.07);color:rgba(246,251,255,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:8px;font-weight:850;padding:4px 2px}
-.laserflow-tool strong{font-size:8px;font-weight:750;color:rgba(246,251,255,.48)}
-.laserflow-tool.accent{background:rgba(75,190,255,.16);border-color:rgba(75,190,255,.27)}
-.laserflow-tool.secondary{background:rgba(255,255,255,.045)}
-.laserflow-tool:disabled{opacity:.31}
-.laserflow-tool.hidden{display:none}
-.laserflow-tool-icon{width:24px;height:20px;position:relative;display:grid;place-items:center;font-size:20px;line-height:1}
-.laserflow-tool-icon.mirror-icon:before{content:"";position:absolute;width:26px;height:4px;border-radius:99px;background:linear-gradient(90deg,#96dfff,#fff,#96dfff);transform:rotate(-30deg);box-shadow:0 0 6px rgba(150,223,255,.35)}
-.laserflow-tool-icon.splitter-icon:before{content:"";position:absolute;width:19px;height:19px;clip-path:polygon(8% 50%,92% 8%,92% 92%);background:linear-gradient(145deg,#f8fbff,#cabaff);border:1px solid rgba(255,255,255,.7)}
-.laserflow-tool-icon.splitter-icon:after{content:"";position:absolute;width:5px;height:5px;border-radius:50%;background:#ff6070;box-shadow:10px 6px 0 #63b8ff;transform:translate(-4px,-3px)}
-.laserflow-board-shell{position:relative;width:min(100%,520px);margin:0 auto;padding:7px;border-radius:24px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.08);box-shadow:0 18px 44px rgba(0,0,0,.16)}
-.laserflow-board{display:block;width:100%;aspect-ratio:1000/620;border-radius:18px;overflow:hidden;touch-action:none;background:#101c2d}
-.laserflow-board-bg{fill:#101c2d;stroke:rgba(255,255,255,.055);stroke-width:2}
-.laserflow-island-shadow{fill:rgba(0,0,0,.26)}
-.laserflow-island{fill:#34445a;stroke:rgba(255,255,255,.12);stroke-width:4;stroke-linejoin:round}
-.laserflow-island.island-1{fill:#3a4858}.laserflow-island.island-2{fill:#304052}
-.laserflow-beam-glow{stroke-width:22;stroke-linecap:round;opacity:.13;filter:blur(7px);pointer-events:none}
-.laserflow-beam{stroke-width:7;stroke-linecap:round;opacity:.98;pointer-events:none}
-.laserflow-target-halo{fill:transparent;stroke-width:8;opacity:.13}
-.laserflow-target-outer{fill:#111c2b;stroke-width:8}
-.laserflow-target-inner{fill:transparent;stroke-width:3;opacity:.8}
-.laserflow-target-label{font-size:16px;font-weight:950;fill:#fff;pointer-events:none}
-.laserflow-target.target-white .laserflow-target-outer,.laserflow-target.target-white .laserflow-target-inner,.laserflow-target.target-white .laserflow-target-halo{stroke:#fff1a8}
-.laserflow-target.target-red .laserflow-target-outer,.laserflow-target.target-red .laserflow-target-inner,.laserflow-target.target-red .laserflow-target-halo{stroke:#ff5d6c}
-.laserflow-target.target-blue .laserflow-target-outer,.laserflow-target.target-blue .laserflow-target-inner,.laserflow-target.target-blue .laserflow-target-halo{stroke:#63b8ff}
-.laserflow-target.hit .laserflow-target-outer{fill:rgba(255,255,255,.16)}
-.laserflow-target.hit .laserflow-target-halo{opacity:.48;stroke-width:13}
-.laserflow-target.wrong .laserflow-target-outer{stroke-dasharray:8 8;opacity:.66}
-.laserflow-emitter-case{fill:#db555e;stroke:#ff9a9f;stroke-width:3}
-.laserflow-emitter-nozzle{fill:#ff9298}.laserflow-emitter-dot{fill:#fff1a8}
-.laserflow-emitter-body{pointer-events:none}
-.laserflow-rotate-connector{stroke:rgba(255,255,255,.25);stroke-width:3;stroke-dasharray:7 7;pointer-events:none}
-.laserflow-emitter-handle-line{stroke:rgba(255,241,168,.34)}
-.laserflow-rotate-handle{fill:rgba(18,31,47,.93);stroke:#dfefff;stroke-width:4;cursor:grab}
-.laserflow-emitter-handle{stroke:#fff1a8}
-.laserflow-rotate-handle-core{fill:#fff;pointer-events:auto}
-.laserflow-selection-ring{fill:rgba(99,184,255,.05);stroke:rgba(99,184,255,.75);stroke-width:3;stroke-dasharray:8 7;pointer-events:none}
-.laserflow-mirror-back{stroke:#436072;stroke-width:15;stroke-linecap:round;pointer-events:none}
-.laserflow-mirror-face{stroke:#dff8ff;stroke-width:7;stroke-linecap:round;pointer-events:none;filter:drop-shadow(0 0 5px rgba(140,225,255,.42))}
-.laserflow-node-hit{stroke:transparent;stroke-width:38;stroke-linecap:round;cursor:grab}
-.laserflow-node-centre{fill:#18283a;stroke:#b9dce9;stroke-width:3;cursor:grab}
-.laserflow-prism{fill:rgba(217,211,255,.84);stroke:#fff;stroke-width:4;stroke-linejoin:round;filter:drop-shadow(0 0 5px rgba(196,180,255,.28))}
-.laserflow-prism-red{fill:#ff5d6c}.laserflow-prism-blue{fill:#63b8ff}
-.laserflow-prism-visual{cursor:grab}
-.laserflow-result{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;width:min(76%,320px);padding:16px 18px;border-radius:18px;background:rgba(8,18,30,.89);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);text-align:center;box-shadow:0 18px 38px rgba(0,0,0,.28);pointer-events:none}
-.laserflow-result.hidden{display:none}.laserflow-result>span{display:block;color:#ffd667;font-size:24px;letter-spacing:.07em}.laserflow-result strong{display:block;margin-top:4px;color:#a2efbc;font-size:17px}.laserflow-result small{display:block;margin-top:5px;color:rgba(246,251,255,.67);font-size:11px}
-.laserflow-status{width:min(100%,520px);min-height:28px;margin:6px auto 4px;text-align:center;color:rgba(246,251,255,.67);font-size:11px;font-weight:720;line-height:1.35}
-.laserflow-info-row{width:min(100%,520px);margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.laserflow-info-row>div{min-height:39px;padding:6px 9px;border-radius:12px;background:rgba(255,255,255,.065);display:flex;align-items:center;justify-content:space-between;gap:5px}
-.laserflow-info-row span{font-size:7px;font-weight:900;letter-spacing:.09em;color:rgba(246,251,255,.42)}
-.laserflow-info-row strong{font-size:14px;color:#fff}
-@media(max-width:390px){.laserflow-page{padding-left:14px;padding-right:14px}.laserflow-toolbar{gap:4px}.laserflow-tool{min-height:51px}.laserflow-header{margin-bottom:6px}.laserflow-difficulty{margin-bottom:5px}.laserflow-board-shell{padding:6px}}
-@media(max-height:720px){.laserflow-header{margin-bottom:4px}.laserflow-difficulty-button{min-height:32px}.laserflow-tool{min-height:46px}.laserflow-board-shell{width:min(78vw,440px)}.laserflow-status{min-height:22px;margin-top:4px}.laserflow-info-row>div{min-height:34px}}
+body[data-game-id="game-10"] .laserflow-page{
+  width:100%;
+  max-width:760px;
+  margin:0 auto;
+  padding-left:12px!important;
+  padding-right:12px!important;
+  padding-bottom:max(120px,calc(92px + env(safe-area-inset-bottom)))!important;
+}
+body[data-game-id="game-10"] .laserflow-header{
+  padding-top:42px;
+  margin-bottom:10px!important;
+}
+body[data-game-id="game-10"] .laserflow-header .kicker{
+  margin-bottom:2px;
+  color:var(--gh-muted);
+}
+body[data-game-id="game-10"] .laserflow-header h1{
+  font-size:clamp(30px,7vw,38px);
+  line-height:1;
+  color:var(--gh-ink);
+}
+body[data-game-id="game-10"] .laserflow-mode-label{
+  margin:5px 0 0;
+  color:var(--gh-accent);
+  font-size:9px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:.18em;
+}
+
+body[data-game-id="game-10"] .laserflow-difficulty{
+  width:min(100%,650px);
+  margin:0 auto 8px;
+  padding:4px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:5px;
+  border:1.5px solid var(--gh-line);
+  border-radius:16px;
+  background:rgba(247,241,235,.72);
+}
+body[data-game-id="game-10"] .laserflow-difficulty-button{
+  min-height:38px;
+  border:1.5px solid transparent;
+  border-radius:12px;
+  background:transparent;
+  color:var(--gh-ink);
+  font-size:12px;
+  font-weight:850;
+}
+body[data-game-id="game-10"] .laserflow-difficulty-button.active{
+  color:var(--gh-accent);
+  background:var(--gh-surface);
+  border-color:color-mix(in srgb,var(--gh-accent) 55%,var(--gh-line));
+}
+
+body[data-game-id="game-10"] .laserflow-toolbar{
+  width:min(100%,650px);
+  margin:0 auto 8px;
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:6px;
+}
+body[data-game-id="game-10"] .laserflow-tool{
+  min-width:0;
+  min-height:60px;
+  padding:5px 3px 4px;
+  border:1.5px solid var(--gh-line);
+  border-radius:14px;
+  background:rgba(247,241,235,.86);
+  color:var(--gh-ink);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+  font-size:9px;
+  line-height:1.05;
+  font-weight:850;
+  box-shadow:none;
+}
+body[data-game-id="game-10"] .laserflow-tool strong{
+  font-size:8px;
+  line-height:1;
+  font-weight:800;
+  color:var(--gh-muted);
+}
+body[data-game-id="game-10"] .laserflow-tool.accent{
+  color:var(--gh-accent);
+  background:color-mix(in srgb,var(--gh-accent) 8%,var(--gh-surface));
+  border-color:color-mix(in srgb,var(--gh-accent) 48%,var(--gh-line));
+}
+body[data-game-id="game-10"] .laserflow-tool.secondary{
+  background:rgba(247,241,235,.68);
+}
+body[data-game-id="game-10"] .laserflow-tool:disabled{opacity:.34}
+body[data-game-id="game-10"] .laserflow-tool.hidden{display:none}
+
+/* Compact line-art toolbar icons. */
+body[data-game-id="game-10"] .laserflow-tool-icon{
+  width:28px;
+  height:24px;
+  position:relative;
+  display:block;
+  color:currentColor;
+  font-size:0;
+}
+body[data-game-id="game-10"] .laserflow-tool-icon.mirror-icon::before{
+  content:"";
+  position:absolute;
+  left:2px;
+  top:11px;
+  width:25px;
+  height:0;
+  border-top:2px solid currentColor;
+  transform:rotate(-28deg);
+  transform-origin:center;
+}
+body[data-game-id="game-10"] .laserflow-tool-icon.mirror-icon::after{
+  content:"";
+  position:absolute;
+  left:6px;
+  top:8px;
+  width:17px;
+  height:7px;
+  border-top:1px solid currentColor;
+  border-bottom:1px solid currentColor;
+  opacity:.42;
+  transform:rotate(-28deg);
+}
+body[data-game-id="game-10"] .laserflow-tool-icon.splitter-icon::before{
+  content:"";
+  position:absolute;
+  left:4px;
+  top:2px;
+  width:19px;
+  height:19px;
+  border:2px solid currentColor;
+  clip-path:polygon(0 50%,100% 0,100% 100%);
+  transform:rotate(1deg);
+}
+body[data-game-id="game-10"] .laserflow-tool-icon.splitter-icon::after{
+  content:"";
+  position:absolute;
+  left:16px;
+  top:5px;
+  width:4px;
+  height:4px;
+  border-radius:50%;
+  background:#e66b72;
+  box-shadow:0 10px 0 #679bc8;
+}
+body[data-game-id="game-10"] .laserflow-tool-icon.delete-icon::before,
+body[data-game-id="game-10"] .laserflow-tool-icon.delete-icon::after{
+  content:"";
+  position:absolute;
+  left:6px;
+  top:11px;
+  width:17px;
+  border-top:2px solid currentColor;
+}
+body[data-game-id="game-10"] .laserflow-tool-icon.delete-icon::before{transform:rotate(45deg)}
+body[data-game-id="game-10"] .laserflow-tool-icon.delete-icon::after{transform:rotate(-45deg)}
+body[data-game-id="game-10"] .laserflow-tool-icon.reset-icon::before{
+  content:"";
+  position:absolute;
+  left:5px;
+  top:4px;
+  width:15px;
+  height:15px;
+  border:2px solid currentColor;
+  border-left-color:transparent;
+  border-radius:50%;
+}
+body[data-game-id="game-10"] .laserflow-tool-icon.reset-icon::after{
+  content:"";
+  position:absolute;
+  left:3px;
+  top:3px;
+  width:0;
+  height:0;
+  border-top:4px solid transparent;
+  border-bottom:4px solid transparent;
+  border-right:7px solid currentColor;
+  transform:rotate(35deg);
+}
+body[data-game-id="game-10"] .laserflow-tool-icon.new-icon::before,
+body[data-game-id="game-10"] .laserflow-tool-icon.new-icon::after{
+  content:"";
+  position:absolute;
+  left:6px;
+  top:11px;
+  width:17px;
+  border-top:2px solid currentColor;
+}
+body[data-game-id="game-10"] .laserflow-tool-icon.new-icon::after{transform:rotate(90deg)}
+
+body[data-game-id="game-10"] .laserflow-board-shell{
+  position:relative;
+  width:min(100%,650px);
+  aspect-ratio:1 / 1;
+  margin:0 auto;
+  padding:9px;
+  border:1.5px solid var(--gh-line-strong);
+  border-radius:24px;
+  background:rgba(247,241,235,.86);
+  box-shadow:none;
+  overflow:hidden;
+}
+body[data-game-id="game-10"] .laserflow-board{
+  display:block;
+  width:100%;
+  height:100%;
+  aspect-ratio:1 / 1;
+  border-radius:16px;
+  overflow:hidden;
+  touch-action:none;
+  background:#1b1e1f;
+}
+body[data-game-id="game-10"] .laserflow-board-bg{
+  fill:#1b1e1f;
+  stroke:rgba(236,232,225,.14);
+  stroke-width:2;
+}
+body[data-game-id="game-10"] .laserflow-hatch-base{fill:#25292a}
+body[data-game-id="game-10"] .laserflow-hatch-line{
+  stroke:rgba(230,226,218,.34);
+  stroke-width:2;
+  vector-effect:non-scaling-stroke;
+}
+body[data-game-id="game-10"] .laserflow-island{
+  fill:url(#laserflow-island-hatch);
+  stroke:rgba(230,226,218,.62);
+  stroke-width:3;
+  stroke-linejoin:round;
+  vector-effect:non-scaling-stroke;
+}
+body[data-game-id="game-10"] .laserflow-beam-glow{
+  stroke-width:14;
+  stroke-linecap:round;
+  opacity:.10;
+  pointer-events:none;
+}
+body[data-game-id="game-10"] .laserflow-beam{
+  stroke-width:5;
+  stroke-linecap:round;
+  opacity:.98;
+  pointer-events:none;
+}
+body[data-game-id="game-10"] .laserflow-target-halo{
+  fill:transparent;
+  stroke-width:5;
+  opacity:.10;
+}
+body[data-game-id="game-10"] .laserflow-target-outer{
+  fill:#1b1e1f;
+  stroke-width:5;
+}
+body[data-game-id="game-10"] .laserflow-target-inner{
+  fill:transparent;
+  stroke-width:2;
+  opacity:.9;
+}
+body[data-game-id="game-10"] .laserflow-target-label{
+  font-size:15px;
+  font-weight:900;
+  fill:#f3efe9;
+  pointer-events:none;
+}
+body[data-game-id="game-10"] .laserflow-target.target-white .laserflow-target-outer,
+body[data-game-id="game-10"] .laserflow-target.target-white .laserflow-target-inner,
+body[data-game-id="game-10"] .laserflow-target.target-white .laserflow-target-halo{stroke:#f1e6bd}
+body[data-game-id="game-10"] .laserflow-target.target-red .laserflow-target-outer,
+body[data-game-id="game-10"] .laserflow-target.target-red .laserflow-target-inner,
+body[data-game-id="game-10"] .laserflow-target.target-red .laserflow-target-halo{stroke:#e66b72}
+body[data-game-id="game-10"] .laserflow-target.target-blue .laserflow-target-outer,
+body[data-game-id="game-10"] .laserflow-target.target-blue .laserflow-target-inner,
+body[data-game-id="game-10"] .laserflow-target.target-blue .laserflow-target-halo{stroke:#679bc8}
+body[data-game-id="game-10"] .laserflow-target.hit .laserflow-target-outer{fill:rgba(247,241,235,.10)}
+body[data-game-id="game-10"] .laserflow-target.hit .laserflow-target-halo{opacity:.40;stroke-width:10}
+body[data-game-id="game-10"] .laserflow-target.wrong .laserflow-target-outer{stroke-dasharray:8 7;opacity:.65}
+
+/* The optics use the same restrained line-art language as Tell the Time. */
+body[data-game-id="game-10"] .laserflow-emitter-case{
+  fill:#1b1e1f;
+  stroke:#e5e1da;
+  stroke-width:3;
+}
+body[data-game-id="game-10"] .laserflow-emitter-nozzle{
+  fill:#1b1e1f;
+  stroke:#e5e1da;
+  stroke-width:3;
+  stroke-linejoin:round;
+}
+body[data-game-id="game-10"] .laserflow-emitter-hatch{
+  stroke:rgba(229,225,218,.58);
+  stroke-width:2;
+  stroke-linecap:round;
+}
+body[data-game-id="game-10"] .laserflow-emitter-body{pointer-events:none}
+body[data-game-id="game-10"] .laserflow-emitter-hit{
+  fill:transparent;
+  stroke:transparent;
+  stroke-width:2;
+  cursor:pointer;
+}
+body[data-game-id="game-10"] .laserflow-selection-ring{
+  fill:rgba(102,131,168,.05);
+  stroke:rgba(133,166,207,.88);
+  stroke-width:3;
+  stroke-dasharray:8 7;
+  pointer-events:none;
+}
+body[data-game-id="game-10"] .laserflow-mirror-back{
+  stroke:#4c5557;
+  stroke-width:13;
+  stroke-linecap:round;
+  pointer-events:none;
+}
+body[data-game-id="game-10"] .laserflow-mirror-face{
+  stroke:#e8e4dd;
+  stroke-width:5;
+  stroke-linecap:round;
+  pointer-events:none;
+}
+body[data-game-id="game-10"] .laserflow-node-hit{
+  stroke:transparent;
+  stroke-width:42;
+  stroke-linecap:round;
+  cursor:grab;
+}
+body[data-game-id="game-10"] .laserflow-node-centre{
+  fill:#1b1e1f;
+  stroke:#d8d4ce;
+  stroke-width:2.5;
+  cursor:grab;
+}
+body[data-game-id="game-10"] .laserflow-prism{
+  fill:#202425;
+  stroke:#e5e1da;
+  stroke-width:3;
+  stroke-linejoin:round;
+}
+body[data-game-id="game-10"] .laserflow-prism-hatch{
+  stroke:rgba(229,225,218,.52);
+  stroke-width:2;
+  stroke-linecap:round;
+  pointer-events:none;
+}
+body[data-game-id="game-10"] .laserflow-prism-red{fill:#e66b72;pointer-events:none}
+body[data-game-id="game-10"] .laserflow-prism-blue{fill:#679bc8;pointer-events:none}
+body[data-game-id="game-10"] .laserflow-prism-visual{cursor:grab}
+
+body[data-game-id="game-10"] .laserflow-result{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  z-index:4;
+  width:min(78%,330px);
+  padding:16px 18px;
+  border:1.5px solid var(--gh-line-strong);
+  border-radius:18px;
+  background:rgba(247,241,235,.94);
+  text-align:center;
+  box-shadow:none;
+  pointer-events:none;
+}
+body[data-game-id="game-10"] .laserflow-result.hidden{display:none}
+body[data-game-id="game-10"] .laserflow-result>span{display:block;color:#bd8d43;font-size:23px;letter-spacing:.06em}
+body[data-game-id="game-10"] .laserflow-result strong{display:block;margin-top:4px;color:#3c7753;font-size:17px}
+body[data-game-id="game-10"] .laserflow-result small{display:block;margin-top:5px;color:var(--gh-muted);font-size:11px}
+
+/* A large off-board rotation control keeps the user's finger away from the optic. */
+body[data-game-id="game-10"] .laserflow-rotate-panel{
+  position:sticky;
+  bottom:max(8px,env(safe-area-inset-bottom));
+  z-index:20;
+  width:min(100%,650px);
+  margin:9px auto 0;
+  padding:9px 12px 10px;
+  border:1.5px solid var(--gh-line-strong);
+  border-radius:17px;
+  background:rgba(247,241,235,.96);
+  box-shadow:0 8px 24px rgba(37,43,51,.08);
+}
+body[data-game-id="game-10"] .laserflow-rotate-panel.disabled{opacity:.58}
+body[data-game-id="game-10"] .laserflow-rotate-heading{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:8px;
+  align-items:baseline;
+  margin-bottom:4px;
+}
+body[data-game-id="game-10"] .laserflow-rotate-heading>span{
+  color:var(--gh-muted);
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.14em;
+}
+body[data-game-id="game-10"] .laserflow-rotate-heading>strong{
+  min-width:0;
+  color:var(--gh-ink);
+  font-size:12px;
+  font-weight:850;
+  text-align:left;
+}
+body[data-game-id="game-10"] .laserflow-rotate-heading>output{
+  color:var(--gh-accent);
+  font-size:12px;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+}
+body[data-game-id="game-10"] .laserflow-rotate-control{
+  display:grid;
+  grid-template-columns:44px 1fr;
+  gap:10px;
+  align-items:center;
+}
+body[data-game-id="game-10"] .laserflow-rotate-preview{
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border:1.5px solid var(--gh-line);
+  border-radius:50%;
+  background:var(--gh-surface-2);
+}
+body[data-game-id="game-10"] .laserflow-rotate-preview i{
+  display:block;
+  width:25px;
+  height:2px;
+  border-radius:99px;
+  background:var(--gh-accent);
+  transform-origin:center;
+}
+body[data-game-id="game-10"] .laserflow-rotate-slider{
+  width:100%;
+  height:42px;
+  margin:0;
+  padding:0;
+  appearance:none;
+  -webkit-appearance:none;
+  background:transparent;
+  touch-action:none;
+}
+body[data-game-id="game-10"] .laserflow-rotate-slider::-webkit-slider-runnable-track{
+  height:4px;
+  border-radius:999px;
+  background:linear-gradient(90deg,var(--gh-line-strong),var(--gh-line-strong));
+}
+body[data-game-id="game-10"] .laserflow-rotate-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:32px;
+  height:32px;
+  margin-top:-14px;
+  border:2px solid var(--gh-accent);
+  border-radius:50%;
+  background:var(--gh-surface);
+  box-shadow:0 0 0 5px color-mix(in srgb,var(--gh-accent) 10%,transparent);
+}
+body[data-game-id="game-10"] .laserflow-rotate-slider::-moz-range-track{
+  height:4px;
+  border-radius:999px;
+  background:var(--gh-line-strong);
+}
+body[data-game-id="game-10"] .laserflow-rotate-slider::-moz-range-thumb{
+  width:30px;
+  height:30px;
+  border:2px solid var(--gh-accent);
+  border-radius:50%;
+  background:var(--gh-surface);
+}
+
+body[data-game-id="game-10"] .laserflow-status{
+  width:min(100%,650px);
+  min-height:24px;
+  margin:6px auto 5px;
+  color:var(--gh-muted);
+  text-align:center;
+  font-size:10px;
+  font-weight:720;
+  line-height:1.35;
+}
+body[data-game-id="game-10"] .laserflow-info-row{
+  width:min(100%,650px);
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:6px;
+}
+body[data-game-id="game-10"] .laserflow-info-row>div{
+  min-height:41px;
+  padding:6px 9px;
+  border:1.5px solid var(--gh-line);
+  border-radius:12px;
+  background:rgba(247,241,235,.76);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:5px;
+}
+body[data-game-id="game-10"] .laserflow-info-row span{
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:.09em;
+  color:var(--gh-muted);
+}
+body[data-game-id="game-10"] .laserflow-info-row strong{
+  color:var(--gh-ink);
+  font-size:14px;
+}
+
+@media(max-width:430px){
+  body[data-game-id="game-10"] .laserflow-page{padding-left:9px!important;padding-right:9px!important}
+  body[data-game-id="game-10"] .laserflow-toolbar{gap:4px}
+  body[data-game-id="game-10"] .laserflow-tool{min-height:57px;font-size:8px;border-radius:12px}
+  body[data-game-id="game-10"] .laserflow-tool strong{font-size:7px}
+  body[data-game-id="game-10"] .laserflow-board-shell{padding:7px;border-radius:21px}
+  body[data-game-id="game-10"] .laserflow-board{border-radius:14px}
+}
+
+@media(max-height:760px){
+  body[data-game-id="game-10"] .laserflow-header{padding-top:38px;margin-bottom:7px!important}
+  body[data-game-id="game-10"] .laserflow-difficulty{margin-bottom:6px}
+  body[data-game-id="game-10"] .laserflow-difficulty-button{min-height:34px}
+  body[data-game-id="game-10"] .laserflow-toolbar{margin-bottom:6px}
+  body[data-game-id="game-10"] .laserflow-tool{min-height:52px}
+  body[data-game-id="game-10"] .laserflow-rotate-panel{margin-top:7px}
+}
+

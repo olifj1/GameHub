@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.2.0">
+  <link rel="stylesheet" href="style.css?v=1.2.1">
   <title>Laser Lab Freeform</title>
 </head>
 <body class="modular-game" data-game-id="game-10">
@@ -16,7 +16,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="game-10-info-title">Laser Lab Freeform</h2>
-      <p>Rotate the laser, then add mirrors and splitters anywhere on the board. Drag a piece to move it and drag its round handle to rotate it. The light updates while you move.</p>
+      <p>Tap the laser, a mirror or a splitter to select it. Drag mirrors and splitters anywhere on the board, then use the large rotate control below the board. The light updates live while you move or rotate.</p>
       <p>Mirrors obey the angle of reflection: changing a mirror by a small amount changes the outgoing beam by twice that amount.</p>
       <p>A splitter sends a <strong>red</strong> beam straight on and reflects a <strong>blue</strong> beam. Coloured targets only light when the matching colour reaches them.</p>
     </div>
@@ -27,7 +27,8 @@
       <div class="page laserflow-page">
         <header class="page-header laserflow-header">
           <p class="kicker" data-site-name="">GameHub</p>
-          <h1 id="laserflow-title">Laser Lab Freeform</h1>
+          <h1 id="laserflow-title">Laser Lab</h1>
+          <p class="laserflow-mode-label">FREEFORM</p>
         </header>
 
         <div class="laserflow-difficulty" role="group" aria-label="Difficulty">
@@ -65,7 +66,7 @@
         </div>
 
         <div class="laserflow-board-shell">
-          <svg id="laserflow-board" class="laserflow-board" viewBox="0 0 1000 620" role="img" aria-label="Freeform laser puzzle"></svg>
+          <svg id="laserflow-board" class="laserflow-board" viewBox="0 0 1000 1000" role="img" aria-label="Freeform laser puzzle"></svg>
           <div class="laserflow-result hidden" id="laserflow-result" aria-live="polite">
             <span id="laserflow-result-stars">★★★★★</span>
             <strong>All targets matched!</strong>
@@ -73,7 +74,19 @@
           </div>
         </div>
 
-        <div class="laserflow-status" id="laserflow-status">Rotate the laser or add a mirror.</div>
+        <div class="laserflow-rotate-panel" id="laserflow-rotate-panel">
+          <div class="laserflow-rotate-heading">
+            <span>ROTATE</span>
+            <strong id="laserflow-rotate-name">Laser</strong>
+            <output id="laserflow-rotate-value">0°</output>
+          </div>
+          <div class="laserflow-rotate-control">
+            <span class="laserflow-rotate-preview" aria-hidden="true"><i id="laserflow-rotate-preview-line"></i></span>
+            <input id="laserflow-rotate-slider" type="range" min="-180" max="180" step="0.5" value="0" aria-label="Rotate selected optical piece">
+          </div>
+        </div>
+
+        <div class="laserflow-status" id="laserflow-status">Select an optic, then use the rotate control below the board.</div>
         <div class="laserflow-info-row">
           <div><span>TARGETS</span><strong id="laserflow-target-count">0 / 0</strong></div>
           <div><span>PIECES</span><strong id="laserflow-piece-count">0 / 0</strong></div>
@@ -83,8 +96,8 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.2.0"></script>
-  <script src="core.js?v=1.2.0"></script>
-  <script src="game-10.js?v=1.2.0"></script>
+  <script src="site-config.js?v=1.2.1"></script>
+  <script src="core.js?v=1.2.1"></script>
+  <script src="game-10.js?v=1.2.1"></script>
 </body>
 </html>

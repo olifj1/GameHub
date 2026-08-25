@@ -253,3 +253,14 @@ Version 1.0.68
 - The splitter acts as a simple colour prism: the incoming beam becomes a red straight-through branch and a blue reflected branch. Red/blue targets only activate for matching light and also carry R/B labels.
 - Added Easy/Medium/Hard experimental layouts, limited piece inventories, Reset/New controls, and first-pass piece-count par scoring.
 - Added the new game to the Home screen and offline PWA cache.
+
+## v1.2.1
+
+- Laser Lab Freeform received its first visual/interaction polish pass while the original grid Laser Lab remains unchanged.
+- Reworked the Freeform page back into GameHub's soft neutral visual language, with clearer high-contrast controls and a more compact header.
+- The Freeform play area is now a large square board with an off-black inner field. Existing hand-built layouts are centred without stretching, leaving extra free routing space above and below.
+- Removed the small on-board rotation handles. Tap the laser, mirror or splitter to select it, then use the large sticky rotation slider below the board; beams update live while rotating.
+- Mirrors and splitters remain freely draggable on the board.
+- Redesigned laser, mirrors, splitter, targets and toolbar controls as cleaner line-art graphics.
+- Obstacle islands now use neutral diagonal hatching inspired by Tell the Time's graphic treatment instead of filled game-like blocks.
+- Updated cache/version references to v1.2.1.

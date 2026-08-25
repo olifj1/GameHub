@@ -2,7 +2,9 @@
   "use strict";
 
   const W = 1000;
-  const H = 620;
+  const H = 1000;
+  const LEGACY_H = 620;
+  const LEVEL_Y_OFFSET = (H - LEGACY_H) / 2;
   const EPS = 2.5;
   const MAX_BOUNCES = 28;
   const MIRROR_LENGTH = 126;
@@ -25,11 +27,16 @@
   const resultStarsEl = document.getElementById("laserflow-result-stars");
   const resultTextEl = document.getElementById("laserflow-result-text");
   const difficultyButtons = [...document.querySelectorAll("[data-flow-difficulty]")];
+  const rotatePanel = document.getElementById("laserflow-rotate-panel");
+  const rotateNameEl = document.getElementById("laserflow-rotate-name");
+  const rotateValueEl = document.getElementById("laserflow-rotate-value");
+  const rotateSlider = document.getElementById("laserflow-rotate-slider");
+  const rotatePreviewLine = document.getElementById("laserflow-rotate-preview-line");
 
   const beamColours = {
-    white: "#fff1a8",
-    red: "#ff5d6c",
-    blue: "#63b8ff"
+    white: "#f1e6bd",
+    red: "#e66b72",
+    blue: "#679bc8"
   };
 
   const levelSets = {
@@ -130,7 +137,7 @@
   let inventory = { mirrors: 0, splitters: 0 };
   let par = 0;
   let nodes = [];
-  let selectedId = null;
+  let selectedId = "emitter";
   let dragState = null;
   let nextNodeId = 1;
   let targetHits = new Set();
@@ -139,6 +146,18 @@
 
   function deepClone(value) {
     return JSON.parse(JSON.stringify(value));
+  }
+
+  // v1.2.1 keeps the existing hand-built layouts intact, but centres the
+  // original 1000×620 play area inside the new square 1000×1000 board.
+  // That preserves the islands' proportions and creates useful routing space
+  // above and below them instead of stretching the artwork.
+  function squareLevel(source) {
+    const level = deepClone(source);
+    level.emitter.y += LEVEL_Y_OFFSET;
+    level.targets.forEach(target => { target.y += LEVEL_Y_OFFSET; });
+    level.islands.forEach(polygon => polygon.forEach(point => { point[1] += LEVEL_Y_OFFSET; }));
+    return level;
   }
 
   function setDifficulty(next) {
@@ -151,7 +170,7 @@
     const set = levelSets[difficulty];
     const index = first ? levelCounter[difficulty] % set.length : (levelCounter[difficulty] + 1) % set.length;
     levelCounter[difficulty] = index;
-    baseLevel = deepClone(set[index]);
+    baseLevel = squareLevel(set[index]);
     resetLevel();
   }
 
@@ -162,15 +181,15 @@
     inventory = deepClone(baseLevel.inventory);
     par = baseLevel.par || 0;
     nodes = [];
-    selectedId = null;
+    selectedId = "emitter";
     dragState = null;
     nextNodeId = 1;
     solvedLastFrame = false;
     resultEl.classList.add("hidden");
     render();
     statusEl.textContent = difficulty === "easy"
-      ? "Drag the laser handle, then place a mirror to bend the beam around the island."
-      : "Use the splitter to make red and blue light, then route each colour to its matching target.";
+      ? "Laser selected — use the rotate control below the board, then place a mirror to bend the beam."
+      : "Laser selected — rotate below, then use mirrors and the splitter to route each colour.";
   }
 
   function svgPoint(evt) {
@@ -351,12 +370,13 @@
 
   function findSpawnPoint() {
     const candidates = [
-      [210, 530],[320, 535],[430, 535],[540, 535],[650, 535],[760, 535],
-      [210, 84],[320, 84],[430, 84],[540, 84],[650, 84],[760, 84],
-      [250, 300],[400, 300],[600, 300],[760, 300]
+      [210, 860],[330, 860],[450, 860],[570, 860],[690, 860],[810, 860],
+      [210, 140],[330, 140],[450, 140],[570, 140],[690, 140],[810, 140],
+      [210, 500],[360, 500],[520, 500],[680, 500],[820, 500],
+      [260, 760],[500, 760],[740, 760],[260, 240],[500, 240],[740, 240]
     ];
     for (const [x, y] of candidates) if (canPlaceAt(x, y)) return { x, y };
-    return { x: 500, y: 540 };
+    return { x: 500, y: 850 };
   }
 
   function addNode(type) {
@@ -371,7 +391,7 @@
     selectedId = node.id;
     resultEl.classList.add("hidden");
     render();
-    statusEl.textContent = `Drag the ${type} to move it. Drag its round handle to rotate it.`;
+    statusEl.textContent = `Drag the ${type} to move it, then use the rotate control below the board.`;
   }
 
   function removeSelected() {
@@ -394,9 +414,6 @@
 
   function appendIsland(polygon, index) {
     const points = polygon.map(point => point.join(",")).join(" ");
-    const shadow = createSvg("polygon", { points, class: "laserflow-island-shadow" });
-    shadow.setAttribute("transform", "translate(0 8)");
-    board.appendChild(shadow);
     const shape = createSvg("polygon", { points, class: `laserflow-island island-${index % 3}` });
     board.appendChild(shape);
   }
@@ -425,54 +442,100 @@
   }
 
   function appendEmitter() {
-    const group = createSvg("g", { class: "laserflow-emitter-group" });
-    const d = unitFromAngle(emitter.angle);
-    const handleX = emitter.x + d.x * 76;
-    const handleY = emitter.y + d.y * 76;
-    const connector = createSvg("line", { x1: emitter.x, y1: emitter.y, x2: handleX, y2: handleY, class: "laserflow-rotate-connector emitter-handle-line" });
-    const body = createSvg("g", { transform: `translate(${emitter.x} ${emitter.y}) rotate(${emitter.angle})`, class: "laserflow-emitter-body" });
+    const group = createSvg("g", { class: `laserflow-emitter-group${selectedId === "emitter" ? " selected" : ""}` });
+    if (selectedId === "emitter") {
+      group.appendChild(createSvg("circle", { cx: emitter.x, cy: emitter.y, r: 54, class: "laserflow-selection-ring" }));
+    }
+
+    const body = createSvg("g", {
+      transform: `translate(${emitter.x} ${emitter.y}) rotate(${emitter.angle})`,
+      class: "laserflow-emitter-body"
+    });
     body.append(
-      createSvg("rect", { x: -24, y: -18, width: 40, height: 36, rx: 9, class: "laserflow-emitter-case" }),
-      createSvg("path", { d: "M14 -10 L31 -6 L31 6 L14 10 Z", class: "laserflow-emitter-nozzle" }),
-      createSvg("circle", { cx: -8, cy: 0, r: 6, class: "laserflow-emitter-dot" })
+      createSvg("rect", { x: -28, y: -17, width: 42, height: 34, rx: 6, class: "laserflow-emitter-case" }),
+      createSvg("path", { d: "M14 -10 L34 -6 L34 6 L14 10 Z", class: "laserflow-emitter-nozzle" }),
+      createSvg("line", { x1: -18, y1: -8, x2: -6, y2: -8, class: "laserflow-emitter-hatch" }),
+      createSvg("line", { x1: -18, y1: 0, x2: -6, y2: 0, class: "laserflow-emitter-hatch" }),
+      createSvg("line", { x1: -18, y1: 8, x2: -6, y2: 8, class: "laserflow-emitter-hatch" })
     );
-    const handle = createSvg("circle", { cx: handleX, cy: handleY, r: 18, class: "laserflow-rotate-handle laserflow-emitter-handle", "data-drag": "emitter-rotate" });
-    const handleCore = createSvg("circle", { cx: handleX, cy: handleY, r: 6, class: "laserflow-rotate-handle-core", "data-drag": "emitter-rotate" });
-    group.append(connector, body, handle, handleCore);
+    const hit = createSvg("circle", {
+      cx: emitter.x, cy: emitter.y, r: 46, class: "laserflow-emitter-hit", "data-select": "emitter"
+    });
+    group.append(body, hit);
     board.appendChild(group);
   }
 
   function appendNode(node) {
     const selected = node.id === selectedId;
     const group = createSvg("g", { class: `laserflow-node ${node.type}${selected ? " selected" : ""}`, "data-node-id": node.id });
-    const angle = degToRad(node.angle - 90);
-    const handleX = node.x + Math.cos(angle) * 74;
-    const handleY = node.y + Math.sin(angle) * 74;
 
-    if (selected) group.appendChild(createSvg("circle", { cx: node.x, cy: node.y, r: 53, class: "laserflow-selection-ring" }));
-    group.appendChild(createSvg("line", { x1: node.x, y1: node.y, x2: handleX, y2: handleY, class: "laserflow-rotate-connector" }));
+    if (selected) {
+      group.appendChild(createSvg("circle", { cx: node.x, cy: node.y, r: 53, class: "laserflow-selection-ring" }));
+    }
 
     if (node.type === "mirror") {
       const seg = nodeSegment(node);
       group.appendChild(createSvg("line", { x1: seg.a.x, y1: seg.a.y, x2: seg.b.x, y2: seg.b.y, class: "laserflow-mirror-back" }));
       group.appendChild(createSvg("line", { x1: seg.a.x, y1: seg.a.y, x2: seg.b.x, y2: seg.b.y, class: "laserflow-mirror-face" }));
       group.appendChild(createSvg("line", { x1: seg.a.x, y1: seg.a.y, x2: seg.b.x, y2: seg.b.y, class: "laserflow-node-hit", "data-drag": "move", "data-node-id": node.id }));
-      group.appendChild(createSvg("circle", { cx: node.x, cy: node.y, r: 13, class: "laserflow-node-centre", "data-drag": "move", "data-node-id": node.id }));
+      group.appendChild(createSvg("circle", { cx: node.x, cy: node.y, r: 10, class: "laserflow-node-centre", "data-drag": "move", "data-node-id": node.id }));
     } else {
       const visual = createSvg("g", { transform: `translate(${node.x} ${node.y}) rotate(${node.angle})`, class: "laserflow-prism-visual", "data-drag": "move", "data-node-id": node.id });
       visual.append(
         createSvg("polygon", { points: "-43,-24 43,0 -43,24", class: "laserflow-prism" }),
-        createSvg("circle", { cx: -14, cy: -7, r: 6, class: "laserflow-prism-red" }),
-        createSvg("circle", { cx: -14, cy: 7, r: 6, class: "laserflow-prism-blue" })
+        createSvg("line", { x1: -24, y1: -10, x2: -10, y2: -10, class: "laserflow-prism-hatch" }),
+        createSvg("line", { x1: -24, y1: 0, x2: -6, y2: 0, class: "laserflow-prism-hatch" }),
+        createSvg("line", { x1: -24, y1: 10, x2: -2, y2: 10, class: "laserflow-prism-hatch" }),
+        createSvg("circle", { cx: 5, cy: -7, r: 5, class: "laserflow-prism-red" }),
+        createSvg("circle", { cx: 5, cy: 7, r: 5, class: "laserflow-prism-blue" })
       );
       group.appendChild(visual);
       const seg = nodeSegment(node);
       group.appendChild(createSvg("line", { x1: seg.a.x, y1: seg.a.y, x2: seg.b.x, y2: seg.b.y, class: "laserflow-node-hit", "data-drag": "move", "data-node-id": node.id }));
     }
 
-    group.appendChild(createSvg("circle", { cx: handleX, cy: handleY, r: 20, class: "laserflow-rotate-handle", "data-drag": "rotate", "data-node-id": node.id }));
-    group.appendChild(createSvg("circle", { cx: handleX, cy: handleY, r: 6, class: "laserflow-rotate-handle-core", "data-drag": "rotate", "data-node-id": node.id }));
     board.appendChild(group);
+  }
+
+  function appendBoardDefs() {
+    const defs = createSvg("defs");
+    const pattern = createSvg("pattern", { id: "laserflow-island-hatch", width: 24, height: 24, patternUnits: "userSpaceOnUse", patternTransform: "rotate(38)" });
+    pattern.appendChild(createSvg("rect", { x: 0, y: 0, width: 24, height: 24, class: "laserflow-hatch-base" }));
+    pattern.appendChild(createSvg("line", { x1: 2, y1: 0, x2: 2, y2: 24, class: "laserflow-hatch-line" }));
+    defs.appendChild(pattern);
+    board.appendChild(defs);
+  }
+
+  function normaliseAngle(angle) {
+    let value = Number(angle) || 0;
+    while (value > 180) value -= 360;
+    while (value < -180) value += 360;
+    return value;
+  }
+
+  function selectedSubject() {
+    if (selectedId === "emitter") return { type: "Laser", object: emitter };
+    const node = nodeById(selectedId);
+    if (!node) return null;
+    return { type: node.type === "mirror" ? "Mirror" : "Splitter", object: node };
+  }
+
+  function updateRotateUi() {
+    const selected = selectedSubject();
+    const disabled = !selected;
+    rotatePanel.classList.toggle("disabled", disabled);
+    rotateSlider.disabled = disabled;
+    if (!selected) {
+      rotateNameEl.textContent = "Select an optic";
+      rotateValueEl.textContent = "—";
+      rotatePreviewLine.style.transform = "rotate(0deg)";
+      return;
+    }
+    const angle = normaliseAngle(selected.object.angle);
+    rotateNameEl.textContent = selected.type;
+    rotateValueEl.textContent = `${Math.round(angle)}°`;
+    rotateSlider.value = String(angle);
+    rotatePreviewLine.style.transform = `rotate(${angle}deg)`;
   }
 
   function updateHud(solved) {
@@ -487,7 +550,8 @@
     addMirrorButton.disabled = mirrorCount >= inventory.mirrors;
     addSplitterButton.disabled = splitterCount >= inventory.splitters;
     addSplitterButton.classList.toggle("hidden", inventory.splitters === 0);
-    deleteButton.disabled = !selectedId;
+    deleteButton.disabled = !selectedId || selectedId === "emitter";
+    updateRotateUi();
 
     if (solved && !solvedLastFrame) {
       const stars = par > 0 ? Math.max(1, 5 - Math.max(0, pieces - par)) : 5;
@@ -519,7 +583,8 @@
 
   function render() {
     board.innerHTML = "";
-    board.appendChild(createSvg("rect", { x: 0, y: 0, width: W, height: H, rx: 34, class: "laserflow-board-bg" }));
+    appendBoardDefs();
+    board.appendChild(createSvg("rect", { x: 0, y: 0, width: W, height: H, rx: 32, class: "laserflow-board-bg" }));
 
     islands.forEach(appendIsland);
     const segments = traceBeams();
@@ -533,8 +598,19 @@
   }
 
   board.addEventListener("pointerdown", evt => {
-    const dragType = evt.target.dataset.drag;
-    const nodeId = evt.target.dataset.nodeId;
+    const control = evt.target.closest?.("[data-drag], [data-select]") || evt.target;
+    const dragType = control.dataset.drag;
+    const nodeId = control.dataset.nodeId;
+    const selectType = control.dataset.select;
+
+    if (selectType === "emitter") {
+      evt.preventDefault();
+      selectedId = "emitter";
+      statusEl.textContent = "Laser selected — use the rotate control below the board.";
+      render();
+      return;
+    }
+
     if (!dragType) {
       selectedId = null;
       render();
@@ -543,21 +619,18 @@
 
     evt.preventDefault();
     const p = svgPoint(evt);
-    if (dragType === "emitter-rotate") {
-      dragState = { pointerId: evt.pointerId, type: "emitter-rotate" };
-    } else {
-      const node = nodeById(nodeId);
-      if (!node) return;
-      selectedId = node.id;
-      dragState = {
-        pointerId: evt.pointerId,
-        type: dragType,
-        nodeId: node.id,
-        offsetX: node.x - p.x,
-        offsetY: node.y - p.y
-      };
-    }
+    const node = nodeById(nodeId);
+    if (!node) return;
+    selectedId = node.id;
+    dragState = {
+      pointerId: evt.pointerId,
+      type: "move",
+      nodeId: node.id,
+      offsetX: node.x - p.x,
+      offsetY: node.y - p.y
+    };
     board.setPointerCapture(evt.pointerId);
+    statusEl.textContent = `${node.type === "mirror" ? "Mirror" : "Splitter"} selected — drag to move, rotate below.`;
     render();
   });
 
@@ -565,27 +638,14 @@
     if (!dragState || dragState.pointerId !== evt.pointerId) return;
     evt.preventDefault();
     const p = svgPoint(evt);
-
-    if (dragState.type === "emitter-rotate") {
-      emitter.angle = Math.atan2(p.y - emitter.y, p.x - emitter.x) * 180 / Math.PI;
-      resultEl.classList.add("hidden");
-      render();
-      return;
-    }
-
     const node = nodeById(dragState.nodeId);
     if (!node) return;
 
-    if (dragState.type === "move") {
-      const nextX = clamp(p.x + dragState.offsetX, 65, W - 65);
-      const nextY = clamp(p.y + dragState.offsetY, 65, H - 65);
-      if (canPlaceAt(nextX, nextY, node.id)) {
-        node.x = nextX;
-        node.y = nextY;
-      }
-    } else if (dragState.type === "rotate") {
-      const handleAngle = Math.atan2(p.y - node.y, p.x - node.x) * 180 / Math.PI;
-      node.angle = handleAngle + 90;
+    const nextX = clamp(p.x + dragState.offsetX, 65, W - 65);
+    const nextY = clamp(p.y + dragState.offsetY, 65, H - 65);
+    if (canPlaceAt(nextX, nextY, node.id)) {
+      node.x = nextX;
+      node.y = nextY;
     }
 
     resultEl.classList.add("hidden");
@@ -601,6 +661,14 @@
 
   board.addEventListener("pointerup", endDrag);
   board.addEventListener("pointercancel", endDrag);
+
+  rotateSlider.addEventListener("input", () => {
+    const selected = selectedSubject();
+    if (!selected) return;
+    selected.object.angle = Number(rotateSlider.value);
+    resultEl.classList.add("hidden");
+    render();
+  });
 
   addMirrorButton.addEventListener("click", () => addNode("mirror"));
   addSplitterButton.addEventListener("click", () => addNode("splitter"));
