@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.2.1">
-  <title>Laser Lab Freeform</title>
+  <link rel="stylesheet" href="style.css?v=1.3.1">
+  <title>Laser Lab</title>
 </head>
 <body class="modular-game" data-game-id="game-10">
   <a class="game-home-button" href="index.html" aria-label="Back to games">← Games</a>
@@ -15,10 +15,10 @@
     <div class="game-info-dialog" role="dialog" aria-modal="true" aria-labelledby="game-10-info-title">
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">HOW TO PLAY</p>
-      <h2 id="game-10-info-title">Laser Lab Freeform</h2>
-      <p>Tap the laser, a mirror or a splitter to select it. Drag mirrors and splitters anywhere on the board, then use the large rotate control below the board. The light updates live while you move or rotate.</p>
+      <h2 id="game-10-info-title">Laser Lab</h2>
+      <p>Tap the laser, a mirror or a prism to select it. Drag mirrors and prisms anywhere on the board, then use the large rotate control below the board. The light updates live while you move or rotate.</p>
       <p>Mirrors obey the angle of reflection: changing a mirror by a small amount changes the outgoing beam by twice that amount.</p>
-      <p>A splitter sends a <strong>red</strong> beam straight on and reflects a <strong>blue</strong> beam. Coloured targets only light when the matching colour reaches them.</p>
+      <p>Medium prisms split white light into <strong>red</strong> and <strong>blue</strong>. Hard uses an <strong>RGB prism</strong> that makes red, green and blue branches. Route each colour through matching checkpoints and targets.</p>
     </div>
   </div>
 
@@ -28,7 +28,6 @@
         <header class="page-header laserflow-header">
           <p class="kicker" data-site-name="">GameHub</p>
           <h1 id="laserflow-title">Laser Lab</h1>
-          <p class="laserflow-mode-label">FREEFORM</p>
         </header>
 
         <div class="laserflow-difficulty" role="group" aria-label="Difficulty">
@@ -45,7 +44,7 @@
           </button>
           <button class="laserflow-tool" id="laserflow-add-splitter" type="button">
             <span class="laserflow-tool-icon splitter-icon" aria-hidden="true"></span>
-            <span>Splitter</span>
+            <span>Prism</span>
             <strong id="laserflow-splitters-left">0 / 0</strong>
           </button>
           <button class="laserflow-tool secondary" id="laserflow-delete" type="button" disabled>
@@ -89,6 +88,7 @@
         <div class="laserflow-status" id="laserflow-status">Select an optic, then use the rotate control below the board.</div>
         <div class="laserflow-info-row">
           <div><span>TARGETS</span><strong id="laserflow-target-count">0 / 0</strong></div>
+          <div><span>CHECKS</span><strong id="laserflow-checkpoint-count">0 / 0</strong></div>
           <div><span>PIECES</span><strong id="laserflow-piece-count">0 / 0</strong></div>
           <div><span>5★ PAR</span><strong id="laserflow-par">—</strong></div>
         </div>
@@ -96,8 +96,8 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.2.1"></script>
-  <script src="core.js?v=1.2.1"></script>
-  <script src="game-10.js?v=1.2.1"></script>
+  <script src="site-config.js?v=1.3.1"></script>
+  <script src="core.js?v=1.3.1"></script>
+  <script src="game-10.js?v=1.3.1"></script>
 </body>
 </html>

@@ -10,10 +10,13 @@
   const MIRROR_LENGTH = 126;
   const SPLITTER_LENGTH = 112;
   const TARGET_RADIUS = 30;
+  const CHECKPOINT_RADIUS = 22;
+  const RGB_FACE_OFFSET = 45;
 
   const board = document.getElementById("laserflow-board");
   const statusEl = document.getElementById("laserflow-status");
   const targetCountEl = document.getElementById("laserflow-target-count");
+  const checkpointCountEl = document.getElementById("laserflow-checkpoint-count");
   const pieceCountEl = document.getElementById("laserflow-piece-count");
   const parEl = document.getElementById("laserflow-par");
   const mirrorsLeftEl = document.getElementById("laserflow-mirrors-left");
@@ -36,6 +39,7 @@
   const beamColours = {
     white: "#f1e6bd",
     red: "#e66b72",
+    green: "#78a878",
     blue: "#679bc8"
   };
 
@@ -128,11 +132,14 @@
     ]
   };
 
+  const HARD_FALLBACK_LEVEL = {"emitter":{"x":324.5194497101546,"y":72,"angle":-162.2237659435615},"targets":[{"id":"r1","x":896.5562632983246,"y":928,"colour":"red","label":"R"},{"id":"g1","x":529.3878951488298,"y":928,"colour":"green","label":"G"},{"id":"b1","x":72,"y":774.9942618186005,"colour":"blue","label":"B"}],"checkpoints":[{"id":"c1","x":904.3859914482433,"y":674.0861516788191,"colour":"red","label":"R"},{"id":"c2","x":600.7985344253505,"y":882.1202940747706,"colour":"green","label":"G"},{"id":"c3","x":110.15937759550249,"y":565.714218987574,"colour":"blue","label":"B"}],"islands":[[[377.40900689344386,443.3834668337049],[470.7545553153527,354.5247389942332],[613.1730111580531,319.04897808875126],[713.3552891981127,434.2736872759849],[753.9576520468452,598.4637587216205],[605.0365952259483,676.8592099984186],[445.66059245151007,723.172278625623],[320.317468443955,596.9588414836292]],[[209.1982021760437,326.4897077032087],[218.8991912526305,290.23412442004667],[255.14062271575372,296.03249438158014],[279.3757637454695,314.36380217365576],[291.46260732583676,342.58008953733827],[282.3630059769348,374.1239603163098],[254.20802386478485,397.24095150272075],[217.5810687510825,388.6023676296112],[207.1223559068791,354.5681642338112]],[[127.13017626917437,853.4330396640471],[153.50266272978058,826.7030768984051],[190.5252707249936,834.2781369806261],[229.03936745339726,838.05682533083],[225.37368792951804,871.6796250311518],[221.63572228750672,900.2654259110682],[191.69052518536643,917.7581958377609],[157.3738175750352,908.9533861159617],[132.37256511890246,887.0025111131963]],[[208.83521681272643,670.1698737797049],[225.07550178303208,690.4560308986855],[212.02802253253384,714.4945840246867],[179.01625438976157,723.7302058400005],[160.4798893815685,700.9010436277791],[151.4243637801233,674.5801600533017],[182.693698458222,665.6587703525136]],[[880.9774349577885,142.6798996970841],[833.941258861074,136.17862913972812],[812.4073874548594,114.49165167030444],[812.0581744493611,86.87825083631961],[852.6270208219269,68.6739814027527],[888.4182940064412,88.97614895538484],[910.2126847434386,115.35170041983756]],[[356.5898702618104,787.997258159393],[396.96361126982754,802.6842843682384],[413.25938534600743,828.5365651221648],[404.90739180717003,860.2771294501393],[360.7969607304555,869.5135575505939],[329.4320718706124,846.2581003501411],[320.8534429701965,812.6584558882066]]],"inventory":{"mirrors":5,"splitters":1},"prismMode":"rgb","prismSign":1,"par":5,"solution":{"emitterAngle":162.769237075088,"nodes":[{"id":"solution-pre","type":"mirror","x":173.01193583986878,"y":118.98856611301275,"angle":88.29027179555493},{"id":"solution-prism","type":"splitter","mode":"rgb","rgbSign":1,"x":772.0225052030567,"y":266.2450176006473,"angle":53.43357290087604},{"id":"solution-red-mirror","type":"mirror","x":915.8717908116191,"y":301.6078916986247,"angle":52.788764344485735},{"id":"solution-green-mirror","type":"mirror","x":744.057548642076,"y":790.079647050866,"angle":120.16801001678752},{"id":"solution-blue-mirror","type":"mirror","x":170.61762808748574,"y":234.13896672396106,"angle":141.69471341441272}]}};
+
   let difficulty = "easy";
   let levelCounter = { easy: 0, medium: 0, hard: 0 };
   let baseLevel = null;
   let emitter = null;
   let targets = [];
+  let checkpoints = [];
   let islands = [];
   let inventory = { mirrors: 0, splitters: 0 };
   let par = 0;
@@ -141,7 +148,10 @@
   let dragState = null;
   let nextNodeId = 1;
   let targetHits = new Set();
+  let checkpointHits = new Set();
   let wrongHits = new Set();
+  let prismMode = "rb";
+  let prismSign = 1;
   let solvedLastFrame = false;
 
   function deepClone(value) {
@@ -311,23 +321,59 @@
     return points;
   }
 
+  function pointClearOfPolygon(point, polygon, padding = 0) {
+    if (pointInPolygon(point, polygon)) return false;
+    if (padding <= 0) return true;
+    for (let i = 0; i < polygon.length; i++) {
+      const a = { x: polygon[i][0], y: polygon[i][1] };
+      const next = polygon[(i + 1) % polygon.length];
+      const b = { x: next[0], y: next[1] };
+      if (pointSegmentDistance(point, a, b) < padding) return false;
+    }
+    return true;
+  }
+
+  function createCentralMass(difficultyName) {
+    const ranges = difficultyName === "easy"
+      ? { rx: [175, 215], ry: [180, 235], offset: 72 }
+      : difficultyName === "medium"
+        ? { rx: [190, 235], ry: [200, 255], offset: 78 }
+        : { rx: [205, 255], ry: [215, 275], offset: 86 };
+    for (let attempt = 0; attempt < 40; attempt++) {
+      const x = 500 + rand(-ranges.offset, ranges.offset);
+      const y = 500 + rand(-ranges.offset, ranges.offset);
+      const rx = rand(...ranges.rx);
+      const ry = rand(...ranges.ry);
+      const polygon = makeIslandPolygon(x, y, rx, ry);
+      if (polygon.every(([px, py]) => px > 95 && px < W - 95 && py > 95 && py < H - 95)) {
+        return { x, y, rx, ry, polygon, central: true };
+      }
+    }
+    const x = 500, y = 500, rx = 205, ry = 225;
+    return { x, y, rx, ry, polygon: makeIslandPolygon(x, y, rx, ry), central: true };
+  }
+
+  function routeAvoidsPolygon(paths, polygon) {
+    return !segmentPairs(paths).some(segment => segmentIntersectsPolygon(segment.a, segment.b, polygon));
+  }
+
   function islandCandidateClear(spec, routeSegments, keyPoints, existing) {
     const radius = Math.max(spec.rx, spec.ry) * 1.18;
     if (spec.x - radius < 42 || spec.x + radius > W - 42 || spec.y - radius < 42 || spec.y + radius > H - 42) return false;
     if (routeSegments.some(segment => pointSegmentDistance(spec, segment.a, segment.b) < radius + 30)) return false;
     if (keyPoints.some(point => distance(spec, point) < radius + 58)) return false;
-    if (existing.some(other => distance(spec, other) < radius + Math.max(other.rx, other.ry) * 1.1 + 36)) return false;
+    if (existing.some(other => distance(spec, other) < radius + Math.max(other.rx, other.ry) * 1.05 + 28)) return false;
     return true;
   }
 
   function makeLineOfSightBlocker(emitterPoint, target, routeSegments, keyPoints, existing, sizeScale = 1) {
     const fractions = shuffled([0.34, 0.43, 0.52, 0.61, 0.69]);
     for (const fraction of fractions) {
-      for (let attempt = 0; attempt < 6; attempt++) {
+      for (let attempt = 0; attempt < 7; attempt++) {
         const x = emitterPoint.x + (target.x - emitterPoint.x) * clamp(fraction + rand(-0.045, 0.045), 0.28, 0.74);
         const y = emitterPoint.y + (target.y - emitterPoint.y) * clamp(fraction + rand(-0.045, 0.045), 0.28, 0.74);
-        const rx = rand(56, 78) * sizeScale;
-        const ry = rand(48, 86) * sizeScale;
+        const rx = rand(42, 68) * sizeScale;
+        const ry = rand(38, 74) * sizeScale;
         const spec = { x, y, rx, ry };
         if (!islandCandidateClear(spec, routeSegments, keyPoints, existing)) continue;
         spec.polygon = makeIslandPolygon(x, y, rx, ry);
@@ -338,28 +384,24 @@
     return null;
   }
 
-  function addSpreadIslands(existing, desiredCount, routeSegments, keyPoints, difficultyName) {
-    const radiusRanges = difficultyName === "easy" ? [48, 92] : difficultyName === "medium" ? [48, 108] : [45, 122];
+  function addSatelliteIslands(existing, desiredCount, routeSegments, keyPoints, difficultyName) {
+    const ranges = difficultyName === "easy" ? [34, 68] : difficultyName === "medium" ? [36, 78] : [38, 88];
     while (existing.length < desiredCount) {
       let best = null;
       let bestScore = -Infinity;
-      for (let attempt = 0; attempt < 70; attempt++) {
-        const rx = rand(radiusRanges[0], radiusRanges[1]);
-        const ry = rand(radiusRanges[0] * 0.78, radiusRanges[1] * 1.05);
+      for (let attempt = 0; attempt < 90; attempt++) {
+        const rx = rand(ranges[0], ranges[1]);
+        const ry = rand(ranges[0] * 0.76, ranges[1] * 1.08);
         const spec = {
-          x: rand(85 + rx, W - 85 - rx),
-          y: rand(85 + ry, H - 85 - ry),
-          rx,
-          ry
+          x: rand(68 + rx, W - 68 - rx),
+          y: rand(68 + ry, H - 68 - ry),
+          rx, ry
         };
         if (!islandCandidateClear(spec, routeSegments, keyPoints, existing)) continue;
-        const nearestIsland = existing.length ? Math.min(...existing.map(other => distance(spec, other))) : 500;
-        const edgeVariety = Math.min(spec.x, W - spec.x, spec.y, H - spec.y);
-        const score = nearestIsland + rand(0, 120) - Math.abs(edgeVariety - rand(150, 320)) * 0.18;
-        if (score > bestScore) {
-          best = spec;
-          bestScore = score;
-        }
+        const nearest = Math.min(...existing.map(other => distance(spec, other)));
+        const centreDistance = distance(spec, { x: 500, y: 500 });
+        const score = nearest * 0.75 + centreDistance * 0.18 + rand(0, 120);
+        if (score > bestScore) { best = spec; bestScore = score; }
       }
       if (!best) break;
       best.polygon = makeIslandPolygon(best.x, best.y, best.rx, best.ry);
@@ -368,26 +410,85 @@
     return existing;
   }
 
-  function buildIslandsForSolution(emitterPoint, routeTargets, paths, solutionNodes, difficultyName) {
+  function buildIslandsForSolution(emitterPoint, routeTargets, paths, solutionNodes, difficultyName, centralMass) {
     const routeSegments = segmentPairs(paths);
     const keyPoints = [emitterPoint, ...routeTargets, ...solutionNodes];
-    const specs = [];
-    const blockerScale = difficultyName === "hard" ? 1.05 : 1;
+    const specs = [centralMass];
+    const blockerScale = difficultyName === "hard" ? 1.08 : 1;
 
     for (const target of routeTargets) {
+      if (segmentIntersectsPolygon(emitterPoint, target, centralMass.polygon)) continue;
       const blocker = makeLineOfSightBlocker(emitterPoint, target, routeSegments, keyPoints, specs, blockerScale);
       if (!blocker) return null;
       specs.push(blocker);
     }
 
-    const desired = difficultyName === "easy" ? randInt(3, 5) : difficultyName === "medium" ? randInt(5, 7) : randInt(7, 9);
-    addSpreadIslands(specs, desired, routeSegments, keyPoints, difficultyName);
+    const desired = difficultyName === "easy" ? randInt(3, 4) : difficultyName === "medium" ? randInt(5, 6) : randInt(6, 8);
+    addSatelliteIslands(specs, desired, routeSegments, keyPoints, difficultyName);
 
     const polygons = specs.map(spec => spec.polygon);
     if (polygons.length < Math.max(3, desired - 1)) return null;
     if (routeSegments.some(segment => polygons.some(polygon => segmentIntersectsPolygon(segment.a, segment.b, polygon)))) return null;
     if (routeTargets.some(target => !polygons.some(polygon => segmentIntersectsPolygon(emitterPoint, target, polygon)))) return null;
     return polygons;
+  }
+
+  function chooseBlockedTargetAfterMirror(mirrorPoint, incomingAngle, emitterPoint, centralMass, otherTargets = []) {
+    for (let attempt = 0; attempt < 180; attempt++) {
+      const target = randomEdgePoint();
+      if (distance(mirrorPoint, target) < 260) continue;
+      if (distance(emitterPoint, target) < 520) continue;
+      if (otherTargets.some(other => distance(other, target) < 260)) continue;
+      const turn = Math.abs(angleDifference(incomingAngle, angleBetween(mirrorPoint, target)));
+      if (turn < 32 || turn > 152) continue;
+      if (!segmentIntersectsPolygon(emitterPoint, target, centralMass.polygon)) continue;
+      if (segmentIntersectsPolygon(mirrorPoint, target, centralMass.polygon)) continue;
+      return target;
+    }
+    return null;
+  }
+
+  function chooseTargetAfterMirrorAvoidMass(mirrorPoint, incomingAngle, emitterPoint, centralMass, otherTargets = []) {
+    for (let attempt = 0; attempt < 160; attempt++) {
+      const target = randomEdgePoint();
+      if (distance(mirrorPoint, target) < 235) continue;
+      if (distance(emitterPoint, target) < 470) continue;
+      if (otherTargets.some(other => distance(other, target) < 220)) continue;
+      const turn = Math.abs(angleDifference(incomingAngle, angleBetween(mirrorPoint, target)));
+      if (turn < 28 || turn > 156) continue;
+      if (segmentIntersectsPolygon(mirrorPoint, target, centralMass.polygon)) continue;
+      return target;
+    }
+    return null;
+  }
+
+  function checkpointOnSegment(id, a, b, colour = "any", label = "") {
+    const t = rand(0.42, 0.68);
+    return {
+      id,
+      x: a.x + (b.x - a.x) * t,
+      y: a.y + (b.y - a.y) * t,
+      colour,
+      label
+    };
+  }
+
+  function checkpointsForSolution(difficultyName, paths, colours = []) {
+    if (difficultyName === "easy") {
+      const path = paths[0];
+      const i = Math.max(0, path.length - 2);
+      return [checkpointOnSegment("c1", path[i], path[i + 1], "any", "")];
+    }
+    if (difficultyName === "medium") {
+      return [
+        checkpointOnSegment("c1", paths[1][1], paths[1][2], "red", "R"),
+        checkpointOnSegment("c2", paths[2][1], paths[2][2], "blue", "B")
+      ];
+    }
+    return colours.map((colour, index) => {
+      const path = paths[index + 1];
+      return checkpointOnSegment(`c${index + 1}`, path[1], path[2], colour, colour.slice(0, 1).toUpperCase());
+    });
   }
 
   function chooseEmitterForFirstNode(firstNode) {
@@ -417,23 +518,38 @@
     return normaliseAngle(solutionAngle + (Math.random() < 0.5 ? -amount : amount));
   }
 
+  function randomPointClearOfMass(centralMass, margin = 130) {
+    for (let attempt = 0; attempt < 120; attempt++) {
+      const point = randomInteriorPoint(margin);
+      if (pointClearOfPolygon(point, centralMass.polygon, 62)) return point;
+    }
+    return null;
+  }
+
   function generateEasyCandidate() {
-    const mirrorCount = Math.random() < 0.42 ? 1 : 2;
-    for (let attempt = 0; attempt < 160; attempt++) {
+    const mirrorCount = Math.random() < 0.34 ? 1 : 2;
+    for (let attempt = 0; attempt < 260; attempt++) {
+      const centralMass = createCentralMass("easy");
       const emitterPoint = randomEdgePoint();
       let target = null;
-      for (let targetAttempt = 0; targetAttempt < 60; targetAttempt++) {
+      for (let targetAttempt = 0; targetAttempt < 120; targetAttempt++) {
         const candidate = randomEdgePoint();
-        if (distance(emitterPoint, candidate) >= 560) {
-          target = candidate;
-          break;
-        }
+        if (distance(emitterPoint, candidate) < 560) continue;
+        if (!segmentIntersectsPolygon(emitterPoint, candidate, centralMass.polygon)) continue;
+        target = candidate;
+        break;
       }
       if (!target) continue;
 
       const mirrors = [];
-      for (let i = 0; i < mirrorCount; i++) mirrors.push(randomInteriorPoint(155));
+      for (let i = 0; i < mirrorCount; i++) {
+        const point = randomPointClearOfMass(centralMass, 145);
+        if (!point) break;
+        mirrors.push(point);
+      }
+      if (mirrors.length !== mirrorCount) continue;
       const path = [emitterPoint, ...mirrors, target];
+      if (!routeAvoidsPolygon([path], centralMass.polygon)) continue;
       const solutionNodes = mirrors.map((point, index) => ({
         id: `solution-m${index + 1}`,
         type: "mirror",
@@ -444,14 +560,18 @@
       const routeTargets = [{ id: "w1", x: target.x, y: target.y, colour: "white", label: "W" }];
       if (!routeGeometryIsClean([path], solutionNodes, routeTargets)) continue;
 
-      const islandsForLevel = buildIslandsForSolution(emitterPoint, routeTargets, [path], solutionNodes, "easy");
+      const islandsForLevel = buildIslandsForSolution(emitterPoint, routeTargets, [path], solutionNodes, "easy", centralMass);
       if (!islandsForLevel) continue;
       const solutionAngle = angleBetween(emitterPoint, mirrors[0]);
+      const checkpointsForLevel = checkpointsForSolution("easy", [path]);
       return {
         emitter: { x: emitterPoint.x, y: emitterPoint.y, angle: perturbStartingAngle(solutionAngle, "easy") },
         targets: routeTargets,
+        checkpoints: checkpointsForLevel,
         islands: islandsForLevel,
         inventory: { mirrors: mirrorCount + 1, splitters: 0 },
+        prismMode: "rb",
+        prismSign: 1,
         par: mirrorCount,
         solution: { emitterAngle: solutionAngle, nodes: solutionNodes }
       };
@@ -460,176 +580,177 @@
   }
 
   function generateMediumCandidate() {
-    for (let attempt = 0; attempt < 220; attempt++) {
-      const splitterPoint = randomInteriorPoint(270);
+    for (let attempt = 0; attempt < 420; attempt++) {
+      const centralMass = createCentralMass("medium");
+      const splitterPoint = randomPointClearOfMass(centralMass, 220);
+      if (!splitterPoint) continue;
       const incomingAngle = rand(-180, 180);
-      const preMirror = pointAlong(splitterPoint, incomingAngle + 180, rand(185, 265));
-      if (!insideBoard(preMirror, 125)) continue;
+      const preMirror = pointAlong(splitterPoint, incomingAngle + 180, rand(185, 270));
+      if (!insideBoard(preMirror, 120) || !pointClearOfPolygon(preMirror, centralMass.polygon, 58)) continue;
+      if (segmentIntersectsPolygon(preMirror, splitterPoint, centralMass.polygon)) continue;
       const emitterPoint = chooseEmitterForFirstNode(preMirror);
+      if (segmentIntersectsPolygon(emitterPoint, preMirror, centralMass.polygon)) continue;
       const preTurn = Math.abs(angleDifference(angleBetween(emitterPoint, preMirror), incomingAngle));
-      if (preTurn < 34 || preTurn > 150) continue;
+      if (preTurn < 32 || preTurn > 150) continue;
 
-      const blueAngle = normaliseAngle(incomingAngle + (Math.random() < 0.5 ? -1 : 1) * rand(58, 124));
-      const branchWithMirror = Math.random() < 0.5 ? "red" : "blue";
-      let redTarget = null;
-      let blueTarget = null;
-      let branchMirror = null;
-      const solutionNodes = [];
+      const blueAngle = normaliseAngle(incomingAngle + (Math.random() < 0.5 ? -1 : 1) * rand(62, 118));
+      const redMirrorPoint = pointAlong(splitterPoint, incomingAngle, rand(175, 250));
+      const blueMirrorPoint = pointAlong(splitterPoint, blueAngle, rand(175, 250));
+      if (!insideBoard(redMirrorPoint, 112) || !insideBoard(blueMirrorPoint, 112)) continue;
+      if (!pointClearOfPolygon(redMirrorPoint, centralMass.polygon, 54) || !pointClearOfPolygon(blueMirrorPoint, centralMass.polygon, 54)) continue;
+      if (segmentIntersectsPolygon(splitterPoint, redMirrorPoint, centralMass.polygon)) continue;
+      if (segmentIntersectsPolygon(splitterPoint, blueMirrorPoint, centralMass.polygon)) continue;
+      if (distance(redMirrorPoint, blueMirrorPoint) < 170) continue;
 
-      if (branchWithMirror === "red") {
-        const directBlue = pointNearEdgeAlongRay(splitterPoint, blueAngle);
-        if (!directBlue || distance(splitterPoint, directBlue) < 300 || distance(emitterPoint, directBlue) < 500) continue;
-        blueTarget = { id: "b1", x: directBlue.x, y: directBlue.y, colour: "blue", label: "B" };
-        const redMirrorPoint = pointAlong(splitterPoint, incomingAngle, rand(180, 270));
-        if (!insideBoard(redMirrorPoint, 125)) continue;
-        const targetPoint = chooseTargetAfterMirror(redMirrorPoint, incomingAngle, emitterPoint, [blueTarget]);
-        if (!targetPoint) continue;
-        redTarget = { id: "r1", x: targetPoint.x, y: targetPoint.y, colour: "red", label: "R" };
-        branchMirror = {
-          id: "solution-red-mirror", type: "mirror", x: redMirrorPoint.x, y: redMirrorPoint.y,
-          angle: mirrorAngleFor(incomingAngle, angleBetween(redMirrorPoint, redTarget))
-        };
-      } else {
-        const directRed = pointNearEdgeAlongRay(splitterPoint, incomingAngle);
-        if (!directRed || distance(splitterPoint, directRed) < 300 || distance(emitterPoint, directRed) < 500) continue;
-        redTarget = { id: "r1", x: directRed.x, y: directRed.y, colour: "red", label: "R" };
-        const blueMirrorPoint = pointAlong(splitterPoint, blueAngle, rand(180, 270));
-        if (!insideBoard(blueMirrorPoint, 125)) continue;
-        const targetPoint = chooseTargetAfterMirror(blueMirrorPoint, blueAngle, emitterPoint, [redTarget]);
-        if (!targetPoint) continue;
-        blueTarget = { id: "b1", x: targetPoint.x, y: targetPoint.y, colour: "blue", label: "B" };
-        branchMirror = {
-          id: "solution-blue-mirror", type: "mirror", x: blueMirrorPoint.x, y: blueMirrorPoint.y,
-          angle: mirrorAngleFor(blueAngle, angleBetween(blueMirrorPoint, blueTarget))
-        };
-      }
+      const redTargetPoint = chooseTargetAfterMirrorAvoidMass(redMirrorPoint, incomingAngle, emitterPoint, centralMass);
+      if (!redTargetPoint) continue;
+      const redTarget = { id: "r1", x: redTargetPoint.x, y: redTargetPoint.y, colour: "red", label: "R" };
+      const blueTargetPoint = chooseTargetAfterMirrorAvoidMass(blueMirrorPoint, blueAngle, emitterPoint, centralMass, [redTarget]);
+      if (!blueTargetPoint) continue;
+      const blueTarget = { id: "b1", x: blueTargetPoint.x, y: blueTargetPoint.y, colour: "blue", label: "B" };
+      if (distance(redTarget, blueTarget) < 260) continue;
+      if ([redTarget, blueTarget].filter(target => segmentIntersectsPolygon(emitterPoint, target, centralMass.polygon)).length < 1) continue;
 
-      if (distance(redTarget, blueTarget) < 290) continue;
       const preNode = {
         id: "solution-pre-mirror", type: "mirror", x: preMirror.x, y: preMirror.y,
         angle: mirrorAngleFor(angleBetween(emitterPoint, preMirror), incomingAngle)
       };
       const splitterNode = {
-        id: "solution-splitter", type: "splitter", x: splitterPoint.x, y: splitterPoint.y,
+        id: "solution-prism", type: "splitter", mode: "rb", x: splitterPoint.x, y: splitterPoint.y,
         angle: mirrorAngleFor(incomingAngle, blueAngle)
       };
-      solutionNodes.push(preNode, splitterNode, branchMirror);
-
+      const redNode = {
+        id: "solution-red-mirror", type: "mirror", x: redMirrorPoint.x, y: redMirrorPoint.y,
+        angle: mirrorAngleFor(incomingAngle, angleBetween(redMirrorPoint, redTarget))
+      };
+      const blueNode = {
+        id: "solution-blue-mirror", type: "mirror", x: blueMirrorPoint.x, y: blueMirrorPoint.y,
+        angle: mirrorAngleFor(blueAngle, angleBetween(blueMirrorPoint, blueTarget))
+      };
+      const solutionNodes = [preNode, splitterNode, redNode, blueNode];
       const prePath = [emitterPoint, preMirror, splitterPoint];
-      const redPath = branchWithMirror === "red"
-        ? [splitterPoint, { x: branchMirror.x, y: branchMirror.y }, redTarget]
-        : [splitterPoint, redTarget];
-      const bluePath = branchWithMirror === "blue"
-        ? [splitterPoint, { x: branchMirror.x, y: branchMirror.y }, blueTarget]
-        : [splitterPoint, blueTarget];
+      const redPath = [splitterPoint, redMirrorPoint, redTarget];
+      const bluePath = [splitterPoint, blueMirrorPoint, blueTarget];
       const paths = [prePath, redPath, bluePath];
       const routeTargets = [redTarget, blueTarget];
       if (!routeGeometryIsClean(paths, solutionNodes, routeTargets)) continue;
+      if (!routeAvoidsPolygon(paths, centralMass.polygon)) continue;
 
-      const islandsForLevel = buildIslandsForSolution(emitterPoint, routeTargets, paths, solutionNodes, "medium");
+      const islandsForLevel = buildIslandsForSolution(emitterPoint, routeTargets, paths, solutionNodes, "medium", centralMass);
       if (!islandsForLevel) continue;
       const solutionAngle = angleBetween(emitterPoint, preMirror);
       return {
         emitter: { x: emitterPoint.x, y: emitterPoint.y, angle: perturbStartingAngle(solutionAngle, "medium") },
         targets: routeTargets,
+        checkpoints: checkpointsForSolution("medium", paths),
         islands: islandsForLevel,
-        inventory: { mirrors: 3, splitters: 1 },
-        par: 3,
+        inventory: { mirrors: 4, splitters: 1 },
+        prismMode: "rb",
+        prismSign: 1,
+        par: 4,
         solution: { emitterAngle: solutionAngle, nodes: solutionNodes }
       };
     }
     return null;
   }
 
+  function transformTemplatePoint(point, turns, mirrored) {
+    let x = point.x;
+    let y = point.y;
+    if (mirrored) x = W - x;
+    for (let i = 0; i < turns; i++) {
+      const nx = H - y;
+      const ny = x;
+      x = nx;
+      y = ny;
+    }
+    return { x, y };
+  }
+
   function generateHardCandidate() {
-    for (let attempt = 0; attempt < 280; attempt++) {
-      const splitterPoint = randomInteriorPoint(270);
-      const incomingAngle = rand(-180, 180);
-      const lastPreMirror = pointAlong(splitterPoint, incomingAngle + 180, rand(185, 260));
-      if (!insideBoard(lastPreMirror, 125)) continue;
+    const colours = ["red", "green", "blue"];
+    for (let attempt = 0; attempt < 120; attempt++) {
+      // Start from a deliberately roomy three-way composition around a large
+      // central mass, then rotate/mirror it. Small parameter variation keeps
+      // the level organic without making RGB generation fragile.
+      const centralMass = {
+        x: 515 + rand(-22, 22),
+        y: 500 + rand(-24, 24),
+        rx: rand(192, 222),
+        ry: rand(198, 232),
+        central: true
+      };
+      centralMass.polygon = makeIslandPolygon(centralMass.x, centralMass.y, centralMass.rx, centralMass.ry);
 
-      const useTwoPreMirrors = Math.random() < 0.48;
-      let firstPreMirror = null;
-      let emitterPoint = null;
-      if (useTwoPreMirrors) {
-        for (let preAttempt = 0; preAttempt < 80; preAttempt++) {
-          const candidate = randomInteriorPoint(145);
-          if (distance(candidate, lastPreMirror) < 190) continue;
-          const secondTurn = Math.abs(angleDifference(angleBetween(candidate, lastPreMirror), incomingAngle));
-          if (secondTurn < 32 || secondTurn > 150) continue;
-          const emitterCandidate = chooseEmitterForFirstNode(candidate);
-          const firstTurn = Math.abs(angleDifference(angleBetween(emitterCandidate, candidate), angleBetween(candidate, lastPreMirror)));
-          if (firstTurn < 32 || firstTurn > 150) continue;
-          firstPreMirror = candidate;
-          emitterPoint = emitterCandidate;
-          break;
-        }
-        if (!firstPreMirror || !emitterPoint) continue;
-      } else {
-        emitterPoint = chooseEmitterForFirstNode(lastPreMirror);
-        const preTurn = Math.abs(angleDifference(angleBetween(emitterPoint, lastPreMirror), incomingAngle));
-        if (preTurn < 32 || preTurn > 150) continue;
-      }
+      const prismBase = { x: rand(248, 270), y: rand(210, 230) };
+      const emitterBase = { x: 72, y: rand(620, 690) };
+      const preBase = { x: rand(100, 124), y: rand(800, 842) };
+      const incomingBase = angleBetween(preBase, prismBase);
+      const greenBaseAngle = rand(-8, 8);
+      const redMirrorBase = pointAlong(prismBase, incomingBase, rand(146, 164));
+      const greenMirrorBase = pointAlong(prismBase, greenBaseAngle, rand(500, 525));
+      const blueBaseAngle = normaliseAngle(greenBaseAngle + 90);
+      const blueMirrorBase = pointAlong(prismBase, blueBaseAngle, rand(575, 610));
+      const redTargetBase = { x: 928, y: rand(92, 150) };
+      const greenTargetBase = { x: 928, y: rand(455, 595) };
+      const blueTargetBase = { x: rand(700, 825), y: 928 };
 
-      const blueAngle = normaliseAngle(incomingAngle + (Math.random() < 0.5 ? -1 : 1) * rand(62, 132));
-      const redMirrorPoint = pointAlong(splitterPoint, incomingAngle, rand(180, 265));
-      const blueMirrorPoint = pointAlong(splitterPoint, blueAngle, rand(180, 265));
-      if (!insideBoard(redMirrorPoint, 120) || !insideBoard(blueMirrorPoint, 120)) continue;
-      if (distance(redMirrorPoint, blueMirrorPoint) < 190) continue;
-
-      const redTargetPoint = chooseTargetAfterMirror(redMirrorPoint, incomingAngle, emitterPoint);
-      if (!redTargetPoint) continue;
-      const redTarget = { id: "r1", x: redTargetPoint.x, y: redTargetPoint.y, colour: "red", label: "R" };
-      const blueTargetPoint = chooseTargetAfterMirror(blueMirrorPoint, blueAngle, emitterPoint, [redTarget]);
-      if (!blueTargetPoint) continue;
-      const blueTarget = { id: "b1", x: blueTargetPoint.x, y: blueTargetPoint.y, colour: "blue", label: "B" };
-      if (distance(redTarget, blueTarget) < 310) continue;
-
-      const solutionNodes = [];
-      if (useTwoPreMirrors) {
-        solutionNodes.push({
-          id: "solution-pre-a", type: "mirror", x: firstPreMirror.x, y: firstPreMirror.y,
-          angle: mirrorAngleFor(angleBetween(emitterPoint, firstPreMirror), angleBetween(firstPreMirror, lastPreMirror))
-        });
-      }
-      solutionNodes.push({
-        id: "solution-pre-b", type: "mirror", x: lastPreMirror.x, y: lastPreMirror.y,
-        angle: mirrorAngleFor(angleBetween(useTwoPreMirrors ? firstPreMirror : emitterPoint, lastPreMirror), incomingAngle)
-      });
-      solutionNodes.push({
-        id: "solution-splitter", type: "splitter", x: splitterPoint.x, y: splitterPoint.y,
-        angle: mirrorAngleFor(incomingAngle, blueAngle)
-      });
-      solutionNodes.push({
-        id: "solution-red-mirror", type: "mirror", x: redMirrorPoint.x, y: redMirrorPoint.y,
-        angle: mirrorAngleFor(incomingAngle, angleBetween(redMirrorPoint, redTarget))
-      });
-      solutionNodes.push({
-        id: "solution-blue-mirror", type: "mirror", x: blueMirrorPoint.x, y: blueMirrorPoint.y,
-        angle: mirrorAngleFor(blueAngle, angleBetween(blueMirrorPoint, blueTarget))
+      const turns = randInt(0, 3);
+      const mirrored = Math.random() < 0.5;
+      const emitterPoint = transformTemplatePoint(emitterBase, turns, mirrored);
+      const preMirror = transformTemplatePoint(preBase, turns, mirrored);
+      const splitterPoint = transformTemplatePoint(prismBase, turns, mirrored);
+      const redMirrorPoint = transformTemplatePoint(redMirrorBase, turns, mirrored);
+      const greenMirrorPoint = transformTemplatePoint(greenMirrorBase, turns, mirrored);
+      const blueMirrorPoint = transformTemplatePoint(blueMirrorBase, turns, mirrored);
+      const routeTargets = [redTargetBase, greenTargetBase, blueTargetBase].map((point, i) => {
+        const p = transformTemplatePoint(point, turns, mirrored);
+        return { id: `${colours[i][0]}1`, x: p.x, y: p.y, colour: colours[i], label: colours[i][0].toUpperCase() };
       });
 
-      const prePath = useTwoPreMirrors
-        ? [emitterPoint, firstPreMirror, lastPreMirror, splitterPoint]
-        : [emitterPoint, lastPreMirror, splitterPoint];
-      const redPath = [splitterPoint, redMirrorPoint, redTarget];
-      const bluePath = [splitterPoint, blueMirrorPoint, blueTarget];
-      const paths = [prePath, redPath, bluePath];
-      const routeTargets = [redTarget, blueTarget];
+      const incomingAngle = angleBetween(preMirror, splitterPoint);
+      const greenAngle = angleBetween(splitterPoint, greenMirrorPoint);
+      const blueAngle = angleBetween(splitterPoint, blueMirrorPoint);
+      const rgbSign = angleDifference(greenAngle, blueAngle) >= 0 ? 1 : -1;
+      const prismAngle = mirrorAngleFor(incomingAngle, greenAngle);
+      const expectedBlue = normaliseAngle(2 * (prismAngle + rgbSign * RGB_FACE_OFFSET) - incomingAngle);
+      if (Math.abs(angleDifference(expectedBlue, blueAngle)) > 1.5) continue;
+
+      const preNode = {
+        id: "solution-pre", type: "mirror", x: preMirror.x, y: preMirror.y,
+        angle: mirrorAngleFor(angleBetween(emitterPoint, preMirror), incomingAngle)
+      };
+      const prismNode = {
+        id: "solution-prism", type: "splitter", mode: "rgb", rgbSign,
+        x: splitterPoint.x, y: splitterPoint.y, angle: prismAngle
+      };
+      const branchPoints = [redMirrorPoint, greenMirrorPoint, blueMirrorPoint];
+      const outputAngles = [incomingAngle, greenAngle, blueAngle];
+      const branchNodes = colours.map((colour, i) => ({
+        id: `solution-${colour}-mirror`, type: "mirror", x: branchPoints[i].x, y: branchPoints[i].y,
+        angle: mirrorAngleFor(outputAngles[i], angleBetween(branchPoints[i], routeTargets[i]))
+      }));
+      const solutionNodes = [preNode, prismNode, ...branchNodes];
+      const prePath = [emitterPoint, preMirror, splitterPoint];
+      const branchPaths = colours.map((colour, i) => [splitterPoint, branchPoints[i], routeTargets[i]]);
+      const paths = [prePath, ...branchPaths];
+
       if (!routeGeometryIsClean(paths, solutionNodes, routeTargets)) continue;
+      if (!routeAvoidsPolygon(paths, centralMass.polygon)) continue;
+      if (routeTargets.filter(target => segmentIntersectsPolygon(emitterPoint, target, centralMass.polygon)).length < 2) continue;
 
-      const islandsForLevel = buildIslandsForSolution(emitterPoint, routeTargets, paths, solutionNodes, "hard");
+      const islandsForLevel = buildIslandsForSolution(emitterPoint, routeTargets, paths, solutionNodes, "hard", centralMass);
       if (!islandsForLevel) continue;
-      const firstNode = useTwoPreMirrors ? firstPreMirror : lastPreMirror;
-      const solutionAngle = angleBetween(emitterPoint, firstNode);
-      const hiddenMirrorCount = solutionNodes.filter(node => node.type === "mirror").length;
-      const parValue = solutionNodes.length;
+      const solutionAngle = angleBetween(emitterPoint, preMirror);
       return {
         emitter: { x: emitterPoint.x, y: emitterPoint.y, angle: perturbStartingAngle(solutionAngle, "hard") },
         targets: routeTargets,
+        checkpoints: checkpointsForSolution("hard", paths, colours),
         islands: islandsForLevel,
-        inventory: { mirrors: Math.min(5, hiddenMirrorCount + 1), splitters: 1 },
-        par: parValue,
+        inventory: { mirrors: 5, splitters: 1 },
+        prismMode: "rgb",
+        prismSign: rgbSign,
+        par: 5,
         solution: { emitterAngle: solutionAngle, nodes: solutionNodes }
       };
     }
@@ -640,6 +761,7 @@
     const level = deepClone(source);
     level.emitter.y += LEVEL_Y_OFFSET;
     level.targets.forEach(target => { target.y += LEVEL_Y_OFFSET; });
+    (level.checkpoints || []).forEach(checkpoint => { checkpoint.y += LEVEL_Y_OFFSET; });
     level.islands.forEach(polygon => polygon.forEach(point => { point[1] += LEVEL_Y_OFFSET; }));
     return level;
   }
@@ -647,37 +769,45 @@
   function solutionPasses(level) {
     if (!level?.solution) return true;
     const previous = {
-      emitter, targets, islands, nodes,
-      targetHits, wrongHits
+      emitter, targets, checkpoints, islands, nodes,
+      targetHits, checkpointHits, wrongHits, prismMode, prismSign
     };
     try {
       emitter = { ...deepClone(level.emitter), angle: level.solution.emitterAngle };
       targets = deepClone(level.targets);
+      checkpoints = deepClone(level.checkpoints || []);
       islands = deepClone(level.islands);
+      prismMode = level.prismMode || "rb";
+      prismSign = level.prismSign || 1;
       nodes = deepClone(level.solution.nodes);
       traceBeams();
-      return targetHits.size === targets.length && wrongHits.size === 0;
+      return targetHits.size === targets.length && checkpointHits.size === checkpoints.length && wrongHits.size === 0;
     } catch (_) {
       return false;
     } finally {
       emitter = previous.emitter;
       targets = previous.targets;
+      checkpoints = previous.checkpoints;
       islands = previous.islands;
       nodes = previous.nodes;
       targetHits = previous.targetHits;
+      checkpointHits = previous.checkpointHits;
       wrongHits = previous.wrongHits;
+      prismMode = previous.prismMode;
+      prismSign = previous.prismSign;
     }
   }
 
   function generateLevel(difficultyName) {
     const generator = difficultyName === "easy" ? generateEasyCandidate : difficultyName === "medium" ? generateMediumCandidate : generateHardCandidate;
-    for (let attempt = 0; attempt < 24; attempt++) {
+    for (let attempt = 0; attempt < 60; attempt++) {
       const level = generator();
       if (level && solutionPasses(level)) return level;
     }
 
     // A known-good layout remains as an emergency fallback only. Normal play
     // should always come from the freeform solution-first generator above.
+    if (difficultyName === "hard") return deepClone(HARD_FALLBACK_LEVEL);
     const set = levelSets[difficultyName];
     return squareFallbackLevel(set[randInt(0, set.length - 1)]);
   }
@@ -696,8 +826,11 @@
   function resetLevel() {
     emitter = deepClone(baseLevel.emitter);
     targets = deepClone(baseLevel.targets);
+    checkpoints = deepClone(baseLevel.checkpoints || []);
     islands = deepClone(baseLevel.islands);
     inventory = deepClone(baseLevel.inventory);
+    prismMode = baseLevel.prismMode || "rb";
+    prismSign = baseLevel.prismSign || 1;
     par = baseLevel.par || 0;
     nodes = [];
     selectedId = "emitter";
@@ -708,7 +841,9 @@
     render();
     statusEl.textContent = difficulty === "easy"
       ? "Laser selected — use the rotate control below the board, then place a mirror to bend the beam."
-      : "Laser selected — rotate below, then use mirrors and the splitter to route each colour.";
+      : difficulty === "medium"
+        ? "Laser selected — route both colours through their checkpoints and targets."
+        : "Laser selected — use the RGB prism, then route red, green and blue through matching checkpoints and targets.";
   }
 
   function svgPoint(evt) {
@@ -822,6 +957,7 @@
   function traceBeams() {
     const segments = [];
     targetHits = new Set();
+    checkpointHits = new Set();
     wrongHits = new Set();
     const initialDirection = unitFromAngle(emitter.angle);
 
@@ -852,13 +988,30 @@
 
       if (hit.type === "splitter") {
         const straight = normalise(dir);
-        const reflected = reflect(dir, hit.node.angle);
-        cast({ x: hit.x + straight.x * 3, y: hit.y + straight.y * 3 }, straight, "red", depth + 1, hit.id, nextSeen);
-        cast({ x: hit.x + reflected.x * 3, y: hit.y + reflected.y * 3 }, reflected, "blue", depth + 1, hit.id, nextSeen);
+        if ((hit.node.mode || prismMode) === "rgb") {
+          const sign = hit.node.rgbSign || prismSign || 1;
+          const green = reflect(dir, hit.node.angle);
+          const blue = reflect(dir, hit.node.angle + sign * RGB_FACE_OFFSET);
+          cast({ x: hit.x + straight.x * 3, y: hit.y + straight.y * 3 }, straight, "red", depth + 1, hit.id, nextSeen);
+          cast({ x: hit.x + green.x * 3, y: hit.y + green.y * 3 }, green, "green", depth + 1, hit.id, nextSeen);
+          cast({ x: hit.x + blue.x * 3, y: hit.y + blue.y * 3 }, blue, "blue", depth + 1, hit.id, nextSeen);
+        } else {
+          const reflected = reflect(dir, hit.node.angle);
+          cast({ x: hit.x + straight.x * 3, y: hit.y + straight.y * 3 }, straight, "red", depth + 1, hit.id, nextSeen);
+          cast({ x: hit.x + reflected.x * 3, y: hit.y + reflected.y * 3 }, reflected, "blue", depth + 1, hit.id, nextSeen);
+        }
       }
     }
 
     cast({ x: emitter.x + initialDirection.x * 26, y: emitter.y + initialDirection.y * 26 }, initialDirection, "white", 0);
+    checkpoints.forEach(checkpoint => {
+      const hit = segments.some(segment => {
+        const colourMatches = checkpoint.colour === "any" || checkpoint.colour === segment.colour;
+        if (!colourMatches) return false;
+        return pointSegmentDistance(checkpoint, { x: segment.x1, y: segment.y1 }, { x: segment.x2, y: segment.y2 }) <= CHECKPOINT_RADIUS + 2;
+      });
+      if (hit) checkpointHits.add(checkpoint.id);
+    });
     return segments;
   }
 
@@ -878,6 +1031,7 @@
     if (x < 70 || x > W - 70 || y < 70 || y > H - 70) return false;
     if (Math.hypot(x - emitter.x, y - emitter.y) < 76) return false;
     if (targets.some(target => Math.hypot(x - target.x, y - target.y) < 64)) return false;
+    if (checkpoints.some(checkpoint => Math.hypot(x - checkpoint.x, y - checkpoint.y) < 50)) return false;
     if (islands.some(polygon => pointInPolygon({ x, y }, polygon))) return false;
     if (nodes.some(node => node.id !== ignoreId && Math.hypot(x - node.x, y - node.y) < 60)) return false;
     return true;
@@ -901,16 +1055,16 @@
   function addNode(type) {
     const max = type === "mirror" ? inventory.mirrors : inventory.splitters;
     if (countType(type) >= max) {
-      statusEl.textContent = type === "mirror" ? "No mirrors left. Remove one to move it elsewhere." : "No splitters left. Remove one to move it elsewhere.";
+      statusEl.textContent = type === "mirror" ? "No mirrors left. Remove one to move it elsewhere." : "No prisms left. Remove one to move it elsewhere.";
       return;
     }
     const spawn = findSpawnPoint();
-    const node = { id: `n${nextNodeId++}`, type, x: spawn.x, y: spawn.y, angle: type === "mirror" ? -35 : 20 };
+    const node = { id: `n${nextNodeId++}`, type, x: spawn.x, y: spawn.y, angle: type === "mirror" ? -35 : 20, mode: type === "splitter" ? prismMode : undefined, rgbSign: type === "splitter" ? prismSign : undefined };
     nodes.push(node);
     selectedId = node.id;
     resultEl.classList.add("hidden");
     render();
-    statusEl.textContent = `Drag the ${type} to move it, then use the rotate control below the board.`;
+    statusEl.textContent = `Drag the ${type === "splitter" ? "prism" : type} to move it, then use the rotate control below the board.`;
   }
 
   function removeSelected() {
@@ -933,7 +1087,7 @@
 
   function appendIsland(polygon, index) {
     const points = polygon.map(point => point.join(",")).join(" ");
-    const shape = createSvg("polygon", { points, class: `laserflow-island island-${index % 3}` });
+    const shape = createSvg("polygon", { points, class: `laserflow-island island-${index % 3}${index === 0 ? " central" : ""}` });
     board.appendChild(shape);
   }
 
@@ -945,6 +1099,23 @@
     const text = createSvg("text", { x: target.x, y: target.y + 6, class: "laserflow-target-label", "text-anchor": "middle" });
     text.textContent = target.label;
     group.append(halo, outer, inner, text);
+    board.appendChild(group);
+  }
+
+  function appendCheckpoint(checkpoint) {
+    const hit = checkpointHits.has(checkpoint.id);
+    const colourClass = checkpoint.colour === "any" ? "neutral" : checkpoint.colour;
+    const group = createSvg("g", { class: `laserflow-checkpoint checkpoint-${colourClass}${hit ? " hit" : ""}` });
+    group.append(
+      createSvg("circle", { cx: checkpoint.x, cy: checkpoint.y, r: CHECKPOINT_RADIUS + 8, class: "laserflow-checkpoint-halo" }),
+      createSvg("circle", { cx: checkpoint.x, cy: checkpoint.y, r: CHECKPOINT_RADIUS, class: "laserflow-checkpoint-ring" }),
+      createSvg("circle", { cx: checkpoint.x, cy: checkpoint.y, r: 5, class: "laserflow-checkpoint-dot" })
+    );
+    if (checkpoint.label) {
+      const text = createSvg("text", { x: checkpoint.x, y: checkpoint.y + 5, class: "laserflow-checkpoint-label", "text-anchor": "middle" });
+      text.textContent = checkpoint.label;
+      group.appendChild(text);
+    }
     board.appendChild(group);
   }
 
@@ -1005,8 +1176,9 @@
         createSvg("line", { x1: -24, y1: -10, x2: -10, y2: -10, class: "laserflow-prism-hatch" }),
         createSvg("line", { x1: -24, y1: 0, x2: -6, y2: 0, class: "laserflow-prism-hatch" }),
         createSvg("line", { x1: -24, y1: 10, x2: -2, y2: 10, class: "laserflow-prism-hatch" }),
-        createSvg("circle", { cx: 5, cy: -7, r: 5, class: "laserflow-prism-red" }),
-        createSvg("circle", { cx: 5, cy: 7, r: 5, class: "laserflow-prism-blue" })
+        createSvg("circle", { cx: 5, cy: node.mode === "rgb" ? -10 : -7, r: 5, class: "laserflow-prism-red" }),
+        ...(node.mode === "rgb" ? [createSvg("circle", { cx: 5, cy: 0, r: 5, class: "laserflow-prism-green" })] : []),
+        createSvg("circle", { cx: 5, cy: node.mode === "rgb" ? 10 : 7, r: 5, class: "laserflow-prism-blue" })
       );
       group.appendChild(visual);
       const seg = nodeSegment(node);
@@ -1036,7 +1208,7 @@
     if (selectedId === "emitter") return { type: "Laser", object: emitter };
     const node = nodeById(selectedId);
     if (!node) return null;
-    return { type: node.type === "mirror" ? "Mirror" : "Splitter", object: node };
+    return { type: node.type === "mirror" ? "Mirror" : (node.mode === "rgb" ? "RGB Prism" : "Prism"), object: node };
   }
 
   function updateRotateUi() {
@@ -1064,6 +1236,7 @@
     mirrorsLeftEl.textContent = `${inventory.mirrors - mirrorCount} / ${inventory.mirrors}`;
     splittersLeftEl.textContent = `${inventory.splitters - splitterCount} / ${inventory.splitters}`;
     targetCountEl.textContent = `${targetHits.size} / ${targets.length}`;
+    checkpointCountEl.textContent = `${checkpointHits.size} / ${checkpoints.length}`;
     pieceCountEl.textContent = `${pieces} / ${inventory.mirrors + inventory.splitters}`;
     parEl.textContent = par || "—";
     addMirrorButton.disabled = mirrorCount >= inventory.mirrors;
@@ -1077,7 +1250,7 @@
       resultStarsEl.textContent = "★".repeat(stars) + "☆".repeat(5 - stars);
       resultTextEl.textContent = pieces <= par ? `Solved at ${pieces} piece${pieces === 1 ? "" : "s"} — at or under par.` : `Solved with ${pieces} pieces. Par is ${par}.`;
       resultEl.classList.remove("hidden");
-      statusEl.textContent = "Every target received the right colour.";
+      statusEl.textContent = checkpoints.length ? "Every checkpoint and target received the right light." : "Every target received the right colour.";
       saveProgress(stars, pieces);
     } else if (!solved) {
       resultEl.classList.add("hidden");
@@ -1108,11 +1281,12 @@
     islands.forEach(appendIsland);
     const segments = traceBeams();
     segments.forEach(appendBeam);
+    checkpoints.forEach(appendCheckpoint);
     targets.forEach(appendTarget);
     appendEmitter();
     nodes.forEach(appendNode);
 
-    const solved = targets.length > 0 && targetHits.size === targets.length;
+    const solved = targets.length > 0 && targetHits.size === targets.length && checkpointHits.size === checkpoints.length;
     updateHud(solved);
   }
 
@@ -1149,7 +1323,7 @@
       offsetY: node.y - p.y
     };
     board.setPointerCapture(evt.pointerId);
-    statusEl.textContent = `${node.type === "mirror" ? "Mirror" : "Splitter"} selected — drag to move, rotate below.`;
+    statusEl.textContent = `${node.type === "mirror" ? "Mirror" : (node.mode === "rgb" ? "RGB prism" : "Prism")} selected — drag to move, rotate below.`;
     render();
   });
 

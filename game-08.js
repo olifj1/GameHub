@@ -1,7 +1,7 @@
-// Laser Lab v1.1.4
-// One board model is shared by the designer, saved levels and generated play.
-// Mirrors/splitters placed in the Designer describe the intended solution;
-// they are hidden while testing a designed level so the player can rebuild it.
+// Maze v1.3.0
+// The original grid Laser Lab has become a maze-routing game. One board model
+// is still shared by Designer, saved levels and generated play. Designer corner
+// reflectors/splitters describe the intended solution and are hidden while testing.
 
 const laserBoard = $("#laser-board");
 const laserBeamLayer = $("#laser-beam-layer");
@@ -39,17 +39,17 @@ const laserSplittersLeft = $("#laser-splitters-left");
 const laserParDisplay = $("#laser-par-display");
 
 const laserGridSizes = {
-  small: { rows: 8, cols: 8 },
-  medium: { rows: 10, cols: 10 },
-  large: { rows: 12, cols: 12 }
+  small: { rows: 13, cols: 13 },
+  medium: { rows: 15, cols: 15 },
+  large: { rows: 17, cols: 17 }
 };
 
-// Difficulty is now driven by decisions, not just board size. Checkpoints are
-// deliberately sparse on harder levels so they do less of the route-finding.
+// Maze difficulty changes both scale and route ambiguity. Every generated maze
+// contains loops, and checkpoints remain part of Hard rather than disappearing.
 const laserDifficultyInfo = {
-  easy:   { grid: "small",  checkpoints: 1, splitters: 0, minMirrors: 3, mirrorSlack: 3 },
-  medium: { grid: "medium", checkpoints: 1, splitters: 1, minMirrors: 5, mirrorSlack: 4 },
-  hard:   { grid: "large",  checkpoints: 0, splitters: 2, minMirrors: 7, mirrorSlack: 5 }
+  easy:   { grid: "small",  checkpoints: 2, splitters: 0, minMirrors: 4, maxMirrors: 8,  mirrorSlack: 3, braid: 7 },
+  medium: { grid: "medium", checkpoints: 2, splitters: 1, minMirrors: 5, maxMirrors: 14, mirrorSlack: 4, braid: 11 },
+  hard:   { grid: "large",  checkpoints: 3, splitters: 1, minMirrors: 7, maxMirrors: 20, mirrorSlack: 5, braid: 16 }
 };
 
 let laserDifficulty = localStorage.getItem("laserDifficulty") || "easy";
@@ -60,8 +60,8 @@ const laserDirVectors = [[-1, 0], [0, 1], [1, 0], [0, -1]];
 
 let laserMode = "setup";
 let laserGridSize = "large";
-let laserRowsCount = 12;
-let laserColsCount = 12;
+let laserRowsCount = 17;
+let laserColsCount = 17;
 let laserSetupTool = "emitter";
 let laserPlayTool = "mirror";
 let laserPlaySource = "generated";
@@ -169,12 +169,12 @@ function resetLaserDesigner(sizeName = laserGridSize) {
   laserSizeButtons.forEach(b => b.classList.toggle("active", b.dataset.laserSize === sizeName));
   laserResult.classList.add("hidden");
   setLaserMode("setup", { generate: false });
-  laserStatus.textContent = "New blank level. Saved levels have not been changed.";
+  laserStatus.textContent = "New blank maze. Saved mazes have not been changed.";
 }
 
 function confirmNewLaserDesigner(sizeName = laserGridSize) {
   if (laserDesignerHasWork()) {
-    const okay = window.confirm("Start a new level? The current designer board will be cleared. Your saved levels will not be changed.");
+    const okay = window.confirm("Start a new maze? The current designer board will be cleared. Your saved mazes will not be changed.");
     if (!okay) return false;
   }
   resetLaserDesigner(sizeName);
@@ -260,10 +260,21 @@ function handleLaserSetupTap(row, col) {
     return;
   }
 
+  if (laserSetupTool === "target") {
+    const existing = laserLevel.targets.find(x => x.row === row && x.col === col);
+    if (existing) {
+      const colours = ["white", "red", "blue"];
+      existing.color = colours[(colours.indexOf(existing.color || "white") + 1) % colours.length];
+      renderLaserBoard();
+      traceLaser();
+      return;
+    }
+  }
+
   clearLaserCell(row, col);
   if (laserSetupTool === "emitter") laserLevel.emitter = { row, col, dir: 1 };
   if (laserSetupTool === "checkpoint") laserLevel.checkpoints.push({ row, col });
-  if (laserSetupTool === "target") laserLevel.targets.push({ row, col });
+  if (laserSetupTool === "target") laserLevel.targets.push({ row, col, color: "white" });
   if (laserSetupTool === "mirror") laserLevel.fixedMirrors.set(key, 0);
   if (laserSetupTool === "splitter") laserLevel.fixedSplitters.set(key, 0);
   if (laserSetupTool === "block") laserLevel.blocks.add(key);
@@ -290,7 +301,7 @@ function handleLaserPlayTap(row, col) {
       laserPlayerMirrors.set(key, (laserPlayerMirrors.get(key) + 1) % 2);
     } else {
       if (remainingInventory("mirror") <= 0) {
-        laserStatus.textContent = "No mirrors left. Erase one to move it.";
+        laserStatus.textContent = "No corner pieces left. Erase one to move it.";
         return;
       }
       laserPlayerSplitters.delete(key);
@@ -316,8 +327,8 @@ function handleLaserPlayTap(row, col) {
 
 function makeMirrorElement(orientation, fixed) {
   const m = document.createElement("span");
-  m.className = `laser-mirror angle-${orientation}${fixed ? " fixed-optic" : ""}`;
-  m.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 26L26 6M9 28L29 8"/></svg>';
+  m.className = `laser-mirror maze-corner angle-${orientation}${fixed ? " fixed-optic" : ""}`;
+  m.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><path class="maze-corner-fill" d="M4 28L28 4V28Z"/><path class="maze-corner-hatch" d="M12 28l16-16M18 28l10-10M24 28l4-4"/><path class="maze-corner-face" d="M4 28L28 4"/></svg>';
   return m;
 }
 
@@ -350,12 +361,15 @@ function renderLaserBoard() {
         cell.appendChild(e);
       }
 
-      if (laserLevel.targets.some(x => x.row === row && x.col === col)) {
-        cell.classList.add("target-cell");
+      const targetData = laserLevel.targets.find(x => x.row === row && x.col === col);
+      if (targetData) {
+        const targetColour = targetData.color || "white";
+        cell.classList.add("target-cell", `target-cell-${targetColour}`);
         const t = document.createElement("span");
-        t.className = "laser-target";
+        t.className = `laser-target target-${targetColour}`;
         t.dataset.target = key;
-        t.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="11"/><circle cx="16" cy="16" r="6"/><circle cx="16" cy="16" r="2"/></svg>';
+        const label = targetColour === "red" ? "R" : targetColour === "blue" ? "B" : "E";
+        t.innerHTML = `<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="11"/><circle cx="16" cy="16" r="6"/><text x="16" y="19" text-anchor="middle">${label}</text></svg>`;
         cell.appendChild(t);
       }
 
@@ -394,14 +408,23 @@ function renderLaserBoard() {
   updateInventoryDisplay();
 }
 
-function traceSingleBeam(state, hitCheckpoints, hitTargets, queue) {
-  const points = [];
+function targetAcceptsColour(target, colour) {
+  return (target.color || "white") === colour;
+}
+
+function traceSingleBeam(state, hitCheckpoints, hitTargets, wrongTargets, queue) {
+  const segments = [];
   const seen = new Set();
   let { row, col, dir } = state;
-  points.push(laserCellCenter(row, col));
+  let colour = state.color || "white";
+  let points = [laserCellCenter(row, col)];
 
-  for (let step = 0; step < 500; step++) {
-    const stateKey = `${row},${col},${dir}`;
+  function finishSegment() {
+    if (points.length > 1) segments.push({ points, colour });
+  }
+
+  for (let step = 0; step < 800; step++) {
+    const stateKey = `${row},${col},${dir},${colour}`;
     if (seen.has(stateKey)) break;
     seen.add(stateKey);
 
@@ -426,8 +449,10 @@ function traceSingleBeam(state, hitCheckpoints, hitTargets, queue) {
 
     if (laserLevel.checkpoints.some(x => x.row === row && x.col === col)) hitCheckpoints.add(key);
 
-    if (laserLevel.targets.some(x => x.row === row && x.col === col)) {
-      hitTargets.add(key);
+    const target = laserLevel.targets.find(x => x.row === row && x.col === col);
+    if (target) {
+      if (targetAcceptsColour(target, colour)) hitTargets.add(key);
+      else wrongTargets.add(key);
       break;
     }
 
@@ -438,14 +463,19 @@ function traceSingleBeam(state, hitCheckpoints, hitTargets, queue) {
     }
 
     const splitter = activeSplitterAt(key);
-    if (splitter !== null) {
+    if (splitter !== null && colour === "white") {
+      // A white beam becomes two distinct puzzle routes. Red continues straight;
+      // blue follows the reflected branch.
       const reflected = laserReflect(dir, splitter);
-      queue.push({ row, col, dir: reflected });
-      // The original beam deliberately continues straight.
+      queue.push({ row, col, dir: reflected, color: "blue" });
+      finishSegment();
+      colour = "red";
+      points = [laserCellCenter(row, col)];
     }
   }
 
-  return points;
+  finishSegment();
+  return segments;
 }
 
 function calculateStars(used, par) {
@@ -473,7 +503,7 @@ function recordLaserProgress(stars, used) {
         bestPieces: old.bestPieces ? Math.min(old.bestPieces, used) : used
       };
     } else {
-      const levelName = laserLevelName.value.trim() || "Current designed level";
+      const levelName = laserLevelName.value.trim() || "Current designed maze";
       const old = game.designed[levelName] || {};
       game.designed[levelName] = {
         bestStars: Math.max(old.bestStars || 0, stars),
@@ -494,31 +524,35 @@ function traceLaser() {
 
   const hitCheckpoints = new Set();
   const hitTargets = new Set();
+  const wrongTargets = new Set();
 
   if (!laserLevel.emitter) {
     updateLaserStats(hitCheckpoints, hitTargets);
     laserStatus.textContent = laserMode === "setup"
-      ? "Place a laser and at least one target, then build your puzzle."
-      : "This level needs a laser.";
+      ? "Place a start laser and at least one exit, then build your maze."
+      : "This maze needs a start laser.";
     return;
   }
 
-  const queue = [{ ...laserLevel.emitter }];
+  const queue = [{ ...laserLevel.emitter, color: "white" }];
   let processed = 0;
   while (queue.length && processed < 48) {
     const beam = queue.shift();
     processed++;
-    const points = traceSingleBeam(beam, hitCheckpoints, hitTargets, queue);
-    if (points.length > 1) {
+    const segments = traceSingleBeam(beam, hitCheckpoints, hitTargets, wrongTargets, queue);
+    segments.forEach(segment => {
       const line = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-      line.setAttribute("class", `laser-beam-line branch-${((processed - 1) % 4) + 1}`);
-      line.setAttribute("points", points.map(([x, y]) => `${x},${y}`).join(" "));
+      line.setAttribute("class", `laser-beam-line beam-${segment.colour}`);
+      line.setAttribute("points", segment.points.map(([x, y]) => `${x},${y}`).join(" "));
       laserBeamLayer.appendChild(line);
-    }
+    });
   }
 
   document.querySelectorAll(".laser-checkpoint").forEach(m => m.classList.toggle("hit", hitCheckpoints.has(m.dataset.checkpoint)));
-  document.querySelectorAll(".laser-target").forEach(m => m.classList.toggle("hit", hitTargets.has(m.dataset.target)));
+  document.querySelectorAll(".laser-target").forEach(m => {
+    m.classList.toggle("hit", hitTargets.has(m.dataset.target));
+    m.classList.toggle("wrong", wrongTargets.has(m.dataset.target) && !hitTargets.has(m.dataset.target));
+  });
   updateLaserStats(hitCheckpoints, hitTargets);
 
   const checkpointsOkay = laserLevel.checkpoints.length === 0 || hitCheckpoints.size === laserLevel.checkpoints.length;
@@ -528,7 +562,7 @@ function traceLaser() {
     const used = playerPieceCount();
     const stars = calculateStars(used, laserLevel.par);
     laserStatus.classList.add("good");
-    laserStatus.textContent = "Puzzle solved!";
+    laserStatus.textContent = "Maze complete!";
     laserResultStars.textContent = starString(stars);
     laserResultText.textContent = laserLevel.par > 0
       ? `${used} pieces used · 5-star par ${laserLevel.par}.`
@@ -539,9 +573,10 @@ function traceLaser() {
     laserStatus.classList.remove("good", "bad");
     laserResult.classList.add("hidden");
     if (laserMode === "play") {
-      if (!laserLevel.targets.length) laserStatus.textContent = "This level needs at least one target.";
-      else if (laserLevel.inventory.splitters > 0) laserStatus.textContent = "Route the beam. Decide where mirrors and splitters belong.";
-      else laserStatus.textContent = "Place mirrors to hit every checkpoint and target.";
+      if (!laserLevel.targets.length) laserStatus.textContent = "This maze needs at least one exit.";
+      else if (wrongTargets.size) laserStatus.textContent = "That exit needs a different colour.";
+      else if (laserLevel.inventory.splitters > 0) laserStatus.textContent = "Find the route, then split white light into the matching coloured exits.";
+      else laserStatus.textContent = "Use diagonal corners to guide the beam through every checkpoint to the exit.";
     }
   }
 }
@@ -625,35 +660,67 @@ function shortestMazePath(start, target, blocks, rows, cols) {
   return null;
 }
 
-function recursiveDivide(blocks, minRow, maxRow, minCol, maxCol, depth = 0) {
-  const height = maxRow - minRow + 1;
-  const width = maxCol - minCol + 1;
-  if (width < 4 || height < 4) return;
+function oddInteriorValues(size) {
+  const values = [];
+  for (let n = 1; n <= size - 2; n += 2) values.push(n);
+  return values;
+}
 
-  const horizontal = height > width ? true : width > height ? false : Math.random() < 0.5;
-  if (horizontal) {
-    const candidates = [];
-    for (let r = minRow + 1; r <= maxRow - 1; r++) candidates.push(r);
-    if (!candidates.length) return;
-    const wallRow = candidates[Math.floor(Math.random() * candidates.length)];
-    const openings = new Set();
-    const openingCount = depth < 1 ? 2 : 1;
-    while (openings.size < openingCount) openings.add(randomBetween(minCol, maxCol));
-    for (let col = minCol; col <= maxCol; col++) if (!openings.has(col)) blocks.add(laserKey(wallRow, col));
-    recursiveDivide(blocks, minRow, wallRow - 1, minCol, maxCol, depth + 1);
-    recursiveDivide(blocks, wallRow + 1, maxRow, minCol, maxCol, depth + 1);
-  } else {
-    const candidates = [];
-    for (let col = minCol + 1; col <= maxCol - 1; col++) candidates.push(col);
-    if (!candidates.length) return;
-    const wallCol = candidates[Math.floor(Math.random() * candidates.length)];
-    const openings = new Set();
-    const openingCount = depth < 1 ? 2 : 1;
-    while (openings.size < openingCount) openings.add(randomBetween(minRow, maxRow));
-    for (let row = minRow; row <= maxRow; row++) if (!openings.has(row)) blocks.add(laserKey(row, wallCol));
-    recursiveDivide(blocks, minRow, maxRow, minCol, wallCol - 1, depth + 1);
-    recursiveDivide(blocks, minRow, maxRow, wallCol + 1, maxCol, depth + 1);
+function carveBraidedMaze(rows, cols, braidOpenings) {
+  const blocks = new Set();
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) blocks.add(laserKey(row, col));
   }
+
+  const oddRows = oddInteriorValues(rows);
+  const oddCols = oddInteriorValues(cols);
+  const start = {
+    row: oddRows[Math.floor(Math.random() * oddRows.length)],
+    col: oddCols[Math.floor(Math.random() * oddCols.length)]
+  };
+  const visited = new Set([laserKey(start.row, start.col)]);
+  const stack = [start];
+  blocks.delete(laserKey(start.row, start.col));
+
+  while (stack.length) {
+    const cur = stack[stack.length - 1];
+    const next = [];
+    for (const [dr, dc] of laserDirVectors) {
+      const nr = cur.row + dr * 2;
+      const nc = cur.col + dc * 2;
+      if (nr < 1 || nr > rows - 2 || nc < 1 || nc > cols - 2) continue;
+      if (visited.has(laserKey(nr, nc))) continue;
+      next.push({ row: nr, col: nc, wallRow: cur.row + dr, wallCol: cur.col + dc });
+    }
+
+    if (!next.length) {
+      stack.pop();
+      continue;
+    }
+
+    const chosen = next[Math.floor(Math.random() * next.length)];
+    blocks.delete(laserKey(chosen.wallRow, chosen.wallCol));
+    blocks.delete(laserKey(chosen.row, chosen.col));
+    visited.add(laserKey(chosen.row, chosen.col));
+    stack.push({ row: chosen.row, col: chosen.col });
+  }
+
+  // A perfect maze has one route between any two points. Opening selected
+  // separator walls creates loops: real route choices rather than decorative gaps.
+  const braidCandidates = [];
+  for (let row = 1; row < rows - 1; row++) {
+    for (let col = 1; col < cols - 1; col++) {
+      const key = laserKey(row, col);
+      if (!blocks.has(key)) continue;
+      if (row % 2 === 1 && col % 2 === 0) {
+        if (!blocks.has(laserKey(row, col - 1)) && !blocks.has(laserKey(row, col + 1))) braidCandidates.push({ row, col });
+      } else if (row % 2 === 0 && col % 2 === 1) {
+        if (!blocks.has(laserKey(row - 1, col)) && !blocks.has(laserKey(row + 1, col))) braidCandidates.push({ row, col });
+      }
+    }
+  }
+  shuffleArray(braidCandidates).slice(0, braidOpenings).forEach(p => blocks.delete(laserKey(p.row, p.col)));
+  return blocks;
 }
 
 function compressMazePath(path) {
@@ -671,7 +738,7 @@ function compressMazePath(path) {
   return out;
 }
 
-function chooseCheckpointIndices(path, count) {
+function chooseCheckpointIndices(path, count, excludedKeys = new Set()) {
   if (count <= 0) return [];
   const turns = new Set();
   for (let i = 1; i < path.length - 1; i++) {
@@ -679,14 +746,19 @@ function chooseCheckpointIndices(path, count) {
   }
 
   const candidates = [];
-  for (let i = 4; i < path.length - 4; i++) {
+  for (let i = 3; i < path.length - 3; i++) {
+    const key = laserKey(path[i].row, path[i].col);
+    if (excludedKeys.has(key)) continue;
     if (turns.has(i) || turns.has(i - 1) || turns.has(i + 1)) continue;
     candidates.push(i);
   }
   if (candidates.length < count) {
-    for (let i = 3; i < path.length - 3; i++) if (!turns.has(i) && !candidates.includes(i)) candidates.push(i);
+    for (let i = 2; i < path.length - 2; i++) {
+      const key = laserKey(path[i].row, path[i].col);
+      if (!turns.has(i) && !excludedKeys.has(key) && !candidates.includes(i)) candidates.push(i);
+    }
   }
-  if (!candidates.length) return [];
+  if (candidates.length < count) return [];
 
   const chosen = [];
   for (let n = 1; n <= count; n++) {
@@ -703,56 +775,131 @@ function chooseCheckpointIndices(path, count) {
   return chosen.sort((a, b) => a - b);
 }
 
-function findSplitterCandidates(path, blocks, rows, cols) {
-  const pathKeys = new Set(path.map(p => laserKey(p.row, p.col)));
-  const candidates = [];
-
-  for (let i = Math.max(5, Math.floor(path.length * 0.25)); i < path.length - 5; i++) {
+function pathSolutionMirrors(path) {
+  const mirrors = [];
+  for (let i = 1; i < path.length - 1; i++) {
     const inDir = routeDirection(path[i - 1], path[i]);
     const outDir = routeDirection(path[i], path[i + 1]);
+    if (inDir === outDir) continue;
+    const orientation = mirrorOrientationForTurn(inDir, outDir);
+    if (orientation === null) return null;
+    mirrors.push({ row: path[i].row, col: path[i].col, orientation });
+  }
+  return mirrors;
+}
+
+function mazeHasRouteChoice(start, target, blocks, path, rows, cols) {
+  const candidates = [];
+  for (let i = 3; i < path.length - 3; i += Math.max(1, Math.floor(path.length / 10))) candidates.push(path[i]);
+  shuffleArray(candidates);
+  for (const cell of candidates.slice(0, 8)) {
+    const testBlocks = new Set(blocks);
+    testBlocks.add(laserKey(cell.row, cell.col));
+    if (shortestMazePath(start, target, testBlocks, rows, cols)) return true;
+  }
+  return false;
+}
+
+function boundaryExitCandidates(blocks, rows, cols, excluded = new Set()) {
+  const out = [];
+  for (let col = 1; col < cols - 1; col++) {
+    if (!blocks.has(laserKey(1, col))) out.push({ inner: { row: 1, col }, target: { row: 0, col }, outDir: 0 });
+    if (!blocks.has(laserKey(rows - 2, col))) out.push({ inner: { row: rows - 2, col }, target: { row: rows - 1, col }, outDir: 2 });
+  }
+  for (let row = 1; row < rows - 1; row++) {
+    if (!blocks.has(laserKey(row, 1))) out.push({ inner: { row, col: 1 }, target: { row, col: 0 }, outDir: 3 });
+    if (!blocks.has(laserKey(row, cols - 2))) out.push({ inner: { row, col: cols - 2 }, target: { row, col: cols - 1 }, outDir: 1 });
+  }
+  return shuffleArray(out.filter(x => !excluded.has(laserKey(x.target.row, x.target.col))));
+}
+
+function findColourBranch(mainPath, blocks, rows, cols, mainTarget, minTurns) {
+  const mainKeys = new Set(mainPath.map(p => laserKey(p.row, p.col)));
+  const excludedTargets = new Set([
+    laserKey(mainPath[0].row, mainPath[0].col),
+    laserKey(mainTarget.row, mainTarget.col)
+  ]);
+  const exits = boundaryExitCandidates(blocks, rows, cols, excludedTargets);
+  const candidateIndices = [];
+  for (let i = 4; i < mainPath.length - 4; i++) candidateIndices.push(i);
+  shuffleArray(candidateIndices);
+
+  for (const i of candidateIndices) {
+    const inDir = routeDirection(mainPath[i - 1], mainPath[i]);
+    const outDir = routeDirection(mainPath[i], mainPath[i + 1]);
     if (inDir !== outDir) continue;
 
-    for (const branchDir of shuffleArray([(inDir + 3) % 4, (inDir + 1) % 4])) {
+    const sideDirs = shuffleArray([(inDir + 1) % 4, (inDir + 3) % 4]);
+    for (const branchDir of sideDirs) {
       const [dr, dc] = laserDirVectors[branchDir];
-      let r = path[i].row;
-      let c = path[i].col;
-      const cells = [];
+      const first = { row: mainPath[i].row + dr, col: mainPath[i].col + dc };
+      const firstKey = laserKey(first.row, first.col);
+      if (first.row < 1 || first.row >= rows - 1 || first.col < 1 || first.col >= cols - 1) continue;
+      if (blocks.has(firstKey) || mainKeys.has(firstKey)) continue;
 
-      for (let s = 0; s < 4; s++) {
-        r += dr;
-        c += dc;
-        const key = laserKey(r, c);
-        if (r < 0 || r >= rows || c < 0 || c >= cols || blocks.has(key) || pathKeys.has(key)) break;
-        cells.push({ row: r, col: c });
-      }
+      const orientation = mirrorOrientationForTurn(inDir, branchDir);
+      if (orientation === null) continue;
+      const branchBlocks = new Set(blocks);
+      mainKeys.forEach(k => branchBlocks.add(k));
+      branchBlocks.delete(laserKey(mainPath[i].row, mainPath[i].col));
+      branchBlocks.delete(firstKey);
 
-      if (cells.length >= 2) {
-        const orientation = mirrorOrientationForTurn(inDir, branchDir);
-        if (orientation !== null) {
-          candidates.push({ index: i, cell: { ...path[i] }, orientation, cells });
-        }
+      for (const exit of exits) {
+        if (Math.abs(exit.target.row - mainTarget.row) + Math.abs(exit.target.col - mainTarget.col) < Math.floor(rows * 0.45)) continue;
+        if (mainKeys.has(laserKey(exit.inner.row, exit.inner.col))) continue;
+        const partial = shortestMazePath(first, exit.inner, branchBlocks, rows, cols);
+        if (!partial || partial.length < 5) continue;
+        const fullPath = [{ ...mainPath[i] }, ...partial, { ...exit.target }];
+        const mirrors = pathSolutionMirrors(fullPath);
+        if (!mirrors || mirrors.length < minTurns) continue;
+        return {
+          index: i,
+          cell: { ...mainPath[i] },
+          orientation,
+          path: fullPath,
+          target: { ...exit.target, color: "blue" },
+          mirrors
+        };
       }
     }
   }
-  return shuffleArray(candidates);
+  return null;
 }
 
-function chooseSplitterBranches(candidates, count) {
-  const chosen = [];
-  const occupiedBranchCells = new Set();
+function simulateMazeSolution(level, solution, rows, cols) {
+  const mirrors = new Map(solution.mirrors.map(m => [laserKey(m.row, m.col), m.orientation]));
+  const splitters = new Map(solution.splitters.map(x => [laserKey(x.row, x.col), x.orientation]));
+  const hitTargets = new Set();
+  const hitChecks = new Set();
+  const queue = [{ ...level.emitter, color: "white" }];
+  let beams = 0;
 
-  for (const candidate of candidates) {
-    if (chosen.length >= count) break;
-    if (chosen.some(x => Math.abs(x.index - candidate.index) < 4)) continue;
-    if (candidate.cells.some(p => occupiedBranchCells.has(laserKey(p.row, p.col)))) continue;
-
-    const length = randomBetween(2, candidate.cells.length);
-    const target = candidate.cells[length - 1];
-    const branchCells = candidate.cells.slice(0, length);
-    chosen.push({ ...candidate, target, branchCells });
-    branchCells.forEach(p => occupiedBranchCells.add(laserKey(p.row, p.col)));
+  while (queue.length && beams++ < 24) {
+    let { row, col, dir, color } = queue.shift();
+    const seen = new Set();
+    for (let step = 0; step < 1000; step++) {
+      const stateKey = `${row},${col},${dir},${color}`;
+      if (seen.has(stateKey)) break;
+      seen.add(stateKey);
+      const [dr, dc] = laserDirVectors[dir];
+      row += dr; col += dc;
+      if (row < 0 || row >= rows || col < 0 || col >= cols) break;
+      const key = laserKey(row, col);
+      if (level.blocks.has(key)) break;
+      if (level.checkpoints.some(x => x.row === row && x.col === col)) hitChecks.add(key);
+      const target = level.targets.find(x => x.row === row && x.col === col);
+      if (target) {
+        if ((target.color || "white") === color) hitTargets.add(key);
+        break;
+      }
+      if (mirrors.has(key)) { dir = laserReflect(dir, mirrors.get(key)); continue; }
+      if (splitters.has(key) && color === "white") {
+        queue.push({ row, col, dir: laserReflect(dir, splitters.get(key)), color: "blue" });
+        color = "red";
+      }
+    }
   }
-  return chosen;
+  return hitTargets.size === level.targets.length && hitChecks.size === level.checkpoints.length;
 }
 
 function tryGenerateMazePuzzle() {
@@ -760,64 +907,81 @@ function tryGenerateMazePuzzle() {
   const size = laserGridSizes[D.grid];
   const rows = size.rows;
   const cols = size.cols;
-  const blocks = new Set();
-  recursiveDivide(blocks, 0, rows - 1, 0, cols - 1);
+  const blocks = carveBraidedMaze(rows, cols, D.braid);
+  const oddRows = oddInteriorValues(rows);
 
-  const start = { row: randomBetween(1, rows - 2), col: 0 };
-  let target = { row: randomBetween(1, rows - 2), col: cols - 1 };
-  for (let tries = 0; tries < 20 && Math.abs(target.row - start.row) < 2; tries++) {
-    target = { row: randomBetween(1, rows - 2), col: cols - 1 };
+  const startRow = oddRows[Math.floor(Math.random() * oddRows.length)];
+  let targetRow = oddRows[Math.floor(Math.random() * oddRows.length)];
+  for (let tries = 0; tries < 20 && Math.abs(targetRow - startRow) < Math.floor(rows * 0.3); tries++) {
+    targetRow = oddRows[Math.floor(Math.random() * oddRows.length)];
   }
 
-  [start, target, { row: start.row, col: 1 }, { row: target.row, col: cols - 2 }]
+  const start = { row: startRow, col: 0 };
+  const mainTarget = { row: targetRow, col: cols - 1, color: D.splitters ? "red" : "white" };
+  [start, { row: startRow, col: 1 }, mainTarget, { row: targetRow, col: cols - 2 }]
     .forEach(p => blocks.delete(laserKey(p.row, p.col)));
 
-  const path = shortestMazePath(start, target, blocks, rows, cols);
-  if (!path || path.length < Math.max(9, Math.floor(rows * 1.35))) return null;
+  const mainPath = shortestMazePath(start, mainTarget, blocks, rows, cols);
+  if (!mainPath || mainPath.length < Math.floor(rows * 1.6)) return null;
+  if (routeDirection(mainPath[0], mainPath[1]) !== 1) return null;
+  if (!mazeHasRouteChoice(start, mainTarget, blocks, mainPath, rows, cols)) return null;
 
-  const compressed = compressMazePath(path);
-  const mirrorCount = Math.max(0, compressed.length - 2);
-  if (mirrorCount < D.minMirrors) return null;
-  if (routeDirection(path[0], path[1]) !== 1) return null;
+  let mainMirrors = pathSolutionMirrors(mainPath);
+  if (!mainMirrors || mainMirrors.length < D.minMirrors) return null;
 
-  const checkpointIndices = chooseCheckpointIndices(path, D.checkpoints);
-  if (checkpointIndices.length < D.checkpoints) return null;
-
-  const solutionMirrors = [];
-  for (let i = 1; i < path.length - 1; i++) {
-    const inDir = routeDirection(path[i - 1], path[i]);
-    const outDir = routeDirection(path[i], path[i + 1]);
-    if (inDir !== outDir) {
-      const orientation = mirrorOrientationForTurn(inDir, outDir);
-      if (orientation === null) return null;
-      solutionMirrors.push({ row: path[i].row, col: path[i].col, orientation });
-    }
+  let colourBranch = null;
+  let targets = [{ ...mainTarget }];
+  let splitters = [];
+  let branchMirrors = [];
+  if (D.splitters) {
+    colourBranch = findColourBranch(mainPath, blocks, rows, cols, mainTarget, laserDifficulty === "hard" ? 2 : 1);
+    if (!colourBranch) return null;
+    blocks.delete(laserKey(colourBranch.target.row, colourBranch.target.col));
+    targets.push({ ...colourBranch.target });
+    splitters.push({ row: colourBranch.cell.row, col: colourBranch.cell.col, orientation: colourBranch.orientation });
+    branchMirrors = colourBranch.mirrors;
   }
 
-  const splitterBranches = chooseSplitterBranches(findSplitterCandidates(path, blocks, rows, cols), D.splitters);
-  if (splitterBranches.length < D.splitters) return null;
+  const excludedChecks = new Set(splitters.map(x => laserKey(x.row, x.col)));
+  const mainCheckCount = D.splitters ? Math.max(1, D.checkpoints - 1) : D.checkpoints;
+  const mainCheckIndices = chooseCheckpointIndices(mainPath, mainCheckCount, excludedChecks);
+  if (mainCheckIndices.length < mainCheckCount) return null;
+  const checkpoints = mainCheckIndices.map(i => ({ ...mainPath[i] }));
+
+  if (D.splitters) {
+    const branchCheckIndices = chooseCheckpointIndices(colourBranch.path, D.checkpoints - mainCheckCount, excludedChecks);
+    if (branchCheckIndices.length < D.checkpoints - mainCheckCount) return null;
+    branchCheckIndices.forEach(i => checkpoints.push({ ...colourBranch.path[i] }));
+  }
+
+  // The two routes are disjoint except at the splitter, so their turn pieces can
+  // be merged directly into one hidden reference solution.
+  const solutionMirrors = [...mainMirrors, ...branchMirrors];
+  const uniqueMirrors = new Map();
+  for (const m of solutionMirrors) {
+    const key = laserKey(m.row, m.col);
+    if (uniqueMirrors.has(key) && uniqueMirrors.get(key).orientation !== m.orientation) return null;
+    uniqueMirrors.set(key, m);
+  }
+  const mirrors = [...uniqueMirrors.values()];
+  if (mirrors.length > D.maxMirrors) return null;
 
   const level = {
     emitter: { row: start.row, col: start.col, dir: 1 },
-    checkpoints: checkpointIndices.map(i => ({ ...path[i] })),
-    targets: [{ ...target }, ...splitterBranches.map(x => ({ ...x.target }))],
+    checkpoints,
+    targets,
     fixedMirrors: new Map(),
     fixedSplitters: new Map(),
     blocks,
     inventory: {
-      mirrors: solutionMirrors.length + D.mirrorSlack,
+      mirrors: mirrors.length + D.mirrorSlack,
       splitters: D.splitters
     },
-    par: solutionMirrors.length + D.splitters
+    par: mirrors.length + D.splitters
   };
-
-  return {
-    level,
-    solution: {
-      mirrors: solutionMirrors,
-      splitters: splitterBranches.map(x => ({ row: x.cell.row, col: x.cell.col, orientation: x.orientation }))
-    }
-  };
+  const solution = { mirrors, splitters };
+  if (!simulateMazeSolution(level, solution, rows, cols)) return null;
+  return { level, solution };
 }
 
 function generateLaserLevel() {
@@ -825,10 +989,10 @@ function generateLaserLevel() {
   laserPlaySource = "generated";
 
   let generated = null;
-  for (let attempt = 0; attempt < 320 && !generated; attempt++) generated = tryGenerateMazePuzzle();
+  for (let attempt = 0; attempt < 700 && !generated; attempt++) generated = tryGenerateMazePuzzle();
 
   if (!generated) {
-    laserStatus.textContent = "Could not generate a level. Tap New to try again.";
+    laserStatus.textContent = "Could not carve a maze. Tap New to try again.";
     return;
   }
 
@@ -846,8 +1010,8 @@ function generateLaserLevel() {
 
 function validateDesignedLevel() {
   syncLevelSettingsFromDesigner();
-  if (!laserLevel.emitter) return "Add a laser before playing this level.";
-  if (!laserLevel.targets.length) return "Add at least one target before playing this level.";
+  if (!laserLevel.emitter) return "Add a start laser before playing this maze.";
+  if (!laserLevel.targets.length) return "Add at least one exit before playing this maze.";
   return "";
 }
 
@@ -860,14 +1024,14 @@ function playDesignedLevel() {
   clearPlayerPieces();
   laserPlaySource = "designed";
   setLaserMode("play", { generate: false });
-  laserStatus.textContent = "Designed level: the solution optics are hidden. Rebuild the route with the player pieces.";
+  laserStatus.textContent = "Designed maze: the solution corners are hidden. Rebuild the route with the player pieces.";
 }
 
 function serializeLaserLevel() {
   syncLevelSettingsFromDesigner();
   return {
-    version: 2,
-    name: laserLevelName.value.trim() || "Untitled Laser Level",
+    version: 3,
+    name: laserLevelName.value.trim() || "Untitled Maze",
     gridSize: laserGridSize,
     rows: laserRowsCount,
     cols: laserColsCount,
@@ -903,7 +1067,7 @@ function deserializeLaserLevel(data) {
   laserLevel = {
     emitter: savedEmitter,
     checkpoints: Array.isArray(data.checkpoints) ? data.checkpoints : [],
-    targets: Array.isArray(data.targets) ? data.targets : [],
+    targets: Array.isArray(data.targets) ? data.targets.map(t => ({ ...t, color: t.color || "white" })) : [],
     fixedMirrors: new Map(rawMirrors.map(([k, v]) => [k, normaliseOrientation(v)])),
     fixedSplitters: new Map(rawSplitters.map(([k, v]) => [k, normaliseOrientation(v)])),
     blocks: new Set(Array.isArray(data.blocks) ? data.blocks : []),
@@ -928,20 +1092,20 @@ function getSavedLaserLevels() {
 function storeSavedLaserLevels(levels) { localStorage.setItem("laserLabSavedLevels", JSON.stringify(levels)); }
 
 function laserSafeFileName(name) {
-  const cleaned = String(name || "Laser Lab Level")
+  const cleaned = String(name || "Maze Level")
     .trim()
     .replace(/[\\/:*?"<>|]+/g, "-")
     .replace(/\s+/g, " ")
     .slice(0, 60);
-  return cleaned || "Laser Lab Level";
+  return cleaned || "Maze Level";
 }
 
 async function exportLaserLevel() {
   const levels = getSavedLaserLevels();
   const selectedName = laserSavedLevels.value;
   const data = selectedName && levels[selectedName] ? levels[selectedName] : serializeLaserLevel();
-  const levelName = data.name || selectedName || "Laser Lab Level";
-  const fileName = `${laserSafeFileName(levelName)}.laser.json`;
+  const levelName = data.name || selectedName || "Maze Level";
+  const fileName = `${laserSafeFileName(levelName)}.maze.json`;
   const json = JSON.stringify(data, null, 2);
 
   try {
@@ -950,14 +1114,14 @@ async function exportLaserLevel() {
       await navigator.share({
         files: [file],
         title: levelName,
-        text: "GameHub Laser Lab level"
+        text: "GameHub Maze level"
       });
       laserStatus.textContent = `Exported "${levelName}".`;
       return;
     }
   } catch (error) {
     if (error?.name === "AbortError") return;
-    console.warn("Laser Lab share export failed; falling back to download.", error);
+    console.warn("Maze share export failed; falling back to download.", error);
   }
 
   const blob = new Blob([json], { type: "application/json" });
@@ -973,7 +1137,7 @@ async function exportLaserLevel() {
 }
 
 function uniqueImportedLaserName(baseName, levels) {
-  const base = String(baseName || "Imported Laser Level").trim() || "Imported Laser Level";
+  const base = String(baseName || "Imported Maze").trim() || "Imported Maze";
   if (!levels[base]) return base;
   let number = 2;
   let candidate = `${base} (imported)`;
@@ -990,10 +1154,10 @@ async function importLaserLevelFile(file) {
     const raw = await file.text();
     const data = JSON.parse(raw);
     if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Invalid level data");
-    if (!data.emitter && !Array.isArray(data.targets) && !Array.isArray(data.checkpoints)) throw new Error("Not a Laser Lab level");
+    if (!data.emitter && !Array.isArray(data.targets) && !Array.isArray(data.checkpoints)) throw new Error("Not a Maze level");
 
     const levels = getSavedLaserLevels();
-    const importedName = uniqueImportedLaserName(data.name || file.name.replace(/\.laser\.json$|\.json$/i, ""), levels);
+    const importedName = uniqueImportedLaserName(data.name || file.name.replace(/\.maze\.json$|\.laser\.json$|\.json$/i, ""), levels);
     const imported = { ...data, name: importedName };
 
     // Deserialising normalises older level formats before we save the imported copy.
@@ -1007,8 +1171,8 @@ async function importLaserLevelFile(file) {
     laserLevelName.value = importedName;
     laserStatus.textContent = `Imported "${importedName}".`;
   } catch (error) {
-    console.warn("Laser Lab level import failed.", error);
-    laserStatus.textContent = "Could not import that Laser Lab level.";
+    console.warn("Maze level import failed.", error);
+    laserStatus.textContent = "Could not import that Maze level.";
   } finally {
     laserImportFile.value = "";
   }

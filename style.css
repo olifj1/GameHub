@@ -6660,7 +6660,7 @@ body[data-game-id="game-08"] #laser-new-designer{
   font-weight:850;
 }
 
-/* v1.2.2 — Laser Lab Freeform visual + rotation pass */
+/* v1.3.1 — Laser Lab freeform: central mass, checkpoints + RGB prism */
 body[data-game-id="game-10"] .laserflow-screen{
   background:var(--gh-bg)!important;
   color:var(--gh-ink);
@@ -6815,7 +6815,7 @@ body[data-game-id="game-10"] .laserflow-tool-icon.splitter-icon::after{
   height:4px;
   border-radius:50%;
   background:#e66b72;
-  box-shadow:0 10px 0 #679bc8;
+  box-shadow:0 7px 0 #78a878,0 14px 0 #679bc8;
 }
 body[data-game-id="game-10"] .laserflow-tool-icon.delete-icon::before,
 body[data-game-id="game-10"] .laserflow-tool-icon.delete-icon::after{
@@ -6902,6 +6902,24 @@ body[data-game-id="game-10"] .laserflow-island{
   stroke-linejoin:round;
   vector-effect:non-scaling-stroke;
 }
+body[data-game-id="game-10"] .laserflow-island.central{
+  stroke:rgba(239,235,228,.74);
+  stroke-width:4;
+}
+body[data-game-id="game-10"] .laserflow-checkpoint-halo{fill:transparent;stroke-width:7;opacity:.08}
+body[data-game-id="game-10"] .laserflow-checkpoint-ring{fill:#1b1e1f;stroke-width:3;stroke-dasharray:6 5}
+body[data-game-id="game-10"] .laserflow-checkpoint-dot{fill:#ece7df;opacity:.88}
+body[data-game-id="game-10"] .laserflow-checkpoint-label{font-size:12px;font-weight:900;fill:#f3efe9;pointer-events:none}
+body[data-game-id="game-10"] .checkpoint-neutral .laserflow-checkpoint-halo,
+body[data-game-id="game-10"] .checkpoint-neutral .laserflow-checkpoint-ring{stroke:#d5d1ca}
+body[data-game-id="game-10"] .checkpoint-red .laserflow-checkpoint-halo,
+body[data-game-id="game-10"] .checkpoint-red .laserflow-checkpoint-ring{stroke:#e66b72}
+body[data-game-id="game-10"] .checkpoint-green .laserflow-checkpoint-halo,
+body[data-game-id="game-10"] .checkpoint-green .laserflow-checkpoint-ring{stroke:#78a878}
+body[data-game-id="game-10"] .checkpoint-blue .laserflow-checkpoint-halo,
+body[data-game-id="game-10"] .checkpoint-blue .laserflow-checkpoint-ring{stroke:#679bc8}
+body[data-game-id="game-10"] .laserflow-checkpoint.hit .laserflow-checkpoint-halo{opacity:.34}
+body[data-game-id="game-10"] .laserflow-checkpoint.hit .laserflow-checkpoint-ring{stroke-dasharray:none;stroke-width:5}
 body[data-game-id="game-10"] .laserflow-beam-glow{
   stroke-width:14;
   stroke-linecap:round;
@@ -6943,6 +6961,9 @@ body[data-game-id="game-10"] .laserflow-target.target-red .laserflow-target-halo
 body[data-game-id="game-10"] .laserflow-target.target-blue .laserflow-target-outer,
 body[data-game-id="game-10"] .laserflow-target.target-blue .laserflow-target-inner,
 body[data-game-id="game-10"] .laserflow-target.target-blue .laserflow-target-halo{stroke:#679bc8}
+body[data-game-id="game-10"] .laserflow-target.target-green .laserflow-target-outer,
+body[data-game-id="game-10"] .laserflow-target.target-green .laserflow-target-inner,
+body[data-game-id="game-10"] .laserflow-target.target-green .laserflow-target-halo{stroke:#78a878}
 body[data-game-id="game-10"] .laserflow-target.hit .laserflow-target-outer{fill:rgba(247,241,235,.10)}
 body[data-game-id="game-10"] .laserflow-target.hit .laserflow-target-halo{opacity:.40;stroke-width:10}
 body[data-game-id="game-10"] .laserflow-target.wrong .laserflow-target-outer{stroke-dasharray:8 7;opacity:.65}
@@ -7015,6 +7036,7 @@ body[data-game-id="game-10"] .laserflow-prism-hatch{
   pointer-events:none;
 }
 body[data-game-id="game-10"] .laserflow-prism-red{fill:#e66b72;pointer-events:none}
+body[data-game-id="game-10"] .laserflow-prism-green{fill:#78a878;pointer-events:none}
 body[data-game-id="game-10"] .laserflow-prism-blue{fill:#679bc8;pointer-events:none}
 body[data-game-id="game-10"] .laserflow-prism-visual{cursor:grab}
 
@@ -7153,8 +7175,8 @@ body[data-game-id="game-10"] .laserflow-info-row{
   width:min(100%,650px);
   margin:0 auto;
   display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:6px;
+  grid-template-columns:repeat(4,1fr);
+  gap:5px;
 }
 body[data-game-id="game-10"] .laserflow-info-row>div{
   min-height:41px;
@@ -7168,7 +7190,7 @@ body[data-game-id="game-10"] .laserflow-info-row>div{
   gap:5px;
 }
 body[data-game-id="game-10"] .laserflow-info-row span{
-  font-size:7px;
+  font-size:6.5px;
   font-weight:900;
   letter-spacing:.09em;
   color:var(--gh-muted);
@@ -7196,3 +7218,120 @@ body[data-game-id="game-10"] .laserflow-info-row strong{
   body[data-game-id="game-10"] .laserflow-rotate-panel{margin-top:7px}
 }
 
+
+/* v1.3.0 — Maze: classic braided corridors + diagonal corner pieces */
+body[data-game-id="game-08"]{
+  --maze-wall:#2f3334;
+  --maze-wall-line:#434849;
+  --maze-floor:#f5efe8;
+  --maze-corner:#b9d1d5;
+  --maze-corner-line:#557f88;
+}
+body[data-game-id="game-08"] .laser-header h1{letter-spacing:-.035em}
+body[data-game-id="game-08"] .laser-board-wrap{
+  padding:9px!important;
+  background:rgba(247,241,235,.9)!important;
+}
+body[data-game-id="game-08"] .laser-board{
+  background:var(--maze-floor)!important;
+  border-radius:15px!important;
+}
+body[data-game-id="game-08"] .laser-cell{
+  background:var(--maze-floor)!important;
+  box-shadow:inset 0 0 0 .45px rgba(71,72,73,.10)!important;
+}
+body[data-game-id="game-08"] .laser-cell.obstacle{
+  background:
+    repeating-linear-gradient(135deg,
+      var(--maze-wall) 0 4px,
+      var(--maze-wall-line) 4px 5.5px,
+      var(--maze-wall) 5.5px 10px)!important;
+  box-shadow:none!important;
+}
+body[data-game-id="game-08"] .laser-cell.emitter-cell{
+  background:color-mix(in srgb,var(--gh-accent) 10%,var(--maze-floor))!important;
+}
+body[data-game-id="game-08"] .laser-cell.checkpoint-cell{
+  background:color-mix(in srgb,#c39a54 10%,var(--maze-floor))!important;
+}
+body[data-game-id="game-08"] .laser-cell.target-cell-white{
+  background:color-mix(in srgb,#7a867d 9%,var(--maze-floor))!important;
+}
+body[data-game-id="game-08"] .laser-cell.target-cell-red{
+  background:color-mix(in srgb,#d6676c 12%,var(--maze-floor))!important;
+}
+body[data-game-id="game-08"] .laser-cell.target-cell-blue{
+  background:color-mix(in srgb,#5f91bd 12%,var(--maze-floor))!important;
+}
+body[data-game-id="game-08"] .laser-beam-line{
+  fill:none!important;
+  stroke-width:4.5!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+  opacity:.96;
+}
+body[data-game-id="game-08"] .laser-beam-line.beam-white{stroke:#d4ad4f!important}
+body[data-game-id="game-08"] .laser-beam-line.beam-red{stroke:#d75f67!important}
+body[data-game-id="game-08"] .laser-beam-line.beam-blue{stroke:#5790c0!important}
+body[data-game-id="game-08"] .laser-target svg text{
+  stroke:none!important;
+  fill:currentColor!important;
+  font:900 9px/1 system-ui,-apple-system,sans-serif;
+}
+body[data-game-id="game-08"] .laser-target.target-white{color:#69746d}
+body[data-game-id="game-08"] .laser-target.target-white svg{stroke:#69746d!important}
+body[data-game-id="game-08"] .laser-target.target-red{color:#c7545c}
+body[data-game-id="game-08"] .laser-target.target-red svg{stroke:#c7545c!important}
+body[data-game-id="game-08"] .laser-target.target-blue{color:#4e83b1}
+body[data-game-id="game-08"] .laser-target.target-blue svg{stroke:#4e83b1!important}
+body[data-game-id="game-08"] .laser-target.hit svg{fill:rgba(255,255,255,.3)!important}
+body[data-game-id="game-08"] .laser-target.wrong{opacity:.55}
+body[data-game-id="game-08"] .laser-target.wrong svg{stroke-dasharray:4 3}
+
+/* The old mirror is now a diagonal corner block: the coloured triangle is a
+   wall-like insert while the diagonal face is the reflecting surface. */
+body[data-game-id="game-08"] .laser-mirror.maze-corner{
+  width:100%!important;
+  height:100%!important;
+  display:grid!important;
+  place-items:center!important;
+}
+body[data-game-id="game-08"] .laser-mirror.maze-corner svg{
+  width:94%!important;
+  height:94%!important;
+  overflow:visible;
+}
+body[data-game-id="game-08"] .laser-mirror.maze-corner .maze-corner-fill{
+  fill:color-mix(in srgb,var(--maze-corner) 72%,var(--maze-floor));
+  stroke:none;
+}
+body[data-game-id="game-08"] .laser-mirror.maze-corner .maze-corner-hatch{
+  fill:none;
+  stroke:color-mix(in srgb,var(--maze-corner-line) 35%,transparent);
+  stroke-width:1.1;
+}
+body[data-game-id="game-08"] .laser-mirror.maze-corner .maze-corner-face{
+  fill:none;
+  stroke:var(--maze-corner-line);
+  stroke-width:2.7;
+  stroke-linecap:round;
+}
+body[data-game-id="game-08"] .laser-tool[data-laser-tool="mirror"] svg path:first-child,
+body[data-game-id="game-08"] .laser-tool[data-laser-play-tool="mirror"] svg path:first-child{
+  fill:color-mix(in srgb,var(--maze-corner) 55%,transparent);
+}
+
+/* Larger maze cell counts need slightly smaller board furniture, but keep the
+   hit target as the entire cell button. */
+body[data-game-id="game-08"] .laser-emitter,
+body[data-game-id="game-08"] .laser-target,
+body[data-game-id="game-08"] .laser-checkpoint,
+body[data-game-id="game-08"] .laser-splitter{
+  width:88%!important;
+  height:88%!important;
+}
+body[data-game-id="game-08"] .laser-checkpoint svg{stroke-width:2.6!important}
+body[data-game-id="game-08"] .laser-play-panel{margin-bottom:6px!important}
+
+/* Laser Lab is now the freeform game; the old FREEFORM subtitle has gone. */
+body[data-game-id="game-10"] .laserflow-header{margin-bottom:10px!important}

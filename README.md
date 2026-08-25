@@ -276,3 +276,26 @@ Version 1.0.68
 - Generated levels are rejected unless the hidden solution succeeds through the same live beam tracer used during play, preventing unsolvable random layouts from being accepted.
 - The initial laser angle is deliberately offset from the hidden route, keeping source rotation as part of the puzzle.
 - Updated cache/version references to v1.2.2.
+
+## v1.3.0
+
+- Renamed the original grid-based **Laser Lab** to **Maze** and renamed **Laser Lab Freeform** to simply **Laser Lab**.
+- Rebuilt Maze generation around a classic carved maze rather than scattered divider blocks. Generated mazes use 13×13, 15×15 and 17×17 boards for Easy/Medium/Hard.
+- Maze generation now starts from a perfect carved maze and opens additional separator walls to create loops and genuine alternative routes.
+- Generated mazes require at least one meaningful alternate route instead of accepting a purely single-path maze.
+- The old mirror piece is presented as a diagonal **Corner** block: placing/rotating it chooses how the beam turns through a corridor.
+- Easy generated mazes use a white start-to-exit route with two checkpoints. Medium and Hard retain checkpoints and add a player-placed splitter.
+- Maze splitters now use the same colour rule as Laser Lab: white light becomes a red straight branch and a blue reflected branch. Red/blue exits only activate for matching light.
+- Medium uses two checkpoints and Hard uses three; Hard no longer removes checkpoints as a proxy for difficulty.
+- Generated coloured mazes build and validate a hidden two-route solution before being accepted, including all required checkpoints and colour-matched exits.
+- Maze Designer exits can be tapped repeatedly to cycle white → red → blue, and exported Maze files now use `.maze.json` while still accepting older `.laser.json` files.
+- Updated Maze visuals to read as connected dark hatched walls with light corridors, coloured exits and hatched diagonal corner pieces.
+- Updated Home screen names/icons and PWA cache/version references to v1.3.0.
+
+
+## v1.3.1
+- Laser Lab generation now combines one large irregular central mass with smaller satellite islands, restoring strong routing pressure while keeping composition varied.
+- Medium now requires a reflection on both colour branches after the prism; splitting the beam no longer nearly solves the level by itself.
+- Checkpoints return to Laser Lab: Easy has a neutral checkpoint, Medium has red/blue checkpoints, and Hard has colour-matched RGB checkpoints.
+- Hard introduces an RGB prism: white light becomes red, green and blue branches, each with its own matching target and required post-prism reflection.
+- Added green beam/target/prism/checkpoint visuals and updated Laser Lab help/HUD.
