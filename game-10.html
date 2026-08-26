@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.3.1">
+  <link rel="stylesheet" href="style.css?v=1.3.2">
   <title>Laser Lab</title>
 </head>
 <body class="modular-game" data-game-id="game-10">
@@ -16,7 +16,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="game-10-info-title">Laser Lab</h2>
-      <p>Tap the laser, a mirror or a prism to select it. Drag mirrors and prisms anywhere on the board, then use the large rotate control below the board. The light updates live while you move or rotate.</p>
+      <p>Tap Mirror or Prism, then tap the board where you want to place it. Tap the laser or any placed optic to select it; drag placed optics to move them, then use the large rotate control below the board. The light updates live while you move or rotate.</p>
       <p>Mirrors obey the angle of reflection: changing a mirror by a small amount changes the outgoing beam by twice that amount.</p>
       <p>Medium prisms split white light into <strong>red</strong> and <strong>blue</strong>. Hard uses an <strong>RGB prism</strong> that makes red, green and blue branches. Route each colour through matching checkpoints and targets.</p>
     </div>
@@ -37,12 +37,12 @@
         </div>
 
         <div class="laserflow-toolbar">
-          <button class="laserflow-tool" id="laserflow-add-mirror" type="button">
+          <button class="laserflow-tool" id="laserflow-add-mirror" type="button" aria-pressed="false">
             <span class="laserflow-tool-icon mirror-icon" aria-hidden="true"></span>
             <span>Mirror</span>
             <strong id="laserflow-mirrors-left">0 / 0</strong>
           </button>
-          <button class="laserflow-tool" id="laserflow-add-splitter" type="button">
+          <button class="laserflow-tool" id="laserflow-add-splitter" type="button" aria-pressed="false">
             <span class="laserflow-tool-icon splitter-icon" aria-hidden="true"></span>
             <span>Prism</span>
             <strong id="laserflow-splitters-left">0 / 0</strong>
@@ -96,8 +96,8 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.3.1"></script>
-  <script src="core.js?v=1.3.1"></script>
-  <script src="game-10.js?v=1.3.1"></script>
+  <script src="site-config.js?v=1.3.2"></script>
+  <script src="core.js?v=1.3.2"></script>
+  <script src="game-10.js?v=1.3.2"></script>
 </body>
 </html>

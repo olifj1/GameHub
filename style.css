@@ -6660,7 +6660,7 @@ body[data-game-id="game-08"] #laser-new-designer{
   font-weight:850;
 }
 
-/* v1.3.1 — Laser Lab freeform: central mass, checkpoints + RGB prism */
+/* v1.3.2 — Laser Lab: round centred prism + tap-to-place optics */
 body[data-game-id="game-10"] .laserflow-screen{
   background:var(--gh-bg)!important;
   color:var(--gh-ink);
@@ -6762,6 +6762,13 @@ body[data-game-id="game-10"] .laserflow-tool.secondary{
 }
 body[data-game-id="game-10"] .laserflow-tool:disabled{opacity:.34}
 body[data-game-id="game-10"] .laserflow-tool.hidden{display:none}
+body[data-game-id="game-10"] .laserflow-tool.placing{
+  color:var(--gh-accent);
+  background:color-mix(in srgb,var(--gh-accent) 14%,var(--gh-surface));
+  border-color:var(--gh-accent);
+  box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--gh-accent) 24%,transparent);
+}
+body[data-game-id="game-10"] .laserflow-tool.placing strong{color:var(--gh-accent)}
 
 /* Compact line-art toolbar icons. */
 body[data-game-id="game-10"] .laserflow-tool-icon{
@@ -6884,6 +6891,7 @@ body[data-game-id="game-10"] .laserflow-board{
   touch-action:none;
   background:#1b1e1f;
 }
+body[data-game-id="game-10"] .laserflow-board.placing{cursor:crosshair}
 body[data-game-id="game-10"] .laserflow-board-bg{
   fill:#1b1e1f;
   stroke:rgba(236,232,225,.14);
@@ -7027,18 +7035,34 @@ body[data-game-id="game-10"] .laserflow-prism{
   fill:#202425;
   stroke:#e5e1da;
   stroke-width:3;
-  stroke-linejoin:round;
 }
 body[data-game-id="game-10"] .laserflow-prism-hatch{
-  stroke:rgba(229,225,218,.52);
+  stroke:rgba(229,225,218,.34);
   stroke-width:2;
   stroke-linecap:round;
   pointer-events:none;
 }
-body[data-game-id="game-10"] .laserflow-prism-red{fill:#e66b72;pointer-events:none}
-body[data-game-id="game-10"] .laserflow-prism-green{fill:#78a878;pointer-events:none}
-body[data-game-id="game-10"] .laserflow-prism-blue{fill:#679bc8;pointer-events:none}
+body[data-game-id="game-10"] .laserflow-prism-axis{
+  stroke:rgba(241,230,189,.82);
+  stroke-width:3;
+  stroke-linecap:round;
+  pointer-events:none;
+}
+body[data-game-id="game-10"] .laserflow-prism-core{
+  fill:#f1e6bd;
+  stroke:#1b1e1f;
+  stroke-width:2;
+  pointer-events:none;
+}
+body[data-game-id="game-10"] .laserflow-prism-red{fill:#e66b72;stroke:#1b1e1f;stroke-width:1.5;pointer-events:none}
+body[data-game-id="game-10"] .laserflow-prism-green{fill:#78a878;stroke:#1b1e1f;stroke-width:1.5;pointer-events:none}
+body[data-game-id="game-10"] .laserflow-prism-blue{fill:#679bc8;stroke:#1b1e1f;stroke-width:1.5;pointer-events:none}
 body[data-game-id="game-10"] .laserflow-prism-visual{cursor:grab}
+body[data-game-id="game-10"] .laserflow-prism-hit{
+  fill:transparent;
+  stroke:transparent;
+  cursor:grab;
+}
 
 body[data-game-id="game-10"] .laserflow-result{
   position:absolute;

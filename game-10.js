@@ -8,7 +8,7 @@
   const EPS = 2.5;
   const MAX_BOUNCES = 28;
   const MIRROR_LENGTH = 126;
-  const SPLITTER_LENGTH = 112;
+  const PRISM_RADIUS = 44;
   const TARGET_RADIUS = 30;
   const CHECKPOINT_RADIUS = 22;
   const RGB_FACE_OFFSET = 45;
@@ -153,6 +153,7 @@
   let prismMode = "rb";
   let prismSign = 1;
   let solvedLastFrame = false;
+  let placementType = null;
 
   function deepClone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -837,6 +838,7 @@
     dragState = null;
     nextNodeId = 1;
     solvedLastFrame = false;
+    placementType = null;
     resultEl.classList.add("hidden");
     render();
     statusEl.textContent = difficulty === "easy"
@@ -918,7 +920,7 @@
   }
 
   function nodeSegment(node) {
-    const half = (node.type === "splitter" ? SPLITTER_LENGTH : MIRROR_LENGTH) / 2;
+    const half = MIRROR_LENGTH / 2;
     const d = unitFromAngle(node.angle);
     return {
       a: { x: node.x - d.x * half, y: node.y - d.y * half },
@@ -941,8 +943,12 @@
 
     nodes.forEach(node => {
       if (node.id === skipNodeId) return;
-      const seg = nodeSegment(node);
-      const hit = raySegmentIntersection(origin, dir, seg.a, seg.b);
+      const hit = node.type === "splitter"
+        ? rayCircleIntersection(origin, dir, node, PRISM_RADIUS)
+        : (() => {
+            const seg = nodeSegment(node);
+            return raySegmentIntersection(origin, dir, seg.a, seg.b);
+          })();
       if (hit && hit.t < best.t) best = { ...hit, type: node.type, id: node.id, node };
     });
 
@@ -966,7 +972,8 @@
       const hit = nearestHit(origin, dir, skipNodeId);
       if (!hit || !Number.isFinite(hit.t)) return;
 
-      segments.push({ x1: origin.x, y1: origin.y, x2: hit.x, y2: hit.y, colour });
+      const endPoint = hit.type === "splitter" ? { x: hit.node.x, y: hit.node.y } : hit;
+      segments.push({ x1: origin.x, y1: origin.y, x2: endPoint.x, y2: endPoint.y, colour });
 
       if (hit.type === "target") {
         if (hit.target.colour === colour) targetHits.add(hit.target.id);
@@ -992,13 +999,13 @@
           const sign = hit.node.rgbSign || prismSign || 1;
           const green = reflect(dir, hit.node.angle);
           const blue = reflect(dir, hit.node.angle + sign * RGB_FACE_OFFSET);
-          cast({ x: hit.x + straight.x * 3, y: hit.y + straight.y * 3 }, straight, "red", depth + 1, hit.id, nextSeen);
-          cast({ x: hit.x + green.x * 3, y: hit.y + green.y * 3 }, green, "green", depth + 1, hit.id, nextSeen);
-          cast({ x: hit.x + blue.x * 3, y: hit.y + blue.y * 3 }, blue, "blue", depth + 1, hit.id, nextSeen);
+          cast({ x: hit.node.x + straight.x * 3, y: hit.node.y + straight.y * 3 }, straight, "red", depth + 1, hit.id, nextSeen);
+          cast({ x: hit.node.x + green.x * 3, y: hit.node.y + green.y * 3 }, green, "green", depth + 1, hit.id, nextSeen);
+          cast({ x: hit.node.x + blue.x * 3, y: hit.node.y + blue.y * 3 }, blue, "blue", depth + 1, hit.id, nextSeen);
         } else {
           const reflected = reflect(dir, hit.node.angle);
-          cast({ x: hit.x + straight.x * 3, y: hit.y + straight.y * 3 }, straight, "red", depth + 1, hit.id, nextSeen);
-          cast({ x: hit.x + reflected.x * 3, y: hit.y + reflected.y * 3 }, reflected, "blue", depth + 1, hit.id, nextSeen);
+          cast({ x: hit.node.x + straight.x * 3, y: hit.node.y + straight.y * 3 }, straight, "red", depth + 1, hit.id, nextSeen);
+          cast({ x: hit.node.x + reflected.x * 3, y: hit.node.y + reflected.y * 3 }, reflected, "blue", depth + 1, hit.id, nextSeen);
         }
       }
     }
@@ -1041,34 +1048,66 @@
     return nodes.filter(node => node.type === type).length;
   }
 
-  function findSpawnPoint() {
-    const candidates = [
-      [210, 860],[330, 860],[450, 860],[570, 860],[690, 860],[810, 860],
-      [210, 140],[330, 140],[450, 140],[570, 140],[690, 140],[810, 140],
-      [210, 500],[360, 500],[520, 500],[680, 500],[820, 500],
-      [260, 760],[500, 760],[740, 760],[260, 240],[500, 240],[740, 240]
-    ];
-    for (const [x, y] of candidates) if (canPlaceAt(x, y)) return { x, y };
-    return { x: 500, y: 850 };
+  function placementLabel(type) {
+    return type === "splitter" ? (prismMode === "rgb" ? "RGB prism" : "prism") : "mirror";
   }
 
-  function addNode(type) {
-    const max = type === "mirror" ? inventory.mirrors : inventory.splitters;
-    if (countType(type) >= max) {
-      statusEl.textContent = type === "mirror" ? "No mirrors left. Remove one to move it elsewhere." : "No prisms left. Remove one to move it elsewhere.";
+  function setPlacementType(type) {
+    if (placementType === type) {
+      placementType = null;
+      statusEl.textContent = "Placement cancelled — select an optic or choose a piece to place.";
+      render();
       return;
     }
-    const spawn = findSpawnPoint();
-    const node = { id: `n${nextNodeId++}`, type, x: spawn.x, y: spawn.y, angle: type === "mirror" ? -35 : 20, mode: type === "splitter" ? prismMode : undefined, rgbSign: type === "splitter" ? prismSign : undefined };
+
+    const max = type === "mirror" ? inventory.mirrors : inventory.splitters;
+    if (countType(type) >= max) {
+      statusEl.textContent = type === "mirror" ? "No mirrors left. Remove one to place it elsewhere." : "No prisms left. Remove one to place it elsewhere.";
+      return;
+    }
+
+    placementType = type;
+    selectedId = null;
+    dragState = null;
+    resultEl.classList.add("hidden");
+    statusEl.textContent = `Tap a clear place on the board to add the ${placementLabel(type)}.`;
+    render();
+  }
+
+  function placeNodeAt(type, x, y) {
+    const max = type === "mirror" ? inventory.mirrors : inventory.splitters;
+    if (countType(type) >= max) {
+      placementType = null;
+      statusEl.textContent = type === "mirror" ? "No mirrors left." : "No prisms left.";
+      render();
+      return false;
+    }
+    if (!canPlaceAt(x, y)) {
+      statusEl.textContent = `That spot is blocked — tap another clear place for the ${placementLabel(type)}.`;
+      return false;
+    }
+
+    const node = {
+      id: `n${nextNodeId++}`,
+      type,
+      x,
+      y,
+      angle: type === "mirror" ? -35 : 20,
+      mode: type === "splitter" ? prismMode : undefined,
+      rgbSign: type === "splitter" ? prismSign : undefined
+    };
     nodes.push(node);
     selectedId = node.id;
+    placementType = null;
     resultEl.classList.add("hidden");
+    statusEl.textContent = `${placementLabel(type)[0].toUpperCase() + placementLabel(type).slice(1)} placed — drag to move it or rotate below.`;
     render();
-    statusEl.textContent = `Drag the ${type === "splitter" ? "prism" : type} to move it, then use the rotate control below the board.`;
+    return true;
   }
 
   function removeSelected() {
     if (!selectedId) return;
+    placementType = null;
     nodes = nodes.filter(node => node.id !== selectedId);
     selectedId = null;
     resultEl.classList.add("hidden");
@@ -1172,17 +1211,19 @@
     } else {
       const visual = createSvg("g", { transform: `translate(${node.x} ${node.y}) rotate(${node.angle})`, class: "laserflow-prism-visual", "data-drag": "move", "data-node-id": node.id });
       visual.append(
-        createSvg("polygon", { points: "-43,-24 43,0 -43,24", class: "laserflow-prism" }),
-        createSvg("line", { x1: -24, y1: -10, x2: -10, y2: -10, class: "laserflow-prism-hatch" }),
-        createSvg("line", { x1: -24, y1: 0, x2: -6, y2: 0, class: "laserflow-prism-hatch" }),
-        createSvg("line", { x1: -24, y1: 10, x2: -2, y2: 10, class: "laserflow-prism-hatch" }),
-        createSvg("circle", { cx: 5, cy: node.mode === "rgb" ? -10 : -7, r: 5, class: "laserflow-prism-red" }),
-        ...(node.mode === "rgb" ? [createSvg("circle", { cx: 5, cy: 0, r: 5, class: "laserflow-prism-green" })] : []),
-        createSvg("circle", { cx: 5, cy: node.mode === "rgb" ? 10 : 7, r: 5, class: "laserflow-prism-blue" })
+        createSvg("circle", { cx: 0, cy: 0, r: PRISM_RADIUS, class: "laserflow-prism" }),
+        createSvg("line", { x1: -24, y1: -16, x2: 10, y2: -16, class: "laserflow-prism-hatch" }),
+        createSvg("line", { x1: -30, y1: -6, x2: 18, y2: -6, class: "laserflow-prism-hatch" }),
+        createSvg("line", { x1: -30, y1: 6, x2: 18, y2: 6, class: "laserflow-prism-hatch" }),
+        createSvg("line", { x1: -24, y1: 16, x2: 10, y2: 16, class: "laserflow-prism-hatch" }),
+        createSvg("line", { x1: -27, y1: 0, x2: 27, y2: 0, class: "laserflow-prism-axis" }),
+        createSvg("circle", { cx: 0, cy: 0, r: 7, class: "laserflow-prism-core" }),
+        createSvg("circle", { cx: 27, cy: node.mode === "rgb" ? -16 : -10, r: 5, class: "laserflow-prism-red" }),
+        ...(node.mode === "rgb" ? [createSvg("circle", { cx: 31, cy: 0, r: 5, class: "laserflow-prism-green" })] : []),
+        createSvg("circle", { cx: 27, cy: node.mode === "rgb" ? 16 : 10, r: 5, class: "laserflow-prism-blue" })
       );
       group.appendChild(visual);
-      const seg = nodeSegment(node);
-      group.appendChild(createSvg("line", { x1: seg.a.x, y1: seg.a.y, x2: seg.b.x, y2: seg.b.y, class: "laserflow-node-hit", "data-drag": "move", "data-node-id": node.id }));
+      group.appendChild(createSvg("circle", { cx: node.x, cy: node.y, r: PRISM_RADIUS + 14, class: "laserflow-prism-hit", "data-drag": "move", "data-node-id": node.id }));
     }
 
     board.appendChild(group);
@@ -1242,6 +1283,13 @@
     addMirrorButton.disabled = mirrorCount >= inventory.mirrors;
     addSplitterButton.disabled = splitterCount >= inventory.splitters;
     addSplitterButton.classList.toggle("hidden", inventory.splitters === 0);
+    if (addMirrorButton.disabled && placementType === "mirror") placementType = null;
+    if (addSplitterButton.disabled && placementType === "splitter") placementType = null;
+    addMirrorButton.classList.toggle("placing", placementType === "mirror");
+    addSplitterButton.classList.toggle("placing", placementType === "splitter");
+    addMirrorButton.setAttribute("aria-pressed", placementType === "mirror" ? "true" : "false");
+    addSplitterButton.setAttribute("aria-pressed", placementType === "splitter" ? "true" : "false");
+    board.classList.toggle("placing", Boolean(placementType));
     deleteButton.disabled = !selectedId || selectedId === "emitter";
     updateRotateUi();
 
@@ -1291,6 +1339,13 @@
   }
 
   board.addEventListener("pointerdown", evt => {
+    if (placementType) {
+      evt.preventDefault();
+      const p = svgPoint(evt);
+      placeNodeAt(placementType, clamp(p.x, 70, W - 70), clamp(p.y, 70, H - 70));
+      return;
+    }
+
     const control = evt.target.closest?.("[data-drag], [data-select]") || evt.target;
     const dragType = control.dataset.drag;
     const nodeId = control.dataset.nodeId;
@@ -1298,6 +1353,7 @@
 
     if (selectType === "emitter") {
       evt.preventDefault();
+      placementType = null;
       selectedId = "emitter";
       statusEl.textContent = "Laser selected — use the rotate control below the board.";
       render();
@@ -1314,6 +1370,7 @@
     const p = svgPoint(evt);
     const node = nodeById(nodeId);
     if (!node) return;
+    placementType = null;
     selectedId = node.id;
     dragState = {
       pointerId: evt.pointerId,
@@ -1363,8 +1420,8 @@
     render();
   });
 
-  addMirrorButton.addEventListener("click", () => addNode("mirror"));
-  addSplitterButton.addEventListener("click", () => addNode("splitter"));
+  addMirrorButton.addEventListener("click", () => setPlacementType("mirror"));
+  addSplitterButton.addEventListener("click", () => setPlacementType("splitter"));
   deleteButton.addEventListener("click", removeSelected);
   resetButton.addEventListener("click", resetLevel);
   newButton.addEventListener("click", () => newLevel(false));

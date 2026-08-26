@@ -299,3 +299,10 @@ Version 1.0.68
 - Checkpoints return to Laser Lab: Easy has a neutral checkpoint, Medium has red/blue checkpoints, and Hard has colour-matched RGB checkpoints.
 - Hard introduces an RGB prism: white light becomes red, green and blue branches, each with its own matching target and required post-prism reflection.
 - Added green beam/target/prism/checkpoint visuals and updated Laser Lab help/HUD.
+
+
+## v1.3.2
+- Laser Lab prism is now a compact round optical node with a circular hit area.
+- Incoming light reaches the prism centre and all split colour beams visibly originate from that same centre.
+- Mirror/Prism toolbar buttons now arm a highlighted placement mode; the optic is created only when the player taps a valid board position.
+- Tapping the armed tool again cancels placement; invalid taps keep placement armed.
