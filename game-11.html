@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#e7dbd2">
+  <link rel="stylesheet" href="style.css?v=1.4.0">
+  <title>Maze Snake</title>
+</head>
+<body class="modular-game" data-game-id="game-11">
+  <a class="game-home-button" href="index.html" aria-label="Back to games">← Games</a>
+  <button class="game-info-button" type="button" aria-label="How to play" aria-haspopup="dialog">i</button>
+  <div class="game-info-overlay" hidden>
+    <div class="game-info-dialog" role="dialog" aria-modal="true" aria-labelledby="game-11-info-title">
+      <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
+      <p class="kicker">HOW TO PLAY</p>
+      <h2 id="game-11-info-title">Maze Snake</h2>
+      <p>Guide the snake from <strong>START</strong> to <strong>EXIT</strong> with the four direction buttons. The snake moves automatically once you make your first move.</p>
+      <p>Collect the optional gems for more points. Each gem also makes the snake <strong>two segments longer</strong>, so detours become increasingly risky. You can finish the maze without collecting them all.</p>
+      <p>Hit a wall or your own tail and the run ends. You cannot reverse directly into yourself. Reaching the exit always completes the level; collecting every gem gives the best star score.</p>
+    </div>
+  </div>
+
+  <main class="screen-wrap">
+    <section class="screen active" aria-labelledby="snake-maze-title">
+      <div class="page snake-maze-page">
+        <header class="page-header snake-maze-header">
+          <p class="kicker" data-site-name="">GameHub</p>
+          <h1 id="snake-maze-title">Maze Snake</h1>
+        </header>
+
+        <div class="snake-maze-difficulty" role="group" aria-label="Maze Snake difficulty">
+          <button class="snake-maze-difficulty-button active" data-snake-difficulty="easy" type="button">Easy</button>
+          <button class="snake-maze-difficulty-button" data-snake-difficulty="medium" type="button">Medium</button>
+          <button class="snake-maze-difficulty-button" data-snake-difficulty="hard" type="button">Hard</button>
+        </div>
+
+        <div class="snake-maze-stats" aria-label="Current run">
+          <div><span>SCORE</span><strong id="snake-score">0</strong></div>
+          <div><span>GEMS</span><strong id="snake-gems">0 / 0</strong></div>
+          <div><span>LENGTH</span><strong id="snake-length">1</strong></div>
+        </div>
+
+        <div class="snake-maze-board-frame">
+          <div class="snake-maze-board" id="snake-maze-board" role="img" aria-label="Generated maze with snake, collectibles and exit"></div>
+        </div>
+
+        <div class="snake-maze-status" id="snake-maze-status" aria-live="polite">Choose a direction to leave START.</div>
+
+        <div class="snake-maze-controls" aria-label="Snake controls">
+          <button class="snake-dir snake-dir-up" data-snake-dir="0" type="button" aria-label="Up">
+            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 38V11M13 22l11-11 11 11"/></svg>
+          </button>
+          <button class="snake-dir snake-dir-left" data-snake-dir="3" type="button" aria-label="Left">
+            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M38 24H11M22 13L11 24l11 11"/></svg>
+          </button>
+          <button class="snake-dir snake-dir-down" data-snake-dir="2" type="button" aria-label="Down">
+            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 10v27M13 26l11 11 11-11"/></svg>
+          </button>
+          <button class="snake-dir snake-dir-right" data-snake-dir="1" type="button" aria-label="Right">
+            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 24h27M26 13l11 11-11 11"/></svg>
+          </button>
+        </div>
+
+        <div class="snake-maze-actions">
+          <button id="snake-new-maze" type="button">New maze</button>
+          <button id="snake-restart" type="button">Restart</button>
+        </div>
+
+        <div class="snake-maze-result hidden" id="snake-maze-result" aria-live="polite">
+          <span id="snake-result-stars" class="snake-maze-result-stars">★★★★★</span>
+          <strong id="snake-result-title">Maze complete!</strong>
+          <span id="snake-result-text"></span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="site-config.js?v=1.4.0"></script>
+  <script src="core.js?v=1.4.0"></script>
+  <script src="game-11.js?v=1.4.0"></script>
+</body>
+</html>

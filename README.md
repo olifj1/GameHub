@@ -306,3 +306,14 @@ Version 1.0.68
 - Incoming light reaches the prism centre and all split colour beams visibly originate from that same centre.
 - Mirror/Prism toolbar buttons now arm a highlighted placement mode; the optic is created only when the player taps a valid board position.
 - Tapping the armed tool again cancels placement; invalid taps keep placement armed.
+
+## v1.4.0
+- Added **Maze Snake** as a new experimental game while keeping the existing optical Maze intact.
+- Maze Snake uses classic automatic Snake movement inside generated braided mazes with loops and alternate routes.
+- Added a separate large four-direction control pad below the board; the snake waits for the first direction before moving.
+- Direction input is junction-buffered: an early turn press is held until that corridor opens, reducing touchscreen timing frustration.
+- Start and exit are kept far apart, with generated route-length and alternate-route checks per difficulty.
+- Optional gems are biased toward side routes and dead ends rather than the direct exit route. Each gem awards points and grows the snake by two segments, creating a deliberate risk/reward trade-off.
+- Reaching the exit always completes the maze; star score is driven primarily by how many optional gems were collected.
+- Added Easy/Medium/Hard maze sizes and movement speeds, Restart/New Maze actions, tail/wall collision handling, and GameHub progress storage.
+- Added Maze Snake to the Home screen and offline PWA cache; updated cache/version references to v1.4.0.

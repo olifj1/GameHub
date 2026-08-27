@@ -13,7 +13,8 @@ const iconSvg = {
   "game-07": `<svg viewBox="0 0 48 48"><path d="M8 30h27l4 6H13zM14 30V19h13v11M27 23h7l4 7M18 19v-6h10M15 36a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM34 36a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg>`,
   "game-08": `<svg viewBox="0 0 48 48"><path d="M8 8h12v8H12v8h12v8h-8v8M40 8H28v12h8v8H24v12h16"/><path d="M8 40h5M35 8h5"/></svg>`,
   "game-09": `<svg viewBox="0 0 48 48"><path d="M9 25h24c5 0 7-2 9-5-3-2-6-3-10-3H15z"/><path d="M14 17h22M12 30h25M17 17l2 13M31 17l-2 13M12 23L7 16l8 2M38 20h4M42 13v14M18 33a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM34 33a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>`,
-  "game-10": `<svg viewBox="0 0 48 48"><path d="M7 33h11l9-18M27 15h14M18 33l8 7M18 33l-5 8"/><path d="M26 13l6-5M26 17l6 5"/></svg>`
+  "game-10": `<svg viewBox="0 0 48 48"><path d="M7 33h11l9-18M27 15h14M18 33l8 7M18 33l-5 8"/><path d="M26 13l6-5M26 17l6 5"/></svg>`,
+  "game-11": `<svg viewBox="0 0 48 48"><path d="M10 12h17v8H17v8h14v8H20"/><path d="M20 36c-5 0-8-3-8-7M31 28c5 0 7 3 7 7"/><circle cx="38" cy="35" r="2"/></svg>`
 };
 
 const grid = document.getElementById("game-grid");

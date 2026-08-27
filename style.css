@@ -2326,6 +2326,7 @@ body[data-game-id="game-07"], .game-card[data-game-id="game-07"] { --gh-accent:#
 body[data-game-id="game-08"], .game-card[data-game-id="game-08"] { --gh-accent:#bd6f72; }
 body[data-game-id="game-09"], .game-card[data-game-id="game-09"] { --gh-accent:#b87068; }
 body[data-game-id="game-10"], .game-card[data-game-id="game-10"] { --gh-accent:#6683a8; }
+body[data-game-id="game-11"], .game-card[data-game-id="game-11"] { --gh-accent:#5f8a69; }
 
 html, body {
   color: var(--gh-ink);
@@ -6660,7 +6661,7 @@ body[data-game-id="game-08"] #laser-new-designer{
   font-weight:850;
 }
 
-/* v1.3.2 — Laser Lab: round centred prism + tap-to-place optics */
+/* v1.4.0 — Laser Lab: round centred prism + tap-to-place optics */
 body[data-game-id="game-10"] .laserflow-screen{
   background:var(--gh-bg)!important;
   color:var(--gh-ink);
@@ -7359,3 +7360,288 @@ body[data-game-id="game-08"] .laser-play-panel{margin-bottom:6px!important}
 
 /* Laser Lab is now the freeform game; the old FREEFORM subtitle has gone. */
 body[data-game-id="game-10"] .laserflow-header{margin-bottom:10px!important}
+
+/* v1.4.0 — Maze Snake experiment */
+body[data-game-id="game-11"]{
+  --snake-wall:#303435;
+  --snake-wall-line:#44494a;
+  --snake-floor:#f4eee6;
+  --snake-ink:#27313c;
+  --snake-body:#6f9b7b;
+  --snake-head:#4f7f5d;
+  --snake-gem:#c8944c;
+  background:#e7dbd2;
+}
+body[data-game-id="game-11"] .snake-maze-page{
+  max-width:560px;
+  margin:0 auto;
+  padding-bottom:max(24px,env(safe-area-inset-bottom));
+}
+body[data-game-id="game-11"] .snake-maze-header{
+  margin:0 0 10px;
+}
+body[data-game-id="game-11"] .snake-maze-header h1{
+  font-size:clamp(30px,8vw,40px);
+  letter-spacing:-.04em;
+}
+body[data-game-id="game-11"] .snake-maze-difficulty{
+  width:min(100%,390px);
+  margin:0 auto 9px;
+  padding:4px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:4px;
+  border:1px solid rgba(39,49,60,.16);
+  border-radius:17px;
+  background:rgba(255,255,255,.42);
+}
+body[data-game-id="game-11"] .snake-maze-difficulty-button{
+  min-height:38px;
+  border:0;
+  border-radius:13px;
+  color:rgba(39,49,60,.66);
+  background:transparent;
+  font-size:13px;
+  font-weight:800;
+}
+body[data-game-id="game-11"] .snake-maze-difficulty-button.active{
+  color:var(--snake-ink);
+  background:rgba(255,255,255,.92);
+  box-shadow:0 4px 12px rgba(56,51,44,.09);
+}
+body[data-game-id="game-11"] .snake-maze-stats{
+  width:min(100%,390px);
+  margin:0 auto 9px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  border:1px solid rgba(39,49,60,.14);
+  border-radius:16px;
+  overflow:hidden;
+  background:rgba(255,255,255,.52);
+}
+body[data-game-id="game-11"] .snake-maze-stats>div{
+  min-height:48px;
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:1px;
+}
+body[data-game-id="game-11"] .snake-maze-stats>div+div{
+  border-left:1px solid rgba(39,49,60,.11);
+}
+body[data-game-id="game-11"] .snake-maze-stats span{
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.14em;
+  opacity:.5;
+}
+body[data-game-id="game-11"] .snake-maze-stats strong{
+  font-size:17px;
+  line-height:1;
+}
+body[data-game-id="game-11"] .snake-maze-board-frame{
+  width:min(94vw,440px);
+  margin:0 auto;
+  padding:8px;
+  border:1px solid rgba(39,49,60,.16);
+  border-radius:22px;
+  background:rgba(255,255,255,.68);
+  box-shadow:0 10px 28px rgba(55,49,43,.10);
+}
+body[data-game-id="game-11"] .snake-maze-board{
+  width:100%;
+  aspect-ratio:1;
+  display:grid;
+  grid-template-columns:repeat(var(--snake-maze-size,13),1fr);
+  grid-template-rows:repeat(var(--snake-maze-size,13),1fr);
+  overflow:hidden;
+  border-radius:14px;
+  background:var(--snake-floor);
+  border:1px solid rgba(39,49,60,.16);
+}
+body[data-game-id="game-11"] .snake-maze-cell{
+  position:relative;
+  min-width:0;
+  min-height:0;
+  display:grid;
+  place-items:center;
+}
+body[data-game-id="game-11"] .snake-maze-cell.corridor{
+  background:var(--snake-floor);
+  box-shadow:inset 0 0 0 .35px rgba(63,65,65,.07);
+}
+body[data-game-id="game-11"] .snake-maze-cell.wall{
+  background:
+    repeating-linear-gradient(135deg,
+      var(--snake-wall) 0 3px,
+      var(--snake-wall-line) 3px 4px,
+      var(--snake-wall) 4px 8px);
+}
+body[data-game-id="game-11"] .snake-maze-cell.start{
+  box-shadow:inset 0 0 0 2px rgba(79,127,93,.46);
+}
+body[data-game-id="game-11"] .snake-maze-cell.exit{
+  box-shadow:inset 0 0 0 2px rgba(191,104,79,.5);
+  background:#f3e4da;
+}
+body[data-game-id="game-11"] .snake-maze-marker{
+  position:absolute;
+  z-index:1;
+  font-size:clamp(7px,1.8vw,10px);
+  font-weight:950;
+  line-height:1;
+  opacity:.58;
+}
+body[data-game-id="game-11"] .start-marker{color:#3f7651}
+body[data-game-id="game-11"] .exit-marker{color:#b55e48}
+body[data-game-id="game-11"] .snake-maze-pickup{
+  position:absolute;
+  z-index:2;
+  display:grid;
+  place-items:center;
+  width:68%;
+  height:68%;
+  color:var(--snake-gem);
+  font-size:clamp(10px,2.7vw,18px);
+  line-height:1;
+  filter:drop-shadow(0 1px 0 rgba(255,255,255,.8));
+}
+body[data-game-id="game-11"] .snake-maze-cell.snake-body::after,
+body[data-game-id="game-11"] .snake-maze-cell.snake-head::after{
+  content:"";
+  position:absolute;
+  z-index:4;
+  inset:13%;
+  border-radius:38%;
+  background:var(--snake-body);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),0 1px 2px rgba(31,44,35,.18);
+}
+body[data-game-id="game-11"] .snake-maze-cell.snake-head::after{
+  inset:8%;
+  border-radius:42%;
+  background:var(--snake-head);
+}
+body[data-game-id="game-11"] .snake-head-face{
+  position:absolute;
+  z-index:6;
+  width:70%;
+  height:70%;
+  pointer-events:none;
+}
+body[data-game-id="game-11"] .snake-head-face i{
+  position:absolute;
+  width:18%;
+  aspect-ratio:1;
+  border-radius:50%;
+  background:#f7f0e6;
+  box-shadow:inset 0 0 0 1px rgba(31,47,35,.28);
+}
+body[data-game-id="game-11"] .snake-maze-cell.dir-1 .snake-head-face i:nth-child(1){right:7%;top:20%}
+body[data-game-id="game-11"] .snake-maze-cell.dir-1 .snake-head-face i:nth-child(2){right:7%;bottom:20%}
+body[data-game-id="game-11"] .snake-maze-cell.dir-3 .snake-head-face i:nth-child(1){left:7%;top:20%}
+body[data-game-id="game-11"] .snake-maze-cell.dir-3 .snake-head-face i:nth-child(2){left:7%;bottom:20%}
+body[data-game-id="game-11"] .snake-maze-cell.dir-0 .snake-head-face i:nth-child(1){top:7%;left:20%}
+body[data-game-id="game-11"] .snake-maze-cell.dir-0 .snake-head-face i:nth-child(2){top:7%;right:20%}
+body[data-game-id="game-11"] .snake-maze-cell.dir-2 .snake-head-face i:nth-child(1){bottom:7%;left:20%}
+body[data-game-id="game-11"] .snake-maze-cell.dir-2 .snake-head-face i:nth-child(2){bottom:7%;right:20%}
+body[data-game-id="game-11"] .snake-maze-status{
+  width:min(100%,420px);
+  min-height:35px;
+  margin:8px auto 6px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  color:rgba(39,49,60,.72);
+  font-size:12px;
+  font-weight:700;
+  line-height:1.25;
+}
+body[data-game-id="game-11"] .snake-maze-status.good{color:#3f7651}
+body[data-game-id="game-11"] .snake-maze-status.bad{color:#b4594a}
+body[data-game-id="game-11"] .snake-maze-controls{
+  width:min(100%,306px);
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  grid-template-rows:repeat(2,64px);
+  gap:7px;
+  padding:8px;
+  border:1px solid rgba(39,49,60,.14);
+  border-radius:22px;
+  background:rgba(255,255,255,.48);
+}
+body[data-game-id="game-11"] .snake-dir{
+  border:1px solid rgba(39,49,60,.18);
+  border-radius:17px;
+  background:rgba(255,255,255,.92);
+  color:var(--snake-ink);
+  box-shadow:0 5px 12px rgba(53,48,43,.08);
+}
+body[data-game-id="game-11"] .snake-dir:active{transform:scale(.96);background:#fff}
+body[data-game-id="game-11"] .snake-dir svg{
+  width:32px;
+  height:32px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:3;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+body[data-game-id="game-11"] .snake-dir-up{grid-column:2;grid-row:1}
+body[data-game-id="game-11"] .snake-dir-left{grid-column:1;grid-row:2}
+body[data-game-id="game-11"] .snake-dir-down{grid-column:2;grid-row:2}
+body[data-game-id="game-11"] .snake-dir-right{grid-column:3;grid-row:2}
+body[data-game-id="game-11"] .snake-maze-actions{
+  width:min(100%,306px);
+  margin:7px auto 0;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+}
+body[data-game-id="game-11"] .snake-maze-actions button{
+  min-height:42px;
+  border:1px solid rgba(39,49,60,.16);
+  border-radius:14px;
+  background:rgba(255,255,255,.68);
+  color:var(--snake-ink);
+  font-size:12px;
+  font-weight:850;
+}
+body[data-game-id="game-11"] .snake-maze-actions button:first-child{
+  background:var(--gh-accent,#d97762);
+  color:#fff;
+  border-color:transparent;
+}
+body[data-game-id="game-11"] .snake-maze-result{
+  width:min(100%,390px);
+  margin:8px auto 0;
+  padding:10px 14px;
+  display:grid;
+  gap:2px;
+  text-align:center;
+  border:1px solid rgba(39,49,60,.14);
+  border-radius:16px;
+  background:rgba(255,255,255,.72);
+}
+body[data-game-id="game-11"] .snake-maze-result.hidden{display:none}
+body[data-game-id="game-11"] .snake-maze-result-stars{
+  color:#b9863f;
+  letter-spacing:.07em;
+  font-size:19px;
+  line-height:1;
+}
+body[data-game-id="game-11"] .snake-maze-result strong{font-size:14px}
+body[data-game-id="game-11"] .snake-maze-result span:last-child{
+  font-size:11px;
+  color:rgba(39,49,60,.64);
+}
+@media(max-height:760px){
+  body[data-game-id="game-11"] .snake-maze-header{margin-bottom:5px}
+  body[data-game-id="game-11"] .snake-maze-difficulty{margin-bottom:5px}
+  body[data-game-id="game-11"] .snake-maze-stats{margin-bottom:5px}
+  body[data-game-id="game-11"] .snake-maze-board-frame{width:min(80vw,330px);padding:6px}
+  body[data-game-id="game-11"] .snake-maze-status{margin:4px auto;min-height:26px}
+  body[data-game-id="game-11"] .snake-maze-controls{grid-template-rows:repeat(2,54px);width:min(100%,280px);padding:6px}
+  body[data-game-id="game-11"] .snake-maze-actions{width:min(100%,280px);margin-top:5px}
+}
