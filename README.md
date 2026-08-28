@@ -317,3 +317,12 @@ Version 1.0.68
 - Reaching the exit always completes the maze; star score is driven primarily by how many optional gems were collected.
 - Added Easy/Medium/Hard maze sizes and movement speeds, Restart/New Maze actions, tail/wall collision handling, and GameHub progress storage.
 - Added Maze Snake to the Home screen and offline PWA cache; updated cache/version references to v1.4.0.
+
+
+## v1.4.1
+- Renamed **Maze Snake** to **Snake Maze** throughout the Home screen and game UI.
+- Removed the retired optical **Maze** (`game-08`) from the Home screen, offline app shell and release files. Laser Lab remains the freeform optics game.
+- Fixed collectible generation: gems are no longer placed in dead ends. A gem cell must sit on a genuine loop/through-route so the snake can pass it and continue without making an illegal 180-degree reversal.
+- Increased maze braiding slightly so all difficulties can reliably supply enough safe optional collectible routes.
+- Restyled the snake as outlined, lightly hatched graphic-design segments with a cleaner line-art head rather than solid coloured blocks.
+- Updated cache/version references to v1.4.1.

@@ -1,5 +1,5 @@
-// Maze Snake — a classic Snake-style navigation game inside a braided maze.
-// The existing optical Maze (game-08) is intentionally left untouched.
+// Snake Maze — a classic Snake-style navigation game inside a braided maze.
+// The retired optical Maze (game-08) has been removed from the hub.
 
 const snakeMazeBoard = $("#snake-maze-board");
 const snakeMazeStatus = $("#snake-maze-status");
@@ -16,9 +16,9 @@ const snakeNewMazeButton = $("#snake-new-maze");
 const snakeRestartButton = $("#snake-restart");
 
 const snakeDifficultyConfig = {
-  easy:   { size: 13, braid: 6,  gems: 3, tick: 520, grow: 2, minRoute: 24, alternateChecks: 1 },
-  medium: { size: 15, braid: 8,  gems: 5, tick: 440, grow: 2, minRoute: 28, alternateChecks: 1 },
-  hard:   { size: 19, braid: 14, gems: 7, tick: 360, grow: 2, minRoute: 40, alternateChecks: 2 }
+  easy:   { size: 13, braid: 8,  gems: 3, tick: 520, grow: 2, minRoute: 24, alternateChecks: 1 },
+  medium: { size: 15, braid: 12, gems: 5, tick: 440, grow: 2, minRoute: 28, alternateChecks: 1 },
+  hard:   { size: 19, braid: 20, gems: 7, tick: 360, grow: 2, minRoute: 40, alternateChecks: 2 }
 };
 
 const snakeDirVectors = [
@@ -193,11 +193,25 @@ function snakeAlternativeRouteCount(path, blocks, size) {
   return count;
 }
 
+function snakeCollectibleHasThroughRoute(point, blocks, size) {
+  // A pickup is safe only if it lies on a loop/through-route. If the snake enters
+  // the cell from one neighbour there must be another way out without reversing.
+  const neighbours = snakeOpenNeighbours(point, blocks, size);
+  if (neighbours.length < 2) return false;
+
+  const blockedKey = snakeKey(point.row, point.col);
+  for (let a = 0; a < neighbours.length - 1; a++) {
+    for (let b = a + 1; b < neighbours.length; b++) {
+      if (snakeShortestPath(neighbours[a], neighbours[b], blocks, size, blockedKey)) return true;
+    }
+  }
+  return false;
+}
+
 function chooseSnakeCollectibles(blocks, size, start, exit, mainPath, count) {
   const pathKeys = new Set(mainPath.map(p => snakeKey(p.row, p.col)));
-  const allOpen = [];
-  const sideDeadEnds = [];
-  const sideOpen = [];
+  const sideThrough = [];
+  const allThrough = [];
 
   for (let row = 1; row < size - 1; row++) {
     for (let col = 1; col < size - 1; col++) {
@@ -207,16 +221,19 @@ function chooseSnakeCollectibles(blocks, size, start, exit, mainPath, count) {
       const startDistance = Math.abs(row - start.row) + Math.abs(col - start.col);
       const exitDistance = Math.abs(row - exit.row) + Math.abs(col - exit.col);
       if (startDistance < 4 || exitDistance < 3) continue;
-      allOpen.push(point);
-      if (!pathKeys.has(key)) {
-        sideOpen.push(point);
-        if (snakeOpenNeighbours(point, blocks, size).length === 1) sideDeadEnds.push(point);
-      }
+      if (!snakeCollectibleHasThroughRoute(point, blocks, size)) continue;
+
+      allThrough.push(point);
+      if (!pathKeys.has(key)) sideThrough.push(point);
     }
   }
 
   const chosen = [];
-  const pools = [snakeShuffle(sideDeadEnds), snakeShuffle(sideOpen), snakeShuffle(allOpen)];
+  // Prefer optional loop cells away from the shortest exit route. If a highly
+  // braided maze cannot supply enough, a safe through-cell on the main route is
+  // still better than an impossible dead-end pickup; generation will usually
+  // reject and retry before needing many of these.
+  const pools = [snakeShuffle(sideThrough), snakeShuffle(allThrough)];
   for (const pool of pools) {
     for (const point of pool) {
       if (chosen.length >= count) break;
