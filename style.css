@@ -7361,7 +7361,7 @@ body[data-game-id="game-08"] .laser-play-panel{margin-bottom:6px!important}
 /* Laser Lab is now the freeform game; the old FREEFORM subtitle has gone. */
 body[data-game-id="game-10"] .laserflow-header{margin-bottom:10px!important}
 
-/* v1.4.1 — Snake Maze */
+/* v1.4.2 — Snake Maze */
 body[data-game-id="game-11"]{
   --snake-wall:#303435;
   --snake-wall-line:#44494a;

@@ -326,3 +326,11 @@ Version 1.0.68
 - Increased maze braiding slightly so all difficulties can reliably supply enough safe optional collectible routes.
 - Restyled the snake as outlined, lightly hatched graphic-design segments with a cleaner line-art head rather than solid coloured blocks.
 - Updated cache/version references to v1.4.1.
+
+## v1.4.2
+- Snake Maze gems now replenish continuously: collecting a gem immediately spawns another safe gem elsewhere in the maze.
+- Replacement gems only use valid through-route/loop cells, never walls, the snake body, START, EXIT or another live gem.
+- The EXIT remains available at all times, turning gem collection into an open-ended risk/reward choice.
+- Gem HUD/result copy now reports the running total rather than a finite “x / y” count.
+- Five-star scoring still uses the difficulty's original visible-gem count as the target; extra gems continue increasing score beyond five stars.
+- Updated cache/version references to v1.4.2.

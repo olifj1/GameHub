@@ -208,7 +208,7 @@ function snakeCollectibleHasThroughRoute(point, blocks, size) {
   return false;
 }
 
-function chooseSnakeCollectibles(blocks, size, start, exit, mainPath, count) {
+function snakeCollectibleSpawnPool(blocks, size, start, exit, mainPath) {
   const pathKeys = new Set(mainPath.map(p => snakeKey(p.row, p.col)));
   const sideThrough = [];
   const allThrough = [];
@@ -227,13 +227,18 @@ function chooseSnakeCollectibles(blocks, size, start, exit, mainPath, count) {
       if (!pathKeys.has(key)) sideThrough.push(point);
     }
   }
+  return { sideThrough, allThrough };
+}
 
+function chooseSnakeCollectibles(blocks, size, start, exit, mainPath, count) {
+  const { sideThrough, allThrough } = snakeCollectibleSpawnPool(blocks, size, start, exit, mainPath);
   const chosen = [];
+
   // Prefer optional loop cells away from the shortest exit route. If a highly
   // braided maze cannot supply enough, a safe through-cell on the main route is
   // still better than an impossible dead-end pickup; generation will usually
   // reject and retry before needing many of these.
-  const pools = [snakeShuffle(sideThrough), snakeShuffle(allThrough)];
+  const pools = [snakeShuffle([...sideThrough]), snakeShuffle([...allThrough])];
   for (const pool of pools) {
     for (const point of pool) {
       if (chosen.length >= count) break;
@@ -284,7 +289,8 @@ function tryGenerateSnakeMaze() {
 
   const collectibles = chooseSnakeCollectibles(blocks, size, start, exit, path, D.gems);
   if (collectibles.length < D.gems) return null;
-  return { size, blocks, start, exit, collectibles, pathLength: path.length };
+  const spawnPool = snakeCollectibleSpawnPool(blocks, size, start, exit, path);
+  return { size, blocks, start, exit, collectibles, pathLength: path.length, collectibleSpawnPool: spawnPool };
 }
 
 function generateSnakeMaze() {
@@ -357,10 +363,13 @@ function resetSnakeRun() {
   snakeMazeStatus.classList.remove("good", "bad");
   snakeMazeStatus.textContent = "Choose a direction to leave START.";
 
-  // Restore collectible graphics after a previous run.
+  // Restart always returns to the maze's original gem layout. Remove any
+  // replacement gems spawned during the previous attempt, then restore the
+  // starting set.
+  snakeMazeBoard.querySelectorAll(".snake-maze-pickup").forEach(pickup => pickup.remove());
   snakeLevel.collectibles.forEach(point => {
     const cell = snakeCells.get(snakeKey(point.row, point.col));
-    if (cell && !cell.querySelector(".snake-maze-pickup")) cell.insertAdjacentHTML("beforeend", '<span class="snake-maze-pickup" aria-hidden="true">◆</span>');
+    if (cell) cell.insertAdjacentHTML("beforeend", '<span class="snake-maze-pickup" aria-hidden="true">◆</span>');
   });
   renderSnakeDynamic();
 }
@@ -407,6 +416,52 @@ function queueSnakeDirection(dir) {
   }
 }
 
+function placeSnakePickupAt(key) {
+  const cell = snakeCells.get(key);
+  if (!cell || cell.querySelector(".snake-maze-pickup")) return;
+  cell.insertAdjacentHTML("beforeend", '<span class="snake-maze-pickup" aria-hidden="true">◆</span>');
+}
+
+function spawnReplacementGem() {
+  if (!snakeLevel?.collectibleSpawnPool) return false;
+  const occupied = new Set(snake.map(segment => snakeKey(segment.row, segment.col)));
+  const head = snake[0];
+  const currentGems = snakeCollectibles;
+
+  const valid = point => {
+    const key = snakeKey(point.row, point.col);
+    if (occupied.has(key) || currentGems.has(key)) return false;
+    if (key === snakeKey(snakeLevel.start.row, snakeLevel.start.col) || key === snakeKey(snakeLevel.exit.row, snakeLevel.exit.col)) return false;
+    return true;
+  };
+
+  const scoreCandidate = point => {
+    // Prefer a fresh temptation well away from the snake's head and, where
+    // possible, away from the shortest escape route.
+    const headDistance = Math.abs(point.row - head.row) + Math.abs(point.col - head.col);
+    let gemDistance = 99;
+    snakeCollectibles.forEach(key => {
+      const other = snakePoint(key);
+      gemDistance = Math.min(gemDistance, Math.abs(point.row - other.row) + Math.abs(point.col - other.col));
+    });
+    return headDistance * 2 + Math.min(gemDistance, 12);
+  };
+
+  const pools = [snakeLevel.collectibleSpawnPool.sideThrough, snakeLevel.collectibleSpawnPool.allThrough];
+  for (const pool of pools) {
+    const candidates = pool.filter(valid);
+    if (!candidates.length) continue;
+    candidates.sort((a, b) => scoreCandidate(b) - scoreCandidate(a));
+    const topCount = Math.min(8, candidates.length);
+    const point = candidates[Math.floor(Math.random() * topCount)];
+    const key = snakeKey(point.row, point.col);
+    snakeCollectibles.add(key);
+    placeSnakePickupAt(key);
+    return true;
+  }
+  return false;
+}
+
 function stepSnake() {
   if (!snakeLevel || snakeWon || snakeCrashed) return;
   const head = snake[0];
@@ -450,7 +505,10 @@ function stepSnake() {
     snakeScore += 250;
     snakeGrowthPending += snakeDifficultyConfig[snakeDifficulty].grow;
     snakeCells.get(nextKey)?.querySelector(".snake-maze-pickup")?.remove();
-    snakeMazeStatus.textContent = `Gem collected — the snake grew! ${snakeLevel.collectibles.length - snakeCollected} left.`;
+    const spawned = spawnReplacementGem();
+    snakeMazeStatus.textContent = spawned
+      ? "Gem collected — the snake grew, and another gem appeared!"
+      : "Gem collected — the snake grew!";
   }
 
   if (snakeGrowthPending > 0) snakeGrowthPending--;
@@ -469,13 +527,15 @@ function crashSnake(message) {
   snakeMazeStatus.textContent = `${message} Tap Restart to try the same maze.`;
   snakeResultStars.textContent = "";
   snakeResultTitle.textContent = "Run ended";
-  snakeResultText.textContent = `${snakeCollected} of ${snakeLevel.collectibles.length} gems collected.`;
+  snakeResultText.textContent = `${snakeCollected} gems collected · ${snakeScore} points.`;
   snakeResult.classList.remove("hidden");
 }
 
 function snakeStarScore() {
-  if (!snakeLevel?.collectibles.length) return 1;
-  return Math.max(1, Math.min(5, 1 + Math.round(4 * snakeCollected / snakeLevel.collectibles.length)));
+  // The original visible gem count is the 5-star target. Gems continue spawning
+  // after that, so brave players can keep pushing the score beyond five stars.
+  const target = snakeLevel?.collectibles.length || 1;
+  return Math.max(1, Math.min(5, 1 + Math.round(4 * snakeCollected / target)));
 }
 
 function recordSnakeProgress(stars, score) {
@@ -508,7 +568,7 @@ function winSnake() {
   snakeMazeStatus.textContent = "Maze complete!";
   snakeResultStars.textContent = "★".repeat(stars) + "☆".repeat(5 - stars);
   snakeResultTitle.textContent = "Maze complete!";
-  snakeResultText.textContent = `${snakeCollected}/${snakeLevel.collectibles.length} gems · ${snakeScore} points · length ${snake.length}.`;
+  snakeResultText.textContent = `${snakeCollected} gems · ${snakeScore} points · length ${snake.length}.`;
   snakeResult.classList.remove("hidden");
   recordSnakeProgress(stars, snakeScore);
   renderSnakeDynamic();
@@ -537,7 +597,7 @@ function renderSnakeDynamic() {
   });
 
   snakeScoreEl.textContent = String(snakeScore);
-  snakeGemsEl.textContent = `${snakeCollected} / ${snakeLevel?.collectibles.length || 0}`;
+  snakeGemsEl.textContent = String(snakeCollected);
   snakeLengthEl.textContent = String(snake.length + snakeGrowthPending);
 }
 

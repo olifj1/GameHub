@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.4.1">
+  <link rel="stylesheet" href="style.css?v=1.4.2">
   <title>Snake Maze</title>
 </head>
 <body class="modular-game" data-game-id="game-11">
@@ -17,8 +17,8 @@
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="game-11-info-title">Snake Maze</h2>
       <p>Guide the snake from <strong>START</strong> to <strong>EXIT</strong> with the four direction buttons. The snake moves automatically once you make your first move.</p>
-      <p>Collect the optional gems for more points. Gems are placed on side loops and through-routes, so you can always keep moving after collecting one. Each gem also makes the snake <strong>two segments longer</strong>, so detours become increasingly risky.</p>
-      <p>Hit a wall or your own tail and the run ends. You cannot reverse directly into yourself. Reaching the exit always completes the level; collecting every gem gives the best star score.</p>
+      <p>Collect optional gems for more points. Every time you collect one, <strong>another gem appears</strong> somewhere safe in the maze. Each gem also makes the snake <strong>two segments longer</strong>, so you can keep chasing points for as long as you dare.</p>
+      <p>Hit a wall or your own tail and the run ends. You cannot reverse directly into yourself. The EXIT stays open throughout, so choose when to stop taking risks and escape. Reaching the first set of gem targets earns the best star score; extra gems keep adding points.</p>
     </div>
   </div>
 
@@ -38,7 +38,7 @@
 
         <div class="snake-maze-stats" aria-label="Current run">
           <div><span>SCORE</span><strong id="snake-score">0</strong></div>
-          <div><span>GEMS</span><strong id="snake-gems">0 / 0</strong></div>
+          <div><span>GEMS</span><strong id="snake-gems">0</strong></div>
           <div><span>LENGTH</span><strong id="snake-length">1</strong></div>
         </div>
 
@@ -77,8 +77,8 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.4.1"></script>
-  <script src="core.js?v=1.4.1"></script>
-  <script src="game-11.js?v=1.4.1"></script>
+  <script src="site-config.js?v=1.4.2"></script>
+  <script src="core.js?v=1.4.2"></script>
+  <script src="game-11.js?v=1.4.2"></script>
 </body>
 </html>
