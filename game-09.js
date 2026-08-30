@@ -113,6 +113,7 @@ function normalAngle(a){
 }
 
 function resetFlight(){
+  window.GameHubResults?.close();
   plane={
     x:175,
     y:GROUND_Y-23,
@@ -174,6 +175,19 @@ function crashFlight(message){
   flightMessage.classList.remove("hidden");
 }
 
+function flightRating(starCount){
+  // Completing the course is always worth one star. Optional in-world stars
+  // raise the result rating up to five stars.
+  if(!stars.length)return 1;
+  return Math.max(1,Math.min(5,1+Math.round(4*starCount/stars.length)));
+}
+
+function flightScore(starCount){
+  // A deliberately simple per-game score for this first shared-results test.
+  // It is not compared with scores from other GameHub games.
+  return 1000 + hoops.length*250 + starCount*500;
+}
+
 function finishFlight(){
   if(!flightWorld.running)return;
   flightWorld.running=false;
@@ -186,14 +200,30 @@ function finishFlight(){
   updateFlightHud();
 
   const starCount=stars.filter(s=>s.hit).length;
-  flightMessageTitle.textContent=starCount===stars.length?"Perfect flight!":"Flight complete!";
-  flightMessageText.textContent=`${starCount}/${stars.length} stars collected.`;
-  flightAgain.textContent="Fly again";
-  flightMessage.classList.add("flight-message-success");
+  const rating=flightRating(starCount);
+  const score=flightScore(starCount);
   flightMessage.classList.add("hidden");
+  flightMessage.classList.remove("flight-message-success");
+
+  // Leave the landing visible for a moment, then use the shared GameHub
+  // completion card. This is the first game wired into the common system.
   window.setTimeout(()=>{
-    if(plane.finished) flightMessage.classList.remove("hidden");
-  },300);
+    if(!plane.finished)return;
+    window.GameHubResults?.show({
+      gameId:"game-09",
+      difficulty:flightDifficulty,
+      stars:rating,
+      score,
+      title:starCount===stars.length?"Perfect flight!":"Flight complete!",
+      summary:`${starCount}/${stars.length} bonus stars collected.`,
+      metrics:[
+        {label:"Hoops",value:`${hoops.length}/${hoops.length}`},
+        {label:"Bonus stars",value:`${starCount}/${stars.length}`}
+      ],
+      againLabel:"Fly again",
+      onAgain:resetFlight
+    });
+  },450);
 }
 
 function onRunway(x){

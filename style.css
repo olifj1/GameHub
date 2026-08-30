@@ -7656,3 +7656,114 @@ body[data-game-id="game-11"] .snake-maze-result span:last-child{
   body[data-game-id="game-11"] .snake-maze-controls{grid-template-rows:repeat(2,54px);width:min(100%,280px);padding:6px}
   body[data-game-id="game-11"] .snake-maze-actions{width:min(100%,280px);margin-top:5px}
 }
+
+
+/* ============================================================
+   GameHub v1.5.0 — shared results + per-game Progress screen
+   ============================================================ */
+.home-progress-link{
+  --gh-accent:#b87068;
+  width:min(100%,620px);
+  min-height:76px;
+  margin:-6px auto 22px;
+  padding:12px 15px;
+  display:flex;
+  align-items:center;
+  gap:13px;
+  color:var(--gh-ink);
+  text-decoration:none;
+  background:rgba(247,241,235,.9);
+  border:1.5px solid var(--gh-line);
+  border-radius:20px;
+}
+.home-progress-link:active{transform:translateY(1px);background:var(--gh-surface)}
+.home-progress-icon{
+  width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;
+  border:1.5px solid color-mix(in srgb,var(--gh-accent) 55%,var(--gh-line));
+  border-radius:14px;color:var(--gh-accent);
+}
+.home-progress-icon svg{width:29px;height:29px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.home-progress-copy{display:flex;flex-direction:column;gap:2px;min-width:0}
+.home-progress-copy strong{font-size:17px;letter-spacing:-.02em}
+.home-progress-copy small{color:var(--gh-muted);font-size:11px;font-weight:750}
+.home-progress-arrow{margin-left:auto;color:var(--gh-accent);font-size:22px;font-weight:850}
+
+.gh-result-overlay{
+  position:fixed;inset:0;z-index:90000;
+  display:flex;align-items:flex-end;justify-content:center;
+  padding:18px max(12px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
+  background:rgba(37,43,51,.14);
+  opacity:0;transition:opacity .14s ease;
+}
+.gh-result-overlay[hidden]{display:none}
+.gh-result-overlay.open{opacity:1}
+.gh-result-card{
+  width:min(100%,430px);
+  padding:18px;
+  color:var(--gh-ink);
+  background:rgba(247,241,235,.97);
+  border:1.5px solid var(--gh-line-strong);
+  border-radius:22px;
+  box-shadow:0 16px 38px rgba(37,43,51,.18);
+  transform:translateY(12px);transition:transform .14s ease;
+}
+.gh-result-overlay.open .gh-result-card{transform:translateY(0)}
+.gh-result-topline{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.gh-result-kicker{margin:0;color:var(--gh-muted);font-size:9px;font-weight:900;letter-spacing:.15em}
+.gh-result-best{padding:5px 8px;border-radius:999px;background:var(--gh-accent);color:#fff;font-size:8px;font-weight:950;letter-spacing:.10em}
+.gh-result-card h2{margin:7px 0 2px;font-size:27px;line-height:1.04;letter-spacing:-.035em}
+.gh-result-stars{display:flex;gap:3px;margin:7px 0 4px;font-size:31px;line-height:1;color:color-mix(in srgb,var(--gh-ink) 16%,transparent)}
+.gh-result-stars .filled{color:var(--gh-accent)}
+.gh-result-summary{margin:6px 0 13px;color:var(--gh-muted);font-size:12px;font-weight:750;line-height:1.35}
+.gh-result-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:7px;margin-bottom:14px}
+.gh-result-stats>div{min-width:0;padding:9px 10px;border:1.5px solid var(--gh-line);border-radius:13px;background:rgba(255,255,255,.28);display:flex;flex-direction:column;gap:2px}
+.gh-result-stats span{color:var(--gh-muted);font-size:8px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}
+.gh-result-stats strong{font-size:15px;white-space:nowrap}
+.gh-result-actions{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:7px}
+.gh-result-actions button,.gh-result-actions a{min-height:44px;padding:0 10px;display:flex;align-items:center;justify-content:center;border-radius:13px;font-size:10px;font-weight:900;text-decoration:none;text-align:center}
+.gh-result-primary{border:1.5px solid color-mix(in srgb,var(--gh-accent) 72%,var(--gh-ink));background:var(--gh-accent);color:#fff}
+.gh-result-secondary{border:1.5px solid var(--gh-line);background:rgba(255,255,255,.34);color:var(--gh-ink)}
+
+html:has(body.modular-progress){height:auto;min-height:100%;overflow-y:auto;position:static;inset:auto;touch-action:pan-y manipulation}
+body.modular-progress{
+  --gh-accent:#b87068;
+  position:static;inset:auto;width:100%;height:auto;min-height:100vh;
+  overflow-x:hidden;overflow-y:auto;touch-action:pan-y manipulation;
+  color:var(--gh-ink);
+  background:radial-gradient(circle at 14% 0%,rgba(255,255,255,.35),transparent 32%),linear-gradient(180deg,var(--gh-bg-soft),var(--gh-bg));
+}
+.progress-shell{width:min(100%,760px);margin:0 auto;padding:74px 16px 42px}
+.progress-header{text-align:center;max-width:600px;margin:0 auto 24px}
+.progress-header h1{margin:0;font-size:clamp(38px,9vw,58px);line-height:1;letter-spacing:-.04em}
+.progress-header>p:last-child{margin:12px auto 0;max-width:530px;color:var(--gh-muted);font-size:13px;line-height:1.5}
+.progress-games{display:grid;gap:12px}
+.progress-game-card{background:rgba(247,241,235,.9);border:1.5px solid var(--gh-line);border-radius:22px;overflow:hidden}
+.progress-game-heading{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:15px;border-bottom:1.5px solid var(--gh-line)}
+.progress-game-icon{width:48px;height:48px;display:grid;place-items:center;color:var(--gh-accent);border:1.5px solid color-mix(in srgb,var(--gh-accent) 55%,var(--gh-line));border-radius:14px;font-weight:900}
+.progress-game-icon svg{width:29px;height:29px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.progress-game-heading p{margin:0 0 2px;color:var(--gh-muted);font-size:8px;font-weight:900;letter-spacing:.13em}
+.progress-game-heading h2{margin:0;font-size:21px;letter-spacing:-.03em}
+.progress-game-heading>a{color:var(--gh-accent);text-decoration:none;font-size:10px;font-weight:900;letter-spacing:.08em}
+.progress-difficulty-list{padding:8px 14px 12px}
+.progress-difficulty{min-height:48px;display:grid;grid-template-columns:76px 1fr auto;align-items:center;gap:10px;border-bottom:1px solid color-mix(in srgb,var(--gh-line) 65%,transparent)}
+.progress-difficulty:last-child{border-bottom:0}
+.progress-difficulty>strong{font-size:11px}
+.progress-stars{display:flex;gap:1px;color:color-mix(in srgb,var(--gh-ink) 15%,transparent);font-size:18px;white-space:nowrap}
+.progress-stars .filled{color:var(--gh-accent)}
+.progress-score{font-size:10px;font-weight:850;white-space:nowrap}
+.progress-score.muted{color:var(--gh-muted);font-weight:700}
+.progress-empty{padding:22px;text-align:center;background:rgba(247,241,235,.9);border:1.5px solid var(--gh-line);border-radius:22px}
+.progress-empty p{margin:6px 0 0;color:var(--gh-muted);font-size:12px}
+
+@media(max-width:520px){
+  .home-progress-link{margin-bottom:14px;min-height:68px;padding:10px 12px;border-radius:18px}
+  .home-progress-icon{width:43px;height:43px;flex-basis:43px}
+  .progress-shell{padding:66px 12px 28px}
+  .progress-header{margin-bottom:18px}
+  .progress-game-heading{padding:13px}
+  .progress-difficulty{grid-template-columns:64px 1fr;gap:4px 8px;padding:7px 0}
+  .progress-score{grid-column:2;color:var(--gh-muted)}
+  .gh-result-card{padding:16px;border-radius:20px}
+  .gh-result-card h2{font-size:25px}
+  .gh-result-stars{font-size:29px}
+}

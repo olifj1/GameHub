@@ -334,3 +334,10 @@ Version 1.0.68
 - Gem HUD/result copy now reports the running total rather than a finite “x / y” count.
 - Five-star scoring still uses the difficulty's original visible-gem count as the target; extra gems continue increasing score beyond five stars.
 - Updated cache/version references to v1.4.2.
+
+
+## v1.5.0
+- Introduces the first shared GameHub result framework without any global score.
+- Flight now reports difficulty, a five-star rating, a per-game score, and personal-best status through a common completion card.
+- Adds a Progress screen linked from the top of the Home page. For this first test, Flight is the only game connected to it.
+- Results are stored per game and per difficulty in `gameHubProgress`, ready for other games to adopt later.
