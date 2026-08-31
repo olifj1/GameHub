@@ -1,4 +1,4 @@
-const CACHE = "gamehub-v1.5.1";
+const CACHE = "gamehub-v1.6.0";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -25,6 +25,8 @@ const APP_SHELL = [
   "./game-06.js",
   "./game-07.html",
   "./game-07.js",
+  "./game-08.html",
+  "./game-08.js",
   "./game-09.html",
   "./game-09.js",
   "./game-10.html",
@@ -59,7 +61,7 @@ self.addEventListener("fetch", event => {
         return response;
       })
       .catch(async () => {
-        // HTML uses cache-busting query strings such as style.css?v=1.5.1,
+        // HTML uses cache-busting query strings such as style.css?v=1.6.0,
         // while APP_SHELL pre-caches the same files without the query string.
         // ignoreSearch lets those pre-cached assets satisfy offline requests.
         const cached = await caches.match(event.request, { ignoreSearch: true });

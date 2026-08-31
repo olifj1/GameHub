@@ -351,3 +351,28 @@ Version 1.0.68
 - Fixed the shared results API so a game with no numeric score does not accidentally record/display a score of zero.
 - Progress cards now use each tracked game's own accent colour.
 - Updated cache/version references to v1.5.1.
+
+## v1.5.2
+- Laser Lab: prisms now split only white light. Red/green/blue beams that re-enter a prism continue through without recursively splitting again.
+- Laser Lab: added a hard global beam-segment budget alongside the existing bounce/loop checks so pathological optical feedback cannot grow exponentially or hang the game.
+- Strengthened beam loop signatures with incoming direction information.
+- Updated cache/version references to v1.5.2.
+
+
+## v1.5.3
+- Added a Home-screen **Install GameHub** action.
+- On supported Chromium/Android browsers, the button launches the browser's native PWA install prompt.
+- On iPhone/iPad, the same button opens concise Share → Add to Home Screen instructions because iOS does not expose a programmatic install prompt.
+- Added a browser-menu fallback for Android and other browsers when no native prompt is available.
+- The install action is hidden while GameHub is already running in standalone/installed mode.
+- Updated cache/version references to v1.5.3.
+
+
+## v1.6.0 — Roller Coaster prototype
+
+- Added **Roller Coaster** as `game-08`.
+- Sequence-based track builder with Start, End, Straight, Curve Up, Curve Down and Lift pieces.
+- Lift track regulates the cart toward one slow speed on climbs or descents; ordinary track uses gravity, momentum and rolling resistance.
+- Live length, speed and approximate G-load display.
+- Successful rides use the shared GameHub result popup and save a Standard best rating/score.
+- Added Roller Coaster to the Home screen, Progress screen and offline app shell.

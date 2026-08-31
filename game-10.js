@@ -7,6 +7,7 @@
   const LEVEL_Y_OFFSET = (H - LEGACY_H) / 2;
   const EPS = 2.5;
   const MAX_BOUNCES = 28;
+  const MAX_BEAM_SEGMENTS = 180;
   const MIRROR_LENGTH = 126;
   const PRISM_RADIUS = 44;
   const TARGET_RADIUS = 30;
@@ -966,14 +967,16 @@
     checkpointHits = new Set();
     wrongHits = new Set();
     const initialDirection = unitFromAngle(emitter.angle);
+    let remainingSegmentBudget = MAX_BEAM_SEGMENTS;
 
-    function cast(origin, dir, colour, depth, skipNodeId = null, seen = new Set()) {
-      if (depth > MAX_BOUNCES) return;
+    function cast(origin, dir, colour, depth, skipNodeId = null, seen = new Set(), usedPrisms = new Set()) {
+      if (depth > MAX_BOUNCES || remainingSegmentBudget <= 0) return;
       const hit = nearestHit(origin, dir, skipNodeId);
       if (!hit || !Number.isFinite(hit.t)) return;
 
       const endPoint = hit.type === "splitter" ? { x: hit.node.x, y: hit.node.y } : hit;
       segments.push({ x1: origin.x, y1: origin.y, x2: endPoint.x, y2: endPoint.y, colour });
+      remainingSegmentBudget -= 1;
 
       if (hit.type === "target") {
         if (hit.target.colour === colour) targetHits.add(hit.target.id);
@@ -982,30 +985,47 @@
       }
       if (hit.type === "boundary" || hit.type === "island") return;
 
-      const signature = `${hit.type}:${hit.id}:${colour}:${Math.round(hit.x)}:${Math.round(hit.y)}`;
+      const directionAngle = Math.round(Math.atan2(dir.y, dir.x) * 180 / Math.PI);
+      const signature = `${hit.type}:${hit.id}:${colour}:${Math.round(hit.x)}:${Math.round(hit.y)}:${directionAngle}`;
       if (seen.has(signature)) return;
       const nextSeen = new Set(seen);
       nextSeen.add(signature);
 
       if (hit.type === "mirror") {
         const nextDir = reflect(dir, hit.node.angle);
-        cast({ x: hit.x + nextDir.x * 3, y: hit.y + nextDir.y * 3 }, nextDir, colour, depth + 1, hit.id, nextSeen);
+        cast({ x: hit.x + nextDir.x * 3, y: hit.y + nextDir.y * 3 }, nextDir, colour, depth + 1, hit.id, nextSeen, usedPrisms);
         return;
       }
 
       if (hit.type === "splitter") {
         const straight = normalise(dir);
+
+        // A prism separates white light once. Already-coloured light is already
+        // spectrally separated, so passing it back through a prism must not
+        // recursively spawn another full set of coloured beams. This also
+        // prevents exponential ray growth from prism feedback loops.
+        if (colour !== "white" || usedPrisms.has(hit.id)) {
+          cast(
+            { x: hit.node.x + straight.x * 3, y: hit.node.y + straight.y * 3 },
+            straight, colour, depth + 1, hit.id, nextSeen, usedPrisms
+          );
+          return;
+        }
+
+        const nextUsedPrisms = new Set(usedPrisms);
+        nextUsedPrisms.add(hit.id);
+
         if ((hit.node.mode || prismMode) === "rgb") {
           const sign = hit.node.rgbSign || prismSign || 1;
           const green = reflect(dir, hit.node.angle);
           const blue = reflect(dir, hit.node.angle + sign * RGB_FACE_OFFSET);
-          cast({ x: hit.node.x + straight.x * 3, y: hit.node.y + straight.y * 3 }, straight, "red", depth + 1, hit.id, nextSeen);
-          cast({ x: hit.node.x + green.x * 3, y: hit.node.y + green.y * 3 }, green, "green", depth + 1, hit.id, nextSeen);
-          cast({ x: hit.node.x + blue.x * 3, y: hit.node.y + blue.y * 3 }, blue, "blue", depth + 1, hit.id, nextSeen);
+          cast({ x: hit.node.x + straight.x * 3, y: hit.node.y + straight.y * 3 }, straight, "red", depth + 1, hit.id, nextSeen, nextUsedPrisms);
+          cast({ x: hit.node.x + green.x * 3, y: hit.node.y + green.y * 3 }, green, "green", depth + 1, hit.id, nextSeen, nextUsedPrisms);
+          cast({ x: hit.node.x + blue.x * 3, y: hit.node.y + blue.y * 3 }, blue, "blue", depth + 1, hit.id, nextSeen, nextUsedPrisms);
         } else {
           const reflected = reflect(dir, hit.node.angle);
-          cast({ x: hit.node.x + straight.x * 3, y: hit.node.y + straight.y * 3 }, straight, "red", depth + 1, hit.id, nextSeen);
-          cast({ x: hit.node.x + reflected.x * 3, y: hit.node.y + reflected.y * 3 }, reflected, "blue", depth + 1, hit.id, nextSeen);
+          cast({ x: hit.node.x + straight.x * 3, y: hit.node.y + straight.y * 3 }, straight, "red", depth + 1, hit.id, nextSeen, nextUsedPrisms);
+          cast({ x: hit.node.x + reflected.x * 3, y: hit.node.y + reflected.y * 3 }, reflected, "blue", depth + 1, hit.id, nextSeen, nextUsedPrisms);
         }
       }
     }

@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#e7dbd2">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=1.5.1">
+  <link rel="stylesheet" href="style.css?v=1.6.0">
   <title>Games</title>
 </head>
 <body class="modular-home">
@@ -24,10 +24,28 @@
       <span class="home-progress-copy"><strong>Progress</strong><small>View your best results</small></span>
       <span class="home-progress-arrow" aria-hidden="true">→</span>
     </a>
+    <button class="home-install-link" id="home-install" type="button" hidden aria-haspopup="dialog">
+      <span class="home-install-icon" aria-hidden="true">
+        <svg viewBox="0 0 48 48"><path d="M24 7v23M16 22l8 8 8-8"/><path d="M10 31v7a3 3 0 0 0 3 3h22a3 3 0 0 0 3-3v-7"/></svg>
+      </span>
+      <span class="home-install-copy"><strong>Install GameHub</strong><small>Add an app icon to this device</small></span>
+      <span class="home-install-arrow" aria-hidden="true">＋</span>
+    </button>
+
+    <div class="gh-install-overlay" id="gh-install-overlay" hidden>
+      <section class="gh-install-card" role="dialog" aria-modal="true" aria-labelledby="gh-install-title">
+        <button class="gh-install-close" id="gh-install-close" type="button" aria-label="Close install instructions">×</button>
+        <p class="gh-install-kicker" id="gh-install-kicker">INSTALL GAMEHUB</p>
+        <h2 id="gh-install-title">Add GameHub to your Home Screen</h2>
+        <p class="gh-install-copy-text" id="gh-install-copy-text"></p>
+        <div class="gh-install-steps" id="gh-install-steps"></div>
+        <button class="gh-install-done" id="gh-install-done" type="button">Got it</button>
+      </section>
+    </div>
     <section class="game-grid" id="game-grid" aria-label="Games"></section>
   </main>
-  <script src="site-config.js?v=1.5.1"></script>
-  <script src="core.js?v=1.5.1"></script>
-  <script src="home.js?v=1.5.1"></script>
+  <script src="site-config.js?v=1.6.0"></script>
+  <script src="core.js?v=1.6.0"></script>
+  <script src="home.js?v=1.6.0"></script>
 </body>
 </html>

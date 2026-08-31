@@ -1,6 +1,7 @@
 const progressRoot = document.getElementById("progress-games");
 
 const progressIcons = {
+  "game-08": `<svg viewBox="0 0 48 48"><path d="M5 33c8 0 8-20 17-20s8 22 17 22h4"/><path d="M7 38h34M12 31v7M22 15v23M32 31v7"/><rect x="17" y="8" width="10" height="7" rx="2"/></svg>`,
   "game-09": `<svg viewBox="0 0 48 48"><path d="M9 25h24c5 0 7-2 9-5-3-2-6-3-10-3H15z"/><path d="M14 17h22M12 30h25M17 17l2 13M31 17l-2 13M12 23L7 16l8 2M38 20h4M42 13v14M18 33a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM34 33a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>`,
   "game-10": `<svg viewBox="0 0 48 48"><path d="M7 33h11l9-18M27 15h14M18 33l8 7M18 33l-5 8"/><path d="M26 13l6-5M26 17l6 5"/></svg>`,
   "game-11": `<svg viewBox="0 0 48 48"><path d="M10 12h17v8H17v8h14v8H20"/><path d="M20 36c-5 0-8-3-8-7M31 28c5 0 7 3 7 7"/><circle cx="38" cy="35" r="2"/></svg>`

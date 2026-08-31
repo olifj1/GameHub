@@ -5,119 +5,92 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.4.0">
-  <title>Maze</title>
+  <link rel="stylesheet" href="style.css?v=1.6.0">
+  <title>Roller Coaster</title>
 </head>
 <body class="modular-game" data-game-id="game-08">
   <a class="game-home-button" href="index.html" aria-label="Back to games">← Games</a>
   <button class="game-info-button" type="button" aria-label="How to play" aria-haspopup="dialog">i</button>
+
   <div class="game-info-overlay" hidden>
-    <div class="game-info-dialog" role="dialog" aria-modal="true" aria-labelledby="game-08-info-title">
+    <div class="game-info-dialog" role="dialog" aria-modal="true" aria-labelledby="coaster-info-title">
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">HOW TO PLAY</p>
-      <h2 id="game-08-info-title">Instructions</h2>
-      <p><strong>Level Designer:</strong> build a maze with a laser start, exits, checkpoints, walls, corner reflectors and splitters. Tap an exit again to cycle white, red and blue. Set the player inventory and 5-star par, then tap <strong>Play this level</strong>. Your solution corners and splitters are hidden during the test.</p>
-      <p><strong>Play:</strong> guide the beam through the maze by placing diagonal corner reflectors. Hit every checkpoint and exit. Medium and Hard add a splitter: white light becomes a red straight beam and a blue reflected beam, and coloured exits only accept the matching colour.</p>
-      <p><strong>Stars:</strong> solve at or below par for five stars. The maze has loops and alternative corridors, so finding a route is only the first step — try to find an efficient one.</p>
+      <h2 id="coaster-info-title">Roller Coaster</h2>
+      <p>Build a complete coaster from <strong>Start</strong> to <strong>End</strong>. Choose a track piece, then tap <strong>Add</strong>. Every piece joins smoothly to the end of the track.</p>
+      <p><strong>Curve Up</strong> and <strong>Curve Down</strong> change the slope a little at a time. Ordinary track runs on momentum and gravity. <strong>Lift</strong> track pulls the cart at one steady, deliberately slow speed — useful for climbs, but it will also slow the cart on a descent.</p>
+      <p>Tap <strong>Play</strong> to test the design. A successful coaster earns a five-star result based on its length and excitement. Watch the live speed and G-load, then change the track and try again.</p>
     </div>
   </div>
 
   <main class="screen-wrap">
-    <section aria-labelledby="laser-title" class="screen active" id="laser-screen">
-      <div class="page laser-page">
-        <header class="page-header laser-header">
+    <section class="screen active" aria-labelledby="coaster-title">
+      <div class="page coaster-page">
+        <header class="page-header coaster-header">
           <p class="kicker" data-site-name="">GameHub</p>
-          <h1 id="laser-title">Maze</h1>
+          <h1 id="coaster-title">Roller Coaster</h1>
         </header>
 
-        <div aria-label="Maze mode" class="laser-mode-switch" role="group">
-          <button class="laser-mode-button active" data-laser-mode="setup" type="button">Level Designer</button>
-          <button class="laser-mode-button" data-laser-mode="play" type="button">Play</button>
+        <div class="coaster-hud" aria-label="Roller coaster information">
+          <div><span>LENGTH</span><strong id="coaster-length">0 m</strong></div>
+          <div><span>SPEED</span><strong id="coaster-speed">0 km/h</strong></div>
+          <div><span>G LOAD</span><strong id="coaster-g">1.0 g</strong></div>
         </div>
 
-        <div class="laser-setup-panel" id="laser-setup-panel">
-          <div class="laser-size-row">
-            <span>Grid</span>
-            <button class="laser-size-button" data-laser-size="small" type="button">13×13</button>
-            <button class="laser-size-button" data-laser-size="medium" type="button">15×15</button>
-            <button class="laser-size-button active" data-laser-size="large" type="button">17×17</button>
-          </div>
-
-          <div class="laser-tools laser-designer-tools">
-            <button class="laser-tool active" data-laser-tool="emitter" type="button"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="10" width="14" height="12" rx="3"/><path d="M19 13h5l4 3-4 3h-5M9 16h6"/></svg></span><span>Laser</span></button>
-            <button class="laser-tool" data-laser-tool="checkpoint" type="button"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="10"/><circle cx="16" cy="16" r="4"/><path d="M16 3v4M16 25v4M3 16h4M25 16h4"/></svg></span><span>Check</span></button>
-            <button class="laser-tool" data-laser-tool="target" type="button"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="11"/><circle cx="16" cy="16" r="6"/><circle cx="16" cy="16" r="2"/></svg></span><span>Exit</span></button>
-            <button class="laser-tool" data-laser-tool="mirror" type="button"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 27L27 5v22Z"/><path d="M5 27L27 5"/><path d="M14 27l13-13M21 27l6-6"/></svg></span><span>Corner</span></button>
-            <button class="laser-tool" data-laser-tool="splitter" type="button"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 16h9M18 16h10M16 14l7-7M13 13l3-3 3 3-3 3-3-3Z"/></svg></span><span>Splitter</span></button>
-            <button class="laser-tool" data-laser-tool="block" type="button"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="6" width="20" height="20" rx="3"/><path d="M9 9l14 14M16 7l9 9M7 16l9 9"/></svg></span><span>Block</span></button>
-            <button class="laser-tool" data-laser-tool="eraser" type="button"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 22L20 8l6 6-10 12H9l-3-3 2-1Z"/><path d="M15 25h11M12 18l6 6"/></svg></span><span>Erase</span></button>
-          </div>
-
-          <div class="laser-design-settings" aria-label="Player inventory and par">
-            <label><span>Corners</span><input id="laser-design-mirrors" type="number" min="0" max="30" inputmode="numeric" value="6"></label>
-            <label><span>Splitters</span><input id="laser-design-splitters" type="number" min="0" max="8" inputmode="numeric" value="1"></label>
-            <label><span>5★ par</span><input id="laser-design-par" type="number" min="0" max="40" inputmode="numeric" value="0" placeholder="—"></label>
-            <button class="laser-play-designed" id="laser-play-designed" type="button">Play this level</button>
-          </div>
-
-          <div class="laser-save-row">
-            <input id="laser-level-name" maxlength="28" placeholder="Maze name" type="text"/>
-            <button class="laser-save-button" id="laser-save-level" type="button">Save</button>
-            <select aria-label="Saved Maze levels" id="laser-saved-levels"><option value="">Saved levels…</option></select>
-            <button class="laser-save-button" id="laser-load-level" type="button">Load</button>
-            <button class="laser-save-button danger" id="laser-delete-level" type="button">Delete</button>
-          </div>
-          <div class="laser-transfer-row">
-            <button class="laser-save-button secondary" id="laser-new-designer" type="button">New level</button>
-            <button class="laser-save-button secondary" id="laser-export-level" type="button">Export selected</button>
-            <button class="laser-save-button secondary" id="laser-import-level" type="button">Import level</button>
-            <input id="laser-import-file" type="file" accept=".json,.maze.json,.laser.json,application/json" hidden>
+        <div class="coaster-stage-wrap">
+          <canvas id="coaster-canvas" width="900" height="560" aria-label="Side view of your roller coaster"></canvas>
+          <div class="coaster-run-message" id="coaster-run-message" hidden aria-live="polite">
+            <strong id="coaster-run-title">The cart stalled</strong>
+            <span id="coaster-run-text">Try changing the track.</span>
+            <div>
+              <button id="coaster-try-again" type="button">Try again</button>
+              <button id="coaster-back-build" type="button">Back to build</button>
+            </div>
           </div>
         </div>
 
-        <div class="laser-play-panel hidden" id="laser-play-panel">
-          <div class="laser-difficulty-row" role="group" aria-label="Maze difficulty">
-            <button class="laser-difficulty active" data-laser-difficulty="easy" type="button">Easy</button>
-            <button class="laser-difficulty" data-laser-difficulty="medium" type="button">Medium</button>
-            <button class="laser-difficulty" data-laser-difficulty="hard" type="button">Hard</button>
-          </div>
-          <div class="laser-play-inventory" id="laser-play-inventory">
-            <span>Corners <strong id="laser-mirrors-left">0 / 0</strong></span>
-            <span>Splitters <strong id="laser-splitters-left">0 / 0</strong></span>
-            <span>5★ par <strong id="laser-par-display">—</strong></span>
-          </div>
-          <div class="laser-tools play-tools">
-            <button class="laser-tool active" data-laser-play-tool="mirror" type="button"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 27L27 5v22Z"/><path d="M5 27L27 5"/><path d="M14 27l13-13M21 27l6-6"/></svg></span><span>Corner</span></button>
-            <button class="laser-tool" data-laser-play-tool="splitter" type="button"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 16h9M18 16h10M16 14l7-7M13 13l3-3 3 3-3 3-3-3Z"/></svg></span><span>Splitter</span></button>
-            <button class="laser-tool" data-laser-play-tool="eraser" type="button"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 22L20 8l6 6-10 12H9l-3-3 2-1Z"/><path d="M15 25h11M12 18l6 6"/></svg></span><span>Erase</span></button>
-            <button class="laser-play-action" id="laser-new-generated" type="button"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 8h7v7H8zM18 8h6v6h-6zM8 18h6v6H8zM19 19h5v5h-5z"/><path d="M24 4v5M21.5 6.5h5"/></svg></span><span>New</span></button>
-            <button class="laser-play-action secondary" id="laser-reset-play" type="button"><span class="laser-tool-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 11a10 10 0 1 1-1 9M8 11V5M8 11h6"/></svg></span><span>Reset</span></button>
-          </div>
-        </div>
+        <div class="coaster-status" id="coaster-status" aria-live="polite">Choose Start, then tap Add.</div>
 
-        <div class="laser-board-wrap">
-          <div aria-label="Maze puzzle grid" class="laser-board" id="laser-board">
-            <svg aria-hidden="true" class="laser-beam-layer" id="laser-beam-layer" preserveAspectRatio="none"></svg>
+        <section class="coaster-builder" aria-label="Track builder">
+          <div class="coaster-piece-grid" role="group" aria-label="Track pieces">
+            <button class="coaster-piece active" data-coaster-piece="start" type="button">
+              <svg viewBox="0 0 64 38" aria-hidden="true"><path d="M6 26h50M10 21v10M50 21v10"/><path d="M17 10v12M17 10h15l-4 5 4 5H17"/></svg>
+              <span>Start</span>
+            </button>
+            <button class="coaster-piece" data-coaster-piece="end" type="button">
+              <svg viewBox="0 0 64 38" aria-hidden="true"><path d="M6 26h50M10 21v10M50 21v10"/><path d="M47 10v12M47 10H32l4 5-4 5h15"/></svg>
+              <span>End</span>
+            </button>
+            <button class="coaster-piece" data-coaster-piece="straight" type="button">
+              <svg viewBox="0 0 64 38" aria-hidden="true"><path d="M6 22h52M9 17v10M20 17v10M31 17v10M42 17v10M53 17v10"/></svg>
+              <span>Straight</span>
+            </button>
+            <button class="coaster-piece" data-coaster-piece="curveUp" type="button">
+              <svg viewBox="0 0 64 38" aria-hidden="true"><path d="M7 28c20 0 24-15 50-18"/><path d="M12 23v9M24 18l3 8M37 12l3 8M50 8l2 8"/></svg>
+              <span>Curve up</span>
+            </button>
+            <button class="coaster-piece" data-coaster-piece="curveDown" type="button">
+              <svg viewBox="0 0 64 38" aria-hidden="true"><path d="M7 10c20 0 24 15 50 18"/><path d="M12 6v9M24 12l-3 8M37 18l-3 8M50 23l-2 8"/></svg>
+              <span>Curve down</span>
+            </button>
+            <button class="coaster-piece" data-coaster-piece="lift" type="button">
+              <svg viewBox="0 0 64 38" aria-hidden="true"><path d="M6 22h52M9 17v10M20 17v10M31 17v10M42 17v10M53 17v10"/><path d="M12 29l7-5M24 29l7-5M36 29l7-5M48 29l7-5"/></svg>
+              <span>Lift</span>
+            </button>
           </div>
-        </div>
 
-        <div class="laser-status" id="laser-status">Place a start laser and at least one exit, then build your maze.</div>
-        <div aria-live="polite" class="laser-result hidden" id="laser-result">
-          <span class="laser-result-stars" id="laser-result-stars">★★★★★</span>
-          <strong>Maze complete!</strong>
-          <span id="laser-result-text">Every exit and checkpoint was reached.</span>
-        </div>
-        <div class="laser-info-row">
-          <div class="laser-info-pill"><span>PIECES</span><strong id="laser-piece-count">0 / —</strong></div>
-          <div class="laser-info-pill"><span>CHECKPOINTS</span><strong id="laser-checkpoint-count">0 / 0</strong></div>
-          <div class="laser-info-pill"><span>EXITS</span><strong id="laser-target-count">0 / 0</strong></div>
-        </div>
+          <div class="coaster-actions">
+            <button id="coaster-add" class="coaster-action coaster-add" type="button">＋ Add</button>
+            <button id="coaster-remove" class="coaster-action" type="button" disabled>− Remove</button>
+            <button id="coaster-play" class="coaster-action coaster-play" type="button" disabled>▶ Play</button>
+          </div>
+        </section>
       </div>
     </section>
   </main>
 
-  <script src="site-config.js?v=1.4.0"></script>
-  <script src="core.js?v=1.4.0"></script>
-  <script src="game-08.js?v=1.4.0"></script>
+  <script src="site-config.js?v=1.6.0"></script>
+  <script src="core.js?v=1.6.0"></script>
+  <script src="game-08.js?v=1.6.0"></script>
 </body>
 </html>
