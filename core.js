@@ -106,14 +106,18 @@ window.bindFastPress = bindFastPress;
 
     const previous = normaliseDifficulty(game, difficulty);
     const safeStars = Math.max(1, Math.min(5, Math.round(Number(stars) || 1)));
-    const hasScore = Number.isFinite(Number(score));
+    const hasScore = score !== null && score !== undefined && score !== "" && Number.isFinite(Number(score));
     const safeScore = hasScore ? Math.max(0, Math.round(Number(score))) : null;
     const now = new Date().toISOString();
 
     const newBestStars = safeStars > previous.bestStars;
     const newBestScore = hasScore && safeScore > previous.bestScore;
 
+    const existingDifficulty = game.difficulties[difficulty] && typeof game.difficulties[difficulty] === "object"
+      ? game.difficulties[difficulty]
+      : {};
     game.difficulties[difficulty] = {
+      ...existingDifficulty,
       bestStars: Math.max(previous.bestStars, safeStars),
       bestScore: hasScore ? Math.max(previous.bestScore, safeScore) : previous.bestScore,
       completions: previous.completions + 1,
@@ -193,7 +197,7 @@ window.bindFastPress = bindFastPress;
     const el = ensureOverlay();
     const niceDifficulty = difficulty ? difficulty.charAt(0).toUpperCase() + difficulty.slice(1) : "";
     const scoreNumber = Number(score);
-    const hasScore = Number.isFinite(scoreNumber);
+    const hasScore = score !== null && score !== undefined && score !== "" && Number.isFinite(scoreNumber);
 
     el.querySelector("#gh-result-kicker").textContent = [game?.displayName || "Result", niceDifficulty].filter(Boolean).join(" · ").toUpperCase();
     el.querySelector("#gh-result-title").textContent = title;

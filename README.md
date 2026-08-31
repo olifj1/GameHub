@@ -341,3 +341,13 @@ Version 1.0.68
 - Flight now reports difficulty, a five-star rating, a per-game score, and personal-best status through a common completion card.
 - Adds a Progress screen linked from the top of the Home page. For this first test, Flight is the only game connected to it.
 - Results are stored per game and per difficulty in `gameHubProgress`, ready for other games to adopt later.
+
+
+## v1.5.1
+- Adds Snake Maze and Laser Lab to the shared GameHub result/progress framework.
+- Snake Maze now uses the common completion card on successful escape, including difficulty, five-star rating, open-ended score, gems, final length and move count. Crash feedback remains local to the game and does not count as a completion.
+- Laser Lab now uses the common completion card with its existing par-based five-star rating, pieces used, five-star par and targets reached; it deliberately has no artificial points score.
+- Progress now shows separate Easy/Medium/Hard personal bests for Flight, Snake Maze and Laser Lab. Existing Snake Maze and Laser Lab progress remains readable through the compatibility layer.
+- Fixed the shared results API so a game with no numeric score does not accidentally record/display a score of zero.
+- Progress cards now use each tracked game's own accent colour.
+- Updated cache/version references to v1.5.1.

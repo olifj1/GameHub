@@ -538,25 +538,6 @@ function snakeStarScore() {
   return Math.max(1, Math.min(5, 1 + Math.round(4 * snakeCollected / target)));
 }
 
-function recordSnakeProgress(stars, score) {
-  try {
-    const progress = JSON.parse(localStorage.getItem("gameHubProgress") || "{}");
-    const game = progress["game-11"] || { bestStars: 0, bestScore: 0, difficulties: {} };
-    const old = game.difficulties[snakeDifficulty] || {};
-    game.bestStars = Math.max(game.bestStars || 0, stars);
-    game.bestScore = Math.max(game.bestScore || 0, score);
-    game.difficulties[snakeDifficulty] = {
-      bestStars: Math.max(old.bestStars || 0, stars),
-      bestScore: Math.max(old.bestScore || 0, score),
-      bestGems: Math.max(old.bestGems || 0, snakeCollected)
-    };
-    progress["game-11"] = game;
-    localStorage.setItem("gameHubProgress", JSON.stringify(progress));
-  } catch {
-    // Progress tracking should never interfere with the game.
-  }
-}
-
 function winSnake() {
   stopSnakeTimer();
   snakeWon = true;
@@ -566,12 +547,24 @@ function winSnake() {
   snakeMazeStatus.classList.remove("bad");
   snakeMazeStatus.classList.add("good");
   snakeMazeStatus.textContent = "Maze complete!";
-  snakeResultStars.textContent = "★".repeat(stars) + "☆".repeat(5 - stars);
-  snakeResultTitle.textContent = "Maze complete!";
-  snakeResultText.textContent = `${snakeCollected} gems · ${snakeScore} points · length ${snake.length}.`;
-  snakeResult.classList.remove("hidden");
-  recordSnakeProgress(stars, snakeScore);
+  snakeResult.classList.add("hidden");
   renderSnakeDynamic();
+
+  window.GameHubResults?.show({
+    gameId: "game-11",
+    difficulty: snakeDifficulty,
+    stars,
+    score: snakeScore,
+    title: stars === 5 ? "Brilliant escape!" : "Maze complete!",
+    summary: `${snakeCollected} gem${snakeCollected === 1 ? "" : "s"} collected before taking the exit.`,
+    metrics: [
+      { label: "Gems", value: snakeCollected },
+      { label: "Length", value: snake.length },
+      { label: "Moves", value: snakeMoves }
+    ],
+    againLabel: "Run again",
+    onAgain: resetSnakeRun
+  });
 }
 
 function renderSnakeDynamic() {

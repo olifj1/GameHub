@@ -1295,30 +1295,29 @@
 
     if (solved && !solvedLastFrame) {
       const stars = par > 0 ? Math.max(1, 5 - Math.max(0, pieces - par)) : 5;
-      resultStarsEl.textContent = "★".repeat(stars) + "☆".repeat(5 - stars);
-      resultTextEl.textContent = pieces <= par ? `Solved at ${pieces} piece${pieces === 1 ? "" : "s"} — at or under par.` : `Solved with ${pieces} pieces. Par is ${par}.`;
-      resultEl.classList.remove("hidden");
+      resultEl.classList.add("hidden");
       statusEl.textContent = checkpoints.length ? "Every checkpoint and target received the right light." : "Every target received the right colour.";
-      saveProgress(stars, pieces);
+      window.GameHubResults?.show({
+        gameId: "game-10",
+        difficulty,
+        stars,
+        score: null,
+        title: stars === 5 ? "Perfect route!" : "Laser Lab complete!",
+        summary: pieces <= par
+          ? `Solved with ${pieces} piece${pieces === 1 ? "" : "s"} — at or under the five-star par.`
+          : `Solved with ${pieces} pieces. Five-star par is ${par}.`,
+        metrics: [
+          { label: "Pieces", value: pieces },
+          { label: "5★ par", value: par || "—" },
+          { label: "Targets", value: `${targetHits.size}/${targets.length}` }
+        ],
+        againLabel: "Try again",
+        onAgain: resetLevel
+      });
     } else if (!solved) {
       resultEl.classList.add("hidden");
     }
     solvedLastFrame = solved;
-  }
-
-  function saveProgress(stars, pieces) {
-    try {
-      const all = JSON.parse(localStorage.getItem("gameHubProgress") || "{}");
-      const game = all["game-10"] || {};
-      const key = difficulty;
-      const previous = game[key] || {};
-      game[key] = {
-        stars: Math.max(previous.stars || 0, stars),
-        bestPieces: previous.bestPieces ? Math.min(previous.bestPieces, pieces) : pieces
-      };
-      all["game-10"] = game;
-      localStorage.setItem("gameHubProgress", JSON.stringify(all));
-    } catch (_) {}
   }
 
   function render() {

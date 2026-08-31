@@ -7738,6 +7738,10 @@ body.modular-progress{
 .progress-header>p:last-child{margin:12px auto 0;max-width:530px;color:var(--gh-muted);font-size:13px;line-height:1.5}
 .progress-games{display:grid;gap:12px}
 .progress-game-card{background:rgba(247,241,235,.9);border:1.5px solid var(--gh-line);border-radius:22px;overflow:hidden}
+.progress-game-card[data-game-id="game-09"]{--gh-accent:#b87068}
+.progress-game-card[data-game-id="game-10"]{--gh-accent:#6683a8}
+.progress-game-card[data-game-id="game-11"]{--gh-accent:#5f8a69}
+
 .progress-game-heading{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:15px;border-bottom:1.5px solid var(--gh-line)}
 .progress-game-icon{width:48px;height:48px;display:grid;place-items:center;color:var(--gh-accent);border:1.5px solid color-mix(in srgb,var(--gh-accent) 55%,var(--gh-line));border-radius:14px;font-weight:900}
 .progress-game-icon svg{width:29px;height:29px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
