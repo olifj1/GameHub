@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.6.0">
+  <link rel="stylesheet" href="style.css?v=1.6.1">
   <title>Roller Coaster</title>
 </head>
 <body class="modular-game" data-game-id="game-08">
@@ -18,7 +18,7 @@
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="coaster-info-title">Roller Coaster</h2>
       <p>Build a complete coaster from <strong>Start</strong> to <strong>End</strong>. Choose a track piece, then tap <strong>Add</strong>. Every piece joins smoothly to the end of the track.</p>
-      <p><strong>Curve Up</strong> and <strong>Curve Down</strong> change the slope a little at a time. Ordinary track runs on momentum and gravity. <strong>Lift</strong> track pulls the cart at one steady, deliberately slow speed — useful for climbs, but it will also slow the cart on a descent.</p>
+      <p><strong>Gentle</strong> curves change the slope gradually; <strong>Tight</strong> curves turn it twice as quickly. Ordinary track runs on momentum and gravity. <strong>Lift</strong>, <strong>Lift Up</strong> and <strong>Lift Down</strong> pull the cart at one steady, deliberately slow speed — ideal for building a hill before a drop, but they also slow the cart on descents.</p>
       <p>Tap <strong>Play</strong> to test the design. A successful coaster earns a five-star result based on its length and excitement. Watch the live speed and G-load, then change the track and try again.</p>
     </div>
   </div>
@@ -38,7 +38,12 @@
         </div>
 
         <div class="coaster-stage-wrap">
-          <canvas id="coaster-canvas" width="900" height="560" aria-label="Side view of your roller coaster"></canvas>
+          <canvas id="coaster-canvas" width="900" height="650" aria-label="Side view of your roller coaster"></canvas>
+          <div class="coaster-camera-controls" aria-label="Coaster view controls">
+            <button id="coaster-zoom-out" type="button" aria-label="Zoom out">−</button>
+            <button id="coaster-fit" type="button">Fit</button>
+            <button id="coaster-zoom-in" type="button" aria-label="Zoom in">＋</button>
+          </div>
           <div class="coaster-run-message" id="coaster-run-message" hidden aria-live="polite">
             <strong id="coaster-run-title">The cart stalled</strong>
             <span id="coaster-run-text">Try changing the track.</span>
@@ -67,15 +72,31 @@
             </button>
             <button class="coaster-piece" data-coaster-piece="curveUp" type="button">
               <svg viewBox="0 0 64 38" aria-hidden="true"><path d="M7 28c20 0 24-15 50-18"/><path d="M12 23v9M24 18l3 8M37 12l3 8M50 8l2 8"/></svg>
-              <span>Curve up</span>
+              <span>Gentle up</span>
             </button>
             <button class="coaster-piece" data-coaster-piece="curveDown" type="button">
               <svg viewBox="0 0 64 38" aria-hidden="true"><path d="M7 10c20 0 24 15 50 18"/><path d="M12 6v9M24 12l-3 8M37 18l-3 8M50 23l-2 8"/></svg>
-              <span>Curve down</span>
+              <span>Gentle down</span>
+            </button>
+            <button class="coaster-piece" data-coaster-piece="curveUpTight" type="button">
+              <svg viewBox="0 0 64 38" aria-hidden="true"><path d="M8 31c12 0 15-21 47-25"/><path d="M13 25v9M25 16l4 8M39 9l3 8M51 5l2 8"/></svg>
+              <span>Tight up</span>
+            </button>
+            <button class="coaster-piece" data-coaster-piece="curveDownTight" type="button">
+              <svg viewBox="0 0 64 38" aria-hidden="true"><path d="M8 7c12 0 15 21 47 25"/><path d="M13 4v9M25 14l-4 8M39 21l-3 8M51 25l-2 8"/></svg>
+              <span>Tight down</span>
             </button>
             <button class="coaster-piece" data-coaster-piece="lift" type="button">
               <svg viewBox="0 0 64 38" aria-hidden="true"><path d="M6 22h52M9 17v10M20 17v10M31 17v10M42 17v10M53 17v10"/><path d="M12 29l7-5M24 29l7-5M36 29l7-5M48 29l7-5"/></svg>
               <span>Lift</span>
+            </button>
+            <button class="coaster-piece" data-coaster-piece="liftUp" type="button">
+              <svg viewBox="0 0 64 38" aria-hidden="true"><path d="M7 28c20 0 24-15 50-18"/><path d="M14 29l7-6M27 23l7-6M40 17l7-6"/></svg>
+              <span>Lift up</span>
+            </button>
+            <button class="coaster-piece" data-coaster-piece="liftDown" type="button">
+              <svg viewBox="0 0 64 38" aria-hidden="true"><path d="M7 10c20 0 24 15 50 18"/><path d="M14 9l7 6M27 15l7 6M40 21l7 6"/></svg>
+              <span>Lift down</span>
             </button>
           </div>
 
@@ -89,8 +110,8 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.6.0"></script>
-  <script src="core.js?v=1.6.0"></script>
-  <script src="game-08.js?v=1.6.0"></script>
+  <script src="site-config.js?v=1.6.1"></script>
+  <script src="core.js?v=1.6.1"></script>
+  <script src="game-08.js?v=1.6.1"></script>
 </body>
 </html>

@@ -17,34 +17,44 @@
   const runText = $("#coaster-run-text");
   const tryAgainButton = $("#coaster-try-again");
   const backBuildButton = $("#coaster-back-build");
+  const zoomOutButton = $("#coaster-zoom-out");
+  const zoomInButton = $("#coaster-zoom-in");
+  const fitButton = $("#coaster-fit");
 
   const W = canvas.width;
   const H = canvas.height;
-  const START_X = 70;
-  const START_Y = 355;
-  const PIECE_LENGTH = 112;
-  const CURVE_DELTA = Math.PI / 12; // 15 degrees per curve piece.
-  const MAX_ANGLE = Math.PI / 3;   // Keep the first vocabulary moving left-to-right.
-  const MIN_Y = 65;
-  const MAX_Y = 485;
+  const START_X = 160;
+  const START_Y = 820;
+  const GROUND_Y = 1180;
+  const PIECE_LENGTH = 118;
+  const GENTLE_DELTA = Math.PI / 12; // 15 degrees.
+  const TIGHT_DELTA = Math.PI / 6;   // 30 degrees.
+  const MAX_ANGLE = Math.PI * 5 / 12; // 75 degrees.
+  // The virtual build world is intentionally much taller than the visible canvas.
+  // Camera zoom/pan exposes it without forcing the whole coaster to shrink.
+  const MIN_Y = -220;
+  const MAX_Y = 1110;
   const WORLD_TO_METERS = 0.08;
-  // The physics are intentionally slightly softened rather than Earth-scale: the
-  // first prototype is about readable momentum and hill design on a phone-sized
-  // track, not a full engineering simulator.
   const GRAVITY = 45;
   const LIFT_SPEED = 42;
   const START_SPEED = 48;
   const ROLLING_DRAG = 1.05;
-  const CAMERA_WIDTH = 900;
-  const MAX_PIECES = 48;
+  const MAX_PIECES = 72;
+  const MIN_ZOOM = 0.34;
+  const MAX_ZOOM = 1.7;
+  const DEFAULT_ZOOM = 0.88;
 
   const typeMeta = {
-    start: { label: "Start", length: 125, powered: true },
-    end: { label: "End", length: 135 },
+    start: { label: "Start", length: 128, powered: true },
+    end: { label: "End", length: 138 },
     straight: { label: "Straight", length: PIECE_LENGTH },
-    curveUp: { label: "Curve up", length: PIECE_LENGTH, delta: -CURVE_DELTA },
-    curveDown: { label: "Curve down", length: PIECE_LENGTH, delta: CURVE_DELTA },
-    lift: { label: "Lift", length: PIECE_LENGTH, powered: true }
+    curveUp: { label: "Gentle up", length: PIECE_LENGTH, delta: -GENTLE_DELTA },
+    curveDown: { label: "Gentle down", length: PIECE_LENGTH, delta: GENTLE_DELTA },
+    curveUpTight: { label: "Tight up", length: PIECE_LENGTH, delta: -TIGHT_DELTA },
+    curveDownTight: { label: "Tight down", length: PIECE_LENGTH, delta: TIGHT_DELTA },
+    lift: { label: "Lift", length: PIECE_LENGTH, powered: true },
+    liftUp: { label: "Lift up", length: PIECE_LENGTH, delta: -GENTLE_DELTA, powered: true },
+    liftDown: { label: "Lift down", length: PIECE_LENGTH, delta: GENTLE_DELTA, powered: true }
   };
 
   let selectedType = "start";
@@ -57,6 +67,12 @@
   let peakSpeed = 0;
   let peakG = 1;
   let stallTime = 0;
+  let cameraMode = "follow";
+  let cameraScale = DEFAULT_ZOOM;
+  let cameraCenterX = START_X + 350;
+  let cameraCenterY = START_Y - 80;
+  let panPointerId = null;
+  let panStart = null;
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -64,6 +80,50 @@
 
   function nice(value, digits = 1) {
     return Number(value).toFixed(digits);
+  }
+
+  function tailPoint() {
+    if (!pieces.length) return { x: START_X, y: START_Y };
+    const tail = pieces[pieces.length - 1];
+    return { x: tail.endX, y: tail.endY };
+  }
+
+  function worldToScreen(point, centerX = cameraCenterX, centerY = cameraCenterY, scale = cameraScale) {
+    return {
+      x: (point.x - centerX) * scale + W / 2,
+      y: (point.y - centerY) * scale + H / 2
+    };
+  }
+
+  function screenToWorld(x, y) {
+    return {
+      x: (x - W / 2) / cameraScale + cameraCenterX,
+      y: (y - H / 2) / cameraScale + cameraCenterY
+    };
+  }
+
+  function keepTailVisible() {
+    if (cameraMode === "fit") return;
+    const tail = tailPoint();
+    let screen = worldToScreen(tail);
+    const left = W * 0.16;
+    const right = W * 0.78;
+    const top = H * 0.16;
+    const bottom = H * 0.80;
+    if (screen.x > right) cameraCenterX += (screen.x - right) / cameraScale;
+    if (screen.x < left) cameraCenterX -= (left - screen.x) / cameraScale;
+    screen = worldToScreen(tail);
+    if (screen.y > bottom) cameraCenterY += (screen.y - bottom) / cameraScale;
+    if (screen.y < top) cameraCenterY -= (top - screen.y) / cameraScale;
+  }
+
+  function setZoom(nextScale, anchorX = W / 2, anchorY = H / 2) {
+    const before = screenToWorld(anchorX, anchorY);
+    cameraMode = "follow";
+    cameraScale = clamp(nextScale, MIN_ZOOM, MAX_ZOOM);
+    cameraCenterX = before.x - (anchorX - W / 2) / cameraScale;
+    cameraCenterY = before.y - (anchorY - H / 2) / cameraScale;
+    draw();
   }
 
   function endpointFor(type, startX, startY, startAngle) {
@@ -149,7 +209,7 @@
       return { ok: true, startX: START_X, startY: START_Y, startAngle: 0, end };
     }
     if (trackHas("end")) return { ok: false, message: "Remove the End piece before adding more track." };
-    if (pieces.length >= MAX_PIECES) return { ok: false, message: "This prototype has enough track already — add End and give it a run." };
+    if (pieces.length >= MAX_PIECES) return { ok: false, message: "This coaster is already very long — add End and give it a run." };
     if (type === "start") return { ok: false, message: "There is already a Start section." };
     const tail = pieces[pieces.length - 1];
     const startAngle = tail.endAngle;
@@ -191,6 +251,7 @@
     } else {
       statusEl.textContent = `${typeMeta[selectedType].label} added.`;
     }
+    keepTailVisible();
     updateUi();
     draw();
   }
@@ -205,6 +266,7 @@
     } else {
       statusEl.textContent = `${typeMeta[removed.type].label} removed.`;
     }
+    keepTailVisible();
     updateUi();
     draw();
   }
@@ -306,7 +368,7 @@
       .filter(piece => !piece.powered && piece.type !== "end")
       .reduce((sum, piece) => sum + piece.length, 0) * WORLD_TO_METERS;
     const liftLength = pieces
-      .filter(piece => piece.type === "lift")
+      .filter(piece => piece.powered && piece.type !== "start")
       .reduce((sum, piece) => sum + piece.length, 0) * WORLD_TO_METERS;
     const topKmh = peakSpeed * WORLD_TO_METERS * 3.6;
     const gExcitement = clamp((peakG - 1) * 220, 0, 650);
@@ -390,48 +452,83 @@
     raf = requestAnimationFrame(runFrame);
   }
 
-  function trackBounds() {
-    if (!pieces.length) return { minX: 0, maxX: 700, minY: 80, maxY: 500 };
+  function trackBounds(includePreview = false) {
+    if (!pieces.length) {
+      return { minX: START_X - 80, maxX: START_X + 620, minY: START_Y - 360, maxY: START_Y + 250 };
+    }
     let minX = START_X;
     let maxX = START_X;
     let minY = START_Y;
     let maxY = START_Y;
-    pieces.forEach(piece => {
-      for (let i = 0; i <= 14; i++) {
-        const p = pointOnPiece(piece, piece.length * i / 14);
+    const scanPiece = piece => {
+      for (let i = 0; i <= 16; i++) {
+        const p = pointOnPiece(piece, piece.length * i / 16);
         minX = Math.min(minX, p.x);
         maxX = Math.max(maxX, p.x);
         minY = Math.min(minY, p.y);
         maxY = Math.max(maxY, p.y);
       }
-    });
+    };
+    pieces.forEach(scanPiece);
+    if (includePreview && mode === "build") {
+      const preview = nextPiecePreview(selectedType);
+      if (preview.ok) {
+        const meta = typeMeta[selectedType];
+        scanPiece({
+          x: preview.startX,
+          y: preview.startY,
+          angle: preview.startAngle,
+          length: meta.length,
+          delta: meta.delta || 0
+        });
+      }
+    }
     return { minX, maxX, minY, maxY };
+  }
+
+  function fitCamera() {
+    const bounds = trackBounds(true);
+    const padX = 90;
+    const padY = 75;
+    const width = Math.max(300, bounds.maxX - bounds.minX);
+    const height = Math.max(260, bounds.maxY - bounds.minY);
+    cameraScale = clamp(Math.min((W - padX * 2) / width, (H - padY * 2) / height), MIN_ZOOM, 1.18);
+    cameraCenterX = (bounds.minX + bounds.maxX) / 2;
+    cameraCenterY = (bounds.minY + bounds.maxY) / 2;
+    cameraMode = "fit";
+    draw();
   }
 
   function viewTransform() {
     if (mode === "play" || mode === "failed" || mode === "finished") {
-      const cartPoint = cart ? sampleTrackAt(cart.s) : { x: START_X };
-      const minCamera = 0;
-      const maxTrackX = trackBounds().maxX + 120;
-      const maxCamera = Math.max(0, maxTrackX - CAMERA_WIDTH);
-      const cameraX = clamp(cartPoint.x - CAMERA_WIDTH * 0.34, minCamera, maxCamera);
+      const cartPoint = cart ? sampleTrackAt(cart.s) : { x: START_X, y: START_Y };
+      const playScale = clamp(cameraScale, 0.52, 1.18);
       return {
-        map: p => ({ x: p.x - cameraX, y: p.y }),
-        scale: 1,
-        cameraX
+        map: p => ({
+          x: (p.x - cartPoint.x) * playScale + W * 0.34,
+          y: (p.y - cartPoint.y) * playScale + H * 0.53
+        }),
+        scale: playScale,
+        cameraX: cartPoint.x
       };
     }
 
-    const bounds = trackBounds();
-    const padX = 54;
-    const padY = 48;
-    const width = Math.max(520, bounds.maxX - Math.min(0, bounds.minX));
-    const height = Math.max(360, bounds.maxY - bounds.minY);
-    const scale = Math.min(1, (W - padX * 2) / width, (H - padY * 2) / height);
-    const contentW = (bounds.maxX - bounds.minX) * scale;
-    const centerX = W / 2 - contentW / 2 - bounds.minX * scale;
-    const centerY = H / 2 - ((bounds.minY + bounds.maxY) / 2) * scale;
-    return { map: p => ({ x: p.x * scale + centerX, y: p.y * scale + centerY }), scale, cameraX: 0 };
+    if (cameraMode === "fit") {
+      const bounds = trackBounds(true);
+      const padX = 90;
+      const padY = 75;
+      const width = Math.max(300, bounds.maxX - bounds.minX);
+      const height = Math.max(260, bounds.maxY - bounds.minY);
+      cameraScale = clamp(Math.min((W - padX * 2) / width, (H - padY * 2) / height), MIN_ZOOM, 1.18);
+      cameraCenterX = (bounds.minX + bounds.maxX) / 2;
+      cameraCenterY = (bounds.minY + bounds.maxY) / 2;
+    }
+
+    return {
+      map: p => worldToScreen(p),
+      scale: cameraScale,
+      cameraX: cameraCenterX
+    };
   }
 
   function drawBackground(transform) {
@@ -455,7 +552,7 @@
       ctx.stroke();
     }
 
-    const groundY = transform.map({ x: 0, y: 505 }).y;
+    const groundY = transform.map({ x: 0, y: GROUND_Y }).y;
     if (groundY < H + 20) {
       ctx.strokeStyle = "rgba(39,49,60,.22)";
       ctx.lineWidth = 2;
@@ -491,7 +588,7 @@
     }
 
     ctx.save();
-    ctx.strokeStyle = piece.type === "lift" || piece.type === "start" ? "#a55f59" : "#303941";
+    ctx.strokeStyle = piece.powered ? "#a55f59" : "#303941";
     ctx.lineWidth = 2.3;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -504,7 +601,7 @@
       ctx.stroke();
     });
 
-    ctx.strokeStyle = piece.type === "lift" || piece.type === "start" ? "rgba(165,95,89,.75)" : "rgba(48,57,65,.62)";
+    ctx.strokeStyle = piece.powered ? "rgba(165,95,89,.75)" : "rgba(48,57,65,.62)";
     ctx.lineWidth = 1.25;
     for (let i = 1; i < samples.length - 1; i += 2) {
       ctx.beginPath();
@@ -513,7 +610,7 @@
       ctx.stroke();
     }
 
-    if (piece.type === "lift") {
+    if (piece.powered && piece.type !== "start") {
       ctx.strokeStyle = "rgba(165,95,89,.72)";
       for (let i = 2; i < samples.length - 1; i += 3) {
         const c = samples[i].center;
@@ -553,7 +650,7 @@
   function drawSupport(worldPoint, transform, every = true) {
     if (!every) return;
     const top = transform.map(worldPoint);
-    const bottom = transform.map({ x: worldPoint.x, y: 505 });
+    const bottom = transform.map({ x: worldPoint.x, y: GROUND_Y });
     if (bottom.y <= top.y + 8 || top.x < -20 || top.x > W + 20) return;
     ctx.save();
     ctx.strokeStyle = "rgba(48,57,65,.18)";
@@ -660,6 +757,41 @@
   });
   tryAgainButton.addEventListener("click", startRun);
   backBuildButton.addEventListener("click", () => stopRunToBuild("Adjust the track, then test it again."));
+
+  zoomOutButton.addEventListener("click", () => setZoom(cameraScale / 1.22));
+  zoomInButton.addEventListener("click", () => setZoom(cameraScale * 1.22));
+  fitButton.addEventListener("click", fitCamera);
+
+  canvas.addEventListener("pointerdown", event => {
+    if (mode !== "build") return;
+    panPointerId = event.pointerId;
+    canvas.setPointerCapture?.(event.pointerId);
+    panStart = {
+      x: event.clientX,
+      y: event.clientY,
+      centerX: cameraCenterX,
+      centerY: cameraCenterY
+    };
+  });
+  canvas.addEventListener("pointermove", event => {
+    if (mode !== "build" || panPointerId !== event.pointerId || !panStart) return;
+    cameraMode = "follow";
+    const rect = canvas.getBoundingClientRect();
+    const pxToCanvasX = W / Math.max(1, rect.width);
+    const pxToCanvasY = H / Math.max(1, rect.height);
+    const dx = (event.clientX - panStart.x) * pxToCanvasX;
+    const dy = (event.clientY - panStart.y) * pxToCanvasY;
+    cameraCenterX = panStart.centerX - dx / cameraScale;
+    cameraCenterY = panStart.centerY - dy / cameraScale;
+    draw();
+  });
+  const endPan = event => {
+    if (panPointerId !== event.pointerId) return;
+    panPointerId = null;
+    panStart = null;
+  };
+  canvas.addEventListener("pointerup", endPan);
+  canvas.addEventListener("pointercancel", endPan);
 
   // Give keyboard testing a small convenience without changing touch-first UI.
   document.addEventListener("keydown", event => {

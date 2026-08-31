@@ -368,7 +368,7 @@ Version 1.0.68
 - Updated cache/version references to v1.5.3.
 
 
-## v1.6.0 — Roller Coaster prototype
+## v1.6.1 — Roller Coaster prototype
 
 - Added **Roller Coaster** as `game-08`.
 - Sequence-based track builder with Start, End, Straight, Curve Up, Curve Down and Lift pieces.
@@ -376,3 +376,15 @@ Version 1.0.68
 - Live length, speed and approximate G-load display.
 - Successful rides use the shared GameHub result popup and save a Standard best rating/score.
 - Added Roller Coaster to the Home screen, Progress screen and offline app shell.
+
+
+## v1.6.1 — Roller Coaster build-space and track pass
+- Greatly expanded the virtual coaster build area vertically and increased the maximum track length from 48 to 72 pieces.
+- Build view no longer continuously shrinks to fit the entire coaster. It keeps a practical working zoom and follows the newest track end.
+- Added on-board **− / Fit / +** camera controls plus drag-to-pan in build mode.
+- Increased the physical coaster canvas area while retaining the GameHub soft-modern visual style.
+- Split ordinary curves into **Gentle Up/Down** (15°) and **Tight Up/Down** (30°) pieces.
+- Added **Lift Up** and **Lift Down** curved powered pieces so a lift hill can begin and end smoothly from flat track.
+- Lift, Lift Up and Lift Down all regulate the cart toward the same slow lift speed; they do not boost a downhill cart.
+- Expanded the allowed track slope to 75° so larger hills and sharper transitions are possible.
+- Updated offline cache and cache-busting references to v1.6.1.
