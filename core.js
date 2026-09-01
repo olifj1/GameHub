@@ -302,8 +302,8 @@ document.querySelectorAll(".game-info-overlay").forEach(overlay => {
 });
 
 
-// Portrait-only game presentation.
-// In landscape we keep the page loaded, but cover it with a simple rotate-device message.
+// Portrait-only game presentation on handheld/tablet devices only.
+// Desktop windows may naturally be landscape and must never be blocked.
 (function installOrientationGuard() {
   const overlay = document.createElement("div");
   overlay.className = "orientation-guard";
@@ -319,4 +319,19 @@ document.querySelectorAll(".game-info-overlay").forEach(overlay => {
     </div>
   `;
   document.body.appendChild(overlay);
+
+  const update = () => {
+    const screenW = Number(window.screen?.width) || window.innerWidth;
+    const screenH = Number(window.screen?.height) || window.innerHeight;
+    const shortSide = Math.min(screenW, screenH);
+    const longSide = Math.max(screenW, screenH);
+    const touch = (navigator.maxTouchPoints || 0) > 0 || matchMedia("(pointer: coarse)").matches;
+    const handheldScale = shortSide <= 900 && longSide <= 1400;
+    const landscape = window.innerWidth > window.innerHeight;
+    document.documentElement.classList.toggle("gh-mobile-landscape", touch && handheldScale && landscape);
+  };
+
+  update();
+  window.addEventListener("resize", update, { passive: true });
+  window.addEventListener("orientationchange", () => setTimeout(update, 80), { passive: true });
 })();

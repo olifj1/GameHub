@@ -16,15 +16,29 @@
 html, body {
   margin: 0;
   width: 100%;
-  height: 100%;
-  overflow: hidden;
-  position: fixed;
-  inset: 0;
+  min-height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--ink);
   background: #f6d694;
-  overscroll-behavior: none;
-  touch-action: manipulation;
+}
+
+/* The document itself must remain scrollable. Interactive game surfaces opt out
+   of scrolling locally with touch-action:none where they need direct gestures. */
+html {
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  position: static;
+  overscroll-behavior-y: auto;
+  touch-action: pan-y manipulation;
+}
+body {
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  position: static;
+  overscroll-behavior-y: auto;
+  touch-action: pan-y manipulation;
 }
 
 body {
@@ -3571,72 +3585,70 @@ body {
   display: none;
 }
 
-@media (orientation: landscape) {
-  .orientation-guard {
-    position: fixed;
-    inset: 0;
-    z-index: 100000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding:
-      max(24px, env(safe-area-inset-top))
-      max(24px, env(safe-area-inset-right))
-      max(24px, env(safe-area-inset-bottom))
-      max(24px, env(safe-area-inset-left));
-    background: var(--gh-bg, #e7dbd2);
-    color: var(--gh-ink, #252b33);
-    text-align: center;
-  }
+html.gh-mobile-landscape .orientation-guard {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding:
+    max(24px, env(safe-area-inset-top))
+    max(24px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom))
+    max(24px, env(safe-area-inset-left));
+  background: var(--gh-bg, #e7dbd2);
+  color: var(--gh-ink, #252b33);
+  text-align: center;
+}
 
-  .orientation-guard-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-  }
+.orientation-guard-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
 
-  .orientation-guard-card strong {
-    font-size: clamp(28px, 5vw, 44px);
-    line-height: 1.05;
-    letter-spacing: -.035em;
-    font-weight: 850;
-  }
+.orientation-guard-card strong {
+  font-size: clamp(28px, 5vw, 44px);
+  line-height: 1.05;
+  letter-spacing: -.035em;
+  font-weight: 850;
+}
 
-  .orientation-guard-card p {
-    margin: 0;
-    color: var(--gh-muted, #736d69);
-    font-size: clamp(15px, 2vw, 20px);
-  }
+.orientation-guard-card p {
+  margin: 0;
+  color: var(--gh-muted, #736d69);
+  font-size: clamp(15px, 2vw, 20px);
+}
 
-  .orientation-phone {
-    position: relative;
-    width: 54px;
-    height: 82px;
-    margin-bottom: 8px;
-    border: 3px solid var(--gh-line-strong, rgba(37,43,51,.72));
-    border-radius: 13px;
-    transform: rotate(-90deg);
-  }
+.orientation-phone {
+  position: relative;
+  width: 54px;
+  height: 82px;
+  margin-bottom: 8px;
+  border: 3px solid var(--gh-line-strong, rgba(37,43,51,.72));
+  border-radius: 13px;
+  transform: rotate(-90deg);
+}
 
-  .orientation-phone::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    bottom: 5px;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--gh-line-strong, rgba(37,43,51,.72));
-    transform: translateX(-50%);
-  }
+.orientation-phone::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gh-line-strong, rgba(37,43,51,.72));
+  transform: translateX(-50%);
+}
 
-  .orientation-phone span {
-    position: absolute;
-    inset: 8px 6px 13px;
-    border: 2px solid var(--gh-line, rgba(37,43,51,.22));
-    border-radius: 5px;
-  }
+.orientation-phone span {
+  position: absolute;
+  inset: 8px 6px 13px;
+  border: 2px solid var(--gh-line, rgba(37,43,51,.22));
+  border-radius: 5px;
 }
 
 
@@ -8085,4 +8097,88 @@ body[data-game-id="game-08"] #coaster-canvas:active{cursor:grabbing}
   body[data-game-id="game-08"] .coaster-piece svg{width:34px;height:22px}
   body[data-game-id="game-08"] .coaster-actions{margin-top:5px}
   body[data-game-id="game-08"] .coaster-action{min-height:39px}
+}
+
+
+/* ============================================================
+   GameHub v1.6.2 — cross-device viewport / scrolling compatibility
+   ============================================================ */
+
+/* Older Android browsers may not support :has(), so modular pages must not
+   depend on it to unlock the fixed legacy shell. Keep the document as the
+   primary scroller on every device. */
+html,
+body.modular-home,
+body.modular-game,
+body.modular-progress {
+  position: static !important;
+  inset: auto !important;
+  width: 100%;
+  height: auto !important;
+  min-height: 100%;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior-y: auto;
+  touch-action: pan-y manipulation;
+}
+
+body.modular-home,
+body.modular-game,
+body.modular-progress {
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+}
+
+body.modular-game .screen-wrap,
+body.modular-game .screen {
+  height: auto !important;
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+  overflow: visible !important;
+}
+
+body.modular-game .page {
+  height: auto !important;
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+  overflow: visible !important;
+  overscroll-behavior-y: auto;
+  touch-action: pan-y manipulation;
+  padding-bottom: max(96px, calc(72px + env(safe-area-inset-bottom))) !important;
+}
+
+/* Full-document scrolling is allowed, but interactive surfaces continue to
+   own drag/swipe gestures rather than moving the page beneath a finger. */
+body[data-game-id="game-06"] .gravity-stage,
+body[data-game-id="game-07"] .coding-board-wrap,
+body[data-game-id="game-08"] #coaster-canvas,
+body[data-game-id="game-09"] .flight-stage,
+body[data-game-id="game-10"] .laser-free-board,
+body[data-game-id="game-11"] .snake-maze-board,
+.laser-board-wrap {
+  touch-action: none;
+}
+
+/* Only a likely handheld/tablet in landscape gets the portrait guard.
+   Desktop/laptop windows are never covered just for being landscape. */
+.orientation-guard { display:none !important; }
+html.gh-mobile-landscape .orientation-guard { display:flex !important; }
+
+/* Give browser/system UI a little more breathing room on devices whose
+   dynamic viewport is shorter than the physical screen. */
+.home-shell {
+  padding-top: max(24px, env(safe-area-inset-top));
+  padding-bottom: max(36px, calc(24px + env(safe-area-inset-bottom)));
+}
+.progress-shell {
+  padding-bottom: max(42px, calc(28px + env(safe-area-inset-bottom)));
+}
+
+@media (max-height: 700px) and (max-width: 900px) {
+  body.modular-game .page {
+    padding-bottom: max(76px, calc(58px + env(safe-area-inset-bottom))) !important;
+  }
 }
