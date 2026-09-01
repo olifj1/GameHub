@@ -184,8 +184,16 @@ function renderClock() {
   const carriedHour = minute === 60 ? (baseHour + 1) % 24 : baseHour;
   const decimalHour = carriedHour + minuteForHands / 60;
 
-  hourHand.style.transform = `rotate(${(decimalHour % 12) * 30}deg)`;
-  minuteHand.style.transform = `rotate(${minute === 60 ? 360 : minute * 6}deg)`;
+  // Draw the hands by updating their SVG endpoints rather than using CSS transforms.
+  // This is more reliable on older Android SVG implementations, where rotating
+  // an SVG <line> with CSS transform-origin can make a hand disappear.
+  const hourAngle = ((decimalHour % 12) * 30) * Math.PI / 180;
+  const minuteAngle = ((minute === 60 ? 360 : minute * 6)) * Math.PI / 180;
+
+  hourHand.setAttribute("x2", (150 + Math.sin(hourAngle) * 62).toFixed(2));
+  hourHand.setAttribute("y2", (150 - Math.cos(hourAngle) * 62).toFixed(2));
+  minuteHand.setAttribute("x2", (150 + Math.sin(minuteAngle) * 92).toFixed(2));
+  minuteHand.setAttribute("y2", (150 - Math.cos(minuteAngle) * 92).toFixed(2));
 
   const hh = String(carriedHour).padStart(2, "0");
   const mm = String(minute === 60 ? 0 : minute).padStart(2, "0");

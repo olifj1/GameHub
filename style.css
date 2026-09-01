@@ -2341,6 +2341,7 @@ body[data-game-id="game-08"], .game-card[data-game-id="game-08"] { --gh-accent:#
 body[data-game-id="game-09"], .game-card[data-game-id="game-09"] { --gh-accent:#b87068; }
 body[data-game-id="game-10"], .game-card[data-game-id="game-10"] { --gh-accent:#6683a8; }
 body[data-game-id="game-11"], .game-card[data-game-id="game-11"] { --gh-accent:#5f8a69; }
+body[data-game-id="game-12"], .game-card[data-game-id="game-12"] { --gh-accent:#8b6c9d; }
 
 html, body {
   color: var(--gh-ink);
@@ -8101,7 +8102,7 @@ body[data-game-id="game-08"] #coaster-canvas:active{cursor:grabbing}
 
 
 /* ============================================================
-   GameHub v1.6.4 — cross-device viewport / scrolling compatibility
+   GameHub v1.7.0 — cross-device viewport / scrolling compatibility
    ============================================================ */
 
 /* Older Android browsers may not support :has(), so modular pages must not
@@ -8184,7 +8185,7 @@ html.gh-mobile-landscape .orientation-guard { display:flex !important; }
 }
 
 
-/* v1.6.4 — Flight follows the same centred portrait-style presentation as
+/* v1.7.0 — Flight follows the same centred portrait-style presentation as
    Gravity on desktop. The old landscape side-panel experiment is intentionally
    overridden for every viewport; handheld landscape is handled by the shared
    orientation guard instead. */
@@ -8323,7 +8324,7 @@ body[data-game-id="game-09"] .flight-reset{
 body[data-game-id="game-09"] .flight-stage-wrap{touch-action:none!important}
 
 /* ============================================================
-   GameHub v1.6.4 — app-style game viewport lock
+   GameHub v1.7.0 — app-style game viewport lock
    ============================================================ */
 
 /* Menu/record pages remain ordinary documents. Individual game pages are
@@ -8424,4 +8425,213 @@ html.gh-game-page body[data-game-id="game-09"] .flight-page {
   html.gh-game-page body.modular-game .page-header {
     margin-bottom: 8px !important;
   }
+}
+
+/* ============================================================
+   GameHub v1.7.0 — Colour Blocks
+   ============================================================ */
+body[data-game-id="game-12"]{
+  --gh-accent:#8b6c9d;
+}
+body[data-game-id="game-12"] .colour-blocks-page{
+  width:min(100%,520px);
+  height:100%;
+  margin:0 auto;
+  padding-top:4px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+}
+body[data-game-id="game-12"] .colour-blocks-header{
+  width:100%;
+  margin:0 0 2px;
+  text-align:center;
+}
+body[data-game-id="game-12"] .colour-blocks-header h1{
+  margin:0;
+  font-size:clamp(30px,8vw,42px);
+  line-height:1;
+  letter-spacing:-.04em;
+}
+body[data-game-id="game-12"] .colour-blocks-difficulty{
+  width:min(100%,360px);
+  min-height:39px;
+  padding:3px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:3px;
+  border:1.5px solid var(--gh-line);
+  border-radius:15px;
+  background:rgba(247,241,235,.62);
+}
+body[data-game-id="game-12"] .colour-blocks-difficulty-button{
+  min-height:31px;
+  padding:0 8px;
+  border:0;
+  border-radius:11px;
+  background:transparent;
+  color:var(--gh-muted);
+  font:inherit;
+  font-size:10px;
+  font-weight:900;
+}
+body[data-game-id="game-12"] .colour-blocks-difficulty-button.active{
+  background:var(--gh-accent);
+  color:#fff;
+  box-shadow:0 2px 5px rgba(37,43,51,.10);
+}
+body[data-game-id="game-12"] .colour-blocks-stats{
+  width:min(100%,360px);
+  min-height:48px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  border:1.5px solid var(--gh-line);
+  border-radius:15px;
+  overflow:hidden;
+  background:rgba(247,241,235,.62);
+}
+body[data-game-id="game-12"] .colour-blocks-stats>div{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  gap:1px;
+}
+body[data-game-id="game-12"] .colour-blocks-stats>div+div{
+  border-left:1px solid var(--gh-line);
+}
+body[data-game-id="game-12"] .colour-blocks-stats span{
+  color:var(--gh-muted);
+  font-size:7px;
+  font-weight:950;
+  letter-spacing:.12em;
+}
+body[data-game-id="game-12"] .colour-blocks-stats strong{
+  font-size:15px;
+  line-height:1;
+}
+body[data-game-id="game-12"] .colour-blocks-board-frame{
+  width:min(82vw,390px,calc(100dvh - 285px));
+  min-width:220px;
+  aspect-ratio:1;
+  padding:7px;
+  border:1.5px solid var(--gh-line-strong);
+  border-radius:21px;
+  background:rgba(247,241,235,.88);
+  box-shadow:0 7px 18px rgba(37,43,51,.06);
+}
+@supports not (height:100dvh){
+  body[data-game-id="game-12"] .colour-blocks-board-frame{width:min(82vw,390px,calc(100vh - 285px))}
+}
+body[data-game-id="game-12"] .colour-blocks-board{
+  --colour-grid-size:4;
+  position:relative;
+  width:100%;
+  height:100%;
+  display:grid;
+  grid-template-columns:repeat(var(--colour-grid-size),1fr);
+  grid-template-rows:repeat(var(--colour-grid-size),1fr);
+  gap:3px;
+  padding:3px;
+  overflow:hidden;
+  border-radius:15px;
+  background:#4a4a4a;
+  touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
+  overscroll-behavior:contain;
+}
+body[data-game-id="game-12"] .colour-blocks-board::before,
+body[data-game-id="game-12"] .colour-blocks-board::after{
+  content:"";
+  position:absolute;
+  z-index:4;
+  pointer-events:none;
+  background:#f4ece5;
+  box-shadow:0 0 0 1px rgba(50,51,51,.14);
+}
+body[data-game-id="game-12"] .colour-blocks-board::before{
+  top:0;bottom:0;left:50%;width:7px;transform:translateX(-50%);
+}
+body[data-game-id="game-12"] .colour-blocks-board::after{
+  left:0;right:0;top:50%;height:7px;transform:translateY(-50%);
+}
+body[data-game-id="game-12"] .colour-blocks-tile{
+  position:relative;
+  z-index:1;
+  min-width:0;
+  min-height:0;
+  border:1px solid rgba(37,43,51,.38);
+  border-radius:clamp(4px,1.4vw,9px);
+  background:var(--tile-colour);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.20);
+  transition:transform .08s ease,filter .08s ease,box-shadow .08s ease;
+}
+body[data-game-id="game-12"] .colour-blocks-tile::after{
+  content:"";
+  position:absolute;
+  inset:3px;
+  border-radius:inherit;
+  opacity:.14;
+  background:repeating-linear-gradient(135deg,transparent 0 6px,rgba(255,255,255,.7) 6px 7px);
+}
+body[data-game-id="game-12"] .colour-blocks-tile.selected{
+  z-index:3;
+  transform:scale(.91);
+  filter:brightness(1.08);
+  box-shadow:0 0 0 3px #fff,0 0 0 5px rgba(37,43,51,.62);
+}
+body[data-game-id="game-12"] .colour-blocks-status{
+  width:min(100%,390px);
+  min-height:32px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:4px 8px;
+  color:var(--gh-muted);
+  font-size:10px;
+  font-weight:800;
+  line-height:1.25;
+  text-align:center;
+}
+body[data-game-id="game-12"] .colour-blocks-status.good{color:#4e7d59}
+body[data-game-id="game-12"] .colour-blocks-actions{
+  width:min(100%,390px);
+  display:grid;
+  grid-template-columns:1fr 1fr 1.35fr;
+  gap:6px;
+}
+body[data-game-id="game-12"] .colour-blocks-actions button{
+  min-height:43px;
+  padding:0 9px;
+  border:1.5px solid var(--gh-line);
+  border-radius:13px;
+  background:rgba(247,241,235,.80);
+  color:var(--gh-ink);
+  font:inherit;
+  font-size:10px;
+  font-weight:900;
+}
+body[data-game-id="game-12"] .colour-blocks-actions button:last-child{
+  border-color:color-mix(in srgb,var(--gh-accent) 70%,var(--gh-ink));
+  background:var(--gh-accent);
+  color:#fff;
+}
+body[data-game-id="game-12"] .colour-blocks-actions button:disabled{
+  opacity:.38;
+}
+
+.progress-game-card[data-game-id="game-12"]{--gh-accent:#8b6c9d}
+
+@media(max-height:700px){
+  body[data-game-id="game-12"] .colour-blocks-page{gap:5px}
+  body[data-game-id="game-12"] .colour-blocks-header{margin-bottom:0}
+  body[data-game-id="game-12"] .colour-blocks-header h1{font-size:30px}
+  body[data-game-id="game-12"] .colour-blocks-difficulty{min-height:35px}
+  body[data-game-id="game-12"] .colour-blocks-difficulty-button{min-height:27px}
+  body[data-game-id="game-12"] .colour-blocks-stats{min-height:42px}
+  body[data-game-id="game-12"] .colour-blocks-board-frame{width:min(76vw,330px,calc(100dvh - 250px));min-width:190px;padding:6px}
+  body[data-game-id="game-12"] .colour-blocks-status{min-height:25px;font-size:9px}
+  body[data-game-id="game-12"] .colour-blocks-actions button{min-height:38px}
 }

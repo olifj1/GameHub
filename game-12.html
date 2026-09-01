@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" class="gh-game-page">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#e7dbd2">
+  <link rel="stylesheet" href="style.css?v=1.7.0">
+  <title>Colour Blocks</title>
+</head>
+<body class="modular-game" data-game-id="game-12">
+  <a class="game-home-button" href="index.html" aria-label="Back to games">← Games</a>
+  <button class="game-info-button" type="button" aria-label="How to play" aria-haspopup="dialog">i</button>
+  <div class="game-info-overlay" hidden>
+    <div class="game-info-dialog" role="dialog" aria-modal="true" aria-labelledby="game-12-info-title">
+      <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
+      <p class="kicker">HOW TO PLAY</p>
+      <h2 id="game-12-info-title">Colour Blocks</h2>
+      <p>The board is divided into <strong>four larger blocks</strong>. Your goal is to make every larger block a single solid colour.</p>
+      <p>Swipe across two or more tiles in the same row or column. The tiles you cross are <strong>reversed</strong>: swiping across two swaps them, while a longer swipe reverses the whole selected run.</p>
+      <p>It does not matter which colour ends up in which block. Every puzzle starts from a solved board and is scrambled using legal moves, so there is always a way back.</p>
+    </div>
+  </div>
+
+  <main class="screen-wrap">
+    <section class="screen active" aria-labelledby="colour-blocks-title">
+      <div class="page colour-blocks-page">
+        <header class="page-header colour-blocks-header">
+          <p class="kicker" data-site-name="">GameHub</p>
+          <h1 id="colour-blocks-title">Colour Blocks</h1>
+        </header>
+
+        <div class="colour-blocks-difficulty" role="group" aria-label="Colour Blocks difficulty">
+          <button class="colour-blocks-difficulty-button active" data-colour-difficulty="easy" type="button">Easy</button>
+          <button class="colour-blocks-difficulty-button" data-colour-difficulty="medium" type="button">Medium</button>
+          <button class="colour-blocks-difficulty-button" data-colour-difficulty="hard" type="button">Hard</button>
+        </div>
+
+        <div class="colour-blocks-stats" aria-label="Puzzle progress">
+          <div><span>MOVES</span><strong id="colour-moves">0</strong></div>
+          <div><span>PAR</span><strong id="colour-par">6</strong></div>
+          <div><span>BLOCKS</span><strong id="colour-solid">0 / 4</strong></div>
+        </div>
+
+        <div class="colour-blocks-board-frame">
+          <div class="colour-blocks-board" id="colour-blocks-board" role="grid" aria-label="Colour sorting puzzle"></div>
+        </div>
+
+        <div class="colour-blocks-status" id="colour-blocks-status" aria-live="polite">Swipe across a row or column to reverse those tiles.</div>
+
+        <div class="colour-blocks-actions">
+          <button id="colour-undo" type="button">Undo</button>
+          <button id="colour-reset" type="button">Reset</button>
+          <button id="colour-new" type="button">New puzzle</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="site-config.js?v=1.7.0"></script>
+  <script src="core.js?v=1.7.0"></script>
+  <script src="game-12.js?v=1.7.0"></script>
+</body>
+</html>
