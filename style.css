@@ -8101,7 +8101,7 @@ body[data-game-id="game-08"] #coaster-canvas:active{cursor:grabbing}
 
 
 /* ============================================================
-   GameHub v1.6.2 — cross-device viewport / scrolling compatibility
+   GameHub v1.6.3 — cross-device viewport / scrolling compatibility
    ============================================================ */
 
 /* Older Android browsers may not support :has(), so modular pages must not
@@ -8155,7 +8155,7 @@ body.modular-game .page {
 body[data-game-id="game-06"] .gravity-stage,
 body[data-game-id="game-07"] .coding-board-wrap,
 body[data-game-id="game-08"] #coaster-canvas,
-body[data-game-id="game-09"] .flight-stage,
+body[data-game-id="game-09"] .flight-stage-wrap,
 body[data-game-id="game-10"] .laser-free-board,
 body[data-game-id="game-11"] .snake-maze-board,
 .laser-board-wrap {
@@ -8182,3 +8182,142 @@ html.gh-mobile-landscape .orientation-guard { display:flex !important; }
     padding-bottom: max(76px, calc(58px + env(safe-area-inset-bottom))) !important;
   }
 }
+
+
+/* v1.6.3 — Flight follows the same centred portrait-style presentation as
+   Gravity on desktop. The old landscape side-panel experiment is intentionally
+   overridden for every viewport; handheld landscape is handled by the shared
+   orientation guard instead. */
+body[data-game-id="game-09"] .flight-page{
+  width:100%!important;
+  max-width:560px!important;
+  height:auto!important;
+  min-height:100vh!important;
+  min-height:100svh!important;
+  min-height:100dvh!important;
+  margin:0 auto!important;
+  padding:
+    max(10px,env(safe-area-inset-top))
+    14px
+    max(96px,calc(72px + env(safe-area-inset-bottom)))!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  overflow:visible!important;
+}
+body[data-game-id="game-09"] .flight-header{
+  width:100%!important;
+  margin:0 0 10px!important;
+  padding:0!important;
+  text-align:center!important;
+}
+body[data-game-id="game-09"] .flight-header .kicker{
+  margin:0 0 5px!important;
+  font-size:10px!important;
+}
+body[data-game-id="game-09"] .flight-header h1{
+  font-size:clamp(30px,5vw,42px)!important;
+  line-height:1.05!important;
+}
+body[data-game-id="game-09"] .flight-difficulty-row,
+body[data-game-id="game-09"] .flight-hud,
+body[data-game-id="game-09"] .flight-stage-wrap,
+body[data-game-id="game-09"] .flight-status,
+body[data-game-id="game-09"] .flight-controls{
+  width:min(100%,430px)!important;
+  max-width:430px!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  grid-column:auto!important;
+  grid-row:auto!important;
+  align-self:auto!important;
+  justify-self:auto!important;
+}
+body[data-game-id="game-09"] .flight-hud{
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:5px!important;
+  margin-bottom:7px!important;
+}
+body[data-game-id="game-09"] .flight-hud>div{
+  min-width:0!important;
+  min-height:40px!important;
+  padding:5px 7px!important;
+}
+body[data-game-id="game-09"] .flight-hud span{font-size:7px!important}
+body[data-game-id="game-09"] .flight-hud strong{font-size:13px!important;white-space:nowrap}
+body[data-game-id="game-09"] .flight-stage-wrap{
+  position:relative!important;
+  max-height:none!important;
+  aspect-ratio:4/3!important;
+  border-radius:20px!important;
+}
+body[data-game-id="game-09"] #flight-canvas{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  aspect-ratio:4/3!important;
+  touch-action:none!important;
+}
+body[data-game-id="game-09"] .flight-status{
+  min-height:20px!important;
+  margin-top:6px!important;
+  margin-bottom:6px!important;
+  padding:0!important;
+  display:block!important;
+  text-align:center!important;
+  font-size:11px!important;
+  line-height:1.25!important;
+}
+body[data-game-id="game-09"] .flight-controls{
+  display:grid!important;
+  grid-template-columns:1fr 1.35fr 1fr!important;
+  grid-template-rows:none!important;
+  gap:7px!important;
+  margin-top:0!important;
+}
+body[data-game-id="game-09"] .flight-control,
+body[data-game-id="game-09"] .flight-control.pitch:first-child,
+body[data-game-id="game-09"] .flight-control.pitch:last-child,
+body[data-game-id="game-09"] .flight-control.engine{
+  grid-column:auto!important;
+  grid-row:auto!important;
+  width:auto!important;
+  height:auto!important;
+  min-height:58px!important;
+  padding:6px 7px 5px!important;
+  border-radius:15px!important;
+}
+body[data-game-id="game-09"] .flight-control-icon{
+  width:28px!important;
+  height:28px!important;
+}
+body[data-game-id="game-09"] .flight-control small{font-size:7.5px!important}
+body[data-game-id="game-09"] .flight-reset{
+  grid-column:auto!important;
+  grid-row:auto!important;
+  width:auto!important;
+  min-height:34px!important;
+  margin:7px auto 0!important;
+  padding:0 16px!important;
+  font-size:10px!important;
+}
+
+@media(max-width:480px){
+  body[data-game-id="game-09"] .flight-hud{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:6px!important;
+  }
+}
+@media(max-height:730px){
+  body[data-game-id="game-09"] .flight-header{margin-bottom:6px!important}
+  body[data-game-id="game-09"] .flight-difficulty-row{margin-bottom:5px!important}
+  body[data-game-id="game-09"] .flight-hud{margin-bottom:5px!important}
+  body[data-game-id="game-09"] .flight-stage-wrap{width:min(100%,390px)!important}
+  body[data-game-id="game-09"] .flight-controls{gap:6px!important}
+  body[data-game-id="game-09"] .flight-control{min-height:52px!important}
+  body[data-game-id="game-09"] .flight-reset{margin-top:5px!important}
+}
+
+/* The compatibility pass originally named a non-existent .flight-stage.
+   The real interactive surface is .flight-stage-wrap. */
+body[data-game-id="game-09"] .flight-stage-wrap{touch-action:none!important}

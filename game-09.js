@@ -892,14 +892,36 @@ flightReset.addEventListener("click",resetFlight);
 flightAgain.addEventListener("click",resetFlight);
 
 document.addEventListener("keydown",e=>{
-  if(e.key==="ArrowUp"||e.key.toLowerCase()==="w")flightInput.up=true;
-  if(e.key==="ArrowDown"||e.key.toLowerCase()==="s")flightInput.down=true;
-  if(e.key===" "||e.key==="Enter")toggleEngine();
-});
+  const key=e.key;
+  const lower=key.length===1?key.toLowerCase():key;
+  const target=e.target;
+  const interactive=target instanceof HTMLElement && (target.matches("button,input,select,textarea") || target.isContentEditable);
+
+  if(key==="ArrowUp"||lower==="w"){
+    if(key==="ArrowUp")e.preventDefault();
+    flightInput.up=true;
+  }
+  if(key==="ArrowDown"||lower==="s"){
+    if(key==="ArrowDown")e.preventDefault();
+    flightInput.down=true;
+  }
+  if((key===" "||key==="Enter")&&!interactive&&!e.repeat){
+    e.preventDefault();
+    toggleEngine();
+  }
+},{passive:false});
 document.addEventListener("keyup",e=>{
-  if(e.key==="ArrowUp"||e.key.toLowerCase()==="w")flightInput.up=false;
-  if(e.key==="ArrowDown"||e.key.toLowerCase()==="s")flightInput.down=false;
-});
+  const key=e.key;
+  const lower=key.length===1?key.toLowerCase():key;
+  if(key==="ArrowUp"||lower==="w"){
+    if(key==="ArrowUp")e.preventDefault();
+    flightInput.up=false;
+  }
+  if(key==="ArrowDown"||lower==="s"){
+    if(key==="ArrowDown")e.preventDefault();
+    flightInput.down=false;
+  }
+},{passive:false});
 
 let flightLast=performance.now();
 function flightLoop(now){

@@ -1,12 +1,11 @@
-# GameHub v1.6.2
+# GameHub v1.6.3
 
-Cross-device compatibility pass.
+Flight desktop/input consistency pass.
 
-- Desktop/laptop landscape views no longer show the rotate-device guard.
-- Normal pages now use document scrolling instead of the legacy fixed-body/nested-scroll setup, improving compatibility with older Android browsers.
-- Interactive game boards and canvases still capture their own drag/swipe gestures.
-- Viewport sizing now uses `vh` with `svh`/`dvh` enhancement and safer bottom-area spacing.
-- Installed Android PWAs now request `fullscreen` display first, with `standalone` fallback.
-- Added mobile web-app capability metadata while retaining safe-area support.
+- Flight now uses the same centred, phone-like presentation on desktop as Gravity instead of the old full-height landscape/side-control layout.
+- Flight controls remain underneath the play area on desktop and mobile.
+- Arrow Up/Down keyboard controls now prevent the browser from scrolling the page while flying.
+- Space/Enter engine shortcuts no longer interfere with focused buttons and ignore key-repeat toggling.
+- Corrected the Flight interactive-surface selector used by the cross-device touch compatibility rules.
 
-This ZIP is a complete release snapshot; the README intentionally contains only notes for v1.6.2.
+This ZIP is a complete release snapshot; the README intentionally contains only notes for v1.6.3.
