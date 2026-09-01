@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.7.1">
+  <link rel="stylesheet" href="style.css?v=1.7.2">
   <title>Colour Blocks</title>
 </head>
 <body class="modular-game" data-game-id="game-12">
@@ -19,8 +19,9 @@
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="game-12-info-title">Colour Blocks</h2>
       <p>The board is divided into <strong>four larger blocks</strong>. Your goal is to make every larger block a single solid colour.</p>
-      <p>Swipe left or right on any tile to shift its <strong>whole row</strong> by one place. Swipe up or down to shift its <strong>whole column</strong>. Tiles that move off one edge wrap around to the other side, without changing order.</p>
-      <p>It does not matter which colour ends up in which block. Every puzzle starts from a solved board and is scrambled using these same wrapped shifts, so there is always a way back.</p>
+      <p>Tap the board to place a <strong>2×2 frame</strong> over four tiles. Then use the left or right rotate button to turn those four tiles by 90°.</p>
+      <p>Every move changes exactly four tiles, so you can target a small area without moving an entire row or column. It does not matter which colour ends up in which large block.</p>
+      <p>Every puzzle starts solved and is scrambled using these same 2×2 rotations, so there is always a way back.</p>
     </div>
   </div>
 
@@ -48,7 +49,13 @@
           <div class="colour-blocks-board" id="colour-blocks-board" role="grid" aria-label="Colour sorting puzzle"></div>
         </div>
 
-        <div class="colour-blocks-status" id="colour-blocks-status" aria-live="polite">Swipe a row or column to shift it one place.</div>
+        <div class="colour-blocks-rotate-controls" aria-label="Rotate selected tiles">
+          <button id="colour-rotate-left" type="button" aria-label="Rotate selected four tiles anticlockwise"><strong>↺</strong><span>LEFT</span></button>
+          <div class="colour-blocks-rotate-label"><span>SELECTED</span><strong>2 × 2</strong></div>
+          <button id="colour-rotate-right" type="button" aria-label="Rotate selected four tiles clockwise"><strong>↻</strong><span>RIGHT</span></button>
+        </div>
+
+        <div class="colour-blocks-status" id="colour-blocks-status" aria-live="polite">Tap a 2×2 area, then rotate it left or right.</div>
 
         <div class="colour-blocks-actions">
           <button id="colour-undo" type="button">Undo</button>
@@ -59,8 +66,8 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.7.1"></script>
-  <script src="core.js?v=1.7.1"></script>
-  <script src="game-12.js?v=1.7.1"></script>
+  <script src="site-config.js?v=1.7.2"></script>
+  <script src="core.js?v=1.7.2"></script>
+  <script src="game-12.js?v=1.7.2"></script>
 </body>
 </html>

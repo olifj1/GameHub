@@ -8102,7 +8102,7 @@ body[data-game-id="game-08"] #coaster-canvas:active{cursor:grabbing}
 
 
 /* ============================================================
-   GameHub v1.7.1 — cross-device viewport / scrolling compatibility
+   GameHub v1.7.2 — cross-device viewport / scrolling compatibility
    ============================================================ */
 
 /* Older Android browsers may not support :has(), so modular pages must not
@@ -8185,7 +8185,7 @@ html.gh-mobile-landscape .orientation-guard { display:flex !important; }
 }
 
 
-/* v1.7.1 — Flight follows the same centred portrait-style presentation as
+/* v1.7.2 — Flight follows the same centred portrait-style presentation as
    Gravity on desktop. The old landscape side-panel experiment is intentionally
    overridden for every viewport; handheld landscape is handled by the shared
    orientation guard instead. */
@@ -8324,7 +8324,7 @@ body[data-game-id="game-09"] .flight-reset{
 body[data-game-id="game-09"] .flight-stage-wrap{touch-action:none!important}
 
 /* ============================================================
-   GameHub v1.7.1 — app-style game viewport lock
+   GameHub v1.7.2 — app-style game viewport lock
    ============================================================ */
 
 /* Menu/record pages remain ordinary documents. Individual game pages are
@@ -8428,7 +8428,7 @@ html.gh-game-page body[data-game-id="game-09"] .flight-page {
 }
 
 /* ============================================================
-   GameHub v1.7.1 — Colour Blocks
+   GameHub v1.7.2 — Colour Blocks
    ============================================================ */
 body[data-game-id="game-12"]{
   --gh-accent:#8b6c9d;
@@ -8638,4 +8638,114 @@ body[data-game-id="game-12"] .colour-blocks-actions button:disabled{
   body[data-game-id="game-12"] .colour-blocks-board-frame{width:min(76vw,330px,calc(100dvh - 250px));min-width:190px;padding:6px}
   body[data-game-id="game-12"] .colour-blocks-status{min-height:25px;font-size:9px}
   body[data-game-id="game-12"] .colour-blocks-actions button{min-height:38px}
+}
+
+/* ============================================================
+   GameHub v1.7.2 — Colour Blocks 2x2 rotation mechanic
+   ============================================================ */
+body[data-game-id="game-12"] .colour-blocks-board-frame{
+  width:min(80vw,380px,calc(100dvh - 338px));
+}
+@supports not (height:100dvh){
+  body[data-game-id="game-12"] .colour-blocks-board-frame{width:min(80vw,380px,calc(100vh - 338px))}
+}
+body[data-game-id="game-12"] .colour-blocks-board{
+  cursor:pointer;
+}
+body[data-game-id="game-12"] .colour-blocks-tile.selected{
+  z-index:3;
+  transform:scale(.94);
+  filter:brightness(1.07) saturate(1.03);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.38);
+}
+body[data-game-id="game-12"] .colour-blocks-selection-frame{
+  position:absolute;
+  z-index:8;
+  pointer-events:none;
+  border:3px solid #fff;
+  border-radius:13px;
+  box-shadow:0 0 0 2px rgba(37,43,51,.78),0 4px 10px rgba(37,43,51,.16);
+  transition:left .09s ease,top .09s ease,width .09s ease,height .09s ease;
+}
+body[data-game-id="game-12"] .colour-blocks-selection-frame::before,
+body[data-game-id="game-12"] .colour-blocks-selection-frame::after{
+  content:"";
+  position:absolute;
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 0 0 1.5px rgba(37,43,51,.7);
+}
+body[data-game-id="game-12"] .colour-blocks-selection-frame::before{left:50%;top:-5px;transform:translateX(-50%)}
+body[data-game-id="game-12"] .colour-blocks-selection-frame::after{left:50%;bottom:-5px;transform:translateX(-50%)}
+body[data-game-id="game-12"] .colour-blocks-rotate-controls{
+  width:min(100%,390px);
+  min-height:50px;
+  display:grid;
+  grid-template-columns:1fr .72fr 1fr;
+  gap:7px;
+  align-items:stretch;
+}
+body[data-game-id="game-12"] .colour-blocks-rotate-controls button{
+  min-height:50px;
+  padding:4px 8px 3px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:0;
+  border:1.5px solid color-mix(in srgb,var(--gh-accent) 68%,var(--gh-ink));
+  border-radius:14px;
+  background:var(--gh-accent);
+  color:#fff;
+  font:inherit;
+  font-weight:950;
+  box-shadow:0 3px 8px rgba(37,43,51,.08);
+}
+body[data-game-id="game-12"] .colour-blocks-rotate-controls button strong{
+  font-size:25px;
+  line-height:.9;
+  font-weight:800;
+}
+body[data-game-id="game-12"] .colour-blocks-rotate-controls button span{
+  margin-top:2px;
+  font-size:7px;
+  letter-spacing:.12em;
+}
+body[data-game-id="game-12"] .colour-blocks-rotate-controls button:disabled{
+  opacity:.32;
+  filter:saturate(.5);
+}
+body[data-game-id="game-12"] .colour-blocks-rotate-label{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  border:1.5px solid var(--gh-line);
+  border-radius:14px;
+  background:rgba(247,241,235,.68);
+}
+body[data-game-id="game-12"] .colour-blocks-rotate-label span{
+  color:var(--gh-muted);
+  font-size:6px;
+  font-weight:950;
+  letter-spacing:.12em;
+}
+body[data-game-id="game-12"] .colour-blocks-rotate-label strong{
+  margin-top:2px;
+  font-size:13px;
+  line-height:1;
+}
+body[data-game-id="game-12"] .colour-blocks-status{
+  min-height:25px;
+  padding:1px 8px;
+}
+@media(max-height:700px){
+  body[data-game-id="game-12"] .colour-blocks-board-frame{width:min(74vw,310px,calc(100dvh - 315px));min-width:180px;padding:5px}
+  body[data-game-id="game-12"] .colour-blocks-rotate-controls{min-height:43px}
+  body[data-game-id="game-12"] .colour-blocks-rotate-controls button{min-height:43px}
+  body[data-game-id="game-12"] .colour-blocks-rotate-controls button strong{font-size:22px}
+  body[data-game-id="game-12"] .colour-blocks-status{min-height:20px;font-size:8px}
+  body[data-game-id="game-12"] .colour-blocks-actions button{min-height:35px}
 }
