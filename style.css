@@ -8101,7 +8101,7 @@ body[data-game-id="game-08"] #coaster-canvas:active{cursor:grabbing}
 
 
 /* ============================================================
-   GameHub v1.6.3 — cross-device viewport / scrolling compatibility
+   GameHub v1.6.4 — cross-device viewport / scrolling compatibility
    ============================================================ */
 
 /* Older Android browsers may not support :has(), so modular pages must not
@@ -8184,7 +8184,7 @@ html.gh-mobile-landscape .orientation-guard { display:flex !important; }
 }
 
 
-/* v1.6.3 — Flight follows the same centred portrait-style presentation as
+/* v1.6.4 — Flight follows the same centred portrait-style presentation as
    Gravity on desktop. The old landscape side-panel experiment is intentionally
    overridden for every viewport; handheld landscape is handled by the shared
    orientation guard instead. */
@@ -8321,3 +8321,107 @@ body[data-game-id="game-09"] .flight-reset{
 /* The compatibility pass originally named a non-existent .flight-stage.
    The real interactive surface is .flight-stage-wrap. */
 body[data-game-id="game-09"] .flight-stage-wrap{touch-action:none!important}
+
+/* ============================================================
+   GameHub v1.6.4 — app-style game viewport lock
+   ============================================================ */
+
+/* Menu/record pages remain ordinary documents. Individual game pages are
+   explicitly marked in HTML so this does not depend on :has() or browser
+   feature detection (important for older Android devices). */
+html.gh-game-page {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  touch-action: manipulation;
+}
+
+html.gh-game-page body.modular-game {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  touch-action: manipulation;
+}
+
+html.gh-game-page body.modular-game .screen-wrap,
+html.gh-game-page body.modular-game .screen {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+html.gh-game-page body.modular-game .page {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  touch-action: manipulation;
+  /* Dynamic viewport sizing already accounts for browser/system chrome.
+     Keep only the real safe-area inset rather than a large scroll buffer. */
+  padding-bottom: max(10px, calc(8px + env(safe-area-inset-bottom))) !important;
+}
+
+/* Restore normal control behaviour inside the locked page. The root owns
+   page-panning prevention; buttons/inputs remain fully interactive. */
+html.gh-game-page button,
+html.gh-game-page a,
+html.gh-game-page select,
+html.gh-game-page input {
+  touch-action: manipulation;
+}
+html.gh-game-page input[type="range"] {
+  touch-action: none;
+}
+
+
+/* Information/results overlays may scroll internally if their copy is taller
+   than a very short device viewport; the game page beneath them remains locked. */
+html.gh-game-page .game-info-overlay,
+html.gh-game-page .gh-result-overlay {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+html.gh-game-page .game-info-dialog,
+html.gh-game-page .gh-result-card {
+  max-height: calc(100vh - 28px);
+  max-height: calc(100dvh - 28px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+/* Flight's v1.6.3 desktop override inherited the old scrolling page model.
+   Keep its centred presentation but make it fill the locked game viewport. */
+html.gh-game-page body[data-game-id="game-09"] .flight-page {
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+  padding-bottom: max(10px, calc(8px + env(safe-area-inset-bottom))) !important;
+}
+
+/* On very short usable viewports (older Android with persistent system bars),
+   favour fitting the app over creating an invisible scroll region. */
+@media (max-height: 700px) {
+  html.gh-game-page body.modular-game .page {
+    padding-top: max(6px, env(safe-area-inset-top)) !important;
+    padding-bottom: max(6px, calc(4px + env(safe-area-inset-bottom))) !important;
+  }
+  html.gh-game-page body.modular-game .page-header {
+    margin-bottom: 8px !important;
+  }
+}
