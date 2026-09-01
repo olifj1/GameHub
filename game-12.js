@@ -1,4 +1,4 @@
-// Colour Blocks — reverse contiguous runs of coloured tiles until each quadrant is solid.
+// Colour Blocks — shift whole rows and columns with wraparound until each quadrant is solid.
 
 const colourBoardEl = $("#colour-blocks-board");
 const colourMovesEl = $("#colour-moves");
@@ -11,21 +11,21 @@ const colourResetButton = $("#colour-reset");
 const colourNewButton = $("#colour-new");
 
 const colourDifficultyConfig = {
-  easy:   { size: 4, scrambleMoves: 6, minMixedBlocks: 3 },
-  medium: { size: 6, scrambleMoves: 12, minMixedBlocks: 4 },
-  hard:   { size: 8, scrambleMoves: 20, minMixedBlocks: 4 }
+  easy:   { size: 4, scrambleMoves: 7,  minMixedBlocks: 3 },
+  medium: { size: 6, scrambleMoves: 13, minMixedBlocks: 4 },
+  hard:   { size: 8, scrambleMoves: 21, minMixedBlocks: 4 }
 };
 
 const colourPalette = [
-  { name: "coral",  value: "#c97969" },
-  { name: "blue",   value: "#7596b7" },
-  { name: "gold",   value: "#d4ad5f" },
-  { name: "green",  value: "#779b78" }
+  { name: "coral", value: "#c97969" },
+  { name: "blue",  value: "#7596b7" },
+  { name: "gold",  value: "#d4ad5f" },
+  { name: "green", value: "#779b78" }
 ];
 
 let colourDifficulty = "easy";
 let colourSize = 4;
-let colourPar = 6;
+let colourPar = 7;
 let colourBoard = [];
 let colourInitialBoard = [];
 let colourMoves = 0;
@@ -57,27 +57,34 @@ function colourBuildSolved(size) {
   );
 }
 
-function colourReverse(board, move) {
-  const { axis, fixed, start, end } = move;
-  const low = Math.min(start, end);
-  const high = Math.max(start, end);
-  const values = [];
-  for (let n = low; n <= high; n++) {
-    values.push(axis === "row" ? board[fixed][n] : board[n][fixed]);
+// delta is +1 for right/down and -1 for left/up.
+function colourShift(board, move) {
+  const { axis, fixed, delta } = move;
+  const size = board.length;
+  if (!size || !delta) return;
+
+  if (axis === "row") {
+    const row = [...board[fixed]];
+    for (let col = 0; col < size; col++) {
+      const source = (col - delta + size) % size;
+      board[fixed][col] = row[source];
+    }
+    return;
   }
-  values.reverse();
-  for (let n = low; n <= high; n++) {
-    if (axis === "row") board[fixed][n] = values[n - low];
-    else board[n][fixed] = values[n - low];
+
+  const column = Array.from({ length: size }, (_, row) => board[row][fixed]);
+  for (let row = 0; row < size; row++) {
+    const source = (row - delta + size) % size;
+    board[row][fixed] = column[source];
   }
 }
 
 function colourMoveChanges(board, move) {
-  const before = colourCloneBoard(board);
-  colourReverse(before, move);
-  for (let row = 0; row < before.length; row++) {
-    for (let col = 0; col < before.length; col++) {
-      if (before[row][col] !== board[row][col]) return true;
+  const copy = colourCloneBoard(board);
+  colourShift(copy, move);
+  for (let row = 0; row < copy.length; row++) {
+    for (let col = 0; col < copy.length; col++) {
+      if (copy[row][col] !== board[row][col]) return true;
     }
   }
   return false;
@@ -110,33 +117,33 @@ function colourMakeScrambledBoard() {
   const config = colourDifficultyConfig[colourDifficulty];
   let best = null;
 
-  for (let attempt = 0; attempt < 120; attempt++) {
+  for (let attempt = 0; attempt < 160; attempt++) {
     const board = colourBuildSolved(config.size);
     const moves = [];
-    let lastKey = "";
+    let previous = null;
 
     for (let i = 0; i < config.scrambleMoves; i++) {
       let chosen = null;
-      for (let pick = 0; pick < 80 && !chosen; pick++) {
+      for (let pick = 0; pick < 100 && !chosen; pick++) {
         const axis = Math.random() < 0.5 ? "row" : "col";
         const fixed = Math.floor(Math.random() * config.size);
-        const a = Math.floor(Math.random() * config.size);
-        let b = Math.floor(Math.random() * config.size);
-        if (b === a) b = (b + 1 + Math.floor(Math.random() * (config.size - 1))) % config.size;
-        const move = { axis, fixed, start: Math.min(a, b), end: Math.max(a, b) };
-        const key = `${axis}:${fixed}:${move.start}:${move.end}`;
-        if (key === lastKey || !colourMoveChanges(board, move)) continue;
-        chosen = move;
-        lastKey = key;
+        const delta = Math.random() < 0.5 ? -1 : 1;
+        const candidate = { axis, fixed, delta };
+
+        // Avoid immediately undoing the previous scramble step.
+        if (previous && previous.axis === axis && previous.fixed === fixed && previous.delta === -delta) continue;
+        if (!colourMoveChanges(board, candidate)) continue;
+        chosen = candidate;
       }
       if (!chosen) break;
-      colourReverse(board, chosen);
+      colourShift(board, chosen);
       moves.push(chosen);
+      previous = chosen;
     }
 
     const mixed = 4 - colourSolidBlocks(board);
     const candidate = { board, moves, mixed };
-    if (!best || mixed > best.mixed) best = candidate;
+    if (!best || mixed > best.mixed || (mixed === best.mixed && moves.length > best.moves.length)) best = candidate;
     if (moves.length === config.scrambleMoves && !colourIsSolved(board) && mixed >= config.minMixedBlocks) return candidate;
   }
 
@@ -158,20 +165,24 @@ function colourSelectionCells(drag = colourDrag) {
   if (!drag || !drag.axis) return [];
   const cells = [];
   if (drag.axis === "row") {
-    const low = Math.min(drag.start.col, drag.end.col);
-    const high = Math.max(drag.start.col, drag.end.col);
-    for (let col = low; col <= high; col++) cells.push(`${drag.start.row},${col}`);
+    for (let col = 0; col < colourSize; col++) cells.push(`${drag.start.row},${col}`);
   } else {
-    const low = Math.min(drag.start.row, drag.end.row);
-    const high = Math.max(drag.start.row, drag.end.row);
-    for (let row = low; row <= high; row++) cells.push(`${row},${drag.start.col}`);
+    for (let row = 0; row < colourSize; row++) cells.push(`${row},${drag.start.col}`);
   }
   return cells;
+}
+
+function colourDirectionText(drag = colourDrag) {
+  if (!drag || !drag.axis || !drag.delta) return "";
+  if (drag.axis === "row") return drag.delta > 0 ? "right" : "left";
+  return drag.delta > 0 ? "down" : "up";
 }
 
 function colourRender() {
   const selected = new Set(colourSelectionCells());
   colourBoardEl.style.setProperty("--colour-grid-size", colourSize);
+  colourBoardEl.dataset.shiftAxis = colourDrag?.axis || "";
+  colourBoardEl.dataset.shiftDirection = colourDirectionText();
   colourBoardEl.innerHTML = "";
 
   for (let row = 0; row < colourSize; row++) {
@@ -233,12 +244,17 @@ function colourFinishPuzzle() {
 }
 
 function colourCommitMove(move) {
-  if (colourSolved || !move || move.start === move.end) return;
+  if (colourSolved || !move || !move.delta) return;
+  if (!colourMoveChanges(colourBoard, move)) {
+    colourStatusEl.textContent = "That line is already uniform — try a different row or column.";
+    colourRender();
+    return;
+  }
   colourHistory.push(colourCloneBoard(colourBoard));
-  colourReverse(colourBoard, move);
+  colourShift(colourBoard, move);
   colourMoves++;
   colourStatusEl.classList.remove("good");
-  colourStatusEl.textContent = "Keep going — make each large block one solid colour.";
+  colourStatusEl.textContent = "Keep going — every shift changes a whole row or column.";
   colourRender();
   if (colourIsSolved()) colourFinishPuzzle();
 }
@@ -255,7 +271,7 @@ function colourNewPuzzle() {
   colourSolved = false;
   colourDrag = null;
   colourStatusEl.classList.remove("good");
-  colourStatusEl.textContent = "Swipe across a row or column to reverse those tiles.";
+  colourStatusEl.textContent = "Swipe a row or column to shift it one place.";
   colourRender();
 }
 
@@ -275,7 +291,7 @@ function colourUndo() {
   colourBoard = colourHistory.pop();
   colourMoves = Math.max(0, colourMoves - 1);
   colourDrag = null;
-  colourStatusEl.textContent = "Last move undone.";
+  colourStatusEl.textContent = "Last shift undone.";
   colourRender();
 }
 
@@ -288,8 +304,8 @@ colourBoardEl.addEventListener("pointerdown", event => {
   colourDrag = {
     pointerId: event.pointerId,
     start,
-    end: { ...start },
     axis: null,
+    delta: 0,
     startX: event.clientX,
     startY: event.clientY
   };
@@ -299,22 +315,27 @@ colourBoardEl.addEventListener("pointerdown", event => {
 colourBoardEl.addEventListener("pointermove", event => {
   if (!colourDrag || colourDrag.pointerId !== event.pointerId) return;
   event.preventDefault();
-  const current = colourCellIndexFromPoint(event.clientX, event.clientY);
-  if (!current) return;
   const dx = event.clientX - colourDrag.startX;
   const dy = event.clientY - colourDrag.startY;
+  const rect = colourBoardEl.getBoundingClientRect();
+  const threshold = Math.max(10, rect.width / colourSize * 0.28);
 
   if (!colourDrag.axis) {
-    const rect = colourBoardEl.getBoundingClientRect();
-    const threshold = Math.max(5, rect.width / colourSize * 0.22);
     if (Math.max(Math.abs(dx), Math.abs(dy)) < threshold) return;
     colourDrag.axis = Math.abs(dx) >= Math.abs(dy) ? "row" : "col";
   }
 
   if (colourDrag.axis === "row") {
-    colourDrag.end = { row: colourDrag.start.row, col: current.col };
+    if (Math.abs(dx) < threshold) colourDrag.delta = 0;
+    else colourDrag.delta = dx > 0 ? 1 : -1;
   } else {
-    colourDrag.end = { row: current.row, col: colourDrag.start.col };
+    if (Math.abs(dy) < threshold) colourDrag.delta = 0;
+    else colourDrag.delta = dy > 0 ? 1 : -1;
+  }
+
+  const direction = colourDirectionText();
+  if (direction) {
+    colourStatusEl.textContent = `Release to shift this ${colourDrag.axis} ${direction}.`;
   }
   colourRender();
 });
@@ -326,19 +347,15 @@ function colourEndDrag(event) {
   colourDrag = null;
   try { colourBoardEl.releasePointerCapture?.(event.pointerId); } catch (_) {}
 
-  if (!drag.axis) {
+  if (!drag.axis || !drag.delta) {
+    colourStatusEl.textContent = "Swipe left/right for a row, or up/down for a column.";
     colourRender();
     return;
   }
 
   const move = drag.axis === "row"
-    ? { axis: "row", fixed: drag.start.row, start: drag.start.col, end: drag.end.col }
-    : { axis: "col", fixed: drag.start.col, start: drag.start.row, end: drag.end.row };
-
-  if (move.start === move.end) {
-    colourRender();
-    return;
-  }
+    ? { axis: "row", fixed: drag.start.row, delta: drag.delta }
+    : { axis: "col", fixed: drag.start.col, delta: drag.delta };
   colourCommitMove(move);
 }
 
@@ -346,6 +363,7 @@ colourBoardEl.addEventListener("pointerup", colourEndDrag);
 colourBoardEl.addEventListener("pointercancel", event => {
   if (!colourDrag || colourDrag.pointerId !== event.pointerId) return;
   colourDrag = null;
+  colourStatusEl.textContent = "Swipe a row or column to shift it one place.";
   colourRender();
 });
 

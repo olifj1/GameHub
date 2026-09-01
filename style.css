@@ -8102,7 +8102,7 @@ body[data-game-id="game-08"] #coaster-canvas:active{cursor:grabbing}
 
 
 /* ============================================================
-   GameHub v1.7.0 — cross-device viewport / scrolling compatibility
+   GameHub v1.7.1 — cross-device viewport / scrolling compatibility
    ============================================================ */
 
 /* Older Android browsers may not support :has(), so modular pages must not
@@ -8185,7 +8185,7 @@ html.gh-mobile-landscape .orientation-guard { display:flex !important; }
 }
 
 
-/* v1.7.0 — Flight follows the same centred portrait-style presentation as
+/* v1.7.1 — Flight follows the same centred portrait-style presentation as
    Gravity on desktop. The old landscape side-panel experiment is intentionally
    overridden for every viewport; handheld landscape is handled by the shared
    orientation guard instead. */
@@ -8324,7 +8324,7 @@ body[data-game-id="game-09"] .flight-reset{
 body[data-game-id="game-09"] .flight-stage-wrap{touch-action:none!important}
 
 /* ============================================================
-   GameHub v1.7.0 — app-style game viewport lock
+   GameHub v1.7.1 — app-style game viewport lock
    ============================================================ */
 
 /* Menu/record pages remain ordinary documents. Individual game pages are
@@ -8428,7 +8428,7 @@ html.gh-game-page body[data-game-id="game-09"] .flight-page {
 }
 
 /* ============================================================
-   GameHub v1.7.0 — Colour Blocks
+   GameHub v1.7.1 — Colour Blocks
    ============================================================ */
 body[data-game-id="game-12"]{
   --gh-accent:#8b6c9d;
@@ -8578,10 +8578,14 @@ body[data-game-id="game-12"] .colour-blocks-tile::after{
 }
 body[data-game-id="game-12"] .colour-blocks-tile.selected{
   z-index:3;
-  transform:scale(.91);
+  transform:scale(.94);
   filter:brightness(1.08);
-  box-shadow:0 0 0 3px #fff,0 0 0 5px rgba(37,43,51,.62);
+  box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(37,43,51,.55);
 }
+body[data-game-id="game-12"] .colour-blocks-board[data-shift-direction="left"] .colour-blocks-tile.selected{transform:translateX(-3px) scale(.94)}
+body[data-game-id="game-12"] .colour-blocks-board[data-shift-direction="right"] .colour-blocks-tile.selected{transform:translateX(3px) scale(.94)}
+body[data-game-id="game-12"] .colour-blocks-board[data-shift-direction="up"] .colour-blocks-tile.selected{transform:translateY(-3px) scale(.94)}
+body[data-game-id="game-12"] .colour-blocks-board[data-shift-direction="down"] .colour-blocks-tile.selected{transform:translateY(3px) scale(.94)}
 body[data-game-id="game-12"] .colour-blocks-status{
   width:min(100%,390px);
   min-height:32px;

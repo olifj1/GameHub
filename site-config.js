@@ -13,7 +13,7 @@ window.APP_CONFIG = {
       "description": "Build multiplication facts one step at a time.",
       "icon": "×",
       "enabled": true,
-      "path": "game-01.html?v=1.7.0"
+      "path": "game-01.html?v=1.7.1"
     },
     {
       "id": "game-02",
@@ -21,7 +21,7 @@ window.APP_CONFIG = {
       "description": "Move through the day and explore analogue and digital time.",
       "icon": "◷",
       "enabled": true,
-      "path": "game-02.html?v=1.7.0"
+      "path": "game-02.html?v=1.7.1"
     },
     {
       "id": "game-03",
@@ -29,7 +29,7 @@ window.APP_CONFIG = {
       "description": "Practise arithmetic at your own pace or race the timer.",
       "icon": "+",
       "enabled": true,
-      "path": "game-03.html?v=1.7.0"
+      "path": "game-03.html?v=1.7.1"
     },
     {
       "id": "game-04",
@@ -37,7 +37,7 @@ window.APP_CONFIG = {
       "description": "Read sentences and choose missing words.",
       "icon": "Aa",
       "enabled": true,
-      "path": "game-04.html?v=1.7.0"
+      "path": "game-04.html?v=1.7.1"
     },
     {
       "id": "game-05",
@@ -45,7 +45,7 @@ window.APP_CONFIG = {
       "description": "Use maths to solve everyday problems.",
       "icon": "▦",
       "enabled": true,
-      "path": "game-05.html?v=1.7.0"
+      "path": "game-05.html?v=1.7.1"
     },
     {
       "id": "game-06",
@@ -53,7 +53,7 @@ window.APP_CONFIG = {
       "description": "Fly through the cavern, collect the stars and land safely.",
       "icon": "△",
       "enabled": true,
-      "path": "game-06.html?v=1.7.0"
+      "path": "game-06.html?v=1.7.1"
     },
     {
       "id": "game-07",
@@ -61,7 +61,7 @@ window.APP_CONFIG = {
       "description": "Build a program to guide the rover to the flag.",
       "icon": "{ }",
       "enabled": true,
-      "path": "game-07.html?v=1.7.0"
+      "path": "game-07.html?v=1.7.1"
     },
     {
       "id": "game-08",
@@ -75,12 +75,12 @@ window.APP_CONFIG = {
         "difficulties": ["standard"],
         "hasScore": true
       },
-      "path": "game-08.html?v=1.7.0"
+      "path": "game-08.html?v=1.7.1"
     },
     {
       "id": "game-12",
       "displayName": "Colour Blocks",
-      "description": "Reverse rows and columns to rebuild four solid blocks of colour.",
+      "description": "Shift whole rows and columns to rebuild four solid blocks of colour.",
       "icon": "▦",
       "enabled": true,
       "progress": {
@@ -88,7 +88,7 @@ window.APP_CONFIG = {
         "difficulties": ["easy", "medium", "hard"],
         "hasScore": false
       },
-      "path": "game-12.html?v=1.7.0"
+      "path": "game-12.html?v=1.7.1"
     },
     {
       "id": "game-11",
@@ -101,7 +101,7 @@ window.APP_CONFIG = {
         "difficulties": ["easy", "medium", "hard"],
         "hasScore": true
       },
-      "path": "game-11.html?v=1.7.0"
+      "path": "game-11.html?v=1.7.1"
     },
     {
       "id": "game-09",
@@ -114,7 +114,7 @@ window.APP_CONFIG = {
         "difficulties": ["easy", "medium", "hard"],
         "hasScore": true
       },
-      "path": "game-09.html?v=1.7.0"
+      "path": "game-09.html?v=1.7.1"
     },
     {
       "id": "game-10",
@@ -127,7 +127,7 @@ window.APP_CONFIG = {
         "difficulties": ["easy", "medium", "hard"],
         "hasScore": false
       },
-      "path": "game-10.html?v=1.7.0"
+      "path": "game-10.html?v=1.7.1"
     }
   ]
 };
