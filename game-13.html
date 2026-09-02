@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.7.8">
+  <link rel="stylesheet" href="style.css?v=1.7.9">
   <title>Racer</title>
 </head>
 <body class="modular-game" data-game-id="game-13">
@@ -19,7 +19,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="game-13-info-title">Instructions</h2>
-      <p>Press Go once to start, then the car accelerates automatically. Use only Left and Right to steer around the circuit and complete the required laps as quickly as you can. Running onto the grass slows the car down. Easy is a broad flowing one-lap circuit, Medium adds longer linked bends over two laps, and Hard is a more technical three-lap circuit. Open the settings control to tune top speed, acceleration and grip while we refine the handling.</p>
+      <p>Press Go once to start, then the car accelerates automatically. Use Left and Right to steer around circuits built from straights, hairpins, sweepers and linked corners. The car carries momentum through a turn, so lower grip allows more drift while higher grip makes it settle sooner. Running onto the grass slows the car down. Open the settings control to tune top speed, acceleration and grip.</p>
     </div>
   </div>
 
@@ -56,8 +56,8 @@
                 <input id="racer-acceleration" max="420" min="140" step="10" type="range" value="270">
               </label>
               <label>
-                <span>Grip <strong id="racer-grip-value">5.5</strong></span>
-                <input id="racer-grip" max="9" min="2" step="0.25" type="range" value="5.5">
+                <span>Grip <strong id="racer-grip-value">3.2</strong></span>
+                <input id="racer-grip" max="6" min="0.8" step="0.2" type="range" value="3.2">
               </label>
               <button id="racer-tuning-reset" type="button">Reset tuning</button>
             </div>
@@ -90,8 +90,8 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.7.8"></script>
-  <script src="core.js?v=1.7.8"></script>
-  <script src="game-13.js?v=1.7.8"></script>
+  <script src="site-config.js?v=1.7.9"></script>
+  <script src="core.js?v=1.7.9"></script>
+  <script src="game-13.js?v=1.7.9"></script>
 </body>
 </html>

@@ -26,75 +26,90 @@
   };
 
   const WORLD = { width: 1500, height: 1220 };
-  const DEFAULT_TUNING = { topSpeed: 330, acceleration: 220, grip: 6.5 };
-  const TUNING_KEY = "gameHubRacerTuning";
+  const DEFAULT_TUNING = { topSpeed: 330, acceleration: 220, grip: 3.2 };
+  const TUNING_KEY = "gameHubRacerTuningV2";
   const TIMES_KEY = "gameHubRacerBestTimes";
   const input = { left: false, right: false };
 
-  // Each circuit is built from explicit cubic Bezier sections. The points are
-  // the actual road design rather than loose waypoints that an interpolating
-  // spline has to guess its way through. That gives broad, consistent-radius
-  // corners and lets S-bends flow cleanly from one section into the next.
+  // Circuit layouts are built like real race tracks rather than as freeform
+  // spline loops: long straights are true line segments, while individual
+  // corners use deliberately placed Bezier arcs. This creates recognisable
+  // braking zones, hairpins, sweepers, esses and short connecting chutes.
   const COURSE_DEFS = {
     easy: {
-      name: "Meadow Loop",
+      name: "Club Circuit",
       laps: 1,
-      width: 154,
-      target: 29,
-      segments: [
-        [[315,250],[500,145],[760,135],[960,200]],
-        [[960,200],[1160,245],[1300,375],[1270,550]],
-        [[1270,550],[1240,735],[1120,885],[930,975]],
-        [[930,975],[720,1070],[455,1035],[300,900]],
-        [[300,900],[145,765],[155,560],[220,420]],
-        [[220,420],[250,350],[240,293],[315,250]]
+      width: 142,
+      target: 28,
+      seed: 19,
+      start: [300, 160],
+      commands: [
+        ["L", [980, 160]],
+        ["C", [1120, 160], [1210, 250], [1210, 380]],
+        ["L", [1210, 610]],
+        ["C", [1210, 750], [1125, 835], [990, 835]],
+        ["C", [850, 835], [765, 750], [765, 610]],
+        ["L", [765, 525]],
+        ["C", [765, 410], [690, 370], [575, 370]],
+        ["L", [360, 370]],
+        ["C", [220, 370], [150, 305], [165, 230]],
+        ["C", [178, 165], [230, 160], [300, 160]]
       ]
     },
     medium: {
-      name: "Riverside",
+      name: "Grand Prix Loop",
       laps: 2,
-      width: 138,
-      target: 57,
-      segments: [
-        [[300,225],[500,120],[810,125],[1035,205]],
-        [[1035,205],[1245,280],[1335,410],[1250,550]],
-        [[1250,550],[1175,670],[985,635],[875,560]],
-        [[875,560],[750,475],[630,475],[555,585]],
-        [[555,585],[475,705],[600,825],[795,815]],
-        [[795,815],[1010,805],[1200,845],[1250,955]],
-        [[1250,955],[1300,1065],[1170,1100],[1050,1080]],
-        [[1050,1080],[850,1050],[700,1040],[565,1015]],
-        [[565,1015],[330,945],[180,800],[205,630]],
-        [[205,630],[225,485],[215,270],[300,225]]
+      width: 128,
+      target: 60,
+      seed: 43,
+      start: [300, 120],
+      commands: [
+        ["L", [980, 120]],
+        ["C", [1125, 120], [1210, 220], [1240, 350]],
+        ["L", [1290, 540]],
+        ["C", [1320, 660], [1230, 755], [1100, 760]],
+        ["L", [830, 760]],
+        ["C", [750, 760], [735, 690], [665, 680]],
+        ["C", [600, 670], [575, 735], [515, 755]],
+        ["L", [350, 830]],
+        ["C", [225, 885], [150, 805], [175, 690]],
+        ["L", [235, 455]],
+        ["C", [120, 410], [115, 240], [195, 160]],
+        ["C", [220, 135], [255, 120], [300, 120]]
       ]
     },
     hard: {
-      name: "Hill Circuit",
+      name: "Mountain Ring",
       laps: 3,
-      width: 124,
-      target: 86,
-      segments: [
-        [[300,220],[480,120],[735,125],[925,210]],
-        [[925,210],[1065,275],[1130,360],[1085,450]],
-        [[1085,450],[1020,575],[825,565],[735,475]],
-        [[735,475],[640,380],[535,390],[475,495]],
-        [[475,495],[405,615],[520,705],[685,690]],
-        [[685,690],[865,675],[970,730],[965,830]],
-        [[965,830],[960,925],[835,980],[690,935]],
-        [[690,935],[530,885],[420,900],[385,1010]],
-        [[385,1010],[335,1135],[155,1045],[170,875]],
-        [[170,875],[180,735],[315,680],[350,585]],
-        [[350,585],[385,485],[245,455],[205,385]],
-        [[205,385],[165,315],[210,260],[300,220]]
+      width: 118,
+      target: 88,
+      seed: 71,
+      start: [280, 120],
+      commands: [
+        ["L", [1010, 120]],
+        ["C", [1135, 120], [1200, 190], [1235, 300]],
+        ["L", [1310, 510]],
+        ["C", [1350, 630], [1255, 705], [1130, 685]],
+        ["L", [930, 650]],
+        ["C", [820, 630], [785, 705], [845, 790]],
+        ["L", [1010, 990]],
+        ["C", [1075, 1075], [985, 1130], [875, 1090]],
+        ["L", [625, 1000]],
+        ["C", [520, 965], [455, 1040], [355, 1000]],
+        ["C", [250, 960], [230, 855], [290, 770]],
+        ["L", [475, 510]],
+        ["C", [535, 425], [500, 350], [405, 345]],
+        ["L", [300, 345]],
+        ["C", [180, 345], [140, 250], [190, 175]],
+        ["C", [210, 140], [245, 120], [280, 120]]
       ]
     }
   };
 
   const SURFACES = {
-    tarmac: { max: 1, accel: 1, grip: 1, drag: 0.30 },
-    grass: { max: 0.48, accel: 0.52, grip: 0.56, drag: 1.75 }
+    tarmac: { max: 1, accel: 1, grip: 1, drag: 0.24 },
+    grass: { max: 0.46, accel: 0.45, grip: 0.46, drag: 1.9 }
   };
-
   let difficulty = "easy";
   let course = null;
   let track = [];
@@ -115,6 +130,9 @@
   let lastFrame = performance.now();
   let tuning = loadTuning();
   let bestTimes = loadBestTimes();
+  let trees = [];
+  let skidMarks = [];
+  let skidTick = 0;
 
   function loadTuning() {
     try {
@@ -181,8 +199,7 @@
   });
   syncTuningUI();
 
-  function cubicPoint(segment, t) {
-    const [p0, p1, p2, p3] = segment;
+  function cubicPoint(p0, p1, p2, p3, t) {
     const u = 1 - t;
     const tt = t * t;
     const uu = u * u;
@@ -192,59 +209,78 @@
     };
   }
 
-  function sampleBezierCourse(segments, samplesPerSection = 54) {
-    const raw = [];
-    segments.forEach((segment, segmentIndex) => {
-      for (let i = 0; i <= samplesPerSection; i++) {
-        if (segmentIndex > 0 && i === 0) continue;
-        raw.push(cubicPoint(segment, i / samplesPerSection));
+  function sampleCircuit(definition) {
+    const raw = [{ x: definition.start[0], y: definition.start[1] }];
+    let current = [...definition.start];
+
+    definition.commands.forEach(command => {
+      if (command[0] === "L") {
+        const end = command[1];
+        const length = Math.hypot(end[0] - current[0], end[1] - current[1]);
+        const samples = Math.max(2, Math.ceil(length / 8));
+        for (let i = 1; i <= samples; i++) {
+          const t = i / samples;
+          raw.push({
+            x: current[0] + (end[0] - current[0]) * t,
+            y: current[1] + (end[1] - current[1]) * t
+          });
+        }
+        current = [...end];
+        return;
       }
+
+      const c1 = command[1];
+      const c2 = command[2];
+      const end = command[3];
+      const estimate = Math.hypot(c1[0] - current[0], c1[1] - current[1])
+        + Math.hypot(c2[0] - c1[0], c2[1] - c1[1])
+        + Math.hypot(end[0] - c2[0], end[1] - c2[1]);
+      const samples = Math.max(12, Math.ceil(estimate / 7));
+      for (let i = 1; i <= samples; i++) {
+        raw.push(cubicPoint(current, c1, c2, end, i / samples));
+      }
+      current = [...end];
     });
-    // The last closed section ends exactly on the first point; keep only one
-    // copy so nearest-point and lap-crossing tests do not see a duplicate.
+
     if (raw.length > 1 && Math.hypot(raw[0].x - raw[raw.length - 1].x, raw[0].y - raw[raw.length - 1].y) < 0.01) {
       raw.pop();
     }
+    return raw;
+  }
 
-    // Resample by distance so lap gates, tangents and the minimap all behave
-    // consistently even when one Bezier section is much longer than another.
-    const cumulative = [0];
-    for (let i = 1; i < raw.length; i++) {
-      cumulative.push(cumulative[i - 1] + Math.hypot(raw[i].x - raw[i - 1].x, raw[i].y - raw[i - 1].y));
-    }
-    const closeLength = Math.hypot(raw[0].x - raw[raw.length - 1].x, raw[0].y - raw[raw.length - 1].y);
-    const total = cumulative[cumulative.length - 1] + closeLength;
-    const spacing = 8;
-    const count = Math.max(220, Math.round(total / spacing));
-    const result = [];
+  function seededRandom(seed) {
+    let state = seed >>> 0;
+    return () => {
+      state = (state * 1664525 + 1013904223) >>> 0;
+      return state / 4294967296;
+    };
+  }
 
-    for (let s = 0; s < count; s++) {
-      const target = total * s / count;
-      if (target >= cumulative[cumulative.length - 1]) {
-        const d = target - cumulative[cumulative.length - 1];
-        const t = closeLength ? d / closeLength : 0;
-        const a = raw[raw.length - 1];
-        const b = raw[0];
-        result.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
-        continue;
-      }
-      let hi = 1;
-      while (hi < cumulative.length && cumulative[hi] < target) hi++;
-      const lo = Math.max(0, hi - 1);
-      const span = cumulative[hi] - cumulative[lo] || 1;
-      const t = (target - cumulative[lo]) / span;
-      result.push({
-        x: raw[lo].x + (raw[hi].x - raw[lo].x) * t,
-        y: raw[lo].y + (raw[hi].y - raw[lo].y) * t
+  function generateTrees() {
+    const random = seededRandom(course.seed);
+    trees = [];
+    let attempts = 0;
+    while (trees.length < 76 && attempts < 1200) {
+      attempts += 1;
+      const x = 55 + random() * (WORLD.width - 110);
+      const y = 55 + random() * (WORLD.height - 110);
+      const point = nearestTrackPoint(x, y);
+      if (point.distance < course.width * 0.78 + 32) continue;
+      const start = track[0];
+      if (Math.hypot(x - start.x, y - start.y) < 150) continue;
+      trees.push({
+        x, y,
+        size: 18 + random() * 15,
+        variant: random()
       });
     }
-    return result;
   }
 
   function buildTrack() {
     course = COURSE_DEFS[difficulty];
-    track = sampleBezierCourse(course.segments);
+    track = sampleCircuit(course);
     trackLength = track.length;
+    generateTrees();
   }
 
   function angleBetween(a, b) {
@@ -277,6 +313,8 @@
     raceStart = 0;
     lapStart = 0;
     currentSurface = "tarmac";
+    skidMarks = [];
+    skidTick = 0;
     Object.keys(input).forEach(key => input[key] = false);
     Object.values(controls).forEach(button => button.classList.remove("pressed"));
     lapEl.textContent = `1 / ${course.laps}`;
@@ -415,52 +453,88 @@
     currentSurface = surfaceAt(nearest);
     const surface = SURFACES[currentSurface];
     let speed = Math.hypot(car.vx, car.vy);
+    const steer = (input.right ? 1 : 0) - (input.left ? 1 : 0);
 
-    const headingX = Math.cos(car.angle);
-    const headingY = Math.sin(car.angle);
-    const rightX = -headingY;
-    const rightY = headingX;
-    let forwardSpeed = car.vx * headingX + car.vy * headingY;
-    let sideSpeed = car.vx * rightX + car.vy * rightY;
+    // Steering rotates the car, not its velocity. The tyres then pull the
+    // velocity back toward the car's heading over time. This separation is
+    // what gives the car a controllable slip angle instead of feeling on rails.
+    const speedFactor = Math.min(1, speed / 125);
+    if (steer && speed > 4) {
+      const turnRate = 2.46 * (0.24 + speedFactor * 0.76);
+      car.angle += steer * turnRate * dt;
+    }
+
+    let headingX = Math.cos(car.angle);
+    let headingY = Math.sin(car.angle);
+    let rightX = -headingY;
+    let rightY = headingX;
 
     if (raceStarted) {
-      forwardSpeed += tuning.acceleration * surface.accel * dt;
+      const steeringLift = 1 - Math.abs(steer) * 0.28;
+      car.vx += headingX * tuning.acceleration * surface.accel * steeringLift * dt;
+      car.vy += headingY * tuning.acceleration * surface.accel * steeringLift * dt;
     } else {
-      forwardSpeed *= Math.exp(-4 * dt);
-      sideSpeed *= Math.exp(-4 * dt);
+      car.vx *= Math.exp(-4 * dt);
+      car.vy *= Math.exp(-4 * dt);
     }
 
-    const steer = (input.right ? 1 : 0) - (input.left ? 1 : 0);
-    const steerSpeed = Math.min(1, Math.abs(forwardSpeed) / 105);
-    if (steer && Math.abs(forwardSpeed) > 4) {
-      const steeringGrip = 0.68 + surface.grip * 0.32;
-      car.angle += steer * 2.58 * (0.24 + steerSpeed * 0.76) * steeringGrip * dt;
-      // A small automatic lift under full steering replaces the need for a
-      // separate brake button and makes long presses workable on a phone.
-      forwardSpeed *= Math.exp(-0.88 * Math.abs(steer) * dt);
+    // Recalculate local velocity after yawing. Low grip leaves more sideways
+    // velocity in place; high grip pulls the car toward the direction it faces.
+    let forwardSpeed = car.vx * headingX + car.vy * headingY;
+    let sideSpeed = car.vx * rightX + car.vy * rightY;
+    const gripStrength = Math.max(0.35, tuning.grip * surface.grip);
+    const lateralCorrection = 1 - Math.exp(-gripStrength * dt);
+    car.vx -= rightX * sideSpeed * lateralCorrection;
+    car.vy -= rightY * sideSpeed * lateralCorrection;
+
+    // A little extra slip appears when steering hard at speed, so the rear
+    // starts to rotate progressively rather than suddenly snapping loose.
+    if (raceStarted && steer && speed > 115 && currentSurface === "tarmac") {
+      const driftBuild = Math.min(1, (speed - 115) / 150) * (1.15 - Math.min(1, tuning.grip / 6));
+      car.vx -= rightX * steer * driftBuild * 38 * dt;
+      car.vy -= rightY * steer * driftBuild * 38 * dt;
     }
 
-    const lateralGrip = tuning.grip * surface.grip;
-    sideSpeed *= Math.exp(-lateralGrip * dt);
-    forwardSpeed *= Math.exp(-surface.drag * dt);
+    const drag = surface.drag + Math.abs(steer) * 0.16;
+    car.vx *= Math.exp(-drag * dt);
+    car.vy *= Math.exp(-drag * dt);
 
-    const maxForward = tuning.topSpeed * surface.max;
-    forwardSpeed = Math.max(0, Math.min(maxForward, forwardSpeed));
+    headingX = Math.cos(car.angle);
+    headingY = Math.sin(car.angle);
+    rightX = -headingY;
+    rightY = headingX;
+    forwardSpeed = car.vx * headingX + car.vy * headingY;
+    sideSpeed = car.vx * rightX + car.vy * rightY;
 
-    const hx = Math.cos(car.angle);
-    const hy = Math.sin(car.angle);
-    const rx = -hy;
-    const ry = hx;
-    car.vx = hx * forwardSpeed + rx * sideSpeed;
-    car.vy = hy * forwardSpeed + ry * sideSpeed;
+    // No reversing is needed in this game. If a slide spins the velocity past
+    // ninety degrees, bleed the backwards component away without killing drift.
+    if (forwardSpeed < -8) {
+      car.vx -= headingX * forwardSpeed * Math.min(1, 4 * dt);
+      car.vy -= headingY * forwardSpeed * Math.min(1, 4 * dt);
+    }
 
     speed = Math.hypot(car.vx, car.vy);
-    const maxSpeed = tuning.topSpeed * surface.max * 1.04;
+    const maxSpeed = tuning.topSpeed * surface.max;
     if (speed > maxSpeed) {
       const scale = maxSpeed / speed;
       car.vx *= scale;
       car.vy *= scale;
       speed = maxSpeed;
+    }
+
+    const slip = Math.abs(sideSpeed);
+    skidTick += 1;
+    if (currentSurface === "tarmac" && speed > 120 && slip > 28 && skidTick % 2 === 0) {
+      const rearX = car.x - headingX * car.length * 0.35;
+      const rearY = car.y - headingY * car.length * 0.35;
+      const axle = car.width * 0.31;
+      const markLength = Math.min(12, 3 + slip * 0.07);
+      for (const side of [-1, 1]) {
+        const x = rearX + rightX * axle * side;
+        const y = rearY + rightY * axle * side;
+        skidMarks.push({ x1: x, y1: y, x2: x - car.vx / Math.max(1, speed) * markLength, y2: y - car.vy / Math.max(1, speed) * markLength });
+      }
+      if (skidMarks.length > 420) skidMarks.splice(0, skidMarks.length - 420);
     }
 
     car.x += car.vx * dt;
@@ -472,9 +546,10 @@
     currentSurface = surfaceAt(nearest);
     if (raceStarted) updateLapProgress();
 
-    const lookAhead = 80 + Math.min(120, speed * 0.24);
-    const cameraTargetX = car.x + Math.cos(car.angle) * lookAhead;
-    const cameraTargetY = car.y + Math.sin(car.angle) * lookAhead;
+    const velocityAngle = speed > 16 ? Math.atan2(car.vy, car.vx) : car.angle;
+    const lookAhead = 82 + Math.min(125, speed * 0.25);
+    const cameraTargetX = car.x + Math.cos(velocityAngle) * lookAhead;
+    const cameraTargetY = car.y + Math.sin(velocityAngle) * lookAhead;
     const follow = 1 - Math.exp(-5.2 * dt);
     camera.x += (cameraTargetX - camera.x) * follow;
     camera.y += (cameraTargetY - camera.y) * follow;
@@ -503,19 +578,65 @@
     targetCtx.closePath();
   }
 
+  function drawTree(tree) {
+    const r = tree.size;
+    ctx.save();
+    ctx.translate(tree.x, tree.y);
+    ctx.fillStyle = "rgba(49,58,47,.16)";
+    ctx.beginPath();
+    ctx.ellipse(5, r * 0.44, r * 0.9, r * 0.42, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#786b56";
+    ctx.fillRect(-2.4, r * 0.18, 4.8, r * 0.65);
+
+    const light = tree.variant > 0.5 ? "#587354" : "#506a4d";
+    const dark = tree.variant > 0.5 ? "#405b42" : "#476044";
+    ctx.strokeStyle = "rgba(45,55,44,.55)";
+    ctx.lineWidth = 1.5;
+    ctx.fillStyle = dark;
+    ctx.beginPath();
+    ctx.arc(-r * 0.28, 0, r * 0.55, 0, Math.PI * 2);
+    ctx.arc(r * 0.30, r * 0.03, r * 0.50, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = light;
+    ctx.beginPath();
+    ctx.arc(0, -r * 0.24, r * 0.58, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawSkidMarks() {
+    if (!skidMarks.length) return;
+    ctx.save();
+    ctx.strokeStyle = "rgba(24,29,32,.28)";
+    ctx.lineWidth = 3.2;
+    ctx.lineCap = "round";
+    skidMarks.forEach(mark => {
+      ctx.beginPath();
+      ctx.moveTo(mark.x1, mark.y1);
+      ctx.lineTo(mark.x2, mark.y2);
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+
   function drawWorld() {
     ctx.fillStyle = "#91a47e";
     ctx.fillRect(0, 0, WORLD.width, WORLD.height);
 
-    ctx.fillStyle = "rgba(52,68,49,.10)";
+    ctx.fillStyle = "rgba(52,68,49,.08)";
     for (let y = 45; y < WORLD.height; y += 90) {
       const offset = (Math.floor(y / 90) % 2) * 42;
       for (let x = 35 + offset; x < WORLD.width; x += 84) {
         ctx.beginPath();
-        ctx.arc(x, y, 2.2, 0, Math.PI * 2);
+        ctx.arc(x, y, 2, 0, Math.PI * 2);
         ctx.fill();
       }
     }
+
+    trees.forEach(drawTree);
 
     traceTrackPath();
     ctx.strokeStyle = "#d8d0c6";
@@ -536,6 +657,7 @@
     ctx.stroke();
     ctx.setLineDash([]);
 
+    drawSkidMarks();
     drawStartLine();
   }
 
