@@ -1,7 +1,7 @@
-# GameHub v1.7.9
+# GameHub v1.7.10
 
-- Racer tracks redesigned around real circuit principles: proper start/finish straights, distinct hairpins, sweepers, esses and connecting straights rather than continuously wavy spline loops.
-- Racer handling now preserves momentum while the car rotates, creating a genuine slip angle and controllable drift; the Grip slider now has a much wider effect.
-- Added subtle skid marks during larger slides.
-- Added sparse stylised trees to the grass scenery, kept clear of the racing surface.
-- Left and Right controls are now larger square buttons; Go remains a one-touch automatic-acceleration control.
+- Racer circuits are physically much longer: Easy is roughly the scale of the previous Hard lap, Medium is about twice that, and Hard is a long endurance-style circuit around 3–4× the old Hard layout.
+- Removed the centre lane line and added red/white rumble strips through selected corners.
+- Reworked the scenery into dense woodland with top-down tree canopies kept clear of the racing surface.
+- Added Formula and Road car choices in Racer settings. Formula is an open-wheel car with slightly higher speed, grip and steering response; Road is a little slower and more drift-friendly.
+- Best times are now stored separately for each difficulty and car type.

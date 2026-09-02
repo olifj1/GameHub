@@ -9119,7 +9119,7 @@ body[data-game-id="game-12"] .colour-blocks-status{
   }
 }
 
-/* v1.7.9 — Racer */
+/* v1.7.10 — Racer */
 body[data-game-id="game-13"], .game-card[data-game-id="game-13"] { --gh-accent:#4f847b; }
 
 body[data-game-id="game-13"] #racer-screen{
@@ -9402,7 +9402,7 @@ body[data-game-id="game-13"] .racer-reset{
   body[data-game-id="game-13"] .racer-hud{gap:4px;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,1fr) 38px}
 }
 
-/* v1.7.9 — Racer circuit/handling pass */
+/* v1.7.10 — Racer circuit/handling pass */
 body[data-game-id="game-13"] .racer-controls{
   display:grid;
   grid-template-columns:88px minmax(92px,1fr) 88px;
@@ -9439,4 +9439,38 @@ body[data-game-id="game-13"] .racer-control.go{
 @media(max-width:360px){
   body[data-game-id="game-13"] .racer-controls{grid-template-columns:68px minmax(78px,1fr) 68px;gap:7px}
   body[data-game-id="game-13"] .racer-control.steer{width:68px;height:68px;min-height:68px}
+}
+
+/* v1.7.10 — Racer long-circuit / car-choice pass */
+body[data-game-id="game-13"] .racer-car-setting{
+  display:grid;
+  gap:5px;
+  padding:8px 9px;
+  border-radius:11px;
+  background:#f2ebe5;
+}
+body[data-game-id="game-13"] .racer-car-setting>span{
+  color:#746e69;
+  font-size:9px;
+  font-weight:850;
+}
+body[data-game-id="game-13"] .racer-car-choice{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:5px;
+}
+body[data-game-id="game-13"] .racer-car-choice button{
+  min-height:30px;
+  padding:4px 7px;
+  border:1px solid rgba(52,57,68,.12);
+  border-radius:9px;
+  background:rgba(255,255,255,.72);
+  color:#746e69;
+  font-size:9px;
+  font-weight:900;
+}
+body[data-game-id="game-13"] .racer-car-choice button.active{
+  border-color:color-mix(in srgb,var(--gh-accent) 38%,transparent);
+  background:color-mix(in srgb,var(--gh-accent) 13%,#fff);
+  color:var(--gh-accent);
 }

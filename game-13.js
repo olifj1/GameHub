@@ -11,6 +11,7 @@
   const goLabel = document.getElementById("racer-go-label");
   const difficultyButtons = [...document.querySelectorAll("[data-racer-difficulty]")];
   const settings = document.querySelector(".racer-settings");
+  const carButtons = [...document.querySelectorAll("[data-racer-car]")];
 
   const topSpeedSlider = document.getElementById("racer-top-speed");
   const accelerationSlider = document.getElementById("racer-acceleration");
@@ -25,84 +26,124 @@
     right: document.getElementById("racer-right")
   };
 
-  const WORLD = { width: 1500, height: 1220 };
+  let WORLD = { width: 2200, height: 1600 };
   const DEFAULT_TUNING = { topSpeed: 330, acceleration: 220, grip: 3.2 };
   const TUNING_KEY = "gameHubRacerTuningV2";
-  const TIMES_KEY = "gameHubRacerBestTimes";
+  const CAR_KEY = "gameHubRacerCarV1";
+  const TIMES_KEY = "gameHubRacerBestTimesV2";
   const input = { left: false, right: false };
 
-  // Circuit layouts are built like real race tracks rather than as freeform
-  // spline loops: long straights are true line segments, while individual
-  // corners use deliberately placed Bezier arcs. This creates recognisable
-  // braking zones, hairpins, sweepers, esses and short connecting chutes.
+  // The circuits are original layouts, but they are designed with the rhythm
+  // of real race tracks: long straights, defined braking zones, hairpins,
+  // sweepers, esses and short technical links. Difficulty now changes the
+  // physical length of a lap rather than simply asking for more laps.
   const COURSE_DEFS = {
     easy: {
-      name: "Club Circuit",
+      name: "Forest Club",
       laps: 1,
-      width: 142,
-      target: 28,
+      width: 136,
+      target: 32,
       seed: 19,
-      start: [300, 160],
+      world: { width: 2200, height: 1600 },
+      start: [400, 220],
       commands: [
-        ["L", [980, 160]],
-        ["C", [1120, 160], [1210, 250], [1210, 380]],
-        ["L", [1210, 610]],
-        ["C", [1210, 750], [1125, 835], [990, 835]],
-        ["C", [850, 835], [765, 750], [765, 610]],
-        ["L", [765, 525]],
-        ["C", [765, 410], [690, 370], [575, 370]],
-        ["L", [360, 370]],
-        ["C", [220, 370], [150, 305], [165, 230]],
-        ["C", [178, 165], [230, 160], [300, 160]]
+        ["L", [1500, 220]],
+        ["C", [1720, 220], [1880, 360], [1880, 580]],
+        ["L", [1880, 900]],
+        ["C", [1880, 1120], [1720, 1280], [1500, 1280]],
+        ["L", [950, 1280]],
+        ["C", [760, 1280], [650, 1130], [680, 960]],
+        ["C", [710, 800], [600, 700], [430, 700]],
+        ["L", [280, 700]],
+        ["C", [120, 700], [100, 520], [180, 400]],
+        ["C", [245, 300], [310, 240], [400, 220]]
       ]
     },
     medium: {
-      name: "Grand Prix Loop",
-      laps: 2,
-      width: 128,
+      name: "Woodland Grand Prix",
+      laps: 1,
+      width: 130,
       target: 60,
       seed: 43,
-      start: [300, 120],
+      world: { width: 3000, height: 2700 },
+      start: [450, 240],
       commands: [
-        ["L", [980, 120]],
-        ["C", [1125, 120], [1210, 220], [1240, 350]],
-        ["L", [1290, 540]],
-        ["C", [1320, 660], [1230, 755], [1100, 760]],
-        ["L", [830, 760]],
-        ["C", [750, 760], [735, 690], [665, 680]],
-        ["C", [600, 670], [575, 735], [515, 755]],
-        ["L", [350, 830]],
-        ["C", [225, 885], [150, 805], [175, 690]],
-        ["L", [235, 455]],
-        ["C", [120, 410], [115, 240], [195, 160]],
-        ["C", [220, 135], [255, 120], [300, 120]]
+        ["L", [2300, 240]],
+        ["C", [2550, 240], [2750, 400], [2790, 650]],
+        ["L", [2860, 1050]],
+        ["C", [2900, 1280], [2700, 1460], [2470, 1440]],
+        ["L", [2050, 1400]],
+        ["C", [1880, 1380], [1810, 1510], [1890, 1650]],
+        ["L", [2230, 2050]],
+        ["C", [2330, 2170], [2220, 2290], [2060, 2260]],
+        ["L", [1500, 2140]],
+        ["C", [1320, 2100], [1220, 2200], [1150, 2350]],
+        ["C", [1060, 2530], [830, 2580], [650, 2470]],
+        ["L", [350, 2280]],
+        ["C", [180, 2170], [170, 1970], [280, 1810]],
+        ["L", [700, 1230]],
+        ["C", [800, 1090], [760, 960], [600, 900]],
+        ["L", [330, 800]],
+        ["C", [160, 735], [130, 560], [220, 420]],
+        ["C", [285, 320], [350, 265], [450, 240]]
       ]
     },
     hard: {
-      name: "Mountain Ring",
-      laps: 3,
-      width: 118,
-      target: 88,
+      name: "Endurance Ring",
+      laps: 1,
+      width: 124,
+      target: 96,
       seed: 71,
-      start: [280, 120],
+      world: { width: 4600, height: 4100 },
+      start: [550, 280],
       commands: [
-        ["L", [1010, 120]],
-        ["C", [1135, 120], [1200, 190], [1235, 300]],
-        ["L", [1310, 510]],
-        ["C", [1350, 630], [1255, 705], [1130, 685]],
-        ["L", [930, 650]],
-        ["C", [820, 630], [785, 705], [845, 790]],
-        ["L", [1010, 990]],
-        ["C", [1075, 1075], [985, 1130], [875, 1090]],
-        ["L", [625, 1000]],
-        ["C", [520, 965], [455, 1040], [355, 1000]],
-        ["C", [250, 960], [230, 855], [290, 770]],
-        ["L", [475, 510]],
-        ["C", [535, 425], [500, 350], [405, 345]],
-        ["L", [300, 345]],
-        ["C", [180, 345], [140, 250], [190, 175]],
-        ["C", [210, 140], [245, 120], [280, 120]]
+        ["L", [3500, 280]],
+        ["C", [3820, 280], [4100, 450], [4200, 760]],
+        ["L", [4380, 1320]],
+        ["C", [4460, 1580], [4270, 1800], [4010, 1800]],
+        ["L", [3320, 1800]],
+        ["C", [3100, 1800], [2990, 1950], [3090, 2140]],
+        ["C", [3190, 2330], [3060, 2480], [2860, 2480]],
+        ["L", [2250, 2480]],
+        ["C", [2070, 2480], [1990, 2610], [2050, 2780]],
+        ["L", [2360, 3350]],
+        ["C", [2460, 3540], [2310, 3700], [2100, 3650]],
+        ["L", [1160, 3440]],
+        ["C", [900, 3380], [720, 3500], [620, 3720]],
+        ["C", [510, 3960], [250, 3990], [150, 3790]],
+        ["C", [110, 3610], [130, 3420], [300, 3300]],
+        ["L", [760, 2960]],
+        ["C", [930, 2830], [940, 2650], [820, 2510]],
+        ["L", [410, 2030]],
+        ["C", [250, 1840], [260, 1590], [430, 1430]],
+        ["L", [970, 930]],
+        ["C", [1120, 790], [1090, 620], [920, 550]],
+        ["L", [650, 450]],
+        ["C", [520, 400], [500, 330], [550, 280]]
       ]
+    }
+  };
+
+  const CAR_PROFILES = {
+    formula: {
+      name: "Formula",
+      max: 1.08,
+      accel: 1.06,
+      grip: 1.12,
+      turn: 1.06,
+      drift: 0.82,
+      width: 34,
+      length: 58
+    },
+    road: {
+      name: "Road",
+      max: 0.96,
+      accel: 0.95,
+      grip: 0.90,
+      turn: 0.96,
+      drift: 1.18,
+      width: 30,
+      length: 48
     }
   };
 
@@ -129,6 +170,7 @@
   let animationFrame = 0;
   let lastFrame = performance.now();
   let tuning = loadTuning();
+  let carType = loadCarType();
   let bestTimes = loadBestTimes();
   let trees = [];
   let skidMarks = [];
@@ -152,6 +194,24 @@
     catch (_) {}
   }
 
+  function loadCarType() {
+    try {
+      const saved = localStorage.getItem(CAR_KEY);
+      return CAR_PROFILES[saved] ? saved : "formula";
+    } catch (_) {
+      return "formula";
+    }
+  }
+
+  function saveCarType() {
+    try { localStorage.setItem(CAR_KEY, carType); }
+    catch (_) {}
+  }
+
+  function syncCarUI() {
+    carButtons.forEach(button => button.classList.toggle("active", button.dataset.racerCar === carType));
+  }
+
   function loadBestTimes() {
     try {
       const saved = JSON.parse(localStorage.getItem(TIMES_KEY) || "{}");
@@ -161,10 +221,15 @@
     }
   }
 
+  function bestTimeKey() {
+    return `${difficulty}:${carType}`;
+  }
+
   function saveBestTime(seconds) {
-    const previous = Number(bestTimes[difficulty]);
+    const key = bestTimeKey();
+    const previous = Number(bestTimes[key]);
     if (!previous || seconds < previous) {
-      bestTimes[difficulty] = seconds;
+      bestTimes[key] = seconds;
       try { localStorage.setItem(TIMES_KEY, JSON.stringify(bestTimes)); }
       catch (_) {}
       return true;
@@ -258,26 +323,33 @@
 
   function generateTrees() {
     const random = seededRandom(course.seed);
+    const spacing = difficulty === "hard" ? 86 : difficulty === "medium" ? 82 : 78;
     trees = [];
-    let attempts = 0;
-    while (trees.length < 76 && attempts < 1200) {
-      attempts += 1;
-      const x = 55 + random() * (WORLD.width - 110);
-      const y = 55 + random() * (WORLD.height - 110);
-      const point = nearestTrackPoint(x, y);
-      if (point.distance < course.width * 0.78 + 32) continue;
-      const start = track[0];
-      if (Math.hypot(x - start.x, y - start.y) < 150) continue;
-      trees.push({
-        x, y,
-        size: 18 + random() * 15,
-        variant: random()
-      });
+
+    // A jittered grid gives the woodland a dense, continuous feel without
+    // creating obvious rows. Trees stay well outside the racing surface.
+    for (let gy = 45; gy < WORLD.height - 35; gy += spacing) {
+      for (let gx = 45; gx < WORLD.width - 35; gx += spacing) {
+        if (random() < 0.08) continue;
+        const x = gx + (random() - 0.5) * spacing * 0.58;
+        const y = gy + (random() - 0.5) * spacing * 0.58;
+        const point = nearestTrackPoint(x, y);
+        if (point.distance < course.width * 0.78 + 42) continue;
+        const start = track[0];
+        if (Math.hypot(x - start.x, y - start.y) < 165) continue;
+        trees.push({
+          x, y,
+          size: 20 + random() * 17,
+          variant: random(),
+          rotation: random() * Math.PI * 2
+        });
+      }
     }
   }
 
   function buildTrack() {
     course = COURSE_DEFS[difficulty];
+    WORLD = { ...course.world };
     track = sampleCircuit(course);
     trackLength = track.length;
     generateTrees();
@@ -292,14 +364,15 @@
     const start = track[0];
     const ahead = track[8];
     const angle = angleBetween(start, ahead);
+    const profile = CAR_PROFILES[carType];
     car = {
       x: start.x,
       y: start.y,
       vx: 0,
       vy: 0,
       angle,
-      width: 30,
-      length: 48
+      width: profile.width,
+      length: profile.length
     };
     camera.x = car.x + Math.cos(angle) * 70;
     camera.y = car.y + Math.sin(angle) * 70;
@@ -323,10 +396,10 @@
     goButton.disabled = false;
     goButton.classList.remove("running");
     goLabel.textContent = "GO";
-    const best = Number(bestTimes[difficulty]);
+    const best = Number(bestTimes[bestTimeKey()]);
     statusEl.textContent = best
-      ? `${course.name} · Best ${formatTime(best)} · press Go when ready.`
-      : `${course.name} · press Go when you are ready.`;
+      ? `${course.name} · ${CAR_PROFILES[carType].name} · Best ${formatTime(best)} · press Go when ready.`
+      : `${course.name} · ${CAR_PROFILES[carType].name} · press Go when you are ready.`;
     settings.removeAttribute("open");
   }
 
@@ -428,10 +501,11 @@
         stars,
         score,
         title: newTimeBest ? "New best time!" : "Race complete!",
-        summary: `${course.name} finished in ${formatTime(totalSeconds)}.`,
+        summary: `${course.name} · ${CAR_PROFILES[carType].name} finished in ${formatTime(totalSeconds)}.`,
         metrics: [
           { label: "Time", value: formatTime(totalSeconds) },
           { label: "Fastest lap", value: formatTime(fastestLap) },
+          { label: "Car", value: CAR_PROFILES[carType].name },
           { label: "Laps", value: String(course.laps) }
         ],
         againLabel: "Race again",
@@ -452,6 +526,7 @@
     nearest = nearestTrackPoint(car.x, car.y);
     currentSurface = surfaceAt(nearest);
     const surface = SURFACES[currentSurface];
+    const profile = CAR_PROFILES[carType];
     let speed = Math.hypot(car.vx, car.vy);
     const steer = (input.right ? 1 : 0) - (input.left ? 1 : 0);
 
@@ -460,7 +535,7 @@
     // what gives the car a controllable slip angle instead of feeling on rails.
     const speedFactor = Math.min(1, speed / 125);
     if (steer && speed > 4) {
-      const turnRate = 2.46 * (0.24 + speedFactor * 0.76);
+      const turnRate = 2.46 * profile.turn * (0.24 + speedFactor * 0.76);
       car.angle += steer * turnRate * dt;
     }
 
@@ -471,8 +546,8 @@
 
     if (raceStarted) {
       const steeringLift = 1 - Math.abs(steer) * 0.28;
-      car.vx += headingX * tuning.acceleration * surface.accel * steeringLift * dt;
-      car.vy += headingY * tuning.acceleration * surface.accel * steeringLift * dt;
+      car.vx += headingX * tuning.acceleration * profile.accel * surface.accel * steeringLift * dt;
+      car.vy += headingY * tuning.acceleration * profile.accel * surface.accel * steeringLift * dt;
     } else {
       car.vx *= Math.exp(-4 * dt);
       car.vy *= Math.exp(-4 * dt);
@@ -482,7 +557,7 @@
     // velocity in place; high grip pulls the car toward the direction it faces.
     let forwardSpeed = car.vx * headingX + car.vy * headingY;
     let sideSpeed = car.vx * rightX + car.vy * rightY;
-    const gripStrength = Math.max(0.35, tuning.grip * surface.grip);
+    const gripStrength = Math.max(0.35, tuning.grip * profile.grip * surface.grip);
     const lateralCorrection = 1 - Math.exp(-gripStrength * dt);
     car.vx -= rightX * sideSpeed * lateralCorrection;
     car.vy -= rightY * sideSpeed * lateralCorrection;
@@ -490,7 +565,7 @@
     // A little extra slip appears when steering hard at speed, so the rear
     // starts to rotate progressively rather than suddenly snapping loose.
     if (raceStarted && steer && speed > 115 && currentSurface === "tarmac") {
-      const driftBuild = Math.min(1, (speed - 115) / 150) * (1.15 - Math.min(1, tuning.grip / 6));
+      const driftBuild = Math.min(1, (speed - 115) / 150) * (1.15 - Math.min(1, tuning.grip / 6)) * profile.drift;
       car.vx -= rightX * steer * driftBuild * 38 * dt;
       car.vy -= rightY * steer * driftBuild * 38 * dt;
     }
@@ -514,7 +589,7 @@
     }
 
     speed = Math.hypot(car.vx, car.vy);
-    const maxSpeed = tuning.topSpeed * surface.max;
+    const maxSpeed = tuning.topSpeed * profile.max * surface.max;
     if (speed > maxSpeed) {
       const scale = maxSpeed / speed;
       car.vx *= scale;
@@ -582,30 +657,49 @@
     const r = tree.size;
     ctx.save();
     ctx.translate(tree.x, tree.y);
-    ctx.fillStyle = "rgba(49,58,47,.16)";
+    ctx.rotate(tree.rotation || 0);
+
+    // Top-down canopy: a soft shadow and overlapping crown lobes, with no
+    // visible side-on trunk. The small centre spot just hints at the tree core.
+    ctx.fillStyle = "rgba(38,52,39,.18)";
     ctx.beginPath();
-    ctx.ellipse(5, r * 0.44, r * 0.9, r * 0.42, -0.2, 0, Math.PI * 2);
+    ctx.ellipse(5, 6, r * 0.92, r * 0.78, 0.18, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = "#786b56";
-    ctx.fillRect(-2.4, r * 0.18, 4.8, r * 0.65);
+    const dark = tree.variant > 0.5 ? "#426044" : "#496649";
+    const mid = tree.variant > 0.5 ? "#557557" : "#5d7b59";
+    const light = tree.variant > 0.5 ? "#6e8b66" : "#708d67";
 
-    const light = tree.variant > 0.5 ? "#587354" : "#506a4d";
-    const dark = tree.variant > 0.5 ? "#405b42" : "#476044";
-    ctx.strokeStyle = "rgba(45,55,44,.55)";
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "rgba(42,58,43,.48)";
+    ctx.lineWidth = 1.4;
     ctx.fillStyle = dark;
     ctx.beginPath();
-    ctx.arc(-r * 0.28, 0, r * 0.55, 0, Math.PI * 2);
-    ctx.arc(r * 0.30, r * 0.03, r * 0.50, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = light;
-    ctx.beginPath();
-    ctx.arc(0, -r * 0.24, r * 0.58, 0, Math.PI * 2);
+    ctx.arc(-r * 0.34, -r * 0.06, r * 0.54, 0, Math.PI * 2);
+    ctx.arc(r * 0.34, -r * 0.10, r * 0.52, 0, Math.PI * 2);
+    ctx.arc(r * 0.20, r * 0.30, r * 0.50, 0, Math.PI * 2);
+    ctx.arc(-r * 0.22, r * 0.30, r * 0.48, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
+
+    ctx.fillStyle = mid;
+    ctx.beginPath();
+    ctx.arc(0, -r * 0.27, r * 0.55, 0, Math.PI * 2);
+    ctx.arc(-r * 0.12, r * 0.02, r * 0.50, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = light;
+    ctx.beginPath();
+    ctx.arc(-r * 0.18, -r * 0.28, r * 0.26, 0, Math.PI * 2);
+    ctx.arc(r * 0.16, -r * 0.18, r * 0.21, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(72,68,51,.55)";
+    ctx.beginPath();
+    ctx.arc(0, 0, Math.max(2.2, r * 0.09), 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
+
 
   function drawSkidMarks() {
     if (!skidMarks.length) return;
@@ -622,25 +716,46 @@
     ctx.restore();
   }
 
+  function turnAmountAt(index) {
+    const before = tangentAt((index - 10 + trackLength) % trackLength);
+    const after = tangentAt((index + 10) % trackLength);
+    return Math.atan2(before.x * after.y - before.y * after.x, before.x * after.x + before.y * after.y);
+  }
+
+  function drawCurbs() {
+    const edge = course.width * 0.5 + 1;
+    ctx.save();
+    for (let i = 0; i < trackLength; i += 6) {
+      const turn = Math.abs(turnAmountAt(i));
+      if (turn < 0.045) continue;
+      const p = track[i];
+      const tangent = tangentAt(i);
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(Math.atan2(tangent.y, tangent.x));
+      ctx.fillStyle = (Math.floor(i / 6) % 2 === 0) ? "#c95c53" : "#f2eee7";
+      ctx.fillRect(-10, edge - 6, 20, 12);
+      ctx.fillRect(-10, -edge - 6, 20, 12);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+
   function drawWorld() {
     ctx.fillStyle = "#91a47e";
     ctx.fillRect(0, 0, WORLD.width, WORLD.height);
 
-    ctx.fillStyle = "rgba(52,68,49,.08)";
-    for (let y = 45; y < WORLD.height; y += 90) {
-      const offset = (Math.floor(y / 90) % 2) * 42;
-      for (let x = 35 + offset; x < WORLD.width; x += 84) {
-        ctx.beginPath();
-        ctx.arc(x, y, 2, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    trees.forEach(drawTree);
+    // Only draw woodland near the camera. Hard has well over a thousand trees,
+    // so culling keeps the moving canvas light enough for a phone.
+    trees.forEach(tree => {
+      if (Math.abs(tree.x - camera.x) > 560 || Math.abs(tree.y - camera.y) > 680) return;
+      drawTree(tree);
+    });
 
     traceTrackPath();
-    ctx.strokeStyle = "#d8d0c6";
-    ctx.lineWidth = course.width + 24;
+    ctx.strokeStyle = "#d6cec4";
+    ctx.lineWidth = course.width + 18;
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
     ctx.stroke();
@@ -650,16 +765,12 @@
     ctx.lineWidth = course.width;
     ctx.stroke();
 
-    traceTrackPath();
-    ctx.strokeStyle = "rgba(246,241,234,.48)";
-    ctx.lineWidth = 3;
-    ctx.setLineDash([24, 24]);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
+    // No centre lane line: this is now presented as a dedicated racing circuit.
+    drawCurbs();
     drawSkidMarks();
     drawStartLine();
   }
+
 
   function drawStartLine() {
     const p = track[0];
@@ -690,11 +801,7 @@
     targetCtx.closePath();
   }
 
-  function drawCar() {
-    ctx.save();
-    ctx.translate(car.x, car.y);
-    ctx.rotate(car.angle + Math.PI / 2);
-
+  function drawRoadCar() {
     ctx.fillStyle = "#20262b";
     roundRect(ctx, -17, -19, 7, 15, 2); ctx.fill();
     roundRect(ctx, 10, -19, 7, 15, 2); ctx.fill();
@@ -722,8 +829,73 @@
     ctx.fillStyle = "#f2e7b5";
     ctx.fillRect(-10, -23, 6, 3);
     ctx.fillRect(4, -23, 6, 3);
+  }
+
+  function drawFormulaCar() {
+    const body = "#c77858";
+    const dark = "#252b30";
+
+    // Exposed tyres.
+    ctx.fillStyle = dark;
+    roundRect(ctx, -18, -19, 7, 13, 2); ctx.fill();
+    roundRect(ctx, 11, -19, 7, 13, 2); ctx.fill();
+    roundRect(ctx, -19, 8, 8, 16, 2); ctx.fill();
+    roundRect(ctx, 11, 8, 8, 16, 2); ctx.fill();
+
+    // Front and rear wings.
+    ctx.fillStyle = dark;
+    roundRect(ctx, -19, -29, 38, 5, 2); ctx.fill();
+    roundRect(ctx, -16, 23, 32, 5, 2); ctx.fill();
+
+    // Slim nose and centre body.
+    ctx.fillStyle = body;
+    ctx.strokeStyle = "#30363a";
+    ctx.lineWidth = 1.9;
+    ctx.beginPath();
+    ctx.moveTo(0, -29);
+    ctx.lineTo(5, -20);
+    ctx.lineTo(6, -9);
+    ctx.lineTo(11, -2);
+    ctx.lineTo(10, 13);
+    ctx.lineTo(6, 24);
+    ctx.lineTo(-6, 24);
+    ctx.lineTo(-10, 13);
+    ctx.lineTo(-11, -2);
+    ctx.lineTo(-6, -9);
+    ctx.lineTo(-5, -20);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Sidepods make the silhouette unmistakably open-wheel.
+    ctx.fillStyle = body;
+    roundRect(ctx, -14, -1, 7, 18, 3); ctx.fill(); ctx.stroke();
+    roundRect(ctx, 7, -1, 7, 18, 3); ctx.fill(); ctx.stroke();
+
+    // Cockpit / halo area from above.
+    ctx.fillStyle = "#2e3a40";
+    ctx.beginPath();
+    ctx.ellipse(0, 3, 5.5, 8.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#d8d0c6";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(0, 0, 6.5, Math.PI * 0.12, Math.PI * 0.88, true);
+    ctx.stroke();
+
+    ctx.fillStyle = "#f2e7b5";
+    ctx.fillRect(-2.5, -26, 5, 3);
+  }
+
+  function drawCar() {
+    ctx.save();
+    ctx.translate(car.x, car.y);
+    ctx.rotate(car.angle + Math.PI / 2);
+    if (carType === "formula") drawFormulaCar();
+    else drawRoadCar();
     ctx.restore();
   }
+
 
   function drawMiniMap() {
     const box = { x: canvas.width - 132, y: 18, w: 114, h: 92 };
@@ -855,8 +1027,20 @@
     });
   });
 
+  carButtons.forEach(button => {
+    button.addEventListener("click", () => {
+      const next = button.dataset.racerCar;
+      if (!CAR_PROFILES[next] || next === carType) return;
+      carType = next;
+      saveCarType();
+      syncCarUI();
+      resetRace();
+    });
+  });
+
   resetButton.addEventListener("click", resetRace);
 
+  syncCarUI();
   resetRace();
   cancelAnimationFrame(animationFrame);
   animationFrame = requestAnimationFrame(frame);
