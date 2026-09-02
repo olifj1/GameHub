@@ -13,21 +13,21 @@ const colourResetButton = $("#colour-reset");
 const colourNewButton = $("#colour-new");
 
 const colourDifficultyConfig = {
-  easy:   { size: 4, scrambleMoves: 6,  minMixedBlocks: 3 },
-  medium: { size: 6, scrambleMoves: 11, minMixedBlocks: 4 },
-  hard:   { size: 8, scrambleMoves: 18, minMixedBlocks: 4 }
+  easy:   { size: 4, scrambleMoves: 8,  minMixedBlocks: 3, minDisorder: 8,  minVariety: 7 },
+  medium: { size: 6, scrambleMoves: 20, minMixedBlocks: 4, minDisorder: 24, minVariety: 10 },
+  hard:   { size: 8, scrambleMoves: 32, minMixedBlocks: 4, minDisorder: 42, minVariety: 11 }
 };
 
 const colourPalette = [
-  { name: "coral", value: "#c97969" },
-  { name: "blue",  value: "#7596b7" },
-  { name: "gold",  value: "#d4ad5f" },
-  { name: "green", value: "#779b78" }
+  { name: "terracotta", value: "#b78479" },
+  { name: "slate blue", value: "#8ea1b1" },
+  { name: "ochre",      value: "#b89e67" },
+  { name: "sage",       value: "#89a08c" }
 ];
 
 let colourDifficulty = "easy";
 let colourSize = 4;
-let colourPar = 6;
+let colourPar = 8;
 let colourBoard = [];
 let colourInitialBoard = [];
 let colourMoves = 0;
@@ -119,6 +119,36 @@ function colourSolidBlocks(board = colourBoard) {
   return solid;
 }
 
+function colourQuadrantVariety(board = colourBoard) {
+  const size = board.length;
+  const half = size / 2;
+  let variety = 0;
+  for (let blockRow = 0; blockRow < 2; blockRow++) {
+    for (let blockCol = 0; blockCol < 2; blockCol++) {
+      const seen = new Set();
+      for (let row = blockRow * half; row < (blockRow + 1) * half; row++) {
+        for (let col = blockCol * half; col < (blockCol + 1) * half; col++) {
+          seen.add(board[row][col]);
+        }
+      }
+      variety += seen.size;
+    }
+  }
+  return variety;
+}
+
+function colourDisorder(board = colourBoard) {
+  const size = board.length;
+  let changes = 0;
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < size; col++) {
+      if (col < size - 1 && board[row][col] !== board[row][col + 1]) changes++;
+      if (row < size - 1 && board[row][col] !== board[row + 1][col]) changes++;
+    }
+  }
+  return changes;
+}
+
 function colourIsSolved(board = colourBoard) {
   return colourSolidBlocks(board) === 4;
 }
@@ -127,21 +157,20 @@ function colourMakeScrambledBoard() {
   const config = colourDifficultyConfig[colourDifficulty];
   let best = null;
 
-  for (let attempt = 0; attempt < 180; attempt++) {
+  for (let attempt = 0; attempt < 260; attempt++) {
     const board = colourBuildSolved(config.size);
     const moves = [];
     let previous = null;
 
     for (let i = 0; i < config.scrambleMoves; i++) {
       let chosen = null;
-      for (let pick = 0; pick < 120 && !chosen; pick++) {
+      for (let pick = 0; pick < 180 && !chosen; pick++) {
         const candidate = {
           row: Math.floor(Math.random() * (config.size - 1)),
           col: Math.floor(Math.random() * (config.size - 1)),
           turn: Math.random() < 0.5 ? -1 : 1
         };
 
-        // Avoid immediately undoing or repeatedly spinning the same four cells.
         if (previous && previous.row === candidate.row && previous.col === candidate.col) continue;
         if (!colourMoveChanges(board, candidate)) continue;
         chosen = candidate;
@@ -153,9 +182,28 @@ function colourMakeScrambledBoard() {
     }
 
     const mixed = 4 - colourSolidBlocks(board);
-    const candidate = { board, moves, mixed };
-    if (!best || mixed > best.mixed || (mixed === best.mixed && moves.length > best.moves.length)) best = candidate;
-    if (moves.length === config.scrambleMoves && !colourIsSolved(board) && mixed >= config.minMixedBlocks) return candidate;
+    const disorder = colourDisorder(board);
+    const variety = colourQuadrantVariety(board);
+    const candidate = { board, moves, mixed, disorder, variety };
+
+    if (
+      !best ||
+      disorder > best.disorder ||
+      (disorder === best.disorder && variety > best.variety) ||
+      (disorder === best.disorder && variety === best.variety && moves.length > best.moves.length)
+    ) {
+      best = candidate;
+    }
+
+    if (
+      moves.length === config.scrambleMoves &&
+      !colourIsSolved(board) &&
+      mixed >= config.minMixedBlocks &&
+      disorder >= config.minDisorder &&
+      variety >= config.minVariety
+    ) {
+      return candidate;
+    }
   }
 
   return best;
@@ -230,10 +278,11 @@ function colourRender() {
 }
 
 function colourStarsForMoves(moves) {
+  const sizeBonus = Math.max(4, colourSize);
   if (moves <= colourPar) return 5;
-  if (moves <= Math.ceil(colourPar * 1.25)) return 4;
-  if (moves <= Math.ceil(colourPar * 1.6)) return 3;
-  if (moves <= Math.ceil(colourPar * 2.2)) return 2;
+  if (moves <= colourPar + sizeBonus) return 4;
+  if (moves <= colourPar + sizeBonus * 2 + 2) return 3;
+  if (moves <= colourPar + sizeBonus * 4 + 4) return 2;
   return 1;
 }
 
@@ -309,14 +358,14 @@ function colourAnimateRotation(move) {
 
   jobs.forEach(job => {
     job.el.style.transition = "none";
-    job.el.style.transform = `translate(${job.dx}px,${job.dy}px) scale(.94)`;
+    job.el.style.transform = `translate(${job.dx}px,${job.dy}px) scale(.965)`;
     job.el.style.zIndex = "7";
   });
 
   requestAnimationFrame(() => requestAnimationFrame(() => {
     jobs.forEach(job => {
       job.el.style.transition = "transform .19s cubic-bezier(.2,.75,.25,1), filter .19s ease";
-      job.el.style.transform = "translate(0,0) scale(.94)";
+      job.el.style.transform = "translate(0,0) scale(.965)";
     });
   }));
 
