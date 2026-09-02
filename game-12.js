@@ -6,6 +6,7 @@ const colourParEl = $("#colour-par");
 const colourSolidEl = $("#colour-solid");
 const colourStatusEl = $("#colour-blocks-status");
 const colourDifficultyButtons = $$('[data-colour-difficulty]');
+const colourThemeButtons = $$('[data-colour-theme]');
 const colourRotateLeftButton = $("#colour-rotate-left");
 const colourRotateRightButton = $("#colour-rotate-right");
 const colourUndoButton = $("#colour-undo");
@@ -19,15 +20,119 @@ const colourDifficultyConfig = {
 };
 
 const colourPalette = [
-  { name: "terracotta", value: "#b78479" },
-  { name: "slate blue", value: "#8ea1b1" },
-  { name: "ochre",      value: "#b89e67" },
-  { name: "sage",       value: "#89a08c" }
+  { name: "dusty rose", fill: "#d1a29a", stroke: "#805e59" },
+  { name: "slate blue", fill: "#aab7c4", stroke: "#637181" },
+  { name: "ochre",      fill: "#c8b07b", stroke: "#786643" },
+  { name: "sage",       fill: "#a5b9a8", stroke: "#647767" }
 ];
+
+const colourTokenThemes = {
+  shapes: {
+    label: "Shapes",
+    names: ["circle", "diamond", "triangle", "square"],
+    render(index) {
+      if (index === 0) {
+        return `
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="28" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="6" />
+          </svg>`;
+      }
+      if (index === 1) {
+        return `
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <rect x="28" y="28" width="44" height="44" rx="6" transform="rotate(45 50 50)" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="6" />
+          </svg>`;
+      }
+      if (index === 2) {
+        return `
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <path d="M50 20 L78 74 H22 Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="6" stroke-linejoin="round" />
+          </svg>`;
+      }
+      return `
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <rect x="25" y="25" width="50" height="50" rx="10" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="6" />
+        </svg>`;
+    }
+  },
+  fruit: {
+    label: "Fruit",
+    names: ["apple", "pear", "lemon", "cherries"],
+    render(index) {
+      if (index === 0) {
+        return `
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <path d="M50 34c-5-8-16-10-24-2-9 9-9 27 0 38 7 8 17 11 24 11s17-3 24-11c9-11 9-29 0-38-8-8-19-6-24 2Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5" stroke-linejoin="round" />
+            <path d="M52 21c7-5 13-5 18-2" fill="none" stroke="var(--token-stroke)" stroke-width="5" stroke-linecap="round" />
+            <path d="M50 32c0-7 1-12 5-17" fill="none" stroke="var(--token-stroke)" stroke-width="5" stroke-linecap="round" />
+            <path d="M56 18c8 0 12 3 14 8" fill="none" stroke="var(--token-stroke)" stroke-width="4" stroke-linecap="round" />
+          </svg>`;
+      }
+      if (index === 1) {
+        return `
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <path d="M50 22c6 0 11 5 11 12 0 3-1 6-2 9 10 7 14 21 8 31-6 11-16 16-28 16s-22-5-28-16c-6-10-2-24 8-31-1-3-2-6-2-9 0-7 5-12 11-12 5 0 8 2 11 5 3-3 6-5 11-5Z" transform="translate(11 -5) scale(.78)" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="6" stroke-linejoin="round" />
+            <path d="M49 28c1-8 6-13 12-16" fill="none" stroke="var(--token-stroke)" stroke-width="5" stroke-linecap="round" />
+            <path d="M51 27c8-2 13 0 17 5" fill="none" stroke="var(--token-stroke)" stroke-width="4" stroke-linecap="round" />
+          </svg>`;
+      }
+      if (index === 2) {
+        return `
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <ellipse cx="50" cy="52" rx="26" ry="18" transform="rotate(-16 50 52)" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="6" />
+            <path d="M57 31c5-6 11-9 17-9" fill="none" stroke="var(--token-stroke)" stroke-width="5" stroke-linecap="round" />
+          </svg>`;
+      }
+      return `
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <path d="M36 33c7 0 13 6 13 13s-6 13-13 13-13-6-13-13 6-13 13-13Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5" />
+          <path d="M64 43c7 0 13 6 13 13s-6 13-13 13-13-6-13-13 6-13 13-13Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5" />
+          <path d="M37 33c5-9 13-13 24-13" fill="none" stroke="var(--token-stroke)" stroke-width="5" stroke-linecap="round" />
+          <path d="M50 19c5 1 9 4 11 8" fill="none" stroke="var(--token-stroke)" stroke-width="4" stroke-linecap="round" />
+        </svg>`;
+    }
+  },
+  sweets: {
+    label: "Sweets",
+    names: ["wrapped sweet", "lollipop", "jellybean", "chocolate"],
+    render(index) {
+      if (index === 0) {
+        return `
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <path d="M20 50 31 39v22L20 50Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5" stroke-linejoin="round" />
+            <rect x="31" y="33" width="38" height="34" rx="10" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5" />
+            <path d="M69 39 80 50 69 61Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5" stroke-linejoin="round" />
+            <path d="M40 42h20M40 58h20" stroke="rgba(255,255,255,.45)" stroke-width="4" stroke-linecap="round" />
+          </svg>`;
+      }
+      if (index === 1) {
+        return `
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="53" cy="42" r="20" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="6" />
+            <path d="M53 24a18 18 0 0 1 0 36 18 18 0 0 1 0-36Zm0 7a11 11 0 0 0 0 22 11 11 0 0 0 0-22Z" fill="rgba(255,255,255,.28)" />
+            <path d="M53 61v20" fill="none" stroke="var(--token-stroke)" stroke-width="6" stroke-linecap="round" />
+          </svg>`;
+      }
+      if (index === 2) {
+        return `
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <path d="M33 35c8-8 29-8 36 0 8 8 8 22 0 30-7 8-28 8-36 0-8-8-8-22 0-30Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="6" stroke-linejoin="round" />
+            <path d="M42 33c7 0 12 2 17 7" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="4" stroke-linecap="round" />
+          </svg>`;
+      }
+      return `
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <rect x="27" y="28" width="46" height="44" rx="6" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="6" />
+          <path d="M42.5 28v44M57.5 28v44M27 43h46M27 57h46" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="4" />
+        </svg>`;
+    }
+  }
+};
 
 let colourDifficulty = "easy";
 let colourSize = 4;
 let colourPar = 8;
+let colourTheme = "shapes";
 let colourBoard = [];
 let colourInitialBoard = [];
 let colourMoves = 0;
@@ -240,6 +345,15 @@ function colourPositionSelectionFrame() {
   frame.style.height = `${brRect.bottom - tlRect.top + 4}px`;
 }
 
+function colourTokenMarkup(colourIndex) {
+  const theme = colourTokenThemes[colourTheme] || colourTokenThemes.shapes;
+  const palette = colourPalette[colourIndex];
+  return `
+    <div class="colour-blocks-token colour-theme-${colourTheme}" style="--token-fill:${palette.fill}; --token-stroke:${palette.stroke};">
+      ${theme.render(colourIndex)}
+    </div>`;
+}
+
 function colourRender() {
   colourBoardEl.style.setProperty("--colour-grid-size", colourSize);
   colourBoardEl.innerHTML = "";
@@ -248,13 +362,15 @@ function colourRender() {
     for (let col = 0; col < colourSize; col++) {
       const colourIndex = colourBoard[row][col];
       const tile = document.createElement("div");
+      const tokenName = (colourTokenThemes[colourTheme] || colourTokenThemes.shapes).names[colourIndex] || "tile";
       tile.className = "colour-blocks-tile" + (colourSelectionContains(row, col) ? " selected" : "");
       tile.dataset.row = row;
       tile.dataset.col = col;
       tile.dataset.colour = colourPalette[colourIndex].name;
-      tile.style.setProperty("--tile-colour", colourPalette[colourIndex].value);
+      tile.style.setProperty("--tile-colour", colourPalette[colourIndex].fill);
       tile.setAttribute("role", "gridcell");
-      tile.setAttribute("aria-label", `${colourPalette[colourIndex].name} tile`);
+      tile.setAttribute("aria-label", `${colourPalette[colourIndex].name} ${tokenName}`);
+      tile.innerHTML = colourTokenMarkup(colourIndex);
       colourBoardEl.appendChild(tile);
     }
   }
@@ -358,14 +474,14 @@ function colourAnimateRotation(move) {
 
   jobs.forEach(job => {
     job.el.style.transition = "none";
-    job.el.style.transform = `translate(${job.dx}px,${job.dy}px) scale(.965)`;
+    job.el.style.transform = `translate(${job.dx}px,${job.dy}px) scale(.96)`;
     job.el.style.zIndex = "7";
   });
 
   requestAnimationFrame(() => requestAnimationFrame(() => {
     jobs.forEach(job => {
-      job.el.style.transition = "transform .19s cubic-bezier(.2,.75,.25,1), filter .19s ease";
-      job.el.style.transform = "translate(0,0) scale(.965)";
+      job.el.style.transition = "transform .19s cubic-bezier(.2,.75,.25,1)";
+      job.el.style.transform = "translate(0,0) scale(.96)";
     });
   }));
 
@@ -385,7 +501,7 @@ function colourCommitRotation(turn) {
   if (colourSolved || colourAnimating || !colourSelection) return;
   const move = { row: colourSelection.row, col: colourSelection.col, turn: turn >= 0 ? 1 : -1 };
   if (!colourMoveChanges(colourBoard, move)) {
-    colourStatusEl.textContent = "Those four tiles are already the same colour — choose another area.";
+    colourStatusEl.textContent = "Those four tiles are already the same — choose another area.";
     return;
   }
 
@@ -459,6 +575,16 @@ colourDifficultyButtons.forEach(button => {
     colourDifficulty = button.dataset.colourDifficulty;
     colourDifficultyButtons.forEach(other => other.classList.toggle("active", other === button));
     colourNewPuzzle();
+  });
+});
+
+colourThemeButtons.forEach(button => {
+  button.addEventListener("click", () => {
+    colourTheme = button.dataset.colourTheme;
+    colourThemeButtons.forEach(other => other.classList.toggle("active", other === button));
+    colourRender();
+    colourStatusEl.classList.remove("good");
+    colourStatusEl.textContent = `${colourTokenThemes[colourTheme].label} style selected.`;
   });
 });
 
