@@ -7,6 +7,8 @@
   const speedEl = document.getElementById("racer-speed");
   const statusEl = document.getElementById("racer-status");
   const resetButton = document.getElementById("racer-reset");
+  const goButton = document.getElementById("racer-go");
+  const goLabel = document.getElementById("racer-go-label");
   const difficultyButtons = [...document.querySelectorAll("[data-racer-difficulty]")];
   const settings = document.querySelector(".racer-settings");
 
@@ -20,70 +22,77 @@
 
   const controls = {
     left: document.getElementById("racer-left"),
-    right: document.getElementById("racer-right"),
-    gas: document.getElementById("racer-accelerate"),
-    brake: document.getElementById("racer-brake")
+    right: document.getElementById("racer-right")
   };
 
   const WORLD = { width: 1500, height: 1220 };
-  const DEFAULT_TUNING = { topSpeed: 380, acceleration: 270, grip: 5.5 };
+  const DEFAULT_TUNING = { topSpeed: 330, acceleration: 220, grip: 6.5 };
   const TUNING_KEY = "gameHubRacerTuning";
   const TIMES_KEY = "gameHubRacerBestTimes";
-  const input = { left: false, right: false, gas: false, brake: false };
+  const input = { left: false, right: false };
 
+  // Each circuit is built from explicit cubic Bezier sections. The points are
+  // the actual road design rather than loose waypoints that an interpolating
+  // spline has to guess its way through. That gives broad, consistent-radius
+  // corners and lets S-bends flow cleanly from one section into the next.
   const COURSE_DEFS = {
     easy: {
-      name: "Club Circuit",
+      name: "Meadow Loop",
       laps: 1,
-      width: 150,
-      target: 31,
-      points: [
-        [310, 265], [690, 180], [1115, 275], [1280, 535],
-        [1170, 880], [790, 1040], [390, 930], [205, 625]
-      ],
-      surfaces: [
-        { type: "gravel", from: 0.47, to: 0.56 }
+      width: 154,
+      target: 29,
+      segments: [
+        [[315,250],[500,145],[760,135],[960,200]],
+        [[960,200],[1160,245],[1300,375],[1270,550]],
+        [[1270,550],[1240,735],[1120,885],[930,975]],
+        [[930,975],[720,1070],[455,1035],[300,900]],
+        [[300,900],[145,765],[155,560],[220,420]],
+        [[220,420],[250,350],[240,293],[315,250]]
       ]
     },
     medium: {
-      name: "Quarry Run",
+      name: "Riverside",
       laps: 2,
-      width: 128,
-      target: 61,
-      points: [
-        [260, 270], [620, 155], [1010, 205], [1290, 420],
-        [1160, 670], [1340, 905], [1030, 1075], [705, 865],
-        [415, 1050], [165, 795], [285, 560], [505, 455]
-      ],
-      surfaces: [
-        { type: "gravel", from: 0.19, to: 0.29 },
-        { type: "gravel", from: 0.67, to: 0.75 }
+      width: 138,
+      target: 57,
+      segments: [
+        [[300,225],[500,120],[810,125],[1035,205]],
+        [[1035,205],[1245,280],[1335,410],[1250,550]],
+        [[1250,550],[1175,670],[985,635],[875,560]],
+        [[875,560],[750,475],[630,475],[555,585]],
+        [[555,585],[475,705],[600,825],[795,815]],
+        [[795,815],[1010,805],[1200,845],[1250,955]],
+        [[1250,955],[1300,1065],[1170,1100],[1050,1080]],
+        [[1050,1080],[850,1050],[700,1040],[565,1015]],
+        [[565,1015],[330,945],[180,800],[205,630]],
+        [[205,630],[225,485],[215,270],[300,225]]
       ]
     },
     hard: {
-      name: "Switchback",
+      name: "Hill Circuit",
       laps: 3,
-      width: 112,
-      target: 93,
-      points: [
-        [245, 240], [560, 145], [835, 315], [1120, 190],
-        [1350, 435], [1115, 635], [1330, 875], [1010, 1080],
-        [710, 875], [430, 1070], [155, 850], [345, 620],
-        [150, 420], [430, 350]
-      ],
-      surfaces: [
-        { type: "gravel", from: 0.11, to: 0.19 },
-        { type: "wet", from: 0.37, to: 0.47 },
-        { type: "gravel", from: 0.71, to: 0.79 }
+      width: 124,
+      target: 86,
+      segments: [
+        [[300,220],[480,120],[735,125],[925,210]],
+        [[925,210],[1065,275],[1130,360],[1085,450]],
+        [[1085,450],[1020,575],[825,565],[735,475]],
+        [[735,475],[640,380],[535,390],[475,495]],
+        [[475,495],[405,615],[520,705],[685,690]],
+        [[685,690],[865,675],[970,730],[965,830]],
+        [[965,830],[960,925],[835,980],[690,935]],
+        [[690,935],[530,885],[420,900],[385,1010]],
+        [[385,1010],[335,1135],[155,1045],[170,875]],
+        [[170,875],[180,735],[315,680],[350,585]],
+        [[350,585],[385,485],[245,455],[205,385]],
+        [[205,385],[165,315],[210,260],[300,220]]
       ]
     }
   };
 
   const SURFACES = {
-    tarmac: { max: 1, accel: 1, grip: 1, drag: 0.34, label: "TARMAC" },
-    gravel: { max: 0.68, accel: 0.72, grip: 0.58, drag: 1.12, label: "GRAVEL" },
-    wet: { max: 0.90, accel: 0.92, grip: 0.38, drag: 0.42, label: "WET" },
-    grass: { max: 0.46, accel: 0.52, grip: 0.48, drag: 1.85, label: "GRASS" }
+    tarmac: { max: 1, accel: 1, grip: 1, drag: 0.30 },
+    grass: { max: 0.48, accel: 0.52, grip: 0.56, drag: 1.75 }
   };
 
   let difficulty = "easy";
@@ -172,33 +181,69 @@
   });
   syncTuningUI();
 
-  function catmullRomClosed(points, steps = 34) {
-    const result = [];
-    const n = points.length;
-    for (let i = 0; i < n; i++) {
-      const p0 = points[(i - 1 + n) % n];
-      const p1 = points[i];
-      const p2 = points[(i + 1) % n];
-      const p3 = points[(i + 2) % n];
-      for (let s = 0; s < steps; s++) {
-        const t = s / steps;
-        const t2 = t * t;
-        const t3 = t2 * t;
-        const x = 0.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * t +
-          (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 +
-          (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3);
-        const y = 0.5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * t +
-          (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 +
-          (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3);
-        result.push({ x, y });
+  function cubicPoint(segment, t) {
+    const [p0, p1, p2, p3] = segment;
+    const u = 1 - t;
+    const tt = t * t;
+    const uu = u * u;
+    return {
+      x: uu * u * p0[0] + 3 * uu * t * p1[0] + 3 * u * tt * p2[0] + tt * t * p3[0],
+      y: uu * u * p0[1] + 3 * uu * t * p1[1] + 3 * u * tt * p2[1] + tt * t * p3[1]
+    };
+  }
+
+  function sampleBezierCourse(segments, samplesPerSection = 54) {
+    const raw = [];
+    segments.forEach((segment, segmentIndex) => {
+      for (let i = 0; i <= samplesPerSection; i++) {
+        if (segmentIndex > 0 && i === 0) continue;
+        raw.push(cubicPoint(segment, i / samplesPerSection));
       }
+    });
+    // The last closed section ends exactly on the first point; keep only one
+    // copy so nearest-point and lap-crossing tests do not see a duplicate.
+    if (raw.length > 1 && Math.hypot(raw[0].x - raw[raw.length - 1].x, raw[0].y - raw[raw.length - 1].y) < 0.01) {
+      raw.pop();
+    }
+
+    // Resample by distance so lap gates, tangents and the minimap all behave
+    // consistently even when one Bezier section is much longer than another.
+    const cumulative = [0];
+    for (let i = 1; i < raw.length; i++) {
+      cumulative.push(cumulative[i - 1] + Math.hypot(raw[i].x - raw[i - 1].x, raw[i].y - raw[i - 1].y));
+    }
+    const closeLength = Math.hypot(raw[0].x - raw[raw.length - 1].x, raw[0].y - raw[raw.length - 1].y);
+    const total = cumulative[cumulative.length - 1] + closeLength;
+    const spacing = 8;
+    const count = Math.max(220, Math.round(total / spacing));
+    const result = [];
+
+    for (let s = 0; s < count; s++) {
+      const target = total * s / count;
+      if (target >= cumulative[cumulative.length - 1]) {
+        const d = target - cumulative[cumulative.length - 1];
+        const t = closeLength ? d / closeLength : 0;
+        const a = raw[raw.length - 1];
+        const b = raw[0];
+        result.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+        continue;
+      }
+      let hi = 1;
+      while (hi < cumulative.length && cumulative[hi] < target) hi++;
+      const lo = Math.max(0, hi - 1);
+      const span = cumulative[hi] - cumulative[lo] || 1;
+      const t = (target - cumulative[lo]) / span;
+      result.push({
+        x: raw[lo].x + (raw[hi].x - raw[lo].x) * t,
+        y: raw[lo].y + (raw[hi].y - raw[lo].y) * t
+      });
     }
     return result;
   }
 
   function buildTrack() {
     course = COURSE_DEFS[difficulty];
-    track = catmullRomClosed(course.points);
+    track = sampleBezierCourse(course.segments);
     trackLength = track.length;
   }
 
@@ -237,10 +282,13 @@
     lapEl.textContent = `1 / ${course.laps}`;
     timeEl.textContent = "0:00.00";
     speedEl.textContent = "0";
+    goButton.disabled = false;
+    goButton.classList.remove("running");
+    goLabel.textContent = "GO";
     const best = Number(bestTimes[difficulty]);
     statusEl.textContent = best
-      ? `${course.name} · Best ${formatTime(best)} · accelerate when ready.`
-      : `${course.name} · accelerate when you are ready.`;
+      ? `${course.name} · Best ${formatTime(best)} · press Go when ready.`
+      : `${course.name} · press Go when you are ready.`;
     settings.removeAttribute("open");
   }
 
@@ -259,22 +307,8 @@
     return { index: bestIndex, distance: Math.sqrt(bestDistanceSq) };
   }
 
-  function trackFraction(index) {
-    return index / trackLength;
-  }
-
-  function fractionInRange(fraction, from, to) {
-    if (from <= to) return fraction >= from && fraction <= to;
-    return fraction >= from || fraction <= to;
-  }
-
   function surfaceAt(position) {
-    if (position.distance > course.width * 0.52) return "grass";
-    const f = trackFraction(position.index);
-    for (const patch of course.surfaces) {
-      if (fractionInRange(f, patch.from, patch.to)) return patch.type;
-    }
-    return "tarmac";
+    return position.distance > course.width * 0.52 ? "grass" : "tarmac";
   }
 
   function tangentAt(index) {
@@ -322,11 +356,14 @@
     lastTrackIndex = index;
   }
 
-  function startRaceIfNeeded() {
+  function startRace() {
     if (raceStarted || finished) return;
     raceStarted = true;
     raceStart = performance.now();
     lapStart = raceStart;
+    goButton.disabled = true;
+    goButton.classList.add("running");
+    goLabel.textContent = "AUTO";
     statusEl.textContent = `${course.name} · go!`;
   }
 
@@ -334,6 +371,7 @@
     if (finished) return;
     finished = true;
     raceStarted = false;
+    goLabel.textContent = "DONE";
     const totalSeconds = (now - raceStart) / 1000;
     const fastestLap = Math.min(...lapTimes);
     const newTimeBest = saveBestTime(totalSeconds);
@@ -378,8 +416,6 @@
     const surface = SURFACES[currentSurface];
     let speed = Math.hypot(car.vx, car.vy);
 
-    if (input.gas) startRaceIfNeeded();
-
     const headingX = Math.cos(car.angle);
     const headingY = Math.sin(car.angle);
     const rightX = -headingY;
@@ -387,34 +423,29 @@
     let forwardSpeed = car.vx * headingX + car.vy * headingY;
     let sideSpeed = car.vx * rightX + car.vy * rightY;
 
-    if (input.gas) {
+    if (raceStarted) {
       forwardSpeed += tuning.acceleration * surface.accel * dt;
-    }
-
-    if (input.brake) {
-      if (forwardSpeed > 14) {
-        forwardSpeed *= Math.max(0, 1 - 3.9 * dt);
-      } else {
-        forwardSpeed -= tuning.acceleration * 0.50 * surface.accel * dt;
-      }
+    } else {
+      forwardSpeed *= Math.exp(-4 * dt);
+      sideSpeed *= Math.exp(-4 * dt);
     }
 
     const steer = (input.right ? 1 : 0) - (input.left ? 1 : 0);
-    const steerSpeed = Math.min(1, Math.abs(forwardSpeed) / 125);
+    const steerSpeed = Math.min(1, Math.abs(forwardSpeed) / 105);
     if (steer && Math.abs(forwardSpeed) > 4) {
-      const reverse = forwardSpeed < 0 ? -1 : 1;
-      const steeringGrip = 0.62 + surface.grip * 0.38;
-      car.angle += steer * reverse * 2.45 * (0.20 + steerSpeed * 0.80) * steeringGrip * dt;
+      const steeringGrip = 0.68 + surface.grip * 0.32;
+      car.angle += steer * 2.58 * (0.24 + steerSpeed * 0.76) * steeringGrip * dt;
+      // A small automatic lift under full steering replaces the need for a
+      // separate brake button and makes long presses workable on a phone.
+      forwardSpeed *= Math.exp(-0.88 * Math.abs(steer) * dt);
     }
 
-    // Grip removes lateral velocity. Low-grip surfaces let the body point in a
-    // new direction while the car keeps sliding along its previous path.
     const lateralGrip = tuning.grip * surface.grip;
     sideSpeed *= Math.exp(-lateralGrip * dt);
     forwardSpeed *= Math.exp(-surface.drag * dt);
 
     const maxForward = tuning.topSpeed * surface.max;
-    forwardSpeed = Math.max(-maxForward * 0.38, Math.min(maxForward, forwardSpeed));
+    forwardSpeed = Math.max(0, Math.min(maxForward, forwardSpeed));
 
     const hx = Math.cos(car.angle);
     const hy = Math.sin(car.angle);
@@ -424,7 +455,7 @@
     car.vy = hy * forwardSpeed + ry * sideSpeed;
 
     speed = Math.hypot(car.vx, car.vy);
-    const maxSpeed = tuning.topSpeed * surface.max * 1.06;
+    const maxSpeed = tuning.topSpeed * surface.max * 1.04;
     if (speed > maxSpeed) {
       const scale = maxSpeed / speed;
       car.vx *= scale;
@@ -439,9 +470,9 @@
 
     nearest = nearestTrackPoint(car.x, car.y);
     currentSurface = surfaceAt(nearest);
-    updateLapProgress();
+    if (raceStarted) updateLapProgress();
 
-    const lookAhead = 85 + Math.min(125, speed * 0.25);
+    const lookAhead = 80 + Math.min(120, speed * 0.24);
     const cameraTargetX = car.x + Math.cos(car.angle) * lookAhead;
     const cameraTargetY = car.y + Math.sin(car.angle) * lookAhead;
     const follow = 1 - Math.exp(-5.2 * dt);
@@ -472,32 +503,10 @@
     targetCtx.closePath();
   }
 
-  function drawSurfaceSegment(patch) {
-    const start = Math.floor(patch.from * trackLength);
-    const end = Math.floor(patch.to * trackLength);
-    const drawRange = (a, b) => {
-      ctx.beginPath();
-      ctx.moveTo(track[a].x, track[a].y);
-      for (let i = a + 1; i <= b; i++) ctx.lineTo(track[i % trackLength].x, track[i % trackLength].y);
-      ctx.strokeStyle = patch.type === "gravel" ? "#9f8c77" : "#76949b";
-      ctx.lineWidth = course.width - 10;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.stroke();
-    };
-    if (start <= end) drawRange(start, Math.max(start + 1, end));
-    else {
-      drawRange(start, trackLength - 1);
-      drawRange(0, end);
-    }
-  }
-
   function drawWorld() {
     ctx.fillStyle = "#91a47e";
     ctx.fillRect(0, 0, WORLD.width, WORLD.height);
 
-    // Quiet field markings give the moving camera some texture without making
-    // the scene busy or relying on external artwork.
     ctx.fillStyle = "rgba(52,68,49,.10)";
     for (let y = 45; y < WORLD.height; y += 90) {
       const offset = (Math.floor(y / 90) % 2) * 42;
@@ -520,8 +529,6 @@
     ctx.lineWidth = course.width;
     ctx.stroke();
 
-    course.surfaces.forEach(drawSurfaceSegment);
-
     traceTrackPath();
     ctx.strokeStyle = "rgba(246,241,234,.48)";
     ctx.lineWidth = 3;
@@ -530,13 +537,11 @@
     ctx.setLineDash([]);
 
     drawStartLine();
-    drawTrackFurniture();
   }
 
   function drawStartLine() {
     const p = track[0];
     const tangent = tangentAt(0);
-    const normal = { x: -tangent.y, y: tangent.x };
     const half = course.width * 0.47;
     const blocks = 8;
     const blockW = (half * 2) / blocks;
@@ -550,31 +555,6 @@
       }
     }
     ctx.restore();
-
-    void normal;
-  }
-
-  function drawTrackFurniture() {
-    const gateFractions = [0.23, 0.48, 0.73, 0.91];
-    gateFractions.forEach((fraction, gateIndex) => {
-      const p = track[Math.round(fraction * trackLength) % trackLength];
-      const t = tangentAt(Math.round(fraction * trackLength) % trackLength);
-      const n = { x: -t.y, y: t.x };
-      const outer = course.width * 0.64;
-      ctx.strokeStyle = "rgba(243,239,233,.35)";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(p.x - n.x * outer, p.y - n.y * outer);
-      ctx.lineTo(p.x + n.x * outer, p.y + n.y * outer);
-      ctx.stroke();
-
-      if (gateIndex < nextGate) {
-        ctx.fillStyle = "rgba(225,237,218,.72)";
-        ctx.beginPath();
-        ctx.arc(p.x + n.x * outer, p.y + n.y * outer, 8, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    });
   }
 
   function roundRect(targetCtx, x, y, w, h, r) {
@@ -594,14 +574,10 @@
     ctx.rotate(car.angle + Math.PI / 2);
 
     ctx.fillStyle = "#20262b";
-    roundRect(ctx, -17, -19, 7, 15, 2);
-    ctx.fill();
-    roundRect(ctx, 10, -19, 7, 15, 2);
-    ctx.fill();
-    roundRect(ctx, -17, 5, 7, 15, 2);
-    ctx.fill();
-    roundRect(ctx, 10, 5, 7, 15, 2);
-    ctx.fill();
+    roundRect(ctx, -17, -19, 7, 15, 2); ctx.fill();
+    roundRect(ctx, 10, -19, 7, 15, 2); ctx.fill();
+    roundRect(ctx, -17, 5, 7, 15, 2); ctx.fill();
+    roundRect(ctx, 10, 5, 7, 15, 2); ctx.fill();
 
     ctx.fillStyle = "#c77858";
     ctx.strokeStyle = "#2e3438";
@@ -624,24 +600,6 @@
     ctx.fillStyle = "#f2e7b5";
     ctx.fillRect(-10, -23, 6, 3);
     ctx.fillRect(4, -23, 6, 3);
-    ctx.restore();
-  }
-
-  function drawSurfaceBadge() {
-    const surface = SURFACES[currentSurface];
-    ctx.save();
-    roundRect(ctx, 18, 18, 108, 36, 12);
-    ctx.fillStyle = "rgba(247,242,237,.88)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(52,57,68,.16)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.fillStyle = "#746e69";
-    ctx.font = "800 9px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif";
-    ctx.fillText("SURFACE", 31, 32);
-    ctx.fillStyle = "#343944";
-    ctx.font = "900 12px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif";
-    ctx.fillText(surface.label, 31, 46);
     ctx.restore();
   }
 
@@ -679,13 +637,13 @@
     ctx.save();
     ctx.textAlign = "center";
     ctx.fillStyle = "rgba(247,242,237,.92)";
-    roundRect(ctx, canvas.width / 2 - 92, canvas.height * 0.70 - 26, 184, 52, 16);
+    roundRect(ctx, canvas.width / 2 - 78, canvas.height * 0.70 - 24, 156, 48, 16);
     ctx.fill();
     ctx.strokeStyle = "rgba(52,57,68,.16)";
     ctx.stroke();
     ctx.fillStyle = "#343944";
     ctx.font = "900 16px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif";
-    ctx.fillText("ACCELERATE TO START", canvas.width / 2, canvas.height * 0.70 + 6);
+    ctx.fillText("PRESS GO", canvas.width / 2, canvas.height * 0.70 + 6);
     ctx.restore();
   }
 
@@ -700,7 +658,6 @@
     drawCar();
     ctx.restore();
 
-    drawSurfaceBadge();
     drawMiniMap();
     drawReady();
   }
@@ -740,17 +697,19 @@
 
   bindHold(controls.left, "left");
   bindHold(controls.right, "right");
-  bindHold(controls.gas, "gas");
-  bindHold(controls.brake, "brake");
+  goButton.addEventListener("click", startRace);
 
   const keyMap = {
     ArrowLeft: "left", a: "left", A: "left",
-    ArrowRight: "right", d: "right", D: "right",
-    ArrowUp: "gas", w: "gas", W: "gas",
-    ArrowDown: "brake", s: "brake", S: "brake"
+    ArrowRight: "right", d: "right", D: "right"
   };
 
   document.addEventListener("keydown", event => {
+    if (event.key === " " || event.key === "Enter" || event.key === "ArrowUp") {
+      event.preventDefault();
+      startRace();
+      return;
+    }
     const name = keyMap[event.key];
     if (!name) return;
     event.preventDefault();

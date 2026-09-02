@@ -1,7 +1,6 @@
-# GameHub v1.7.7
+# GameHub v1.7.8
 
-- Added **Racer**, a top-down Micro Machines-style driving game.
-- Added Easy, Medium and Hard circuits with increasing lap counts and tighter track widths.
-- Added gravel, wet-road and grass handling differences for speed and grip.
-- Added live lap timing, best times, a mini-map and shared GameHub result/progress support.
-- Added a settings dropdown with tunable top speed, acceleration and grip values.
+- Racer circuits rebuilt from smooth cubic Bezier sections for more natural straights, sweepers, S-bends and hairpins.
+- Racer now uses one-touch Go with automatic acceleration; driving controls are Left and Right only.
+- Removed gravel and wet-road track patches for now so circuit layout and handling can be refined first.
+- Kept grass slowdown, lap timing, mini-map, difficulty levels and Top Speed / Acceleration / Grip tuning controls.

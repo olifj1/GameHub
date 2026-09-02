@@ -9119,7 +9119,7 @@ body[data-game-id="game-12"] .colour-blocks-status{
   }
 }
 
-/* v1.7.7 — Racer */
+/* v1.7.8 — Racer */
 body[data-game-id="game-13"], .game-card[data-game-id="game-13"] { --gh-accent:#4f847b; }
 
 body[data-game-id="game-13"] #racer-screen{
@@ -9305,7 +9305,7 @@ body[data-game-id="game-13"] .racer-controls{
   width:min(100%,430px);
   margin:5px auto 0;
   display:grid;
-  grid-template-columns:.9fr 1.2fr 1fr .9fr;
+  grid-template-columns:1fr .82fr 1fr;
   gap:6px;
 }
 body[data-game-id="game-13"] .racer-control{
@@ -9324,13 +9324,22 @@ body[data-game-id="game-13"] .racer-control{
   gap:0;
   touch-action:none;
 }
-body[data-game-id="game-13"] .racer-control.accelerate{
-  background:color-mix(in srgb,var(--gh-accent) 12%,#fff);
-  border-color:color-mix(in srgb,var(--gh-accent) 34%,transparent);
+body[data-game-id="game-13"] .racer-control.go{
+  background:color-mix(in srgb,var(--gh-accent) 14%,#fff);
+  border-color:color-mix(in srgb,var(--gh-accent) 38%,transparent);
   color:var(--gh-accent);
 }
-body[data-game-id="game-13"] .racer-control.brake{
-  background:rgba(239,232,226,.86);
+body[data-game-id="game-13"] .racer-control.go:disabled{
+  opacity:.72;
+  color:#77726d;
+  background:rgba(239,235,230,.78);
+}
+body[data-game-id="game-13"] .racer-control.go.running{
+  border-color:rgba(52,57,68,.12);
+}
+body[data-game-id="game-13"] .racer-go-icon svg{
+  fill:currentColor;
+  stroke:none;
 }
 body[data-game-id="game-13"] .racer-control-icon{
   display:grid;
@@ -9352,7 +9361,8 @@ body[data-game-id="game-13"] .racer-control small{
   letter-spacing:.07em;
   white-space:nowrap;
 }
-body[data-game-id="game-13"] .racer-control.accelerate small{color:var(--gh-accent)}
+body[data-game-id="game-13"] .racer-control.go small{color:var(--gh-accent)}
+body[data-game-id="game-13"] .racer-control.go:disabled small{color:#77726d}
 body[data-game-id="game-13"] .racer-control.pressed{
   transform:translateY(1px) scale(.985);
   background:color-mix(in srgb,var(--gh-accent) 17%,#fff);
