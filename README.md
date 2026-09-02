@@ -1,6 +1,8 @@
-# GameHub v1.7.5
+# GameHub v1.7.6
 
-- Reworked Colour Blocks to use a clearer white puzzle-board layout, closer to the Sudoku-style reference.
-- Replaced the hatched tile blocks with small centred icon tokens inside each cell.
-- Added switchable icon themes for Colour Blocks so you can experiment with different looks: Shapes, Fruit, and Sweets.
-- Kept the current 2×2 rotation gameplay, scramble behaviour, and relaxed star scoring.
+- Updated Colour Blocks for better readability.
+- Changed the puzzle board to a flat mid-tone grid with black lines and stronger thick divider lines.
+- Made the 2×2 selection frame white and thicker so it stands out more clearly.
+- Changed the rotation animation so only the icon tokens move, not the tile backgrounds.
+- Refined the icon sets to feel more like small graphic-style emoji objects.
+- Increased the scramble strength for medium and hard boards so they start more mixed.

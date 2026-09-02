@@ -14,44 +14,46 @@ const colourResetButton = $("#colour-reset");
 const colourNewButton = $("#colour-new");
 
 const colourDifficultyConfig = {
-  easy:   { size: 4, scrambleMoves: 8,  minMixedBlocks: 3, minDisorder: 8,  minVariety: 7 },
-  medium: { size: 6, scrambleMoves: 20, minMixedBlocks: 4, minDisorder: 24, minVariety: 10 },
-  hard:   { size: 8, scrambleMoves: 32, minMixedBlocks: 4, minDisorder: 42, minVariety: 11 }
+  easy:   { size: 4, scrambleMoves: 10, minMixedBlocks: 3, minDisorder: 10, minVariety: 7 },
+  medium: { size: 6, scrambleMoves: 34, minMixedBlocks: 4, minDisorder: 38, minVariety: 12 },
+  hard:   { size: 8, scrambleMoves: 64, minMixedBlocks: 4, minDisorder: 72, minVariety: 14 }
 };
 
 const colourPalette = [
-  { name: "dusty rose", fill: "#d1a29a", stroke: "#805e59" },
-  { name: "slate blue", fill: "#aab7c4", stroke: "#637181" },
-  { name: "ochre",      fill: "#c8b07b", stroke: "#786643" },
-  { name: "sage",       fill: "#a5b9a8", stroke: "#647767" }
+  { name: "dusty rose", fill: "#d39e95", stroke: "#815f5b" },
+  { name: "slate blue", fill: "#a6b5c5", stroke: "#667687" },
+  { name: "ochre", fill: "#ccb06a", stroke: "#827046" },
+  { name: "sage", fill: "#a7baa7", stroke: "#6a7d6a" }
 ];
 
 const colourTokenThemes = {
   shapes: {
     label: "Shapes",
-    names: ["circle", "diamond", "triangle", "square"],
+    names: ["moon", "star", "heart", "diamond"],
     render(index) {
       if (index === 0) {
         return `
           <svg viewBox="0 0 100 100" aria-hidden="true">
-            <circle cx="50" cy="50" r="28" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="6" />
+            <circle cx="46" cy="50" r="24" fill="var(--token-fill)" />
+            <circle cx="58" cy="44" r="22" fill="var(--board-fill)" />
+            <path d="M41 26a24 24 0 0 0 0 48 24 24 0 0 0 11-2" fill="none" stroke="var(--token-stroke)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
           </svg>`;
       }
       if (index === 1) {
         return `
           <svg viewBox="0 0 100 100" aria-hidden="true">
-            <rect x="28" y="28" width="44" height="44" rx="6" transform="rotate(45 50 50)" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="6" />
+            <path d="M50 16l8 22 24 2-18 14 6 24-20-12-20 12 6-24-18-14 24-2Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5.5" stroke-linejoin="round" />
           </svg>`;
       }
       if (index === 2) {
         return `
           <svg viewBox="0 0 100 100" aria-hidden="true">
-            <path d="M50 20 L78 74 H22 Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="6" stroke-linejoin="round" />
+            <path d="M50 78c-18-12-30-23-30-38 0-9 7-16 16-16 6 0 11 3 14 8 3-5 8-8 14-8 9 0 16 7 16 16 0 15-12 26-30 38Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5.5" stroke-linejoin="round" />
           </svg>`;
       }
       return `
         <svg viewBox="0 0 100 100" aria-hidden="true">
-          <rect x="25" y="25" width="50" height="50" rx="10" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="6" />
+          <rect x="28" y="28" width="44" height="44" rx="8" transform="rotate(45 50 50)" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5.5" />
         </svg>`;
     }
   },
@@ -62,68 +64,73 @@ const colourTokenThemes = {
       if (index === 0) {
         return `
           <svg viewBox="0 0 100 100" aria-hidden="true">
-            <path d="M50 34c-5-8-16-10-24-2-9 9-9 27 0 38 7 8 17 11 24 11s17-3 24-11c9-11 9-29 0-38-8-8-19-6-24 2Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5" stroke-linejoin="round" />
-            <path d="M52 21c7-5 13-5 18-2" fill="none" stroke="var(--token-stroke)" stroke-width="5" stroke-linecap="round" />
-            <path d="M50 32c0-7 1-12 5-17" fill="none" stroke="var(--token-stroke)" stroke-width="5" stroke-linecap="round" />
-            <path d="M56 18c8 0 12 3 14 8" fill="none" stroke="var(--token-stroke)" stroke-width="4" stroke-linecap="round" />
+            <path d="M50 34c-5-8-16-10-24-2-9 9-9 27 0 38 7 8 17 11 24 11s17-3 24-11c9-11 9-29 0-38-8-8-19-6-24 2Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5.5" stroke-linejoin="round" />
+            <path d="M50 32c0-7 2-12 6-17" fill="none" stroke="var(--token-stroke)" stroke-width="5" stroke-linecap="round" />
+            <path d="M57 18c8 1 12 4 15 9" fill="none" stroke="var(--token-stroke)" stroke-width="4" stroke-linecap="round" />
+            <path d="M35 42c5-6 12-10 20-10" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="4" stroke-linecap="round" />
           </svg>`;
       }
       if (index === 1) {
         return `
           <svg viewBox="0 0 100 100" aria-hidden="true">
-            <path d="M50 22c6 0 11 5 11 12 0 3-1 6-2 9 10 7 14 21 8 31-6 11-16 16-28 16s-22-5-28-16c-6-10-2-24 8-31-1-3-2-6-2-9 0-7 5-12 11-12 5 0 8 2 11 5 3-3 6-5 11-5Z" transform="translate(11 -5) scale(.78)" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="6" stroke-linejoin="round" />
-            <path d="M49 28c1-8 6-13 12-16" fill="none" stroke="var(--token-stroke)" stroke-width="5" stroke-linecap="round" />
-            <path d="M51 27c8-2 13 0 17 5" fill="none" stroke="var(--token-stroke)" stroke-width="4" stroke-linecap="round" />
+            <path d="M50 24c7 0 11 5 11 12 0 3-1 6-2 9 9 7 13 18 9 29-5 12-16 18-29 18s-24-6-29-18c-4-11 0-22 9-29-1-3-2-6-2-9 0-7 4-12 11-12 5 0 9 2 11 5 3-3 6-5 12-5Z" transform="translate(11 -6) scale(.78)" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="6" stroke-linejoin="round" />
+            <path d="M48 29c2-8 8-13 14-16" fill="none" stroke="var(--token-stroke)" stroke-width="5" stroke-linecap="round" />
+            <path d="M49 31c8-2 14 0 18 5" fill="none" stroke="var(--token-stroke)" stroke-width="4" stroke-linecap="round" />
           </svg>`;
       }
       if (index === 2) {
         return `
           <svg viewBox="0 0 100 100" aria-hidden="true">
-            <ellipse cx="50" cy="52" rx="26" ry="18" transform="rotate(-16 50 52)" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="6" />
-            <path d="M57 31c5-6 11-9 17-9" fill="none" stroke="var(--token-stroke)" stroke-width="5" stroke-linecap="round" />
+            <ellipse cx="50" cy="54" rx="28" ry="19" transform="rotate(-16 50 54)" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5.5" />
+            <path d="M56 33c6-6 12-10 18-10" fill="none" stroke="var(--token-stroke)" stroke-width="5" stroke-linecap="round" />
+            <path d="M35 50c6-4 12-6 20-7" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="4" stroke-linecap="round" />
           </svg>`;
       }
       return `
         <svg viewBox="0 0 100 100" aria-hidden="true">
-          <path d="M36 33c7 0 13 6 13 13s-6 13-13 13-13-6-13-13 6-13 13-13Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5" />
-          <path d="M64 43c7 0 13 6 13 13s-6 13-13 13-13-6-13-13 6-13 13-13Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5" />
-          <path d="M37 33c5-9 13-13 24-13" fill="none" stroke="var(--token-stroke)" stroke-width="5" stroke-linecap="round" />
-          <path d="M50 19c5 1 9 4 11 8" fill="none" stroke="var(--token-stroke)" stroke-width="4" stroke-linecap="round" />
+          <path d="M36 37c7 0 13 6 13 13s-6 13-13 13-13-6-13-13 6-13 13-13Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5" />
+          <path d="M64 47c7 0 13 6 13 13s-6 13-13 13-13-6-13-13 6-13 13-13Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5" />
+          <path d="M36 38c6-12 14-18 27-18" fill="none" stroke="var(--token-stroke)" stroke-width="5" stroke-linecap="round" />
+          <path d="M51 19c4 1 8 4 10 8" fill="none" stroke="var(--token-stroke)" stroke-width="4" stroke-linecap="round" />
         </svg>`;
     }
   },
   sweets: {
     label: "Sweets",
-    names: ["wrapped sweet", "lollipop", "jellybean", "chocolate"],
+    names: ["wrapped sweet", "lollipop", "jellybean", "donut"],
     render(index) {
       if (index === 0) {
         return `
           <svg viewBox="0 0 100 100" aria-hidden="true">
-            <path d="M20 50 31 39v22L20 50Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5" stroke-linejoin="round" />
-            <rect x="31" y="33" width="38" height="34" rx="10" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5" />
-            <path d="M69 39 80 50 69 61Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5" stroke-linejoin="round" />
-            <path d="M40 42h20M40 58h20" stroke="rgba(255,255,255,.45)" stroke-width="4" stroke-linecap="round" />
+            <path d="M18 50 30 39v22L18 50Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5" stroke-linejoin="round" />
+            <rect x="30" y="33" width="40" height="34" rx="10" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5" />
+            <path d="M70 39 82 50 70 61Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5" stroke-linejoin="round" />
+            <path d="M39 42h22M39 58h22" stroke="rgba(255,255,255,.42)" stroke-width="4" stroke-linecap="round" />
           </svg>`;
       }
       if (index === 1) {
         return `
           <svg viewBox="0 0 100 100" aria-hidden="true">
-            <circle cx="53" cy="42" r="20" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="6" />
-            <path d="M53 24a18 18 0 0 1 0 36 18 18 0 0 1 0-36Zm0 7a11 11 0 0 0 0 22 11 11 0 0 0 0-22Z" fill="rgba(255,255,255,.28)" />
-            <path d="M53 61v20" fill="none" stroke="var(--token-stroke)" stroke-width="6" stroke-linecap="round" />
+            <circle cx="52" cy="40" r="20" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5.5" />
+            <circle cx="52" cy="40" r="8" fill="var(--board-fill)" stroke="var(--token-stroke)" stroke-width="4" />
+            <path d="M52 60v20" fill="none" stroke="var(--token-stroke)" stroke-width="6" stroke-linecap="round" />
           </svg>`;
       }
       if (index === 2) {
         return `
           <svg viewBox="0 0 100 100" aria-hidden="true">
-            <path d="M33 35c8-8 29-8 36 0 8 8 8 22 0 30-7 8-28 8-36 0-8-8-8-22 0-30Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="6" stroke-linejoin="round" />
-            <path d="M42 33c7 0 12 2 17 7" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="4" stroke-linecap="round" />
+            <path d="M32 36c9-8 28-8 36 0 8 8 8 21 0 29-8 8-27 8-36 0-8-8-8-21 0-29Z" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5.5" stroke-linejoin="round" />
+            <path d="M42 34c6 0 12 2 17 6" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="4" stroke-linecap="round" />
           </svg>`;
       }
       return `
         <svg viewBox="0 0 100 100" aria-hidden="true">
-          <rect x="27" y="28" width="46" height="44" rx="6" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="6" />
-          <path d="M42.5 28v44M57.5 28v44M27 43h46M27 57h46" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="4" />
+          <circle cx="50" cy="50" r="24" fill="var(--token-fill)" stroke="var(--token-stroke)" stroke-width="5.5" />
+          <circle cx="50" cy="50" r="10" fill="var(--board-fill)" stroke="var(--token-stroke)" stroke-width="4" />
+          <circle cx="39" cy="41" r="2.5" fill="rgba(255,255,255,.58)" />
+          <circle cx="58" cy="39" r="2.5" fill="rgba(255,255,255,.58)" />
+          <circle cx="60" cy="58" r="2.5" fill="rgba(255,255,255,.58)" />
+          <circle cx="42" cy="60" r="2.5" fill="rgba(255,255,255,.58)" />
         </svg>`;
     }
   }
@@ -131,8 +138,8 @@ const colourTokenThemes = {
 
 let colourDifficulty = "easy";
 let colourSize = 4;
-let colourPar = 8;
-let colourTheme = "shapes";
+let colourPar = 10;
+let colourTheme = "fruit";
 let colourBoard = [];
 let colourInitialBoard = [];
 let colourMoves = 0;
@@ -165,7 +172,6 @@ function colourBuildSolved(size) {
   );
 }
 
-// turn: +1 = clockwise, -1 = anticlockwise.
 function colourRotate(board, move) {
   if (!move) return;
   const row = move.row;
@@ -262,21 +268,21 @@ function colourMakeScrambledBoard() {
   const config = colourDifficultyConfig[colourDifficulty];
   let best = null;
 
-  for (let attempt = 0; attempt < 260; attempt++) {
+  for (let attempt = 0; attempt < 420; attempt++) {
     const board = colourBuildSolved(config.size);
     const moves = [];
     let previous = null;
 
     for (let i = 0; i < config.scrambleMoves; i++) {
       let chosen = null;
-      for (let pick = 0; pick < 180 && !chosen; pick++) {
+      for (let pick = 0; pick < 220 && !chosen; pick++) {
         const candidate = {
           row: Math.floor(Math.random() * (config.size - 1)),
           col: Math.floor(Math.random() * (config.size - 1)),
           turn: Math.random() < 0.5 ? -1 : 1
         };
 
-        if (previous && previous.row === candidate.row && previous.col === candidate.col) continue;
+        if (previous && previous.row === candidate.row && previous.col === candidate.col && previous.turn !== candidate.turn) continue;
         if (!colourMoveChanges(board, candidate)) continue;
         chosen = candidate;
       }
@@ -293,9 +299,9 @@ function colourMakeScrambledBoard() {
 
     if (
       !best ||
-      disorder > best.disorder ||
-      (disorder === best.disorder && variety > best.variety) ||
-      (disorder === best.disorder && variety === best.variety && moves.length > best.moves.length)
+      mixed > best.mixed ||
+      (mixed === best.mixed && disorder > best.disorder) ||
+      (mixed === best.mixed && disorder === best.disorder && variety > best.variety)
     ) {
       best = candidate;
     }
@@ -339,17 +345,17 @@ function colourPositionSelectionFrame() {
   const boardRect = colourBoardEl.getBoundingClientRect();
   const tlRect = tl.getBoundingClientRect();
   const brRect = br.getBoundingClientRect();
-  frame.style.left = `${tlRect.left - boardRect.left - 2}px`;
-  frame.style.top = `${tlRect.top - boardRect.top - 2}px`;
-  frame.style.width = `${brRect.right - tlRect.left + 4}px`;
-  frame.style.height = `${brRect.bottom - tlRect.top + 4}px`;
+  frame.style.left = `${tlRect.left - boardRect.left - 3}px`;
+  frame.style.top = `${tlRect.top - boardRect.top - 3}px`;
+  frame.style.width = `${brRect.right - tlRect.left + 6}px`;
+  frame.style.height = `${brRect.bottom - tlRect.top + 6}px`;
 }
 
 function colourTokenMarkup(colourIndex) {
-  const theme = colourTokenThemes[colourTheme] || colourTokenThemes.shapes;
+  const theme = colourTokenThemes[colourTheme] || colourTokenThemes.fruit;
   const palette = colourPalette[colourIndex];
   return `
-    <div class="colour-blocks-token colour-theme-${colourTheme}" style="--token-fill:${palette.fill}; --token-stroke:${palette.stroke};">
+    <div class="colour-blocks-token colour-theme-${colourTheme}" style="--token-fill:${palette.fill}; --token-stroke:${palette.stroke}; --board-fill:#cfd4d8;">
       ${theme.render(colourIndex)}
     </div>`;
 }
@@ -362,12 +368,11 @@ function colourRender() {
     for (let col = 0; col < colourSize; col++) {
       const colourIndex = colourBoard[row][col];
       const tile = document.createElement("div");
-      const tokenName = (colourTokenThemes[colourTheme] || colourTokenThemes.shapes).names[colourIndex] || "tile";
+      const tokenName = (colourTokenThemes[colourTheme] || colourTokenThemes.fruit).names[colourIndex] || "tile";
       tile.className = "colour-blocks-tile" + (colourSelectionContains(row, col) ? " selected" : "");
       tile.dataset.row = row;
       tile.dataset.col = col;
       tile.dataset.colour = colourPalette[colourIndex].name;
-      tile.style.setProperty("--tile-colour", colourPalette[colourIndex].fill);
       tile.setAttribute("role", "gridcell");
       tile.setAttribute("aria-label", `${colourPalette[colourIndex].name} ${tokenName}`);
       tile.innerHTML = colourTokenMarkup(colourIndex);
@@ -396,9 +401,9 @@ function colourRender() {
 function colourStarsForMoves(moves) {
   const sizeBonus = Math.max(4, colourSize);
   if (moves <= colourPar) return 5;
-  if (moves <= colourPar + sizeBonus) return 4;
-  if (moves <= colourPar + sizeBonus * 2 + 2) return 3;
-  if (moves <= colourPar + sizeBonus * 4 + 4) return 2;
+  if (moves <= colourPar + sizeBonus + 1) return 4;
+  if (moves <= colourPar + sizeBonus * 2 + 4) return 3;
+  if (moves <= colourPar + sizeBonus * 4 + 8) return 2;
   return 1;
 }
 
@@ -462,26 +467,27 @@ function colourAnimateRotation(move) {
   mapping.forEach(({ dest, source }) => {
     const destEl = colourBoardEl.querySelector(`[data-row="${dest[0]}"][data-col="${dest[1]}"]`);
     const sourceEl = colourBoardEl.querySelector(`[data-row="${source[0]}"][data-col="${source[1]}"]`);
-    if (!destEl || !sourceEl) return;
+    const tokenEl = destEl?.querySelector('.colour-blocks-token');
+    if (!destEl || !sourceEl || !tokenEl) return;
     const destRect = destEl.getBoundingClientRect();
     const sourceRect = sourceEl.getBoundingClientRect();
     jobs.push({
-      el: destEl,
-      dx: sourceRect.left - destRect.left,
-      dy: sourceRect.top - destRect.top
+      el: tokenEl,
+      dx: (sourceRect.left + sourceRect.width / 2) - (destRect.left + destRect.width / 2),
+      dy: (sourceRect.top + sourceRect.height / 2) - (destRect.top + destRect.height / 2)
     });
   });
 
   jobs.forEach(job => {
     job.el.style.transition = "none";
-    job.el.style.transform = `translate(${job.dx}px,${job.dy}px) scale(.96)`;
+    job.el.style.transform = `translate(${job.dx}px, ${job.dy}px) scale(1.02)`;
     job.el.style.zIndex = "7";
   });
 
   requestAnimationFrame(() => requestAnimationFrame(() => {
     jobs.forEach(job => {
-      job.el.style.transition = "transform .19s cubic-bezier(.2,.75,.25,1)";
-      job.el.style.transform = "translate(0,0) scale(.96)";
+      job.el.style.transition = "transform .2s cubic-bezier(.2,.75,.25,1)";
+      job.el.style.transform = "translate(0, 0) scale(1)";
     });
   }));
 
@@ -494,7 +500,7 @@ function colourAnimateRotation(move) {
     colourAnimating = false;
     colourRender();
     if (colourIsSolved()) colourFinishPuzzle();
-  }, 225);
+  }, 235);
 }
 
 function colourCommitRotation(turn) {
@@ -584,7 +590,7 @@ colourThemeButtons.forEach(button => {
     colourThemeButtons.forEach(other => other.classList.toggle("active", other === button));
     colourRender();
     colourStatusEl.classList.remove("good");
-    colourStatusEl.textContent = `${colourTokenThemes[colourTheme].label} style selected.`;
+    colourStatusEl.textContent = `${colourTokenThemes[colourTheme].label} icons selected.`;
   });
 });
 
@@ -594,4 +600,5 @@ colourNewButton.addEventListener("click", colourNewPuzzle);
 
 window.addEventListener("resize", () => requestAnimationFrame(colourPositionSelectionFrame));
 
+colourThemeButtons.forEach(button => button.classList.toggle("active", button.dataset.colourTheme === colourTheme));
 colourNewPuzzle();
