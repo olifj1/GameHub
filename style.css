@@ -9118,3 +9118,276 @@ body[data-game-id="game-12"] .colour-blocks-status{
     height:63%;
   }
 }
+
+/* v1.7.7 — Racer */
+body[data-game-id="game-13"], .game-card[data-game-id="game-13"] { --gh-accent:#4f847b; }
+
+body[data-game-id="game-13"] #racer-screen{
+  background:#f5efe9!important;
+  color:var(--gh-text)!important;
+}
+body[data-game-id="game-13"] .racer-page{
+  width:100%;
+  max-width:560px;
+  height:100dvh;
+  min-height:0;
+  margin:0 auto;
+  padding:max(10px,env(safe-area-inset-top)) 14px max(10px,env(safe-area-inset-bottom));
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+body[data-game-id="game-13"] .racer-header{
+  flex:0 0 auto;
+  margin:0 0 10px!important;
+}
+body[data-game-id="game-13"] .racer-header .kicker{color:#77726d!important}
+body[data-game-id="game-13"] .racer-header h1{color:var(--gh-text)!important}
+
+body[data-game-id="game-13"] .racer-difficulty-row{
+  flex:0 0 auto;
+  width:min(100%,430px);
+  margin:0 auto 7px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:6px;
+}
+body[data-game-id="game-13"] .racer-difficulty{
+  min-height:38px;
+  border:1px solid rgba(52,57,68,.12);
+  border-radius:12px;
+  background:rgba(255,255,255,.60);
+  color:#746e69;
+  font-size:11px;
+  font-weight:900;
+}
+body[data-game-id="game-13"] .racer-difficulty.active{
+  border-color:color-mix(in srgb,var(--gh-accent) 38%,transparent);
+  background:color-mix(in srgb,var(--gh-accent) 12%,#fff);
+  color:var(--gh-accent);
+}
+
+body[data-game-id="game-13"] .racer-hud{
+  position:relative;
+  z-index:20;
+  flex:0 0 auto;
+  width:min(100%,430px);
+  margin:0 auto 7px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,1fr) 42px;
+  gap:5px;
+}
+body[data-game-id="game-13"] .racer-hud>div,
+body[data-game-id="game-13"] .racer-settings>summary{
+  min-width:0;
+  min-height:42px;
+  border:1px solid rgba(52,57,68,.12);
+  border-radius:12px;
+  background:rgba(255,255,255,.68);
+  box-shadow:none;
+  color:var(--gh-text);
+}
+body[data-game-id="game-13"] .racer-hud>div{
+  padding:6px 7px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+body[data-game-id="game-13"] .racer-hud span{
+  color:#8a837d;
+  font-size:7.5px;
+  font-weight:850;
+  letter-spacing:.10em;
+}
+body[data-game-id="game-13"] .racer-hud strong{
+  color:var(--gh-text);
+  font-size:13px;
+  white-space:nowrap;
+}
+body[data-game-id="game-13"] .racer-settings{position:relative;min-width:0}
+body[data-game-id="game-13"] .racer-settings>summary{
+  list-style:none;
+  display:grid;
+  place-items:center;
+  padding:0;
+  cursor:pointer;
+}
+body[data-game-id="game-13"] .racer-settings>summary::-webkit-details-marker{display:none}
+body[data-game-id="game-13"] .racer-settings>summary svg{
+  width:23px;height:23px;
+  fill:none;
+  stroke:#5f5a56;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+body[data-game-id="game-13"] .racer-settings[open]>summary{
+  background:color-mix(in srgb,var(--gh-accent) 11%,#fff);
+  border-color:color-mix(in srgb,var(--gh-accent) 35%,transparent);
+}
+body[data-game-id="game-13"] .racer-settings-panel{
+  position:absolute;
+  top:48px;
+  right:0;
+  z-index:40;
+  width:226px;
+  padding:10px;
+  display:grid;
+  gap:8px;
+  border:1px solid rgba(52,57,68,.14);
+  border-radius:15px;
+  background:#fbf7f3;
+  box-shadow:0 10px 26px rgba(52,57,68,.16);
+}
+body[data-game-id="game-13"] .racer-settings-panel label{
+  display:block;
+  padding:8px 9px;
+  border-radius:11px;
+  background:#f2ebe5;
+}
+body[data-game-id="game-13"] .racer-settings-panel label>span{
+  display:flex;
+  justify-content:space-between;
+  color:#746e69;
+  font-size:9px;
+  font-weight:850;
+}
+body[data-game-id="game-13"] .racer-settings-panel label strong{font-size:10px}
+body[data-game-id="game-13"] .racer-settings-panel input[type="range"]{
+  width:100%;
+  margin:7px 0 0;
+  accent-color:var(--gh-accent);
+}
+body[data-game-id="game-13"] #racer-tuning-reset{
+  min-height:32px;
+  border:1px solid rgba(52,57,68,.12);
+  border-radius:10px;
+  background:#fff;
+  color:#746e69;
+  font-size:10px;
+  font-weight:850;
+}
+
+body[data-game-id="game-13"] .racer-stage-wrap{
+  flex:0 1 auto;
+  min-height:0;
+  width:min(100%,430px,calc((100dvh - 266px) * 4 / 5));
+  min-width:220px;
+  margin:0 auto;
+  border-radius:18px;
+  overflow:hidden;
+  border:1px solid rgba(52,57,68,.16);
+  box-shadow:0 8px 22px rgba(52,57,68,.10);
+  background:#91a47e;
+}
+body[data-game-id="game-13"] #racer-canvas{
+  display:block;
+  width:100%;
+  height:auto;
+  aspect-ratio:4 / 5;
+  touch-action:none;
+}
+body[data-game-id="game-13"] .racer-status{
+  flex:0 0 auto;
+  width:min(100%,430px);
+  min-height:24px;
+  margin:5px auto 0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#746e69;
+  font-size:10px;
+  font-weight:750;
+  text-align:center;
+}
+body[data-game-id="game-13"] .racer-controls{
+  flex:0 0 auto;
+  width:min(100%,430px);
+  margin:5px auto 0;
+  display:grid;
+  grid-template-columns:.9fr 1.2fr 1fr .9fr;
+  gap:6px;
+}
+body[data-game-id="game-13"] .racer-control{
+  min-width:0;
+  min-height:53px;
+  padding:4px 3px;
+  border-radius:14px;
+  border:1px solid rgba(52,57,68,.14);
+  background:rgba(255,255,255,.68);
+  color:#4f4a47;
+  box-shadow:none;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:0;
+  touch-action:none;
+}
+body[data-game-id="game-13"] .racer-control.accelerate{
+  background:color-mix(in srgb,var(--gh-accent) 12%,#fff);
+  border-color:color-mix(in srgb,var(--gh-accent) 34%,transparent);
+  color:var(--gh-accent);
+}
+body[data-game-id="game-13"] .racer-control.brake{
+  background:rgba(239,232,226,.86);
+}
+body[data-game-id="game-13"] .racer-control-icon{
+  display:grid;
+  place-items:center;
+  width:28px;height:28px;
+}
+body[data-game-id="game-13"] .racer-control-icon svg{
+  width:100%;height:100%;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2.2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+body[data-game-id="game-13"] .racer-control small{
+  color:#7f7872;
+  font-size:6.8px;
+  font-weight:900;
+  letter-spacing:.07em;
+  white-space:nowrap;
+}
+body[data-game-id="game-13"] .racer-control.accelerate small{color:var(--gh-accent)}
+body[data-game-id="game-13"] .racer-control.pressed{
+  transform:translateY(1px) scale(.985);
+  background:color-mix(in srgb,var(--gh-accent) 17%,#fff);
+}
+body[data-game-id="game-13"] .racer-reset{
+  flex:0 0 auto;
+  width:min(100%,430px);
+  min-height:31px;
+  margin:5px auto 0;
+  border:1px solid rgba(52,57,68,.12);
+  border-radius:11px;
+  background:rgba(255,255,255,.58);
+  color:#746e69;
+  font-size:9px;
+  font-weight:900;
+}
+
+@media(max-height:730px){
+  body[data-game-id="game-13"] .racer-header{margin-bottom:6px!important}
+  body[data-game-id="game-13"] .racer-header h1{font-size:27px!important}
+  body[data-game-id="game-13"] .racer-difficulty-row{margin-bottom:5px}
+  body[data-game-id="game-13"] .racer-difficulty{min-height:34px}
+  body[data-game-id="game-13"] .racer-hud{margin-bottom:5px}
+  body[data-game-id="game-13"] .racer-hud>div,
+  body[data-game-id="game-13"] .racer-settings>summary{min-height:38px}
+  body[data-game-id="game-13"] .racer-settings-panel{top:43px}
+  body[data-game-id="game-13"] .racer-stage-wrap{width:min(100%,370px,calc((100dvh - 235px) * 4 / 5))}
+  body[data-game-id="game-13"] .racer-status{margin-top:3px;min-height:20px}
+  body[data-game-id="game-13"] .racer-controls{margin-top:3px}
+  body[data-game-id="game-13"] .racer-control{min-height:47px}
+  body[data-game-id="game-13"] .racer-control-icon{width:25px;height:25px}
+  body[data-game-id="game-13"] .racer-reset{min-height:28px;margin-top:3px}
+}
+@media(max-width:360px){
+  body[data-game-id="game-13"] .racer-control small{font-size:6px;letter-spacing:.03em}
+  body[data-game-id="game-13"] .racer-controls{gap:4px}
+  body[data-game-id="game-13"] .racer-hud{gap:4px;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,1fr) 38px}
+}

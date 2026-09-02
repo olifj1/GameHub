@@ -1,8 +1,7 @@
-# GameHub v1.7.6
+# GameHub v1.7.7
 
-- Updated Colour Blocks for better readability.
-- Changed the puzzle board to a flat mid-tone grid with black lines and stronger thick divider lines.
-- Made the 2×2 selection frame white and thicker so it stands out more clearly.
-- Changed the rotation animation so only the icon tokens move, not the tile backgrounds.
-- Refined the icon sets to feel more like small graphic-style emoji objects.
-- Increased the scramble strength for medium and hard boards so they start more mixed.
+- Added **Racer**, a top-down Micro Machines-style driving game.
+- Added Easy, Medium and Hard circuits with increasing lap counts and tighter track widths.
+- Added gravel, wet-road and grass handling differences for speed and grip.
+- Added live lap timing, best times, a mini-map and shared GameHub result/progress support.
+- Added a settings dropdown with tunable top speed, acceleration and grip values.
