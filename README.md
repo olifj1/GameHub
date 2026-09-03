@@ -1,3 +1,3 @@
-# GameHub v1.7.16
+# GameHub v1.7.17
 
-Racer crossover polish: the upper bridge now blends cleanly back into the circuit without the stray transverse edge lines at either end. No gameplay or handling changes in this release.
+Racer circuit-layout pass. Easy is unchanged; Medium has a distinctly different GP-style layout, while Hard keeps the crossover but adds a denser technical/esses section in place of longer simple stretches. Medium and Hard best laps/ghosts reset because their track geometry changed; Easy records are retained.
