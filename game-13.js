@@ -5,6 +5,7 @@
   const lapEl = document.getElementById("racer-lap");
   const timeEl = document.getElementById("racer-time");
   const speedEl = document.getElementById("racer-speed");
+  const bestEl = document.getElementById("racer-best");
   const statusEl = document.getElementById("racer-status");
   const resetButton = document.getElementById("racer-reset");
   const goButton = document.getElementById("racer-go");
@@ -30,7 +31,8 @@
   const DEFAULT_TUNING = { topSpeed: 330, acceleration: 220, grip: 3.2 };
   const TUNING_KEY = "gameHubRacerTuningV2";
   const CAR_KEY = "gameHubRacerCarV1";
-  const TIMES_KEY = "gameHubRacerBestTimesV2";
+  const TIMES_KEY = "gameHubRacerBestLapsV1";
+  const GHOST_KEY = "gameHubRacerGhostsV1";
   const input = { left: false, right: false };
 
   // The circuits are original layouts, but they are designed with the rhythm
@@ -197,6 +199,9 @@
   let tuning = loadTuning();
   let carType = loadCarType();
   let bestTimes = loadBestTimes();
+  let bestGhosts = loadBestGhosts();
+  let currentLapSamples = [];
+  let lastGhostSampleAt = -Infinity;
   let trees = [];
   let skidMarks = [];
   let skidTick = 0;
@@ -247,20 +252,46 @@
     }
   }
 
+  function loadBestGhosts() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(GHOST_KEY) || "{}");
+      return saved && typeof saved === "object" ? saved : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
   function bestTimeKey() {
     return `${difficulty}:${carType}`;
   }
 
-  function saveBestTime(seconds) {
+  function saveBestLap(seconds, samples) {
     const key = bestTimeKey();
     const previous = Number(bestTimes[key]);
-    if (!previous || seconds < previous) {
-      bestTimes[key] = seconds;
-      try { localStorage.setItem(TIMES_KEY, JSON.stringify(bestTimes)); }
+    if (previous && seconds >= previous) return false;
+
+    bestTimes[key] = seconds;
+    try { localStorage.setItem(TIMES_KEY, JSON.stringify(bestTimes)); }
+    catch (_) {}
+
+    const compactSamples = (samples || []).map(sample => [
+      Math.max(0, Math.round(sample[0])),
+      Math.round(sample[1] * 10) / 10,
+      Math.round(sample[2] * 10) / 10,
+      Math.round(sample[3] * 10000) / 10000,
+      Math.round(sample[4] || 0)
+    ]);
+
+    if (compactSamples.length >= 2) {
+      bestGhosts[key] = {
+        duration: Math.round(seconds * 1000),
+        samples: compactSamples
+      };
+      try { localStorage.setItem(GHOST_KEY, JSON.stringify(bestGhosts)); }
       catch (_) {}
-      return true;
     }
-    return false;
+
+    return true;
   }
 
   function syncTuningUI() {
@@ -454,6 +485,74 @@
     return Math.atan2(b.y - a.y, b.x - a.x);
   }
 
+
+  function recordGhostSample(now, force = false) {
+    if (!raceStarted || !car) return;
+    const elapsed = Math.max(0, now - lapStart);
+    if (!force && elapsed - lastGhostSampleAt < 70) return;
+    lastGhostSampleAt = elapsed;
+    currentLapSamples.push([elapsed, car.x, car.y, car.angle, nearest.index]);
+    if (currentLapSamples.length > 2600) currentLapSamples.splice(1, currentLapSamples.length - 2600);
+  }
+
+  function ghostPoseAt(now = performance.now()) {
+    if (!raceStarted) return null;
+    const data = bestGhosts[bestTimeKey()];
+    const samples = data?.samples;
+    if (!Array.isArray(samples) || samples.length < 2) return null;
+
+    const elapsed = Math.max(0, now - lapStart);
+    const duration = Number(data.duration) || samples[samples.length - 1][0];
+    if (elapsed > duration + 120) return null;
+
+    if (elapsed <= samples[0][0]) {
+      const s = samples[0];
+      return { x: s[1], y: s[2], angle: s[3], index: s[4] || 0 };
+    }
+
+    let lo = 0;
+    let hi = samples.length - 1;
+    while (lo + 1 < hi) {
+      const mid = (lo + hi) >> 1;
+      if (samples[mid][0] <= elapsed) lo = mid;
+      else hi = mid;
+    }
+
+    const a = samples[lo];
+    const b = samples[Math.min(samples.length - 1, hi)];
+    const span = Math.max(1, b[0] - a[0]);
+    const t = Math.max(0, Math.min(1, (elapsed - a[0]) / span));
+    let angleDelta = b[3] - a[3];
+    while (angleDelta > Math.PI) angleDelta -= Math.PI * 2;
+    while (angleDelta < -Math.PI) angleDelta += Math.PI * 2;
+    return {
+      x: a[1] + (b[1] - a[1]) * t,
+      y: a[2] + (b[2] - a[2]) * t,
+      angle: a[3] + angleDelta * t,
+      index: t < 0.5 ? (a[4] || 0) : (b[4] || 0)
+    };
+  }
+
+  function recordTimeTrialProgress(lapSeconds, newBest, lapNumber) {
+    if (lapNumber !== 1 && !newBest) return;
+    const target = course.target;
+    const stars = lapSeconds <= target ? 5
+      : lapSeconds <= target * 1.15 ? 4
+      : lapSeconds <= target * 1.35 ? 3
+      : lapSeconds <= target * 1.65 ? 2 : 1;
+    const score = Math.max(100, Math.round(12000 - lapSeconds * 55));
+    window.GameHubProgress?.recordResult({
+      gameId: "game-13",
+      difficulty,
+      stars,
+      score,
+      metrics: {
+        bestLap: formatTime(Number(bestTimes[bestTimeKey()]) || lapSeconds),
+        car: CAR_PROFILES[carType].name
+      }
+    });
+  }
+
   function resetRace() {
     buildTrack();
     const start = track[0];
@@ -477,6 +576,8 @@
     nextGate = 0;
     currentLap = 1;
     lapTimes = [];
+    currentLapSamples = [];
+    lastGhostSampleAt = -Infinity;
     raceStarted = false;
     finished = false;
     raceStart = 0;
@@ -486,16 +587,18 @@
     skidTick = 0;
     Object.keys(input).forEach(key => input[key] = false);
     Object.values(controls).forEach(button => button.classList.remove("pressed"));
-    lapEl.textContent = `1 / ${course.laps}`;
+    lapEl.textContent = "1";
     timeEl.textContent = "0:00.00";
     speedEl.textContent = "0";
+    const best = Number(bestTimes[bestTimeKey()]);
+    bestEl.textContent = best ? formatTime(best) : "--";
     goButton.disabled = false;
     goButton.classList.remove("running");
     goLabel.textContent = "GO";
-    const best = Number(bestTimes[bestTimeKey()]);
+    const hasGhost = !!bestGhosts[bestTimeKey()]?.samples?.length;
     statusEl.textContent = best
-      ? `${course.name} · ${CAR_PROFILES[carType].name} · Best ${formatTime(best)} · press Go when ready.`
-      : `${course.name} · ${CAR_PROFILES[carType].name} · press Go when you are ready.`;
+      ? `${course.name} · Best ${formatTime(best)}${hasGhost ? " · ghost ready" : ""} · press Go.`
+      : `${course.name} · first lap sets your ghost · press Go.`;
     settings.removeAttribute("open");
   }
 
@@ -554,7 +657,7 @@
     return Math.min(raw, n - raw);
   }
 
-  function updateLapProgress() {
+  function updateLapProgress(now = performance.now()) {
     const gates = [0.23, 0.48, 0.73, 0.91].map(value => Math.round(value * trackLength));
     const index = nearest.index;
 
@@ -564,19 +667,27 @@
 
     const crossedStart = lastTrackIndex > trackLength * 0.86 && index < trackLength * 0.14 && movingAlongTrack(index);
     if (crossedStart && nextGate === gates.length && raceStarted) {
-      const now = performance.now();
+      recordGhostSample(now, true);
+      const completedLap = currentLap;
       const lapSeconds = (now - lapStart) / 1000;
+      const completedSamples = currentLapSamples.slice();
       lapTimes.push(lapSeconds);
-      nextGate = 0;
+      const newBest = saveBestLap(lapSeconds, completedSamples);
+      recordTimeTrialProgress(lapSeconds, newBest, completedLap);
 
-      if (currentLap >= course.laps) {
-        finishRace(now);
-      } else {
-        currentLap += 1;
-        lapStart = now;
-        lapEl.textContent = `${currentLap} / ${course.laps}`;
-        statusEl.textContent = `Lap ${currentLap} · previous ${formatTime(lapSeconds)}`;
-      }
+      nextGate = 0;
+      currentLap += 1;
+      lapStart = now;
+      currentLapSamples = [];
+      lastGhostSampleAt = -Infinity;
+      lapEl.textContent = String(currentLap);
+      timeEl.textContent = "0:00.00";
+      const best = Number(bestTimes[bestTimeKey()]);
+      bestEl.textContent = best ? formatTime(best) : "--";
+      statusEl.textContent = newBest
+        ? `New best ${formatTime(lapSeconds)} · ghost updated · Lap ${currentLap}`
+        : `Lap ${completedLap} ${formatTime(lapSeconds)} · Best ${formatTime(best)} · Lap ${currentLap}`;
+      recordGhostSample(now, true);
     }
 
     lastTrackIndex = index;
@@ -587,46 +698,16 @@
     raceStarted = true;
     raceStart = performance.now();
     lapStart = raceStart;
+    currentLapSamples = [];
+    lastGhostSampleAt = -Infinity;
+    recordGhostSample(raceStart, true);
     goButton.disabled = true;
     goButton.classList.add("running");
     goLabel.textContent = "AUTO";
-    statusEl.textContent = `${course.name} · go!`;
-  }
-
-  function finishRace(now = performance.now()) {
-    if (finished) return;
-    finished = true;
-    raceStarted = false;
-    goLabel.textContent = "DONE";
-    const totalSeconds = (now - raceStart) / 1000;
-    const fastestLap = Math.min(...lapTimes);
-    const newTimeBest = saveBestTime(totalSeconds);
-    const target = course.target;
-    const stars = totalSeconds <= target ? 5
-      : totalSeconds <= target * 1.15 ? 4
-      : totalSeconds <= target * 1.35 ? 3
-      : totalSeconds <= target * 1.65 ? 2 : 1;
-    const score = Math.max(100, Math.round(12000 - totalSeconds * 55));
-
-    statusEl.textContent = `${newTimeBest ? "New best · " : "Finished · "}${formatTime(totalSeconds)}`;
-    window.setTimeout(() => {
-      window.GameHubResults?.show({
-        gameId: "game-13",
-        difficulty,
-        stars,
-        score,
-        title: newTimeBest ? "New best time!" : "Race complete!",
-        summary: `${course.name} · ${CAR_PROFILES[carType].name} finished in ${formatTime(totalSeconds)}.`,
-        metrics: [
-          { label: "Time", value: formatTime(totalSeconds) },
-          { label: "Fastest lap", value: formatTime(fastestLap) },
-          { label: "Car", value: CAR_PROFILES[carType].name },
-          { label: "Laps", value: String(course.laps) }
-        ],
-        againLabel: "Race again",
-        onAgain: resetRace
-      });
-    }, 350);
+    const best = Number(bestTimes[bestTimeKey()]);
+    statusEl.textContent = best
+      ? `${course.name} · chase the ${formatTime(best)} ghost`
+      : `${course.name} · first lap sets your ghost`;
   }
 
   function updatePhysics(dt) {
@@ -734,7 +815,11 @@
 
     nearest = nearestTrackPoint(car.x, car.y, nearest.index);
     currentSurface = surfaceAt(nearest);
-    if (raceStarted) updateLapProgress();
+    if (raceStarted) {
+      const now = performance.now();
+      recordGhostSample(now);
+      updateLapProgress(now);
+    }
 
     const velocityAngle = speed > 16 ? Math.atan2(car.vy, car.vx) : car.angle;
     const lookAhead = 82 + Math.min(125, speed * 0.25);
@@ -763,7 +848,7 @@
     const speed = Math.hypot(car.vx, car.vy);
     speedEl.textContent = String(Math.round(speed * 0.26));
     if (raceStarted && !finished) {
-      timeEl.textContent = formatTime((now - raceStart) / 1000);
+      timeEl.textContent = formatTime((now - lapStart) / 1000);
     }
   }
 
@@ -1127,8 +1212,26 @@
     ctx.restore();
   }
 
+  function ghostIsOnUnderpass(pose) {
+    return !!bridgeInfo && !!pose && circularDistance(pose.index, bridgeInfo.underIndex, trackLength) < 34;
+  }
 
-  function drawMiniMap() {
+  function drawGhostCar(now) {
+    const pose = ghostPoseAt(now);
+    if (!pose) return null;
+    ctx.save();
+    ctx.translate(pose.x, pose.y);
+    ctx.rotate(pose.angle + Math.PI / 2);
+    ctx.globalAlpha = 0.34;
+    ctx.globalCompositeOperation = "screen";
+    if (carType === "formula") drawFormulaCar();
+    else drawRoadCar();
+    ctx.restore();
+    return pose;
+  }
+
+
+  function drawMiniMap(now) {
     const box = { x: canvas.width - 132, y: 18, w: 114, h: 92 };
     ctx.save();
     roundRect(ctx, box.x, box.y, box.w, box.h, 14);
@@ -1150,6 +1253,14 @@
     ctx.strokeStyle = "#70787d";
     ctx.lineWidth = 3.2 / scale;
     ctx.stroke();
+    const ghostPose = ghostPoseAt(now);
+    if (ghostPose) {
+      ctx.strokeStyle = "rgba(245,249,247,.92)";
+      ctx.lineWidth = 2.3 / scale;
+      ctx.beginPath();
+      ctx.arc(ghostPose.x, ghostPose.y, 4.2 / scale, 0, Math.PI * 2);
+      ctx.stroke();
+    }
     ctx.fillStyle = "#c77858";
     ctx.beginPath();
     ctx.arc(car.x, car.y, 3.6 / scale, 0, Math.PI * 2);
@@ -1172,7 +1283,7 @@
     ctx.restore();
   }
 
-  function draw() {
+  function draw(now) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const viewScale = camera.zoom;
     ctx.save();
@@ -1180,13 +1291,15 @@
     ctx.scale(viewScale, viewScale);
     ctx.translate(-camera.x, -camera.y);
     drawWorld();
+    const ghostPose = drawGhostCar(now);
+    if (ghostIsOnUnderpass(ghostPose)) drawBridgeOverlay();
     drawCar();
     // On the crossover's lower road, redraw the bridge after the car so it
     // genuinely passes beneath it. On the upper road the car stays on top.
     if (carIsOnUnderpass()) drawBridgeOverlay();
     ctx.restore();
 
-    drawMiniMap();
+    drawMiniMap(now);
     drawReady();
   }
 
@@ -1195,7 +1308,7 @@
     lastFrame = now;
     updatePhysics(dt);
     updateHud(now);
-    draw();
+    draw(now);
     animationFrame = requestAnimationFrame(frame);
   }
 
