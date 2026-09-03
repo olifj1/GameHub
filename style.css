@@ -9119,7 +9119,7 @@ body[data-game-id="game-12"] .colour-blocks-status{
   }
 }
 
-/* v1.7.10 — Racer */
+/* v1.7.11 — Racer */
 body[data-game-id="game-13"], .game-card[data-game-id="game-13"] { --gh-accent:#4f847b; }
 
 body[data-game-id="game-13"] #racer-screen{
@@ -9402,7 +9402,7 @@ body[data-game-id="game-13"] .racer-reset{
   body[data-game-id="game-13"] .racer-hud{gap:4px;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,1fr) 38px}
 }
 
-/* v1.7.10 — Racer circuit/handling pass */
+/* v1.7.11 — Racer circuit/handling pass */
 body[data-game-id="game-13"] .racer-controls{
   display:grid;
   grid-template-columns:88px minmax(92px,1fr) 88px;
@@ -9441,7 +9441,7 @@ body[data-game-id="game-13"] .racer-control.go{
   body[data-game-id="game-13"] .racer-control.steer{width:68px;height:68px;min-height:68px}
 }
 
-/* v1.7.10 — Racer long-circuit / car-choice pass */
+/* v1.7.11 — Racer long-circuit / car-choice pass */
 body[data-game-id="game-13"] .racer-car-setting{
   display:grid;
   gap:5px;

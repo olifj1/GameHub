@@ -39,87 +39,114 @@
   // physical length of a lap rather than simply asking for more laps.
   const COURSE_DEFS = {
     easy: {
-      name: "Forest Club",
+      name: "Club Circuit",
       laps: 1,
       width: 136,
-      target: 32,
+      target: 48,
       seed: 19,
-      world: { width: 2200, height: 1600 },
-      start: [400, 220],
+      world: { width: 2700, height: 2200 },
+      start: [500, 300],
+      widthZones: [
+        { start: 0.16, end: 0.22, mult: 1.26 },
+        { start: 0.50, end: 0.57, mult: 1.18 }
+      ],
+      runoffZones: [
+        { start: 0.14, end: 0.23, extra: 56 },
+        { start: 0.48, end: 0.58, extra: 50 }
+      ],
       commands: [
-        ["L", [1500, 220]],
-        ["C", [1720, 220], [1880, 360], [1880, 580]],
-        ["L", [1880, 900]],
-        ["C", [1880, 1120], [1720, 1280], [1500, 1280]],
-        ["L", [950, 1280]],
-        ["C", [760, 1280], [650, 1130], [680, 960]],
-        ["C", [710, 800], [600, 700], [430, 700]],
-        ["L", [280, 700]],
-        ["C", [120, 700], [100, 520], [180, 400]],
-        ["C", [245, 300], [310, 240], [400, 220]]
+        ["L", [2100, 300]],
+        ["C", [2350, 300], [2480, 450], [2480, 650]],
+        ["C", [2480, 850], [2340, 960], [2150, 940]],
+        ["L", [1720, 900]],
+        ["C", [1550, 880], [1480, 1020], [1570, 1160]],
+        ["C", [1660, 1300], [1570, 1440], [1400, 1430]],
+        ["L", [980, 1400]],
+        ["C", [760, 1380], [650, 1520], [700, 1690]],
+        ["C", [760, 1900], [590, 2050], [390, 1970]],
+        ["C", [180, 1880], [120, 1650], [250, 1480]],
+        ["L", [650, 1050]],
+        ["C", [780, 910], [730, 760], [570, 700]],
+        ["L", [320, 610]],
+        ["C", [180, 560], [120, 430], [200, 300]],
+        ["L", [500, 300]]
       ]
     },
     medium: {
-      name: "Woodland Grand Prix",
+      name: "Grand Prix Loop",
       laps: 1,
       width: 130,
       target: 60,
       seed: 43,
-      world: { width: 3000, height: 2700 },
-      start: [450, 240],
+      world: { width: 3300, height: 2800 },
+      start: [500, 300],
+      widthZones: [
+        { start: 0.12, end: 0.18, mult: 1.24 },
+        { start: 0.55, end: 0.63, mult: 1.30 }
+      ],
+      runoffZones: [
+        { start: 0.10, end: 0.19, extra: 60 },
+        { start: 0.34, end: 0.42, extra: 52 },
+        { start: 0.54, end: 0.64, extra: 62 }
+      ],
       commands: [
-        ["L", [2300, 240]],
-        ["C", [2550, 240], [2750, 400], [2790, 650]],
-        ["L", [2860, 1050]],
-        ["C", [2900, 1280], [2700, 1460], [2470, 1440]],
-        ["L", [2050, 1400]],
-        ["C", [1880, 1380], [1810, 1510], [1890, 1650]],
-        ["L", [2230, 2050]],
-        ["C", [2330, 2170], [2220, 2290], [2060, 2260]],
-        ["L", [1500, 2140]],
-        ["C", [1320, 2100], [1220, 2200], [1150, 2350]],
-        ["C", [1060, 2530], [830, 2580], [650, 2470]],
-        ["L", [350, 2280]],
-        ["C", [180, 2170], [170, 1970], [280, 1810]],
-        ["L", [700, 1230]],
-        ["C", [800, 1090], [760, 960], [600, 900]],
-        ["L", [330, 800]],
-        ["C", [160, 735], [130, 560], [220, 420]],
-        ["C", [285, 320], [350, 265], [450, 240]]
+        ["L", [2500, 300]],
+        ["C", [2850, 300], [3000, 500], [3000, 750]],
+        ["L", [3000, 1050]],
+        ["C", [3000, 1280], [2820, 1400], [2600, 1370]],
+        ["L", [2200, 1310]],
+        ["C", [2020, 1280], [1940, 1420], [2040, 1560]],
+        ["C", [2140, 1700], [2080, 1830], [1900, 1850]],
+        ["L", [1420, 1900]],
+        ["C", [1210, 1920], [1110, 2080], [1200, 2250]],
+        ["C", [1300, 2440], [1110, 2590], [900, 2540]],
+        ["L", [500, 2440]],
+        ["C", [240, 2370], [170, 2160], [290, 1980]],
+        ["L", [780, 1300]],
+        ["C", [900, 1130], [850, 980], [690, 920]],
+        ["L", [380, 800]],
+        ["C", [200, 730], [130, 480], [200, 300]],
+        ["L", [500, 300]]
       ]
     },
     hard: {
-      name: "Endurance Ring",
+      name: "Forest Crossover",
       laps: 1,
       width: 124,
-      target: 96,
+      target: 70,
       seed: 71,
-      world: { width: 4600, height: 4100 },
-      start: [550, 280],
+      world: { width: 2700, height: 2400 },
+      start: [400, 240],
+      widthZones: [
+        { start: 0.08, end: 0.14, mult: 1.22 },
+        { start: 0.47, end: 0.53, mult: 1.28 },
+        { start: 0.66, end: 0.72, mult: 1.18 }
+      ],
+      runoffZones: [
+        { start: 0.07, end: 0.15, extra: 58 },
+        { start: 0.42, end: 0.48, extra: 52 },
+        { start: 0.57, end: 0.63, extra: 62 },
+        { start: 0.68, end: 0.74, extra: 52 }
+      ],
+      bridge: { x: 1418, y: 1466, overProgress: 0.817, underProgress: 0.341 },
       commands: [
-        ["L", [3500, 280]],
-        ["C", [3820, 280], [4100, 450], [4200, 760]],
-        ["L", [4380, 1320]],
-        ["C", [4460, 1580], [4270, 1800], [4010, 1800]],
-        ["L", [3320, 1800]],
-        ["C", [3100, 1800], [2990, 1950], [3090, 2140]],
-        ["C", [3190, 2330], [3060, 2480], [2860, 2480]],
-        ["L", [2250, 2480]],
-        ["C", [2070, 2480], [1990, 2610], [2050, 2780]],
-        ["L", [2360, 3350]],
-        ["C", [2460, 3540], [2310, 3700], [2100, 3650]],
-        ["L", [1160, 3440]],
-        ["C", [900, 3380], [720, 3500], [620, 3720]],
-        ["C", [510, 3960], [250, 3990], [150, 3790]],
-        ["C", [110, 3610], [130, 3420], [300, 3300]],
-        ["L", [760, 2960]],
-        ["C", [930, 2830], [940, 2650], [820, 2510]],
-        ["L", [410, 2030]],
-        ["C", [250, 1840], [260, 1590], [430, 1430]],
-        ["L", [970, 930]],
-        ["C", [1120, 790], [1090, 620], [920, 550]],
-        ["L", [650, 450]],
-        ["C", [520, 400], [500, 330], [550, 280]]
+        ["L", [2080, 240]],
+        ["C", [2360, 240], [2520, 400], [2520, 608]],
+        ["L", [2520, 800]],
+        ["C", [2520, 976], [2384, 1072], [2240, 1024]],
+        ["L", [720, 1840]],
+        ["C", [576, 1920], [520, 2040], [608, 2136]],
+        ["C", [720, 2256], [920, 2280], [1056, 2176]],
+        ["L", [1760, 2176]],
+        ["C", [1960, 2176], [2080, 2064], [2064, 1912]],
+        ["C", [2048, 1776], [2152, 1704], [2288, 1752]],
+        ["C", [2448, 1808], [2544, 1712], [2512, 1584]],
+        ["C", [2472, 1440], [2312, 1400], [2192, 1504]],
+        ["C", [2080, 1600], [1960, 1720], [1900, 1840]],
+        ["L", [560, 800]],
+        ["C", [420, 720], [280, 650], [240, 520]],
+        ["C", [200, 400], [100, 300], [160, 240]],
+        ["L", [400, 240]]
       ]
     }
   };
@@ -149,6 +176,7 @@
 
   const SURFACES = {
     tarmac: { max: 1, accel: 1, grip: 1, drag: 0.24 },
+    gravel: { max: 0.68, accel: 0.55, grip: 0.62, drag: 1.12 },
     grass: { max: 0.46, accel: 0.45, grip: 0.46, drag: 1.9 }
   };
   let difficulty = "easy";
@@ -156,7 +184,7 @@
   let track = [];
   let trackLength = 0;
   let car = null;
-  let camera = { x: 0, y: 0 };
+  let camera = { x: 0, y: 0, zoom: 1.06 };
   let nearest = { index: 0, distance: 0 };
   let lastTrackIndex = 0;
   let nextGate = 0;
@@ -175,6 +203,7 @@
   let trees = [];
   let skidMarks = [];
   let skidTick = 0;
+  let bridgeInfo = null;
 
   function loadTuning() {
     try {
@@ -347,11 +376,64 @@
     }
   }
 
+  function progressAt(index) {
+    return ((index % trackLength) + trackLength) % trackLength / trackLength;
+  }
+
+  function inZone(progress, zone) {
+    return progress >= zone.start && progress <= zone.end;
+  }
+
+  function widthAt(index) {
+    const progress = progressAt(index);
+    let width = course.width;
+    (course.widthZones || []).forEach(zone => {
+      if (inZone(progress, zone)) width = Math.max(width, course.width * zone.mult);
+    });
+    return width;
+  }
+
+  function runoffAt(index) {
+    const progress = progressAt(index);
+    let extra = 0;
+    (course.runoffZones || []).forEach(zone => {
+      if (inZone(progress, zone)) extra = Math.max(extra, zone.extra);
+    });
+    return extra;
+  }
+
+  function resolveBridge() {
+    bridgeInfo = null;
+    if (!course.bridge) return;
+    const findNearProgress = progress => {
+      const centre = Math.round(progress * trackLength);
+      const radius = Math.max(50, Math.round(trackLength * 0.06));
+      let bestIndex = centre;
+      let bestDistanceSq = Infinity;
+      for (let offset = -radius; offset <= radius; offset++) {
+        const i = (centre + offset + trackLength) % trackLength;
+        const dx = track[i].x - course.bridge.x;
+        const dy = track[i].y - course.bridge.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < bestDistanceSq) {
+          bestDistanceSq = d2;
+          bestIndex = i;
+        }
+      }
+      return bestIndex;
+    };
+    bridgeInfo = {
+      overIndex: findNearProgress(course.bridge.overProgress),
+      underIndex: findNearProgress(course.bridge.underProgress)
+    };
+  }
+
   function buildTrack() {
     course = COURSE_DEFS[difficulty];
     WORLD = { ...course.world };
     track = sampleCircuit(course);
     trackLength = track.length;
+    resolveBridge();
     generateTrees();
   }
 
@@ -376,6 +458,7 @@
     };
     camera.x = car.x + Math.cos(angle) * 70;
     camera.y = car.y + Math.sin(angle) * 70;
+    camera.zoom = 1.06;
     nearest = { index: 0, distance: 0 };
     lastTrackIndex = 0;
     nextGate = 0;
@@ -403,23 +486,42 @@
     settings.removeAttribute("open");
   }
 
-  function nearestTrackPoint(x, y) {
+  function nearestTrackPoint(x, y, hintIndex = null) {
     let bestIndex = 0;
     let bestDistanceSq = Infinity;
-    for (let i = 0; i < track.length; i++) {
-      const dx = x - track[i].x;
-      const dy = y - track[i].y;
+
+    const testIndex = i => {
+      const index = (i + trackLength) % trackLength;
+      const dx = x - track[index].x;
+      const dy = y - track[index].y;
       const d2 = dx * dx + dy * dy;
       if (d2 < bestDistanceSq) {
         bestDistanceSq = d2;
-        bestIndex = i;
+        bestIndex = index;
       }
+    };
+
+    if (Number.isFinite(hintIndex) && trackLength) {
+      const radius = Math.min(190, Math.max(80, Math.round(trackLength * 0.11)));
+      for (let offset = -radius; offset <= radius; offset++) testIndex(hintIndex + offset);
+      // If the car has gone a long way off course, fall back to a global search.
+      if (bestDistanceSq > Math.pow(course.width * 2.8, 2)) {
+        bestDistanceSq = Infinity;
+        for (let i = 0; i < trackLength; i++) testIndex(i);
+      }
+    } else {
+      for (let i = 0; i < trackLength; i++) testIndex(i);
     }
+
     return { index: bestIndex, distance: Math.sqrt(bestDistanceSq) };
   }
 
   function surfaceAt(position) {
-    return position.distance > course.width * 0.52 ? "grass" : "tarmac";
+    const halfRoad = widthAt(position.index) * 0.52;
+    if (position.distance <= halfRoad) return "tarmac";
+    const runoff = runoffAt(position.index);
+    if (runoff > 0 && position.distance <= halfRoad + runoff) return "gravel";
+    return "grass";
   }
 
   function tangentAt(index) {
@@ -523,7 +625,7 @@
       return;
     }
 
-    nearest = nearestTrackPoint(car.x, car.y);
+    nearest = nearestTrackPoint(car.x, car.y, nearest.index);
     currentSurface = surfaceAt(nearest);
     const surface = SURFACES[currentSurface];
     const profile = CAR_PROFILES[carType];
@@ -617,7 +719,7 @@
     car.x = Math.max(30, Math.min(WORLD.width - 30, car.x));
     car.y = Math.max(30, Math.min(WORLD.height - 30, car.y));
 
-    nearest = nearestTrackPoint(car.x, car.y);
+    nearest = nearestTrackPoint(car.x, car.y, nearest.index);
     currentSurface = surfaceAt(nearest);
     if (raceStarted) updateLapProgress();
 
@@ -628,6 +730,13 @@
     const follow = 1 - Math.exp(-5.2 * dt);
     camera.x += (cameraTargetX - camera.x) * follow;
     camera.y += (cameraTargetY - camera.y) * follow;
+
+    // Close and readable at low speed, easing out only a little on fast sections.
+    const carTopSpeed = Math.max(1, tuning.topSpeed * profile.max);
+    const speedRatio = Math.min(1, speed / carTopSpeed);
+    const targetZoom = 1.06 - speedRatio * 0.12;
+    const zoomFollow = 1 - Math.exp(-2.8 * dt);
+    camera.zoom += (targetZoom - camera.zoom) * zoomFollow;
   }
 
   function formatTime(seconds) {
@@ -723,13 +832,13 @@
   }
 
   function drawCurbs() {
-    const edge = course.width * 0.5 + 1;
     ctx.save();
     for (let i = 0; i < trackLength; i += 6) {
       const turn = Math.abs(turnAmountAt(i));
       if (turn < 0.045) continue;
       const p = track[i];
       const tangent = tangentAt(i);
+      const edge = widthAt(i) * 0.5 + 1;
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(Math.atan2(tangent.y, tangent.x));
@@ -742,16 +851,103 @@
   }
 
 
+  function traceTrackRange(startProgress, endProgress) {
+    const start = Math.max(0, Math.floor(startProgress * trackLength));
+    const end = Math.min(trackLength - 1, Math.ceil(endProgress * trackLength));
+    if (end <= start) return;
+    ctx.beginPath();
+    ctx.moveTo(track[start].x, track[start].y);
+    for (let i = start + 1; i <= end; i++) ctx.lineTo(track[i].x, track[i].y);
+  }
+
+  function drawRunoff() {
+    (course.runoffZones || []).forEach((zone, zoneIndex) => {
+      const mid = Math.round(((zone.start + zone.end) * 0.5) * trackLength);
+      const roadWidth = widthAt(mid);
+      traceTrackRange(zone.start, zone.end);
+      ctx.strokeStyle = "#c7b697";
+      ctx.lineWidth = roadWidth + zone.extra * 2;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.stroke();
+
+      // Sparse aggregate marks keep it visually gravel-like without clutter.
+      ctx.save();
+      ctx.fillStyle = "rgba(93,82,66,.18)";
+      const start = Math.floor(zone.start * trackLength);
+      const end = Math.ceil(zone.end * trackLength);
+      for (let i = start; i <= end; i += 13) {
+        const p = track[i % trackLength];
+        const tangent = tangentAt(i % trackLength);
+        const nx = -tangent.y;
+        const ny = tangent.x;
+        const half = widthAt(i % trackLength) * 0.56;
+        for (const side of [-1, 1]) {
+          const hash = Math.abs(Math.sin((i + 1) * 12.9898 + zoneIndex * 8.21));
+          const offset = half + 10 + hash * Math.max(8, zone.extra - 18);
+          ctx.beginPath();
+          ctx.arc(p.x + nx * offset * side, p.y + ny * offset * side, 2.2 + hash * 1.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+    });
+  }
+
+  function drawWiderRoadSections(edgePass) {
+    (course.widthZones || []).forEach(zone => {
+      traceTrackRange(zone.start, zone.end);
+      ctx.strokeStyle = edgePass ? "#d6cec4" : "#3e4449";
+      ctx.lineWidth = course.width * zone.mult + (edgePass ? 18 : 0);
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.stroke();
+    });
+  }
+
+  function traceBridgeSegment(index, radius = 24) {
+    if (!bridgeInfo) return;
+    const start = Math.max(0, index - radius);
+    const end = Math.min(trackLength - 1, index + radius);
+    ctx.beginPath();
+    ctx.moveTo(track[start].x, track[start].y);
+    for (let i = start + 1; i <= end; i++) ctx.lineTo(track[i].x, track[i].y);
+  }
+
+  function drawBridgeOverlay() {
+    if (!bridgeInfo) return;
+    const width = widthAt(bridgeInfo.overIndex);
+    traceBridgeSegment(bridgeInfo.overIndex, 28);
+    ctx.strokeStyle = "rgba(37,43,47,.28)";
+    ctx.lineWidth = width + 34;
+    ctx.lineCap = "butt";
+    ctx.stroke();
+    traceBridgeSegment(bridgeInfo.overIndex, 26);
+    ctx.strokeStyle = "#d6cec4";
+    ctx.lineWidth = width + 18;
+    ctx.lineCap = "butt";
+    ctx.stroke();
+    traceBridgeSegment(bridgeInfo.overIndex, 25);
+    ctx.strokeStyle = "#3e4449";
+    ctx.lineWidth = width;
+    ctx.lineCap = "butt";
+    ctx.stroke();
+  }
+
+  function carIsOnUnderpass() {
+    return !!bridgeInfo && circularDistance(nearest.index, bridgeInfo.underIndex, trackLength) < 34;
+  }
+
   function drawWorld() {
     ctx.fillStyle = "#91a47e";
     ctx.fillRect(0, 0, WORLD.width, WORLD.height);
 
-    // Only draw woodland near the camera. Hard has well over a thousand trees,
-    // so culling keeps the moving canvas light enough for a phone.
     trees.forEach(tree => {
-      if (Math.abs(tree.x - camera.x) > 560 || Math.abs(tree.y - camera.y) > 680) return;
+      if (Math.abs(tree.x - camera.x) > 680 || Math.abs(tree.y - camera.y) > 780) return;
       drawTree(tree);
     });
+
+    drawRunoff();
 
     traceTrackPath();
     ctx.strokeStyle = "#d6cec4";
@@ -759,23 +955,25 @@
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
     ctx.stroke();
+    drawWiderRoadSections(true);
 
     traceTrackPath();
     ctx.strokeStyle = "#3e4449";
     ctx.lineWidth = course.width;
     ctx.stroke();
+    drawWiderRoadSections(false);
 
-    // No centre lane line: this is now presented as a dedicated racing circuit.
     drawCurbs();
     drawSkidMarks();
     drawStartLine();
+    drawBridgeOverlay();
   }
 
 
   function drawStartLine() {
     const p = track[0];
     const tangent = tangentAt(0);
-    const half = course.width * 0.47;
+    const half = widthAt(0) * 0.47;
     const blocks = 8;
     const blockW = (half * 2) / blocks;
     ctx.save();
@@ -943,13 +1141,16 @@
 
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const viewScale = 1.02;
+    const viewScale = camera.zoom;
     ctx.save();
     ctx.translate(canvas.width / 2, canvas.height * 0.58);
     ctx.scale(viewScale, viewScale);
     ctx.translate(-camera.x, -camera.y);
     drawWorld();
     drawCar();
+    // On the crossover's lower road, redraw the bridge after the car so it
+    // genuinely passes beneath it. On the upper road the car stays on top.
+    if (carIsOnUnderpass()) drawBridgeOverlay();
     ctx.restore();
 
     drawMiniMap();
