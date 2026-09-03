@@ -68,8 +68,8 @@
         ["L", [650, 1050]],
         ["C", [780, 910], [730, 760], [570, 700]],
         ["L", [320, 610]],
-        ["C", [180, 560], [120, 430], [200, 300]],
-        ["L", [500, 300]]
+        ["C", [170, 560], [105, 435], [180, 335]],
+        ["C", [230, 275], [330, 300], [500, 300]]
       ]
     },
     medium: {
@@ -105,8 +105,8 @@
         ["L", [780, 1300]],
         ["C", [900, 1130], [850, 980], [690, 920]],
         ["L", [380, 800]],
-        ["C", [200, 730], [130, 480], [200, 300]],
-        ["L", [500, 300]]
+        ["C", [205, 740], [105, 565], [160, 405]],
+        ["C", [200, 305], [320, 300], [500, 300]]
       ]
     },
     hard: {
@@ -128,25 +128,22 @@
         { start: 0.57, end: 0.63, extra: 62 },
         { start: 0.68, end: 0.74, extra: 52 }
       ],
-      bridge: { x: 1418, y: 1466, overProgress: 0.817, underProgress: 0.341 },
+      bridge: { x: 1861, y: 1205, overProgress: 0.797, underProgress: 0.294 },
       commands: [
-        ["L", [2080, 240]],
-        ["C", [2360, 240], [2520, 400], [2520, 608]],
-        ["L", [2520, 800]],
-        ["C", [2520, 976], [2384, 1072], [2240, 1024]],
+        ["L", [2050, 240]],
+        ["C", [2320, 240], [2500, 400], [2500, 650]],
+        ["C", [2500, 820], [2390, 960], [2210, 1010]],
         ["L", [720, 1840]],
-        ["C", [576, 1920], [520, 2040], [608, 2136]],
-        ["C", [720, 2256], [920, 2280], [1056, 2176]],
-        ["L", [1760, 2176]],
-        ["C", [1960, 2176], [2080, 2064], [2064, 1912]],
-        ["C", [2048, 1776], [2152, 1704], [2288, 1752]],
-        ["C", [2448, 1808], [2544, 1712], [2512, 1584]],
-        ["C", [2472, 1440], [2312, 1400], [2192, 1504]],
-        ["C", [2080, 1600], [1960, 1720], [1900, 1840]],
-        ["L", [560, 800]],
-        ["C", [420, 720], [280, 650], [240, 520]],
-        ["C", [200, 400], [100, 300], [160, 240]],
-        ["L", [400, 240]]
+        ["C", [500, 1960], [470, 2130], [620, 2210]],
+        ["C", [780, 2290], [980, 2200], [1120, 2180]],
+        ["L", [1600, 2180]],
+        ["C", [1830, 2180], [2020, 2030], [1990, 1840]],
+        ["C", [1960, 1660], [2140, 1540], [2320, 1620]],
+        ["C", [2500, 1700], [2600, 1510], [2500, 1360]],
+        ["C", [2400, 1210], [2240, 1190], [2110, 1280]],
+        ["L", [520, 800]],
+        ["C", [350, 730], [240, 650], [220, 520]],
+        ["C", [195, 385], [250, 240], [400, 240]]
       ]
     }
   };
@@ -339,7 +336,23 @@
     if (raw.length > 1 && Math.hypot(raw[0].x - raw[raw.length - 1].x, raw[0].y - raw[raw.length - 1].y) < 0.01) {
       raw.pop();
     }
-    return raw;
+
+    // Gently blend command joins on the closed loop. Collinear samples on
+    // straights stay effectively unchanged, while abrupt line/Bezier joins
+    // become broad, continuous-radius transitions instead of little pinches.
+    let smoothed = raw;
+    const blend = 0.24;
+    for (let pass = 0; pass < 5; pass++) {
+      smoothed = smoothed.map((point, i, source) => {
+        const prev = source[(i - 1 + source.length) % source.length];
+        const next = source[(i + 1) % source.length];
+        return {
+          x: point.x * (1 - blend) + (prev.x + next.x) * 0.5 * blend,
+          y: point.y * (1 - blend) + (prev.y + next.y) * 0.5 * blend
+        };
+      });
+    }
+    return smoothed;
   }
 
   function seededRandom(seed) {
@@ -831,21 +844,41 @@
     return Math.atan2(before.x * after.y - before.y * after.x, before.x * after.x + before.y * after.y);
   }
 
+  function curbEdgePoint(index, side) {
+    const wrapped = (index + trackLength) % trackLength;
+    const p = track[wrapped];
+    const tangent = tangentAt(wrapped);
+    const half = widthAt(wrapped) * 0.5;
+    const nx = -tangent.y;
+    const ny = tangent.x;
+    return { x: p.x + nx * half * side, y: p.y + ny * half * side };
+  }
+
   function drawCurbs() {
+    // Kerbs follow the actual tarmac edge instead of being independent blocks.
+    // They sit half on/half off the road and only appear on sustained corners.
     ctx.save();
-    for (let i = 0; i < trackLength; i += 6) {
-      const turn = Math.abs(turnAmountAt(i));
-      if (turn < 0.045) continue;
-      const p = track[i];
-      const tangent = tangentAt(i);
-      const edge = widthAt(i) * 0.5 + 1;
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(Math.atan2(tangent.y, tangent.x));
-      ctx.fillStyle = (Math.floor(i / 6) % 2 === 0) ? "#c95c53" : "#f2eee7";
-      ctx.fillRect(-10, edge - 6, 20, 12);
-      ctx.fillRect(-10, -edge - 6, 20, 12);
-      ctx.restore();
+    ctx.lineWidth = 13;
+    ctx.lineCap = "butt";
+    ctx.lineJoin = "round";
+
+    const step = 4;
+    for (let i = 0; i < trackLength - step; i += step) {
+      const turnA = turnAmountAt(i);
+      const turnB = turnAmountAt(i + step);
+      if (Math.abs(turnA) < 0.032 || Math.abs(turnB) < 0.032) continue;
+      if (Math.sign(turnA) !== Math.sign(turnB)) continue;
+
+      // Positive curvature turns left, so the left-hand road edge is the
+      // inside kerb; negative curvature uses the right-hand edge.
+      const side = turnA > 0 ? 1 : -1;
+      const a = curbEdgePoint(i, side);
+      const b = curbEdgePoint(i + step, side);
+      ctx.strokeStyle = (Math.floor(i / (step * 3)) % 2 === 0) ? "#c95c53" : "#f2eee7";
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
     }
     ctx.restore();
   }
