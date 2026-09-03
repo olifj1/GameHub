@@ -1,10 +1,12 @@
-# GameHub v1.7.13
+# GameHub v1.7.14
 
-Racer time-trial and ghost-car update.
+Racer mode, controls and track-detail update.
 
-- Racer now runs as a continuous time trial with no end-of-race interruption.
-- Each completed lap starts the next lap immediately.
-- Best lap is shown in the HUD and saved separately for each circuit/car combination.
-- The fastest lap is recorded and replayed as a translucent ghost car on following laps.
-- Beating the best lap automatically updates the saved ghost.
-- Ghost position is also shown on the mini-map.
+- Racer now offers Grand Prix and Time Trial modes from the driving settings.
+- Grand Prix uses 1 lap on Easy, 2 on Medium and 3 on Hard; Time Trial runs continuously.
+- Ghost car can be switched on or off without deleting the saved best lap.
+- The centre Go control becomes a smaller Pause button during a run; pause offers Resume or Restart.
+- Left and Right steering controls are larger, and the accidental bottom reset button has been removed.
+- All circuits use a consistent track width again.
+- Gravel runoff is now placed only on the outside of selected corners and tapers into the grass.
+- Formula and Road now have more distinct handling, and each car keeps its own Top Speed, Acceleration and Grip tuning.

@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.7.13">
+  <link rel="stylesheet" href="style.css?v=1.7.14">
   <title>Racer</title>
 </head>
 <body class="modular-game" data-game-id="game-13">
@@ -19,7 +19,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="game-13-info-title">Instructions</h2>
-      <p>Press Go once to begin a continuous time trial, then use Left and Right to steer. Each time you cross the start/finish line your lap time is recorded and the next lap starts immediately. Your fastest lap is saved for each circuit and car, and is replayed as a translucent ghost car so you can see where you are gaining or losing ground. The car carries momentum through a turn, gravel runoff slows you if you overshoot, and grass slows you further. Open the settings control to choose Formula or Road handling and tune top speed, acceleration and grip.</p>
+      <p>Choose Grand Prix or Time Trial in the driving settings, then press Go once and steer with Left and Right. Grand Prix runs for 1 lap on Easy, 2 on Medium and 3 on Hard. Time Trial keeps going so you can chase your best lap. You can switch the best-lap ghost on or off, choose Formula or Road handling, and keep separate tuning for each car. During a run the centre button becomes Pause; use the pause menu to resume or restart safely.</p>
     </div>
   </div>
 
@@ -37,7 +37,7 @@
           <button class="racer-difficulty" data-racer-difficulty="hard" type="button">Hard</button>
         </div>
 
-        <div class="racer-hud" aria-label="Time trial information">
+        <div class="racer-hud" aria-label="Race information">
           <div><span>LAP</span><strong id="racer-lap">1</strong></div>
           <div><span>LAP TIME</span><strong id="racer-time">0:00.00</strong></div>
           <div><span>BEST</span><strong id="racer-best">--</strong></div>
@@ -48,6 +48,20 @@
               <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 9h20M10 5v8M6 23h20M22 19v8M6 16h20M16 12v8"/></svg>
             </summary>
             <div class="racer-settings-panel">
+              <div class="racer-option-setting">
+                <span>Mode</span>
+                <div class="racer-option-choice" role="group" aria-label="Race mode">
+                  <button class="active" data-racer-mode="gp" type="button">GP</button>
+                  <button data-racer-mode="tt" type="button">Time Trial</button>
+                </div>
+              </div>
+              <div class="racer-option-setting">
+                <span>Ghost</span>
+                <div class="racer-option-choice" role="group" aria-label="Ghost car">
+                  <button class="active" data-racer-ghost="on" type="button">On</button>
+                  <button data-racer-ghost="off" type="button">Off</button>
+                </div>
+              </div>
               <div class="racer-car-setting">
                 <span>Car</span>
                 <div class="racer-car-choice" role="group" aria-label="Car type">
@@ -74,6 +88,14 @@
 
         <div class="racer-stage-wrap">
           <canvas id="racer-canvas" width="720" height="900" aria-label="Top down racing game"></canvas>
+          <div class="racer-pause-overlay" id="racer-pause-overlay" hidden>
+            <div class="racer-pause-menu" role="dialog" aria-modal="true" aria-labelledby="racer-pause-title">
+              <p class="kicker">PAUSED</p>
+              <h2 id="racer-pause-title">Race paused</h2>
+              <button class="primary" id="racer-resume" type="button">Resume</button>
+              <button id="racer-restart" type="button">Restart race</button>
+            </div>
+          </div>
         </div>
 
         <div class="racer-status" id="racer-status">Accelerate when you are ready.</div>
@@ -84,7 +106,7 @@
             <small>LEFT</small>
           </button>
           <button class="racer-control go" id="racer-go" type="button">
-            <span class="racer-control-icon racer-go-icon" aria-hidden="true"><svg viewBox="0 0 36 36"><path d="M12 8l16 10-16 10z"/></svg></span>
+            <span class="racer-control-icon racer-go-icon" aria-hidden="true"><svg viewBox="0 0 36 36"><path class="racer-play-shape" d="M12 8l16 10-16 10z"/><path class="racer-pause-shape" d="M11 9h5v18h-5zM20 9h5v18h-5z"/></svg></span>
             <small id="racer-go-label">GO</small>
           </button>
           <button class="racer-control steer" id="racer-right" type="button">
@@ -93,13 +115,12 @@
           </button>
         </div>
 
-        <button class="racer-reset" id="racer-reset" type="button">Reset time trial</button>
       </div>
     </section>
   </main>
 
-  <script src="site-config.js?v=1.7.13"></script>
-  <script src="core.js?v=1.7.13"></script>
-  <script src="game-13.js?v=1.7.13"></script>
+  <script src="site-config.js?v=1.7.14"></script>
+  <script src="core.js?v=1.7.14"></script>
+  <script src="game-13.js?v=1.7.14"></script>
 </body>
 </html>

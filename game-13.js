@@ -7,12 +7,16 @@
   const speedEl = document.getElementById("racer-speed");
   const bestEl = document.getElementById("racer-best");
   const statusEl = document.getElementById("racer-status");
-  const resetButton = document.getElementById("racer-reset");
   const goButton = document.getElementById("racer-go");
   const goLabel = document.getElementById("racer-go-label");
   const difficultyButtons = [...document.querySelectorAll("[data-racer-difficulty]")];
   const settings = document.querySelector(".racer-settings");
   const carButtons = [...document.querySelectorAll("[data-racer-car]")];
+  const modeButtons = [...document.querySelectorAll("[data-racer-mode]")];
+  const ghostButtons = [...document.querySelectorAll("[data-racer-ghost]")];
+  const pauseOverlay = document.getElementById("racer-pause-overlay");
+  const resumeButton = document.getElementById("racer-resume");
+  const restartButton = document.getElementById("racer-restart");
 
   const topSpeedSlider = document.getElementById("racer-top-speed");
   const accelerationSlider = document.getElementById("racer-acceleration");
@@ -28,17 +32,23 @@
   };
 
   let WORLD = { width: 2200, height: 1600 };
-  const DEFAULT_TUNING = { topSpeed: 330, acceleration: 220, grip: 3.2 };
-  const TUNING_KEY = "gameHubRacerTuningV2";
+  const DEFAULT_TUNINGS = {
+    formula: { topSpeed: 350, acceleration: 240, grip: 3.6 },
+    road: { topSpeed: 290, acceleration: 190, grip: 2.5 }
+  };
+  const LEGACY_TUNING_KEY = "gameHubRacerTuningV2";
+  const TUNING_KEY = "gameHubRacerTuningsV3";
   const CAR_KEY = "gameHubRacerCarV1";
+  const MODE_KEY = "gameHubRacerModeV1";
+  const GHOST_ENABLED_KEY = "gameHubRacerGhostEnabledV1";
   const TIMES_KEY = "gameHubRacerBestLapsV1";
   const GHOST_KEY = "gameHubRacerGhostsV1";
   const input = { left: false, right: false };
 
   // The circuits are original layouts, but they are designed with the rhythm
   // of real race tracks: long straights, defined braking zones, hairpins,
-  // sweepers, esses and short technical links. Difficulty now changes the
-  // physical length of a lap rather than simply asking for more laps.
+  // sweepers, esses and short technical links. Grand Prix mode uses a classic
+  // 1 / 2 / 3 lap progression while Time Trial can run indefinitely.
   const COURSE_DEFS = {
     easy: {
       name: "Club Circuit",
@@ -48,13 +58,10 @@
       seed: 19,
       world: { width: 2700, height: 2200 },
       start: [500, 300],
-      widthZones: [
-        { start: 0.16, end: 0.22, mult: 1.26 },
-        { start: 0.50, end: 0.57, mult: 1.18 }
-      ],
+      widthZones: [],
       runoffZones: [
-        { start: 0.14, end: 0.23, extra: 56 },
-        { start: 0.48, end: 0.58, extra: 50 }
+        { start: 0.18, end: 0.27, extra: 58 },
+        { start: 0.53, end: 0.585, extra: 52 }
       ],
       commands: [
         ["L", [2100, 300]],
@@ -76,20 +83,17 @@
     },
     medium: {
       name: "Grand Prix Loop",
-      laps: 1,
+      laps: 2,
       width: 130,
       target: 60,
       seed: 43,
       world: { width: 3300, height: 2800 },
       start: [500, 300],
-      widthZones: [
-        { start: 0.12, end: 0.18, mult: 1.24 },
-        { start: 0.55, end: 0.63, mult: 1.30 }
-      ],
+      widthZones: [],
       runoffZones: [
-        { start: 0.10, end: 0.19, extra: 60 },
-        { start: 0.34, end: 0.42, extra: 52 },
-        { start: 0.54, end: 0.64, extra: 62 }
+        { start: 0.18, end: 0.245, extra: 62 },
+        { start: 0.385, end: 0.425, extra: 54 },
+        { start: 0.53, end: 0.57, extra: 60 }
       ],
       commands: [
         ["L", [2500, 300]],
@@ -113,22 +117,18 @@
     },
     hard: {
       name: "Forest Crossover",
-      laps: 1,
+      laps: 3,
       width: 124,
       target: 70,
       seed: 71,
       world: { width: 2700, height: 2400 },
       start: [400, 240],
-      widthZones: [
-        { start: 0.08, end: 0.14, mult: 1.22 },
-        { start: 0.47, end: 0.53, mult: 1.28 },
-        { start: 0.66, end: 0.72, mult: 1.18 }
-      ],
+      widthZones: [],
       runoffZones: [
-        { start: 0.07, end: 0.15, extra: 58 },
-        { start: 0.42, end: 0.48, extra: 52 },
-        { start: 0.57, end: 0.63, extra: 62 },
-        { start: 0.68, end: 0.74, extra: 52 }
+        { start: 0.15, end: 0.235, extra: 60 },
+        { start: 0.415, end: 0.485, extra: 54 },
+        { start: 0.555, end: 0.605, extra: 62 },
+        { start: 0.69, end: 0.75, extra: 54 }
       ],
       bridge: { x: 1861, y: 1205, overProgress: 0.797, underProgress: 0.294 },
       commands: [
@@ -153,7 +153,7 @@
   const CAR_PROFILES = {
     formula: {
       name: "Formula",
-      max: 1.08,
+      max: 1.06,
       accel: 1.06,
       grip: 1.12,
       turn: 1.06,
@@ -163,11 +163,11 @@
     },
     road: {
       name: "Road",
-      max: 0.96,
-      accel: 0.95,
-      grip: 0.90,
-      turn: 0.96,
-      drift: 1.18,
+      max: 0.92,
+      accel: 0.90,
+      grip: 0.84,
+      turn: 0.95,
+      drift: 1.24,
       width: 30,
       length: 48
     }
@@ -192,12 +192,17 @@
   let raceStart = 0;
   let raceStarted = false;
   let finished = false;
+  let paused = false;
+  let pauseStartedAt = 0;
   let lapTimes = [];
   let currentSurface = "tarmac";
   let animationFrame = 0;
   let lastFrame = performance.now();
-  let tuning = loadTuning();
   let carType = loadCarType();
+  let raceMode = loadRaceMode();
+  let ghostEnabled = loadGhostEnabled();
+  let tunings = loadTunings();
+  let tuning = tunings[carType];
   let bestTimes = loadBestTimes();
   let bestGhosts = loadBestGhosts();
   let currentLapSamples = [];
@@ -206,22 +211,43 @@
   let skidMarks = [];
   let skidTick = 0;
   let bridgeInfo = null;
+  let runoffZonesResolved = [];
 
-  function loadTuning() {
+  function validTuning(value, fallback) {
+    return {
+      topSpeed: Number(value?.topSpeed) || fallback.topSpeed,
+      acceleration: Number(value?.acceleration) || fallback.acceleration,
+      grip: Number(value?.grip) || fallback.grip
+    };
+  }
+
+  function loadTunings() {
     try {
-      const saved = JSON.parse(localStorage.getItem(TUNING_KEY) || "{}");
+      const saved = JSON.parse(localStorage.getItem(TUNING_KEY) || "null");
+      if (saved && typeof saved === "object") {
+        return {
+          formula: validTuning(saved.formula, DEFAULT_TUNINGS.formula),
+          road: validTuning(saved.road, DEFAULT_TUNINGS.road)
+        };
+      }
+
+      // Preserve the old single setup as the Formula setup on first upgrade.
+      const legacy = JSON.parse(localStorage.getItem(LEGACY_TUNING_KEY) || "null");
       return {
-        topSpeed: Number(saved.topSpeed) || DEFAULT_TUNING.topSpeed,
-        acceleration: Number(saved.acceleration) || DEFAULT_TUNING.acceleration,
-        grip: Number(saved.grip) || DEFAULT_TUNING.grip
+        formula: validTuning(legacy, DEFAULT_TUNINGS.formula),
+        road: { ...DEFAULT_TUNINGS.road }
       };
     } catch (_) {
-      return { ...DEFAULT_TUNING };
+      return {
+        formula: { ...DEFAULT_TUNINGS.formula },
+        road: { ...DEFAULT_TUNINGS.road }
+      };
     }
   }
 
   function saveTuning() {
-    try { localStorage.setItem(TUNING_KEY, JSON.stringify(tuning)); }
+    tunings[carType] = { ...tuning };
+    try { localStorage.setItem(TUNING_KEY, JSON.stringify(tunings)); }
     catch (_) {}
   }
 
@@ -239,8 +265,36 @@
     catch (_) {}
   }
 
+  function loadRaceMode() {
+    try { return localStorage.getItem(MODE_KEY) === "tt" ? "tt" : "gp"; }
+    catch (_) { return "gp"; }
+  }
+
+  function saveRaceMode() {
+    try { localStorage.setItem(MODE_KEY, raceMode); }
+    catch (_) {}
+  }
+
+  function loadGhostEnabled() {
+    try { return localStorage.getItem(GHOST_ENABLED_KEY) !== "off"; }
+    catch (_) { return true; }
+  }
+
+  function saveGhostEnabled() {
+    try { localStorage.setItem(GHOST_ENABLED_KEY, ghostEnabled ? "on" : "off"); }
+    catch (_) {}
+  }
+
   function syncCarUI() {
     carButtons.forEach(button => button.classList.toggle("active", button.dataset.racerCar === carType));
+  }
+
+  function syncModeUI() {
+    modeButtons.forEach(button => button.classList.toggle("active", button.dataset.racerMode === raceMode));
+  }
+
+  function syncGhostUI() {
+    ghostButtons.forEach(button => button.classList.toggle("active", (button.dataset.racerGhost === "on") === ghostEnabled));
   }
 
   function loadBestTimes() {
@@ -315,7 +369,8 @@
   bindTuning(accelerationSlider, "acceleration", accelerationValue, value => String(Math.round(value)));
   bindTuning(gripSlider, "grip", gripValue, value => Number(value).toFixed(2).replace(/0$/, ""));
   tuningReset.addEventListener("click", () => {
-    tuning = { ...DEFAULT_TUNING };
+    tuning = { ...DEFAULT_TUNINGS[carType] };
+    tunings[carType] = tuning;
     syncTuningUI();
     saveTuning();
   });
@@ -428,22 +483,42 @@
     return progress >= zone.start && progress <= zone.end;
   }
 
-  function widthAt(index) {
-    const progress = progressAt(index);
-    let width = course.width;
-    (course.widthZones || []).forEach(zone => {
-      if (inZone(progress, zone)) width = Math.max(width, course.width * zone.mult);
-    });
-    return width;
+  function widthAt() {
+    // Track width is deliberately consistent again; interest comes from the
+    // racing line, kerbs and runoff rather than artificial road widening.
+    return course.width;
   }
 
-  function runoffAt(index) {
-    const progress = progressAt(index);
-    let extra = 0;
-    (course.runoffZones || []).forEach(zone => {
-      if (inZone(progress, zone)) extra = Math.max(extra, zone.extra);
+  function resolveRunoffZones() {
+    runoffZonesResolved = (course.runoffZones || []).map(zone => {
+      const startIndex = Math.max(0, Math.floor(zone.start * trackLength));
+      const endIndex = Math.min(trackLength - 1, Math.ceil(zone.end * trackLength));
+      let turnSum = 0;
+      let samples = 0;
+      const step = Math.max(4, Math.floor((endIndex - startIndex) / 12));
+      for (let i = startIndex; i <= endIndex; i += step) {
+        turnSum += turnAmountAt(i);
+        samples += 1;
+      }
+      // Positive curvature is a left turn. The outside is therefore the
+      // right-hand edge (-1 relative to our left-facing normal), and vice versa.
+      const outsideSide = (turnSum / Math.max(1, samples)) >= 0 ? -1 : 1;
+      return { ...zone, startIndex, endIndex, outsideSide };
     });
-    return extra;
+  }
+
+  function runoffInfoAt(index) {
+    const progress = progressAt(index);
+    let match = null;
+    runoffZonesResolved.forEach(zone => {
+      if (!inZone(progress, zone)) return;
+      const span = Math.max(0.0001, zone.end - zone.start);
+      const t = Math.max(0, Math.min(1, (progress - zone.start) / span));
+      const taper = Math.pow(Math.sin(Math.PI * t), 0.45);
+      const effectiveExtra = zone.extra * taper;
+      if (!match || effectiveExtra > match.effectiveExtra) match = { ...zone, effectiveExtra };
+    });
+    return match;
   }
 
   function resolveBridge() {
@@ -477,6 +552,7 @@
     WORLD = { ...course.world };
     track = sampleCircuit(course);
     trackLength = track.length;
+    resolveRunoffZones();
     resolveBridge();
     generateTrees();
   }
@@ -488,7 +564,8 @@
 
   function recordGhostSample(now, force = false) {
     if (!raceStarted || !car) return;
-    const elapsed = Math.max(0, now - lapStart);
+    const effectiveNow = paused ? pauseStartedAt : now;
+    const elapsed = Math.max(0, effectiveNow - lapStart);
     if (!force && elapsed - lastGhostSampleAt < 70) return;
     lastGhostSampleAt = elapsed;
     currentLapSamples.push([elapsed, car.x, car.y, car.angle, nearest.index]);
@@ -496,12 +573,13 @@
   }
 
   function ghostPoseAt(now = performance.now()) {
-    if (!raceStarted) return null;
+    if (!raceStarted || !ghostEnabled) return null;
     const data = bestGhosts[bestTimeKey()];
     const samples = data?.samples;
     if (!Array.isArray(samples) || samples.length < 2) return null;
 
-    const elapsed = Math.max(0, now - lapStart);
+    const effectiveNow = paused ? pauseStartedAt : now;
+    const elapsed = Math.max(0, effectiveNow - lapStart);
     const duration = Number(data.duration) || samples[samples.length - 1][0];
     if (elapsed > duration + 120) return null;
 
@@ -533,8 +611,8 @@
     };
   }
 
-  function recordTimeTrialProgress(lapSeconds, newBest, lapNumber) {
-    if (lapNumber !== 1 && !newBest) return;
+  function recordRacerProgress(lapSeconds, newBest, lapNumber, force = false) {
+    if (!force && lapNumber !== 1 && !newBest) return;
     const target = course.target;
     const stars = lapSeconds <= target ? 5
       : lapSeconds <= target * 1.15 ? 4
@@ -548,9 +626,25 @@
       score,
       metrics: {
         bestLap: formatTime(Number(bestTimes[bestTimeKey()]) || lapSeconds),
-        car: CAR_PROFILES[carType].name
+        car: CAR_PROFILES[carType].name,
+        mode: raceMode === "gp" ? "Grand Prix" : "Time Trial"
       }
     });
+  }
+
+  function lapLabel() {
+    return raceMode === "gp" ? `${Math.min(currentLap, course.laps)} / ${course.laps}` : String(currentLap);
+  }
+
+  function readyStatus() {
+    const best = Number(bestTimes[bestTimeKey()]);
+    const hasGhost = ghostEnabled && !!bestGhosts[bestTimeKey()]?.samples?.length;
+    if (raceMode === "gp") {
+      return `${course.name} · ${course.laps} lap Grand Prix${best ? ` · Best ${formatTime(best)}` : ""} · press Go.`;
+    }
+    return best
+      ? `${course.name} · Best ${formatTime(best)}${hasGhost ? " · ghost ready" : ""} · press Go.`
+      : `${course.name} · first lap sets your best · press Go.`;
   }
 
   function resetRace() {
@@ -580,6 +674,8 @@
     lastGhostSampleAt = -Infinity;
     raceStarted = false;
     finished = false;
+    paused = false;
+    pauseStartedAt = 0;
     raceStart = 0;
     lapStart = 0;
     currentSurface = "tarmac";
@@ -587,18 +683,16 @@
     skidTick = 0;
     Object.keys(input).forEach(key => input[key] = false);
     Object.values(controls).forEach(button => button.classList.remove("pressed"));
-    lapEl.textContent = "1";
+    lapEl.textContent = lapLabel();
     timeEl.textContent = "0:00.00";
     speedEl.textContent = "0";
     const best = Number(bestTimes[bestTimeKey()]);
     bestEl.textContent = best ? formatTime(best) : "--";
     goButton.disabled = false;
-    goButton.classList.remove("running");
+    goButton.classList.remove("running", "paused");
     goLabel.textContent = "GO";
-    const hasGhost = !!bestGhosts[bestTimeKey()]?.samples?.length;
-    statusEl.textContent = best
-      ? `${course.name} · Best ${formatTime(best)}${hasGhost ? " · ghost ready" : ""} · press Go.`
-      : `${course.name} · first lap sets your ghost · press Go.`;
+    pauseOverlay.hidden = true;
+    statusEl.textContent = readyStatus();
     settings.removeAttribute("open");
   }
 
@@ -635,8 +729,17 @@
   function surfaceAt(position) {
     const halfRoad = widthAt(position.index) * 0.52;
     if (position.distance <= halfRoad) return "tarmac";
-    const runoff = runoffAt(position.index);
-    if (runoff > 0 && position.distance <= halfRoad + runoff) return "gravel";
+
+    const runoff = runoffInfoAt(position.index);
+    if (runoff && car) {
+      const p = track[position.index];
+      const tangent = tangentAt(position.index);
+      const nx = -tangent.y;
+      const ny = tangent.x;
+      const lateral = (car.x - p.x) * nx + (car.y - p.y) * ny;
+      const outsideDistance = lateral * runoff.outsideSide;
+      if (outsideDistance > halfRoad && outsideDistance <= halfRoad + runoff.effectiveExtra) return "gravel";
+    }
     return "grass";
   }
 
@@ -666,27 +769,49 @@
     }
 
     const crossedStart = lastTrackIndex > trackLength * 0.86 && index < trackLength * 0.14 && movingAlongTrack(index);
-    if (crossedStart && nextGate === gates.length && raceStarted) {
+    if (crossedStart && nextGate === gates.length && raceStarted && !paused) {
       recordGhostSample(now, true);
       const completedLap = currentLap;
       const lapSeconds = (now - lapStart) / 1000;
       const completedSamples = currentLapSamples.slice();
       lapTimes.push(lapSeconds);
       const newBest = saveBestLap(lapSeconds, completedSamples);
-      recordTimeTrialProgress(lapSeconds, newBest, completedLap);
+      const best = Number(bestTimes[bestTimeKey()]);
+
+      if (raceMode === "gp" && completedLap >= course.laps) {
+        recordRacerProgress(lapSeconds, newBest, completedLap, true);
+        finished = true;
+        raceStarted = false;
+        currentLap = course.laps;
+        lapEl.textContent = lapLabel();
+        timeEl.textContent = formatTime(lapSeconds);
+        bestEl.textContent = best ? formatTime(best) : "--";
+        const totalSeconds = (now - raceStart) / 1000;
+        statusEl.textContent = `Grand Prix complete · ${formatTime(totalSeconds)} · Best ${formatTime(best || lapSeconds)}`;
+        goButton.disabled = false;
+        goButton.classList.remove("running", "paused");
+        goLabel.textContent = "AGAIN";
+        lastTrackIndex = index;
+        return;
+      }
+
+      if (raceMode === "tt") recordRacerProgress(lapSeconds, newBest, completedLap);
 
       nextGate = 0;
       currentLap += 1;
       lapStart = now;
       currentLapSamples = [];
       lastGhostSampleAt = -Infinity;
-      lapEl.textContent = String(currentLap);
+      lapEl.textContent = lapLabel();
       timeEl.textContent = "0:00.00";
-      const best = Number(bestTimes[bestTimeKey()]);
       bestEl.textContent = best ? formatTime(best) : "--";
-      statusEl.textContent = newBest
-        ? `New best ${formatTime(lapSeconds)} · ghost updated · Lap ${currentLap}`
-        : `Lap ${completedLap} ${formatTime(lapSeconds)} · Best ${formatTime(best)} · Lap ${currentLap}`;
+      if (raceMode === "tt") {
+        statusEl.textContent = newBest
+          ? `New best ${formatTime(lapSeconds)}${ghostEnabled ? " · ghost updated" : ""} · Lap ${currentLap}`
+          : `Lap ${completedLap} ${formatTime(lapSeconds)} · Best ${formatTime(best)} · Lap ${currentLap}`;
+      } else {
+        statusEl.textContent = `Lap ${completedLap} ${formatTime(lapSeconds)} · ${currentLap} / ${course.laps}`;
+      }
       recordGhostSample(now, true);
     }
 
@@ -696,21 +821,69 @@
   function startRace() {
     if (raceStarted || finished) return;
     raceStarted = true;
+    paused = false;
     raceStart = performance.now();
     lapStart = raceStart;
     currentLapSamples = [];
     lastGhostSampleAt = -Infinity;
     recordGhostSample(raceStart, true);
-    goButton.disabled = true;
+    goButton.disabled = false;
     goButton.classList.add("running");
-    goLabel.textContent = "AUTO";
+    goButton.classList.remove("paused");
+    goLabel.textContent = "PAUSE";
     const best = Number(bestTimes[bestTimeKey()]);
-    statusEl.textContent = best
-      ? `${course.name} · chase the ${formatTime(best)} ghost`
-      : `${course.name} · first lap sets your ghost`;
+    if (raceMode === "gp") {
+      statusEl.textContent = `${course.name} · ${course.laps} lap Grand Prix`;
+    } else {
+      statusEl.textContent = best && ghostEnabled
+        ? `${course.name} · chase the ${formatTime(best)} ghost`
+        : `${course.name} · chase your best lap`;
+    }
+  }
+
+  function pauseRace() {
+    if (!raceStarted || finished || paused) return;
+    paused = true;
+    pauseStartedAt = performance.now();
+    Object.keys(input).forEach(name => setInput(name, false, controls[name]));
+    pauseOverlay.hidden = false;
+    goButton.disabled = true;
+    goButton.classList.add("paused");
+    statusEl.textContent = "Paused";
+    resumeButton.focus({ preventScroll: true });
+  }
+
+  function resumeRace() {
+    if (!paused) return;
+    const now = performance.now();
+    const pausedFor = now - pauseStartedAt;
+    raceStart += pausedFor;
+    lapStart += pausedFor;
+    paused = false;
+    pauseStartedAt = 0;
+    pauseOverlay.hidden = true;
+    goButton.disabled = false;
+    goButton.classList.remove("paused");
+    lastFrame = now;
+    statusEl.textContent = raceMode === "gp"
+      ? `${course.name} · Lap ${currentLap} / ${course.laps}`
+      : `${course.name} · Lap ${currentLap}`;
+  }
+
+  function handleCenterButton() {
+    if (finished) {
+      resetRace();
+      return;
+    }
+    if (!raceStarted) {
+      startRace();
+      return;
+    }
+    if (!paused) pauseRace();
   }
 
   function updatePhysics(dt) {
+    if (paused) return;
     if (finished) {
       car.vx *= Math.exp(-2.2 * dt);
       car.vy *= Math.exp(-2.2 * dt);
@@ -848,7 +1021,8 @@
     const speed = Math.hypot(car.vx, car.vy);
     speedEl.textContent = String(Math.round(speed * 0.26));
     if (raceStarted && !finished) {
-      timeEl.textContent = formatTime((now - lapStart) / 1000);
+      const effectiveNow = paused ? pauseStartedAt : now;
+      timeEl.textContent = formatTime((effectiveNow - lapStart) / 1000);
     }
   }
 
@@ -978,49 +1152,68 @@
     for (let i = start + 1; i <= end; i++) ctx.lineTo(track[i].x, track[i].y);
   }
 
-  function drawRunoff() {
-    (course.runoffZones || []).forEach((zone, zoneIndex) => {
-      const mid = Math.round(((zone.start + zone.end) * 0.5) * trackLength);
-      const roadWidth = widthAt(mid);
-      traceTrackRange(zone.start, zone.end);
-      ctx.strokeStyle = "#c7b697";
-      ctx.lineWidth = roadWidth + zone.extra * 2;
-      ctx.lineJoin = "round";
-      ctx.lineCap = "round";
-      ctx.stroke();
+  function offsetTrackPoint(index, side, offset) {
+    const wrapped = (index + trackLength) % trackLength;
+    const p = track[wrapped];
+    const tangent = tangentAt(wrapped);
+    const nx = -tangent.y;
+    const ny = tangent.x;
+    return { x: p.x + nx * offset * side, y: p.y + ny * offset * side };
+  }
 
-      // Sparse aggregate marks keep it visually gravel-like without clutter.
+  function runoffExtraAtZone(zone, index) {
+    const span = Math.max(1, zone.endIndex - zone.startIndex);
+    const t = Math.max(0, Math.min(1, (index - zone.startIndex) / span));
+    return zone.extra * Math.pow(Math.sin(Math.PI * t), 0.45);
+  }
+
+  function drawRunoff() {
+    runoffZonesResolved.forEach((zone, zoneIndex) => {
+      const side = zone.outsideSide;
+      const inner = course.width * 0.5 + 5;
+      const step = 3;
+
+      // Build a tapered gravel bed only on the outside of the corner. The road
+      // is drawn on top afterwards, leaving a clean edge beside the tarmac.
+      ctx.beginPath();
+      let started = false;
+      for (let i = zone.startIndex; i <= zone.endIndex; i += step) {
+        const extra = runoffExtraAtZone(zone, i);
+        const point = offsetTrackPoint(i, side, inner + extra);
+        if (!started) { ctx.moveTo(point.x, point.y); started = true; }
+        else ctx.lineTo(point.x, point.y);
+      }
+      const endPoint = offsetTrackPoint(zone.endIndex, side, inner + runoffExtraAtZone(zone, zone.endIndex));
+      ctx.lineTo(endPoint.x, endPoint.y);
+      for (let i = zone.endIndex; i >= zone.startIndex; i -= step) {
+        const point = offsetTrackPoint(i, side, inner);
+        ctx.lineTo(point.x, point.y);
+      }
+      const startPoint = offsetTrackPoint(zone.startIndex, side, inner);
+      ctx.lineTo(startPoint.x, startPoint.y);
+      ctx.closePath();
+      ctx.fillStyle = "#c7b697";
+      ctx.fill();
+
+      // Sparse aggregate marks sit only in that outside bed.
       ctx.save();
-      ctx.fillStyle = "rgba(93,82,66,.18)";
-      const start = Math.floor(zone.start * trackLength);
-      const end = Math.ceil(zone.end * trackLength);
-      for (let i = start; i <= end; i += 13) {
-        const p = track[i % trackLength];
-        const tangent = tangentAt(i % trackLength);
-        const nx = -tangent.y;
-        const ny = tangent.x;
-        const half = widthAt(i % trackLength) * 0.56;
-        for (const side of [-1, 1]) {
-          const hash = Math.abs(Math.sin((i + 1) * 12.9898 + zoneIndex * 8.21));
-          const offset = half + 10 + hash * Math.max(8, zone.extra - 18);
-          ctx.beginPath();
-          ctx.arc(p.x + nx * offset * side, p.y + ny * offset * side, 2.2 + hash * 1.8, 0, Math.PI * 2);
-          ctx.fill();
-        }
+      ctx.fillStyle = "rgba(93,82,66,.20)";
+      for (let i = zone.startIndex + 5; i < zone.endIndex - 5; i += 13) {
+        const extra = runoffExtraAtZone(zone, i);
+        if (extra < 9) continue;
+        const hash = Math.abs(Math.sin((i + 1) * 12.9898 + zoneIndex * 8.21));
+        const offset = inner + 6 + hash * Math.max(5, extra - 10);
+        const point = offsetTrackPoint(i, side, offset);
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 2.0 + hash * 1.7, 0, Math.PI * 2);
+        ctx.fill();
       }
       ctx.restore();
     });
   }
 
-  function drawWiderRoadSections(edgePass) {
-    (course.widthZones || []).forEach(zone => {
-      traceTrackRange(zone.start, zone.end);
-      ctx.strokeStyle = edgePass ? "#d6cec4" : "#3e4449";
-      ctx.lineWidth = course.width * zone.mult + (edgePass ? 18 : 0);
-      ctx.lineJoin = "round";
-      ctx.lineCap = "round";
-      ctx.stroke();
-    });
+  function drawWiderRoadSections() {
+    // Intentionally unused: v1.7.14 returns every circuit to one consistent width.
   }
 
   function traceBridgeSegment(index, radius = 24) {
@@ -1073,13 +1266,11 @@
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
     ctx.stroke();
-    drawWiderRoadSections(true);
 
     traceTrackPath();
     ctx.strokeStyle = "#3e4449";
     ctx.lineWidth = course.width;
     ctx.stroke();
-    drawWiderRoadSections(false);
 
     drawCurbs();
     drawSkidMarks();
@@ -1338,7 +1529,9 @@
 
   bindHold(controls.left, "left");
   bindHold(controls.right, "right");
-  goButton.addEventListener("click", startRace);
+  goButton.addEventListener("click", handleCenterButton);
+  resumeButton.addEventListener("click", resumeRace);
+  restartButton.addEventListener("click", resetRace);
 
   const keyMap = {
     ArrowLeft: "left", a: "left", A: "left",
@@ -1348,7 +1541,14 @@
   document.addEventListener("keydown", event => {
     if (event.key === " " || event.key === "Enter" || event.key === "ArrowUp") {
       event.preventDefault();
-      startRace();
+      if (paused) resumeRace();
+      else handleCenterButton();
+      return;
+    }
+    if (event.key === "Escape" && raceStarted && !finished) {
+      event.preventDefault();
+      if (paused) resumeRace();
+      else pauseRace();
       return;
     }
     const name = keyMap[event.key];
@@ -1364,6 +1564,7 @@
   });
   window.addEventListener("blur", () => {
     Object.keys(input).forEach(name => setInput(name, false, controls[name]));
+    if (raceStarted && !paused && !finished) pauseRace();
   });
 
   difficultyButtons.forEach(button => {
@@ -1374,20 +1575,48 @@
     });
   });
 
+  modeButtons.forEach(button => {
+    button.addEventListener("click", () => {
+      const next = button.dataset.racerMode;
+      if (!['gp', 'tt'].includes(next) || next === raceMode) return;
+      raceMode = next;
+      saveRaceMode();
+      syncModeUI();
+      resetRace();
+    });
+  });
+
+  ghostButtons.forEach(button => {
+    button.addEventListener("click", () => {
+      const next = button.dataset.racerGhost === "on";
+      if (next === ghostEnabled) return;
+      ghostEnabled = next;
+      saveGhostEnabled();
+      syncGhostUI();
+      statusEl.textContent = raceStarted
+        ? (ghostEnabled ? "Ghost enabled" : "Ghost hidden")
+        : readyStatus();
+    });
+  });
+
   carButtons.forEach(button => {
     button.addEventListener("click", () => {
       const next = button.dataset.racerCar;
       if (!CAR_PROFILES[next] || next === carType) return;
       carType = next;
+      tuning = tunings[carType] || { ...DEFAULT_TUNINGS[carType] };
+      tunings[carType] = tuning;
       saveCarType();
       syncCarUI();
+      syncTuningUI();
       resetRace();
     });
   });
 
-  resetButton.addEventListener("click", resetRace);
-
   syncCarUI();
+  syncModeUI();
+  syncGhostUI();
+  syncTuningUI();
   resetRace();
   cancelAnimationFrame(animationFrame);
   animationFrame = requestAnimationFrame(frame);
