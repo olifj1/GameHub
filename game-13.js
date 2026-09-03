@@ -688,6 +688,7 @@
     speedEl.textContent = "0";
     const best = Number(bestTimes[bestTimeKey()]);
     bestEl.textContent = best ? formatTime(best) : "--";
+    Object.values(controls).forEach(button => { button.disabled = false; });
     goButton.disabled = false;
     goButton.classList.remove("running", "paused");
     goLabel.textContent = "GO";
@@ -787,11 +788,42 @@
         timeEl.textContent = formatTime(lapSeconds);
         bestEl.textContent = best ? formatTime(best) : "--";
         const totalSeconds = (now - raceStart) / 1000;
-        statusEl.textContent = `Grand Prix complete · ${formatTime(totalSeconds)} · Best ${formatTime(best || lapSeconds)}`;
-        goButton.disabled = false;
+        const bestLapSeconds = lapTimes.length ? Math.min(...lapTimes) : lapSeconds;
+        const target = course.target;
+        const stars = bestLapSeconds <= target ? 5
+          : bestLapSeconds <= target * 1.15 ? 4
+          : bestLapSeconds <= target * 1.35 ? 3
+          : bestLapSeconds <= target * 1.65 ? 2 : 1;
+
+        Object.keys(input).forEach(name => setInput(name, false, controls[name]));
+        Object.values(controls).forEach(button => { button.disabled = true; });
+        goButton.disabled = true;
         goButton.classList.remove("running", "paused");
-        goLabel.textContent = "AGAIN";
+        goLabel.textContent = "DONE";
+        statusEl.textContent = `Grand Prix complete · ${formatTime(totalSeconds)} · Best ${formatTime(bestLapSeconds)}`;
         lastTrackIndex = index;
+
+        // Keep the finish visible for a moment, then use the same shared
+        // GameHub completion card as the other completed mini-games. Progress
+        // has already been recorded above, so the card is display-only here.
+        window.setTimeout(() => {
+          if (!finished || raceMode !== "gp") return;
+          window.GameHubResults?.show({
+            gameId: "game-13",
+            difficulty,
+            stars,
+            title: "Grand Prix complete!",
+            summary: `${course.laps} lap${course.laps === 1 ? "" : "s"} finished in ${formatTime(totalSeconds)}.`,
+            metrics: [
+              { label: "Total time", value: formatTime(totalSeconds) },
+              { label: "Best lap", value: formatTime(bestLapSeconds) },
+              { label: "Car", value: CAR_PROFILES[carType].name }
+            ],
+            againLabel: "Race again",
+            onAgain: resetRace,
+            save: false
+          });
+        }, 420);
         return;
       }
 
@@ -1228,17 +1260,25 @@
   function drawBridgeOverlay() {
     if (!bridgeInfo) return;
     const width = widthAt(bridgeInfo.overIndex);
-    traceBridgeSegment(bridgeInfo.overIndex, 28);
+
+    // Keep the bridge side treatment shorter than the tarmac overlay. This
+    // lets the upper road merge back into the normal circuit cleanly instead
+    // of exposing the butt-caps as pale bars across the track at each end.
+    traceBridgeSegment(bridgeInfo.overIndex, 24);
     ctx.strokeStyle = "rgba(37,43,47,.28)";
     ctx.lineWidth = width + 34;
     ctx.lineCap = "butt";
     ctx.stroke();
-    traceBridgeSegment(bridgeInfo.overIndex, 26);
+
+    traceBridgeSegment(bridgeInfo.overIndex, 25);
     ctx.strokeStyle = "#d6cec4";
     ctx.lineWidth = width + 18;
     ctx.lineCap = "butt";
     ctx.stroke();
-    traceBridgeSegment(bridgeInfo.overIndex, 25);
+
+    // Extend the road surface past the bridge edging so the only visible
+    // termination is the pair of side edges, not a line across the roadway.
+    traceBridgeSegment(bridgeInfo.overIndex, 31);
     ctx.strokeStyle = "#3e4449";
     ctx.lineWidth = width;
     ctx.lineCap = "butt";
@@ -1519,6 +1559,7 @@
     button.addEventListener("pointerdown", event => {
       if (event.pointerType === "mouse" && event.button !== 0) return;
       event.preventDefault();
+      if (button.disabled || finished || paused || !raceStarted) return;
       try { button.setPointerCapture(event.pointerId); } catch (_) {}
       setInput(name, true, button);
     });
@@ -1554,7 +1595,7 @@
     const name = keyMap[event.key];
     if (!name) return;
     event.preventDefault();
-    if (!event.repeat) setInput(name, true, controls[name]);
+    if (!event.repeat && raceStarted && !paused && !finished) setInput(name, true, controls[name]);
   });
   document.addEventListener("keyup", event => {
     const name = keyMap[event.key];
