@@ -13,7 +13,7 @@ window.APP_CONFIG = {
       "description": "Build multiplication facts one step at a time.",
       "icon": "\u00d7",
       "enabled": true,
-      "path": "game-01.html?v=1.7.19"
+      "path": "game-01.html?v=1.7.20"
     },
     {
       "id": "game-02",
@@ -21,7 +21,7 @@ window.APP_CONFIG = {
       "description": "Move through the day and explore analogue and digital time.",
       "icon": "\u25f7",
       "enabled": true,
-      "path": "game-02.html?v=1.7.19"
+      "path": "game-02.html?v=1.7.20"
     },
     {
       "id": "game-03",
@@ -29,7 +29,7 @@ window.APP_CONFIG = {
       "description": "Practise arithmetic at your own pace or race the timer.",
       "icon": "+",
       "enabled": true,
-      "path": "game-03.html?v=1.7.19"
+      "path": "game-03.html?v=1.7.20"
     },
     {
       "id": "game-04",
@@ -37,7 +37,7 @@ window.APP_CONFIG = {
       "description": "Read sentences and choose missing words.",
       "icon": "Aa",
       "enabled": true,
-      "path": "game-04.html?v=1.7.19"
+      "path": "game-04.html?v=1.7.20"
     },
     {
       "id": "game-05",
@@ -45,7 +45,7 @@ window.APP_CONFIG = {
       "description": "Use maths to solve everyday problems.",
       "icon": "\u25a6",
       "enabled": true,
-      "path": "game-05.html?v=1.7.19"
+      "path": "game-05.html?v=1.7.20"
     },
     {
       "id": "game-06",
@@ -53,7 +53,7 @@ window.APP_CONFIG = {
       "description": "Fly through the cavern, collect the stars and land safely.",
       "icon": "\u25b3",
       "enabled": true,
-      "path": "game-06.html?v=1.7.19"
+      "path": "game-06.html?v=1.7.20"
     },
     {
       "id": "game-07",
@@ -61,7 +61,7 @@ window.APP_CONFIG = {
       "description": "Build a program to guide the rover to the flag.",
       "icon": "{ }",
       "enabled": true,
-      "path": "game-07.html?v=1.7.19"
+      "path": "game-07.html?v=1.7.20"
     },
     {
       "id": "game-08",
@@ -77,7 +77,7 @@ window.APP_CONFIG = {
         ],
         "hasScore": true
       },
-      "path": "game-08.html?v=1.7.19"
+      "path": "game-08.html?v=1.7.20"
     },
     {
       "id": "game-12",
@@ -94,7 +94,7 @@ window.APP_CONFIG = {
         ],
         "hasScore": false
       },
-      "path": "game-12.html?v=1.7.19"
+      "path": "game-12.html?v=1.7.20"
     },
     {
       "id": "game-11",
@@ -111,7 +111,7 @@ window.APP_CONFIG = {
         ],
         "hasScore": true
       },
-      "path": "game-11.html?v=1.7.19"
+      "path": "game-11.html?v=1.7.20"
     },
     {
       "id": "game-09",
@@ -128,7 +128,7 @@ window.APP_CONFIG = {
         ],
         "hasScore": true
       },
-      "path": "game-09.html?v=1.7.19"
+      "path": "game-09.html?v=1.7.20"
     },
     {
       "id": "game-10",
@@ -145,7 +145,7 @@ window.APP_CONFIG = {
         ],
         "hasScore": false
       },
-      "path": "game-10.html?v=1.7.19"
+      "path": "game-10.html?v=1.7.20"
     },
     {
       "id": "game-13",
@@ -162,7 +162,7 @@ window.APP_CONFIG = {
         ],
         "hasScore": true
       },
-      "path": "game-13.html?v=1.7.19"
+      "path": "game-13.html?v=1.7.20"
     }
   ]
 };

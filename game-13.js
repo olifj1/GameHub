@@ -87,7 +87,10 @@
       width: 130,
       target: 60,
       seed: 43,
-      recordKey: "medium-r4",
+      recordKey: "medium-r5",
+      // Guard against any future control-point edit creating a sharp local
+      // throat. The final sector below already sits comfortably inside this.
+      maxLocalTurn: 0.95,
       world: { width: 3100, height: 2650 },
       // Put the timing line in the middle of the long top straight. The final
       // corner now ends well before it, so the lap never has to fold back on
@@ -116,11 +119,10 @@
         ["C", [370, 1770], [590, 1690], [760, 1580]],
         ["C", [930, 1470], [950, 1320], [830, 1210]],
         ["C", [700, 1090], [500, 1120], [410, 990]],
-        ["C", [310, 850], [430, 730], [610, 720]],
-        ["C", [790, 710], [850, 590], [730, 500]],
-        // One clean, generous final sweeper. It exits onto the top straight
-        // at x=1000, leaving 500 world units of straight before the timing line.
-        ["C", [610, 410], [650, 300], [1000, 300]],
+        // Finish the lap with one broad, continuous-radius turn rather than
+        // a left/right correction sequence. The car is already pointing along
+        // the start straight well before it reaches the timing line.
+        ["C", [250, 760], [420, 300], [1000, 300]],
         ["L", [1500, 300]]
       ]
     },
@@ -130,10 +132,13 @@
       width: 124,
       target: 70,
       seed: 71,
-      recordKey: "hard-r4",
+      recordKey: "hard-r5",
+      // Hard may contain tighter technical corners, but this cap prevents
+      // sampled geometry from collapsing into a pinched near-cusp.
+      maxLocalTurn: 1.0,
       world: { width: 2700, height: 2400 },
-      // The line sits on the centre of the top straight. The final corner is
-      // a single broad sweeper that finishes 450 units before the line.
+      // The line sits on the centre of the top straight. The final sector uses
+      // broad same-direction arcs and finishes well before the timing line.
       start: [1500, 240],
       widthZones: [],
       runoffZones: [
@@ -142,7 +147,7 @@
         { start: 0.4974, end: 0.5710, extra: 62 },
         { start: 0.7340, end: 0.8242, extra: 54 }
       ],
-      bridge: { x: 1700, y: 1443, overProgress: 0.6343, underProgress: 0.2474 },
+      bridge: { x: 1700, y: 1443, overProgress: 0.6401, underProgress: 0.2518 },
       commands: [
         ["L", [1950, 240]],
         ["C", [2240, 240], [2460, 390], [2460, 650]],
@@ -163,12 +168,11 @@
         ["C", [1240, 1190], [1190, 1080], [1310, 1010]],
         ["C", [1430, 940], [1380, 830], [1220, 830]],
         ["C", [1060, 830], [1010, 960], [900, 1020]],
-        ["C", [760, 1090], [620, 1030], [560, 900]],
-        ["C", [500, 770], [620, 660], [780, 660]],
-        ["C", [940, 660], [970, 540], [850, 460]],
-        // The final corner resolves naturally onto the straight instead of
-        // looping tightly around the start point.
-        ["C", [710, 360], [760, 240], [1050, 240]],
+        // Remove the final left/right flicks. These two Beziers form one large
+        // same-direction final sector: a broad approach arc followed by a long
+        // opening exit that is tangent to the start/finish straight.
+        ["C", [680, 1140], [330, 900], [390, 610]],
+        ["C", [450, 340], [690, 240], [1050, 240]],
         ["L", [1500, 240]]
       ]
     }
@@ -465,6 +469,66 @@
     return smoothed;
   }
 
+  function softenPinchedCorners(points, maxLocalTurn) {
+    if (!Number.isFinite(maxLocalTurn) || points.length < 80) return points;
+
+    // A final safety net for authored Bezier layouts. It is deliberately
+    // conservative: normal hairpins are left alone, but a near-cusp where the
+    // heading changes too quickly over a short distance is gently rounded.
+    let result = points.map(point => ({ ...point }));
+    const count = result.length;
+
+    const tangentFor = (source, index) => {
+      const a = source[(index - 3 + count) % count];
+      const b = source[(index + 3) % count];
+      const length = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+      return { x: (b.x - a.x) / length, y: (b.y - a.y) / length };
+    };
+
+    const localTurn = (source, index) => {
+      const before = tangentFor(source, (index - 10 + count) % count);
+      const after = tangentFor(source, (index + 10) % count);
+      return Math.abs(Math.atan2(
+        before.x * after.y - before.y * after.x,
+        before.x * after.x + before.y * after.y
+      ));
+    };
+
+    for (let pass = 0; pass < 6; pass++) {
+      const source = result;
+      const mask = new Array(count).fill(0);
+      let found = false;
+
+      for (let i = 0; i < count; i++) {
+        const turn = localTurn(source, i);
+        if (turn <= maxLocalTurn) continue;
+        found = true;
+        const severity = Math.min(1, 0.2 + (turn - maxLocalTurn) / maxLocalTurn);
+        for (let offset = -10; offset <= 10; offset++) {
+          const falloff = 1 - Math.abs(offset) / 11;
+          const index = (i + offset + count) % count;
+          mask[index] = Math.max(mask[index], severity * falloff);
+        }
+      }
+
+      if (!found) break;
+      result = source.map((point, i) => {
+        if (!mask[i]) return point;
+        const a = source[(i - 7 + count) % count];
+        const b = source[(i + 7) % count];
+        const strength = 0.16 * mask[i];
+        const targetX = (a.x + b.x) * 0.5;
+        const targetY = (a.y + b.y) * 0.5;
+        return {
+          x: point.x * (1 - strength) + targetX * strength,
+          y: point.y * (1 - strength) + targetY * strength
+        };
+      });
+    }
+
+    return result;
+  }
+
   function seededRandom(seed) {
     let state = seed >>> 0;
     return () => {
@@ -575,6 +639,7 @@
     course = COURSE_DEFS[difficulty];
     WORLD = { ...course.world };
     track = sampleCircuit(course);
+    track = softenPinchedCorners(track, course.maxLocalTurn);
     trackLength = track.length;
     resolveRunoffZones();
     resolveBridge();
