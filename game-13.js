@@ -87,9 +87,12 @@
       width: 130,
       target: 60,
       seed: 43,
-      recordKey: "medium-r2",
+      recordKey: "medium-r3",
       world: { width: 3100, height: 2650 },
-      start: [500, 300],
+      // Keep the timing line well inside a genuine straight. The final sector
+      // is designed back into this straight, rather than closing the lap with
+      // a last-second curve at the line.
+      start: [700, 300],
       widthZones: [],
       runoffZones: [
         { start: 0.17, end: 0.245, extra: 62 },
@@ -115,8 +118,11 @@
         ["C", [700, 1090], [500, 1120], [410, 990]],
         ["C", [310, 850], [430, 730], [610, 720]],
         ["C", [790, 710], [850, 590], [730, 500]],
-        ["L", [420, 400]],
-        ["C", [300, 360], [320, 300], [500, 300]]
+        // Final sector: preserve the incoming tangent, open into one broad
+        // corner, then finish the turn before a long, horizontal run to the line.
+        ["C", [610, 410], [400, 350], [230, 390]],
+        ["C", [120, 420], [110, 300], [260, 300]],
+        ["L", [700, 300]]
       ]
     },
     hard: {
@@ -125,9 +131,11 @@
       width: 124,
       target: 70,
       seed: 71,
-      recordKey: "hard-r2",
+      recordKey: "hard-r3",
       world: { width: 2700, height: 2400 },
-      start: [400, 240],
+      // As on Medium, the lap now closes onto a reserved finish straight.
+      // This gives the final bend room to resolve before the timing line.
+      start: [650, 240],
       widthZones: [],
       runoffZones: [
         { start: 0.15, end: 0.235, extra: 60 },
@@ -159,8 +167,11 @@
         ["C", [760, 1090], [620, 1030], [560, 900]],
         ["C", [500, 770], [620, 660], [780, 660]],
         ["C", [940, 660], [970, 540], [850, 460]],
-        ["L", [520, 350]],
-        ["C", [390, 305], [320, 240], [400, 240]]
+        // Broad final bend feeding a proper finish straight. The last line
+        // and the first line are collinear, so the closed-loop tangent is exact.
+        ["C", [730, 380], [470, 300], [230, 350]],
+        ["C", [110, 380], [100, 240], [220, 240]],
+        ["L", [650, 240]]
       ]
     }
   };

@@ -1,3 +1,3 @@
-# GameHub v1.7.17
+# GameHub v1.7.18
 
-Racer circuit-layout pass. Easy is unchanged; Medium has a distinctly different GP-style layout, while Hard keeps the crossover but adds a denser technical/esses section in place of longer simple stretches. Medium and Hard best laps/ghosts reset because their track geometry changed; Easy records are retained.
+Racer track-finish polish: Medium and Hard now reserve a proper final sector and straight run into the start/finish line, removing the pinched last-corner closure. Their lap records/ghosts reset for the revised geometry; Easy is unchanged.
