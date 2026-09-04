@@ -87,18 +87,18 @@
       width: 130,
       target: 60,
       seed: 43,
-      recordKey: "medium-r3",
+      recordKey: "medium-r4",
       world: { width: 3100, height: 2650 },
-      // Keep the timing line well inside a genuine straight. The final sector
-      // is designed back into this straight, rather than closing the lap with
-      // a last-second curve at the line.
-      start: [700, 300],
+      // Put the timing line in the middle of the long top straight. The final
+      // corner now ends well before it, so the lap never has to fold back on
+      // itself simply to reach the start point.
+      start: [1500, 300],
       widthZones: [],
       runoffZones: [
-        { start: 0.17, end: 0.245, extra: 62 },
-        { start: 0.37, end: 0.43, extra: 54 },
-        { start: 0.54, end: 0.625, extra: 60 },
-        { start: 0.68, end: 0.74, extra: 52 }
+        { start: 0.0925, end: 0.1705, extra: 62 },
+        { start: 0.3014, end: 0.3644, extra: 54 },
+        { start: 0.4795, end: 0.5678, extra: 60 },
+        { start: 0.6253, end: 0.6884, extra: 52 }
       ],
       commands: [
         ["L", [2250, 300]],
@@ -118,11 +118,10 @@
         ["C", [700, 1090], [500, 1120], [410, 990]],
         ["C", [310, 850], [430, 730], [610, 720]],
         ["C", [790, 710], [850, 590], [730, 500]],
-        // Final sector: preserve the incoming tangent, open into one broad
-        // corner, then finish the turn before a long, horizontal run to the line.
-        ["C", [610, 410], [400, 350], [230, 390]],
-        ["C", [120, 420], [110, 300], [260, 300]],
-        ["L", [700, 300]]
+        // One clean, generous final sweeper. It exits onto the top straight
+        // at x=1000, leaving 500 world units of straight before the timing line.
+        ["C", [610, 410], [650, 300], [1000, 300]],
+        ["L", [1500, 300]]
       ]
     },
     hard: {
@@ -131,19 +130,19 @@
       width: 124,
       target: 70,
       seed: 71,
-      recordKey: "hard-r3",
+      recordKey: "hard-r4",
       world: { width: 2700, height: 2400 },
-      // As on Medium, the lap now closes onto a reserved finish straight.
-      // This gives the final bend room to resolve before the timing line.
-      start: [650, 240],
+      // The line sits on the centre of the top straight. The final corner is
+      // a single broad sweeper that finishes 450 units before the line.
+      start: [1500, 240],
       widthZones: [],
       runoffZones: [
-        { start: 0.15, end: 0.235, extra: 60 },
-        { start: 0.405, end: 0.50, extra: 54 },
-        { start: 0.555, end: 0.625, extra: 62 },
-        { start: 0.78, end: 0.865, extra: 54 }
+        { start: 0.0703, end: 0.1598, extra: 60 },
+        { start: 0.3389, end: 0.4393, extra: 54 },
+        { start: 0.4974, end: 0.5710, extra: 62 },
+        { start: 0.7340, end: 0.8242, extra: 54 }
       ],
-      bridge: { x: 1700, y: 1443, overProgress: 0.685, underProgress: 0.318 },
+      bridge: { x: 1700, y: 1443, overProgress: 0.6343, underProgress: 0.2474 },
       commands: [
         ["L", [1950, 240]],
         ["C", [2240, 240], [2460, 390], [2460, 650]],
@@ -167,11 +166,10 @@
         ["C", [760, 1090], [620, 1030], [560, 900]],
         ["C", [500, 770], [620, 660], [780, 660]],
         ["C", [940, 660], [970, 540], [850, 460]],
-        // Broad final bend feeding a proper finish straight. The last line
-        // and the first line are collinear, so the closed-loop tangent is exact.
-        ["C", [730, 380], [470, 300], [230, 350]],
-        ["C", [110, 380], [100, 240], [220, 240]],
-        ["L", [650, 240]]
+        // The final corner resolves naturally onto the straight instead of
+        // looping tightly around the start point.
+        ["C", [710, 360], [760, 240], [1050, 240]],
+        ["L", [1500, 240]]
       ]
     }
   };

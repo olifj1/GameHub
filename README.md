@@ -1,3 +1,3 @@
-# GameHub v1.7.18
+# GameHub v1.7.19
 
-Racer track-finish polish: Medium and Hard now reserve a proper final sector and straight run into the start/finish line, removing the pinched last-corner closure. Their lap records/ghosts reset for the revised geometry; Easy is unchanged.
+Racer track-finish geometry fix. Medium and Hard now place the timing line in the middle of a proper straight, with a broad final corner that finishes well before the line. Their runoff/bridge positions were remapped to the revised track progress. Easy is unchanged.
