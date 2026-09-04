@@ -9614,7 +9614,7 @@ body[data-game-id="game-13"] .racer-control.go.running:not(:disabled) small{colo
 }
 
 /* ============================================================
-   GameHub v1.8.1 — Tower Attack playable prototype
+   GameHub v1.8.2 — Tower Attack playable prototype
    ============================================================ */
 body[data-game-id="game-14"], .game-card[data-game-id="game-14"] { --gh-accent:#b36f45; }
 body[data-game-id="game-14"] #attack-screen{background:#f5efe9!important;color:var(--gh-text)!important}
@@ -9712,7 +9712,7 @@ body[data-game-id="game-14"] .attack-battle[hidden],body[data-game-id="game-14"]
 body[data-game-id="game-14"] .attack-battle-hud{grid-template-columns:.75fr 1fr 1fr 46px}
 body[data-game-id="game-14"] .attack-battle-hud>button{font-size:10px;font-weight:950;color:#756d66}
 body[data-game-id="game-14"] .attack-stage-wrap{
-  position:relative;flex:1 1 auto;min-height:0;width:min(100%,430px,calc((100dvh - 176px) * 2 / 3));min-width:225px;margin:0 auto;
+  position:relative;flex:1 1 auto;min-height:0;width:min(100%,430px,calc((100dvh - 150px) * 33 / 56));min-width:218px;margin:0 auto;
   border-radius:18px;overflow:hidden;border:1px solid rgba(52,57,68,.16);background:#cdb681;box-shadow:0 8px 22px rgba(52,57,68,.10)
 }
 body[data-game-id="game-14"] #attack-canvas{display:block;width:100%;height:100%;touch-action:none}
@@ -9741,16 +9741,16 @@ body[data-game-id="game-14"] .attack-pause-menu button.primary{margin-top:0;bord
   body[data-game-id="game-14"] .attack-queue{height:31px}
   body[data-game-id="game-14"] .attack-queue-unit{width:29px;height:29px;flex-basis:29px}
   body[data-game-id="game-14"] .attack-send{min-height:43px}
-  body[data-game-id="game-14"] .attack-stage-wrap{width:min(100%,390px,calc((100dvh - 160px) * 2 / 3))}
+  body[data-game-id="game-14"] .attack-stage-wrap{width:min(100%,390px,calc((100dvh - 200px) * 33 / 56))}
 }
 @media(max-width:360px){
   body[data-game-id="game-14"] .attack-page{padding-left:10px;padding-right:10px}
   body[data-game-id="game-14"] .attack-route-buttons small{font-size:6.3px}
   body[data-game-id="game-14"] .attack-vehicle-name,body[data-game-id="game-14"] .attack-vehicle-price{font-size:9px}
 }
-/* Preserve the same undistorted canvas geometry as Racer. */
-body[data-game-id="game-14"] .attack-stage-wrap{aspect-ratio:2 / 3;flex:0 1 auto}
-body[data-game-id="game-14"] #attack-canvas{height:auto;aspect-ratio:2 / 3}
+/* Taller, slightly closer battlefield while preserving undistorted canvas geometry. */
+body[data-game-id="game-14"] .attack-stage-wrap{aspect-ratio:33 / 56;flex:0 1 auto}
+body[data-game-id="game-14"] #attack-canvas{height:auto;aspect-ratio:33 / 56}
 /* Vehicle cards: keep the readable information grouped at the top rather than
    letting the card height push the name/price apart. */
 body[data-game-id="game-14"] .attack-vehicle-card{

@@ -1,9 +1,11 @@
-# GameHub v1.8.1
+# GameHub v1.8.2
 
-Tower Attack balance and battlefield polish pass.
+Tower Attack battlefield art and route-separation pass.
 
-- Rebalanced starting cash, vehicle costs/health, turret damage, health and round funding.
-- Turret positions now use measured offsets from the route splines; route buttons show current coverage.
-- Taller battle board with more room for the map.
-- Improved bridge, aiming turrets, vehicles, rocks, scrub, ruins/buildings and ground texture.
-- Defender coverage grows gradually by round while guaranteed funding prevents a failed wave from deadlocking the campaign.
+- Taller, closer battlefield framing with more usable phone height.
+- Removed the bridge; the two spline roads now meet at one clean dusty crossover.
+- Winding route spreads much farther away from Direct before crossing once.
+- Turrets sit farther from the road, avoid the crossover and only engage their assigned route.
+- Larger Racer-style top-down trees, clustered painted rocks and redesigned ruins/structures.
+- Added layered ground washes, fine texture and subtle grass marks for less-flat terrain.
+- Further turret visual polish with a layered emplacement, rotating housing and twin barrels.

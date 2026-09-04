@@ -26,11 +26,15 @@
   const ctx = canvas.getContext("2d");
 
   const MAX_QUEUE = 6;
-  const WORLD = { width: 720, height: 1080 };
+  // A slightly narrower, taller world makes the battlefield read closer on phone
+  // without enlarging the surrounding GameHub chrome.
+  const WORLD = { width: 660, height: 1120 };
+  const X_SCALE = WORLD.width / 720;
   const Y_SCALE = WORLD.height / 900;
+  const X = value => value * X_SCALE;
   const Y = value => value * Y_SCALE;
-  const START = { x: 360, y: Y(850) };
-  const BASE = { x: 360, y: Y(54) };
+  const START = { x: X(360), y: Y(850) };
+  const BASE = { x: X(360), y: Y(54) };
   const STARTING_CASH = 90;
   const STARTING_BASE_HEALTH = 14;
 
@@ -68,22 +72,22 @@
       colour: "#b36f45",
       commands: [
         ["M", [360, 850]],
-        ["C", [338, 790], [332, 720], [350, 655]],
-        ["C", [373, 590], [346, 527], [364, 465]],
-        ["C", [387, 399], [350, 337], [371, 270]],
-        ["C", [388, 205], [367, 125], [360, 54]]
+        ["C", [346, 790], [330, 720], [344, 650]],
+        ["C", [360, 584], [324, 520], [342, 458]],
+        ["C", [365, 390], [330, 325], [350, 258]],
+        ["C", [368, 196], [354, 122], [360, 54]]
       ]
     },
     winding: {
       colour: "#4f847b",
       commands: [
         ["M", [360, 850]],
-        ["C", [480, 842], [612, 785], [583, 700]],
-        ["C", [562, 638], [486, 608], [423, 570]],
-        ["C", [354, 528], [268, 532], [226, 478]],
-        ["C", [170, 407], [257, 363], [190, 304]],
-        ["C", [126, 248], [220, 185], [278, 142]],
-        ["C", [308, 111], [338, 81], [360, 54]]
+        ["C", [474, 842], [686, 802], [674, 710]],
+        ["C", [667, 640], [608, 596], [536, 560]],
+        ["C", [470, 525], [365, 495], [250, 455]],
+        ["C", [155, 420], [116, 350], [170, 285]],
+        ["C", [215, 232], [188, 190], [252, 150]],
+        ["C", [292, 124], [332, 88], [360, 54]]
       ]
     }
   };
@@ -91,13 +95,13 @@
   function scaleCommands(commands) {
     return commands.map(command => {
       if (command[0] === "M" || command[0] === "L") {
-        return [command[0], [command[1][0], Y(command[1][1])]];
+        return [command[0], [X(command[1][0]), Y(command[1][1])]];
       }
       if (command[0] === "C") {
         return ["C",
-          [command[1][0], Y(command[1][1])],
-          [command[2][0], Y(command[2][1])],
-          [command[3][0], Y(command[3][1])]
+          [X(command[1][0]), Y(command[1][1])],
+          [X(command[2][0]), Y(command[2][1])],
+          [X(command[3][0]), Y(command[3][1])]
         ];
       }
       return command;
@@ -109,16 +113,20 @@
     winding: buildRoute(scaleCommands(ROUTE_DEFS.winding.commands), 7)
   };
 
+  // One deliberate crossover remains as a visual crossroads, but turret slots are
+  // kept well away from it so it never becomes an accidental kill-box.
+  const CROSSOVER = pointAtDistance(routes.direct, routes.direct.length * .46);
+
   // Turrets are positioned from route fractions rather than arbitrary screen points.
   // That gives predictable firing exposure and makes route balancing easier to reason about.
   const TURRET_SLOT_DEFS = [
-    { id: "d1", route: "direct", fraction: .22, side: -1, offset: 72, unlock: 1 },
-    { id: "d2", route: "direct", fraction: .58, side: 1, offset: 72, unlock: 1 },
-    { id: "w1", route: "winding", fraction: .44, side: 1, offset: 72, unlock: 1 },
-    { id: "d3", route: "direct", fraction: .78, side: -1, offset: 72, unlock: 2 },
-    { id: "w2", route: "winding", fraction: .68, side: -1, offset: 70, unlock: 3 },
-    { id: "d4", route: "direct", fraction: .40, side: -1, offset: 74, unlock: 4 },
-    { id: "w3", route: "winding", fraction: .82, side: 1, offset: 70, unlock: 5 }
+    { id: "d1", route: "direct", fraction: .18, side: -1, offset: 92, unlock: 1 },
+    { id: "d2", route: "direct", fraction: .70, side: 1, offset: 96, unlock: 1 },
+    { id: "w1", route: "winding", fraction: .34, side: -1, offset: 92, unlock: 1 },
+    { id: "d3", route: "direct", fraction: .80, side: 1, offset: 96, unlock: 2 },
+    { id: "w2", route: "winding", fraction: .64, side: 1, offset: 94, unlock: 3 },
+    { id: "d4", route: "direct", fraction: .32, side: -1, offset: 98, unlock: 4 },
+    { id: "w3", route: "winding", fraction: .82, side: -1, offset: 94, unlock: 5 }
   ];
 
   const TURRET_SLOTS = TURRET_SLOT_DEFS.map(def => {
@@ -133,15 +141,6 @@
       defaultAim: p.heading + Math.PI
     };
   });
-
-  const bridgePoint = pointAtDistance(routes.direct, routes.direct.length * .387);
-  const BRIDGE = {
-    x: bridgePoint.x,
-    y: bridgePoint.y,
-    heading: bridgePoint.heading,
-    length: 132,
-    width: 72
-  };
 
   let state = {
     round: 1,
@@ -267,50 +266,63 @@
     const scrub = [];
     const texture = [];
     const patches = [];
+    const grassMarks = [];
 
-    for (let i = 0; i < 20; i++) {
+    // Large translucent washes break up the flat field and blend into one another.
+    for (let i = 0; i < 30; i++) {
       patches.push({
         x: random() * WORLD.width,
         y: random() * WORLD.height,
-        rx: 70 + random() * 150,
-        ry: 45 + random() * 110,
+        rx: 75 + random() * 165,
+        ry: 55 + random() * 135,
         rot: random() * Math.PI,
-        light: random() > .5
+        light: random() > .48,
+        strength: .045 + random() * .07
       });
     }
 
-    for (let i = 0; i < 760; i++) {
+    for (let i = 0; i < 940; i++) {
       texture.push({
         x: random() * WORLD.width,
         y: random() * WORLD.height,
-        r: .45 + random() * 1.2,
-        a: .025 + random() * .065,
-        light: random() > .55
+        r: .45 + random() * 1.45,
+        a: .018 + random() * .052,
+        light: random() > .56
       });
     }
 
-    for (let i = 0; i < 300; i++) {
-      const x = 20 + random() * 680;
-      const y = Y(55) + random() * (WORLD.height - Y(105));
-      if (!safeFromRoutes(x, y, 52)) continue;
-      if (!safeFromTurrets(x, y, 38)) continue;
-      if (Math.hypot(x - START.x, y - START.y) < 88 || Math.hypot(x - BASE.x, y - BASE.y) < 88) continue;
+    for (let i = 0; i < 190; i++) {
+      grassMarks.push({
+        x: random() * WORLD.width,
+        y: random() * WORLD.height,
+        len: 3 + random() * 8,
+        rot: random() * Math.PI,
+        a: .035 + random() * .07
+      });
+    }
+
+    for (let i = 0; i < 360; i++) {
+      const x = 18 + random() * (WORLD.width - 36);
+      const y = Y(48) + random() * (WORLD.height - Y(96));
+      if (!safeFromRoutes(x, y, 58)) continue;
+      if (!safeFromTurrets(x, y, 50)) continue;
+      if (Math.hypot(x - START.x, y - START.y) < 92 || Math.hypot(x - BASE.x, y - BASE.y) < 92) continue;
       const pick = random();
-      if (pick < .62) trees.push({ x, y, r: 8 + random() * 10, v: random() });
-      else if (pick < .86) rocks.push({ x, y, r: 6 + random() * 12, v: random(), rot: random() * Math.PI });
-      else scrub.push({ x, y, r: 4 + random() * 7, v: random() });
+      if (pick < .60) trees.push({ x, y, r: 14 + random() * 13, v: random(), rot: random() * Math.PI });
+      else if (pick < .84) rocks.push({ x, y, r: 8 + random() * 15, v: random(), rot: random() * Math.PI, cluster: random() });
+      else scrub.push({ x, y, r: 5 + random() * 9, v: random() });
     }
 
     const candidates = [
-      { x: 112, y: Y(170), type: "relay", rot: -.18 },
-      { x: 602, y: Y(292), type: "ruin", rot: .18 },
-      { x: 120, y: Y(600), type: "walls", rot: .22 },
-      { x: 595, y: Y(760), type: "bunker", rot: -.20 },
-      { x: 145, y: Y(790), type: "ruin", rot: -.15 }
+      { x: X(105), y: Y(170), type: "relay", rot: -.18 },
+      { x: X(594), y: Y(300), type: "ruin", rot: .16 },
+      { x: X(116), y: Y(612), type: "walls", rot: .20 },
+      { x: X(582), y: Y(736), type: "bunker", rot: -.18 },
+      { x: X(145), y: Y(790), type: "ruin", rot: -.14 }
     ];
-    const structures = candidates.filter(s => safeFromRoutes(s.x, s.y, 76) && safeFromTurrets(s.x, s.y, 52));
+    const structures = candidates.filter(s => safeFromRoutes(s.x, s.y, 88) && safeFromTurrets(s.x, s.y, 64));
 
-    return { trees, rocks, scrub, texture, patches, structures };
+    return { trees, rocks, scrub, texture, patches, grassMarks, structures };
   }
 
   function vehicleSvg(vehicle) {
@@ -574,6 +586,7 @@
     let best = null, bestDistance = range;
     battle.units.forEach(unit => {
       if (!unit.alive || !unit.launched || unit.reached) return;
+      if (unit.routeName !== turret.route) return;
       const d = Math.hypot(unit.x - turret.x, unit.y - turret.y);
       if (d < bestDistance) { bestDistance = d; best = unit; }
     });
@@ -584,6 +597,7 @@
     let best = null, bestDistance = range;
     battle.turrets.forEach(turret => {
       if (!turret.alive) return;
+      if (turret.route !== unit.routeName) return;
       const d = Math.hypot(unit.x - turret.x, unit.y - turret.y);
       if (d < bestDistance) { bestDistance = d; best = turret; }
     });
@@ -687,23 +701,26 @@
     drawTurrets(ctx);
 
     if (!battle) return;
-    battle.units.filter(u => u.routeName === "winding").forEach(unit => drawUnit(ctx, unit));
+    battle.units.forEach(unit => drawUnit(ctx, unit));
     drawShots(ctx, "enemy");
-    drawRoadBridgeDeck(ctx);
-    battle.units.filter(u => u.routeName === "direct").forEach(unit => drawUnit(ctx, unit));
     drawShots(ctx, "player");
     drawEffects(ctx);
   }
 
   function drawTerrain(g) {
-    g.fillStyle = "#cdb681";
+    g.fillStyle = "#c7b17d";
     g.fillRect(0, 0, WORLD.width, WORLD.height);
 
     environment.patches.forEach(patch => {
       g.save();
       g.translate(patch.x, patch.y);
       g.rotate(patch.rot);
-      g.fillStyle = patch.light ? "rgba(233,215,161,.12)" : "rgba(112,101,69,.075)";
+      const colour = patch.light ? [239,220,169] : [93,94,66];
+      const gradient = g.createRadialGradient(0, 0, 8, 0, 0, Math.max(patch.rx, patch.ry));
+      gradient.addColorStop(0, `rgba(${colour[0]},${colour[1]},${colour[2]},${patch.strength})`);
+      gradient.addColorStop(.66, `rgba(${colour[0]},${colour[1]},${colour[2]},${patch.strength * .55})`);
+      gradient.addColorStop(1, `rgba(${colour[0]},${colour[1]},${colour[2]},0)`);
+      g.fillStyle = gradient;
       g.beginPath();
       g.ellipse(0, 0, patch.rx, patch.ry, 0, 0, Math.PI * 2);
       g.fill();
@@ -711,105 +728,134 @@
     });
 
     environment.texture.forEach(mark => {
-      g.fillStyle = mark.light ? `rgba(243,227,183,${mark.a})` : `rgba(76,72,56,${mark.a})`;
+      g.fillStyle = mark.light ? `rgba(246,229,181,${mark.a})` : `rgba(70,72,52,${mark.a})`;
       g.beginPath();
       g.arc(mark.x, mark.y, mark.r, 0, Math.PI * 2);
       g.fill();
     });
 
-    // Decorative river: a little richer than v1.8.0 but still deliberately flat and readable.
+    environment.grassMarks.forEach(mark => {
+      if (!safeFromRoutes(mark.x, mark.y, 28)) return;
+      g.save();
+      g.translate(mark.x, mark.y);
+      g.rotate(mark.rot);
+      g.strokeStyle = `rgba(73,83,54,${mark.a})`;
+      g.lineWidth = 1.1;
+      g.lineCap = "round";
+      g.beginPath();
+      g.moveTo(-mark.len * .5, 0);
+      g.quadraticCurveTo(0, -2.2, mark.len * .5, 0);
+      g.stroke();
+      g.restore();
+    });
+
+    // A soft decorative river sits away from the two playable routes.
     g.lineCap = "round";
     g.lineJoin = "round";
-    g.strokeStyle = "rgba(68,93,88,.22)";
-    g.lineWidth = 63;
+    g.strokeStyle = "rgba(55,79,76,.20)";
+    g.lineWidth = 68;
     g.beginPath();
-    g.moveTo(-25, Y(350));
-    g.bezierCurveTo(72, Y(325), 110, Y(398), 82, Y(468));
-    g.bezierCurveTo(55, Y(535), 110, Y(592), 18, Y(632));
+    g.moveTo(X(-28), Y(350));
+    g.bezierCurveTo(X(70), Y(325), X(112), Y(398), X(82), Y(468));
+    g.bezierCurveTo(X(54), Y(535), X(108), Y(592), X(14), Y(632));
     g.stroke();
-    g.strokeStyle = "#5d9e9a";
-    g.lineWidth = 54;
+    g.strokeStyle = "#5c9c99";
+    g.lineWidth = 57;
     g.stroke();
-    g.strokeStyle = "#8cc3b9";
-    g.lineWidth = 34;
+    g.strokeStyle = "#8dc2b7";
+    g.lineWidth = 37;
     g.stroke();
-    g.strokeStyle = "rgba(255,255,255,.34)";
+    g.strokeStyle = "rgba(255,255,255,.30)";
     g.lineWidth = 4;
     g.beginPath();
-    g.moveTo(-8, Y(361));
-    g.bezierCurveTo(58, Y(345), 78, Y(410), 61, Y(458));
+    g.moveTo(X(-6), Y(360));
+    g.bezierCurveTo(X(57), Y(345), X(77), Y(410), X(60), Y(458));
     g.stroke();
 
     environment.scrub.forEach(item => drawScrub(g, item.x, item.y, item.r, item.v));
-    environment.rocks.forEach(rock => drawRock(g, rock.x, rock.y, rock.r, rock.v, rock.rot));
-    environment.trees.forEach(tree => drawTree(g, tree.x, tree.y, tree.r, tree.v));
+    environment.rocks.forEach(rock => drawRock(g, rock.x, rock.y, rock.r, rock.v, rock.rot, rock.cluster));
+    environment.trees.forEach(tree => drawTree(g, tree.x, tree.y, tree.r, tree.v, tree.rot));
     environment.structures.forEach(structure => drawStructure(g, structure));
   }
 
   function drawScrub(g, x, y, r, v) {
     g.save();
     g.translate(x, y);
-    g.fillStyle = v > .5 ? "#78815c" : "#808362";
-    [[0,0],[-.55,.1],[.45,.22],[.1,-.45]].forEach(([ox, oy], i) => {
+    g.fillStyle = "rgba(48,57,40,.14)";
+    g.beginPath(); g.ellipse(2, 3, r * 1.05, r * .72, .2, 0, Math.PI * 2); g.fill();
+    const dark = v > .5 ? "#667255" : "#70765a";
+    const light = v > .5 ? "#8c9568" : "#91936a";
+    g.fillStyle = dark;
+    [[0,0],[-.55,.1],[.45,.22],[.08,-.46]].forEach(([ox, oy], i) => {
       g.beginPath();
       g.arc(ox * r, oy * r, r * (i === 0 ? .62 : .43), 0, Math.PI * 2);
       g.fill();
     });
+    g.fillStyle = light;
+    g.beginPath(); g.arc(-r*.18,-r*.28,r*.22,0,Math.PI*2); g.fill();
     g.restore();
   }
 
-  function drawTree(g, x, y, r, v) {
+  function drawTree(g, x, y, r, v, rot = 0) {
     g.save();
     g.translate(x, y);
-    g.fillStyle = "rgba(54,62,47,.18)";
+    g.rotate(rot || 0);
+    g.fillStyle = "rgba(40,51,37,.20)";
     g.beginPath();
-    g.ellipse(r * .24, r * .35, r * .95, r * .68, 0, 0, Math.PI * 2);
+    g.ellipse(r * .22, r * .30, r * .95, r * .78, .16, 0, Math.PI * 2);
     g.fill();
-    g.fillStyle = v > .5 ? "#607555" : "#6b805b";
-    [[0,-.38],[-.47,.08],[.43,.12],[0,.42]].forEach(([ox,oy], i) => {
-      g.beginPath();
-      g.arc(ox*r, oy*r, r*(i === 0 ? .64 : .54), 0, Math.PI*2);
-      g.fill();
-    });
-    g.fillStyle = "rgba(197,203,141,.29)";
+
+    const dark = v > .5 ? "#465f43" : "#506847";
+    const mid = v > .5 ? "#5c7853" : "#647d57";
+    const light = v > .5 ? "#78916a" : "#82976d";
+    g.strokeStyle = "rgba(40,54,40,.38)";
+    g.lineWidth = 1.5;
+    g.fillStyle = dark;
     g.beginPath();
-    g.arc(-r*.20, -r*.40, r*.23, 0, Math.PI*2);
+    g.arc(-r*.36,-r*.06,r*.54,0,Math.PI*2);
+    g.arc(r*.34,-r*.12,r*.52,0,Math.PI*2);
+    g.arc(r*.22,r*.30,r*.50,0,Math.PI*2);
+    g.arc(-r*.24,r*.31,r*.49,0,Math.PI*2);
+    g.fill(); g.stroke();
+    g.fillStyle = mid;
+    g.beginPath();
+    g.arc(0,-r*.29,r*.56,0,Math.PI*2);
+    g.arc(-r*.10,r*.02,r*.50,0,Math.PI*2);
     g.fill();
+    g.fillStyle = light;
+    g.beginPath();
+    g.arc(-r*.20,-r*.30,r*.27,0,Math.PI*2);
+    g.arc(r*.16,-r*.18,r*.21,0,Math.PI*2);
+    g.fill();
+    g.fillStyle = "rgba(79,70,47,.52)";
+    g.beginPath(); g.arc(0,0,Math.max(2.2,r*.085),0,Math.PI*2); g.fill();
     g.restore();
   }
 
-  function drawRock(g, x, y, r, v, rot = 0) {
+  function drawRock(g, x, y, r, v, rot = 0, cluster = .5) {
     g.save();
     g.translate(x, y);
     g.rotate(rot);
-    g.fillStyle = "rgba(70,65,56,.18)";
-    g.beginPath();
-    g.ellipse(4, 5, r * 1.08, r * .76, .2, 0, Math.PI*2);
-    g.fill();
-
-    const fill = v > .5 ? "#9d9277" : "#aa9b7d";
-    g.fillStyle = fill;
-    g.strokeStyle = "rgba(73,67,57,.38)";
-    g.lineWidth = 1.5;
-    g.beginPath();
-    g.moveTo(-r*.95, r*.18);
-    g.lineTo(-r*.48,-r*.72);
-    g.lineTo(r*.28,-r*.88);
-    g.lineTo(r*.92,-r*.15);
-    g.lineTo(r*.58,r*.68);
-    g.lineTo(-r*.42,r*.74);
-    g.closePath();
-    g.fill();
-    g.stroke();
-
-    g.fillStyle = "rgba(224,209,173,.34)";
-    g.beginPath();
-    g.moveTo(-r*.45,-r*.52);
-    g.lineTo(r*.24,-r*.68);
-    g.lineTo(r*.48,-r*.18);
-    g.lineTo(-r*.08,-r*.10);
-    g.closePath();
-    g.fill();
+    const stones = cluster > .62 ? [[0,0,1],[-.72,.38,.58],[.72,.31,.48]] : [[0,0,1],[-.62,.34,.46]];
+    stones.forEach(([ox,oy,scale], index) => {
+      const rr = r * scale;
+      g.save(); g.translate(ox*r, oy*r);
+      g.fillStyle = "rgba(66,61,50,.18)";
+      g.beginPath(); g.ellipse(3,5,rr*1.05,rr*.78,.2,0,Math.PI*2); g.fill();
+      g.fillStyle = index ? "#968e75" : (v > .5 ? "#a29a80" : "#aea185");
+      g.strokeStyle = "rgba(72,67,56,.35)"; g.lineWidth = 1.4;
+      g.beginPath();
+      g.moveTo(-rr*.92,rr*.15); g.lineTo(-rr*.50,-rr*.68); g.lineTo(rr*.22,-rr*.88);
+      g.lineTo(rr*.90,-rr*.18); g.lineTo(rr*.58,rr*.68); g.lineTo(-rr*.40,rr*.72); g.closePath();
+      g.fill(); g.stroke();
+      g.fillStyle = "rgba(230,216,181,.36)";
+      g.beginPath(); g.moveTo(-rr*.44,-rr*.48); g.lineTo(rr*.20,-rr*.66); g.lineTo(rr*.48,-rr*.20); g.lineTo(-rr*.02,-rr*.08); g.closePath(); g.fill();
+      if (index === 0 && rr > 12) {
+        g.strokeStyle = "rgba(84,75,59,.22)"; g.lineWidth = 1;
+        g.beginPath(); g.moveTo(-rr*.15,-rr*.54); g.lineTo(rr*.08,-rr*.16); g.lineTo(-rr*.08,rr*.24); g.stroke();
+      }
+      g.restore();
+    });
     g.restore();
   }
 
@@ -817,41 +863,40 @@
     g.save();
     g.translate(structure.x, structure.y);
     g.rotate(structure.rot || 0);
-    const stone = "#8c8573";
-    const dark = "#5f5d55";
-    const light = "#b8aa8d";
+    const wall = "#817b6b";
+    const wallMid = "#999078";
+    const wallLight = "#b8aa8d";
+    const roof = "#6e7068";
+    const dark = "#55564f";
     const glow = "#6ca9a3";
 
+    g.fillStyle = "rgba(55,50,43,.18)";
+    g.beginPath(); g.ellipse(5,10,36,25,.12,0,Math.PI*2); g.fill();
+
     if (structure.type === "relay") {
-      g.fillStyle = "rgba(62,58,50,.17)";
-      g.beginPath(); g.ellipse(4, 8, 34, 23, 0, 0, Math.PI*2); g.fill();
-      g.fillStyle = "#b0a27f"; g.strokeStyle = dark; g.lineWidth = 3;
-      g.beginPath(); polygon(g, 0, 0, 31, 6); g.fill(); g.stroke();
-      [-17, 17].forEach(x => {
-        g.fillStyle = stone; g.fillRect(x-5,-22,10,32);
-        g.fillStyle = glow; g.fillRect(x-2,-16,4,17);
-      });
+      g.fillStyle = wallMid; g.strokeStyle = dark; g.lineWidth = 2.3;
+      g.beginPath(); g.moveTo(-30,8); g.lineTo(-24,-17); g.lineTo(0,-25); g.lineTo(27,-15); g.lineTo(31,10); g.lineTo(0,22); g.closePath(); g.fill(); g.stroke();
+      g.fillStyle = roof; g.beginPath(); g.ellipse(0,-2,15,11,0,0,Math.PI*2); g.fill();
+      g.strokeStyle = glow; g.lineWidth = 4; g.beginPath(); g.arc(0,-2,7,0,Math.PI*2); g.stroke();
+      [-22,22].forEach(px => { g.fillStyle=wall; g.fillRect(px-4,-25,8,34); g.fillStyle=glow; g.fillRect(px-1,-19,2,18); });
     } else if (structure.type === "bunker") {
-      g.fillStyle = "rgba(62,58,50,.17)"; g.fillRect(-28,-14,62,34);
-      g.fillStyle = stone; g.strokeStyle = dark; g.lineWidth = 3;
-      g.beginPath(); g.roundRect(-30,-18,58,32,7); g.fill(); g.stroke();
-      g.fillStyle = light; g.fillRect(-20,-12,29,5);
-      g.fillStyle = dark; g.fillRect(10,-10,12,18);
-      g.fillStyle = glow; g.fillRect(12,-7,8,3);
+      g.fillStyle = wallMid; g.strokeStyle = dark; g.lineWidth = 2.5;
+      g.beginPath(); g.moveTo(-31,13); g.lineTo(-25,-15); g.lineTo(19,-20); g.lineTo(31,-8); g.lineTo(27,16); g.closePath(); g.fill(); g.stroke();
+      g.fillStyle = roof; g.beginPath(); g.roundRect(-19,-13,33,20,6); g.fill();
+      g.fillStyle = "#383f3f"; g.fillRect(14,-7,10,17);
+      g.fillStyle = glow; g.fillRect(16,-4,6,3);
+      g.strokeStyle = "rgba(232,219,187,.36)"; g.lineWidth = 2; g.beginPath(); g.moveTo(-23,-9); g.lineTo(8,-14); g.stroke();
     } else if (structure.type === "walls") {
-      g.fillStyle = "rgba(62,58,50,.14)";
-      g.fillRect(-35,-5,68,24);
-      g.fillStyle = stone; g.strokeStyle = dark; g.lineWidth = 2.5;
-      g.fillRect(-35,-10,47,11); g.strokeRect(-35,-10,47,11);
-      g.fillRect(18,-2,17,30); g.strokeRect(18,-2,17,30);
-      g.fillStyle = light; g.fillRect(-29,-7,16,3);
+      g.fillStyle = wall; g.strokeStyle = dark; g.lineWidth = 2.2;
+      [[-33,-9,47,11],[17,-4,16,34],[-25,10,31,9]].forEach(([x,y,w,h]) => { g.beginPath(); g.roundRect(x,y,w,h,3); g.fill(); g.stroke(); });
+      g.strokeStyle = "rgba(231,216,181,.32)"; g.lineWidth = 1.4;
+      g.beginPath(); g.moveTo(-28,-6); g.lineTo(8,-6); g.moveTo(21,0); g.lineTo(21,22); g.stroke();
+      g.fillStyle = "#79725f"; g.beginPath(); g.arc(-22,15,6,0,Math.PI*2); g.fill();
     } else {
-      g.fillStyle = "rgba(62,58,50,.15)";
-      g.beginPath(); g.ellipse(3,5,31,20,0,0,Math.PI*2); g.fill();
-      g.fillStyle = stone; g.strokeStyle = dark; g.lineWidth = 2.5;
-      g.fillRect(-28,-12,22,9); g.strokeRect(-28,-12,22,9);
-      g.fillRect(-4,-15,10,28); g.strokeRect(-4,-15,10,28);
-      g.fillRect(13,0,19,9); g.strokeRect(13,0,19,9);
+      g.fillStyle = wallMid; g.strokeStyle = dark; g.lineWidth = 2.1;
+      g.beginPath(); g.moveTo(-30,-9); g.lineTo(-6,-16); g.lineTo(5,-5); g.lineTo(29,-8); g.lineTo(25,9); g.lineTo(8,12); g.lineTo(-5,6); g.lineTo(-28,12); g.closePath(); g.fill(); g.stroke();
+      g.fillStyle = wallLight; g.beginPath(); g.moveTo(-23,-7); g.lineTo(-8,-11); g.lineTo(-3,-7); g.lineTo(-19,-3); g.closePath(); g.fill();
+      g.fillStyle = "#6f6958"; g.fillRect(3,-4,7,15);
     }
     g.restore();
   }
@@ -892,6 +937,15 @@
     drawRouteStroke(g, routes.winding, "#ad9567", "#dbc38e", 48);
     drawRouteStroke(g, routes.direct, "#a78f62", "#d4b97e", 56);
 
+    // Blend the two road surfaces at the single crossover so it reads as a
+    // simple dusty crossroads rather than one road being a bridge.
+    g.fillStyle = "rgba(154,130,86,.15)";
+    g.beginPath(); g.arc(CROSSOVER.x, CROSSOVER.y, 41, 0, Math.PI*2); g.fill();
+    g.fillStyle = "#d6bd86";
+    g.beginPath(); g.arc(CROSSOVER.x, CROSSOVER.y, 34, 0, Math.PI*2); g.fill();
+    g.fillStyle = "rgba(233,212,166,.16)";
+    g.beginPath(); g.arc(CROSSOVER.x-8, CROSSOVER.y-7, 19, 0, Math.PI*2); g.fill();
+
     // Soft wheel-wear marks help the roads feel used without turning them into race tracks.
     [
       [routes.direct, .18], [routes.direct, .48], [routes.direct, .73],
@@ -902,7 +956,6 @@
     drawRouteArrow(g, routes.direct, .72, "rgba(120,87,59,.31)");
     drawRouteArrow(g, routes.winding, .23, "rgba(70,102,92,.32)");
     drawRouteArrow(g, routes.winding, .72, "rgba(70,102,92,.32)");
-    drawBridgeUnderlay(g);
   }
 
   function drawRoadWear(g, route, fraction) {
@@ -935,58 +988,6 @@
     g.lineTo(0, -5);
     g.lineTo(7, 5);
     g.stroke();
-    g.restore();
-  }
-
-  function drawBridgeUnderlay(g) {
-    g.save();
-    g.translate(BRIDGE.x, BRIDGE.y);
-    g.rotate(BRIDGE.heading + Math.PI / 2);
-    g.fillStyle = "rgba(56,51,44,.24)";
-    g.beginPath();
-    g.roundRect(-BRIDGE.width/2-8, -BRIDGE.length/2+8, BRIDGE.width+16, BRIDGE.length, 12);
-    g.fill();
-
-    // Four low abutments sit off the road instead of drawing lines across it.
-    g.fillStyle = "#877b65";
-    g.strokeStyle = "#625e54";
-    g.lineWidth = 2;
-    [[-44,-49],[44,-49],[-44,49],[44,49]].forEach(([x,y]) => {
-      g.beginPath();
-      g.roundRect(x-8,y-12,16,24,4);
-      g.fill();
-      g.stroke();
-    });
-    g.restore();
-  }
-
-  function drawRoadBridgeDeck(g) {
-    g.save();
-    g.translate(BRIDGE.x, BRIDGE.y);
-    g.rotate(BRIDGE.heading + Math.PI / 2);
-
-    // Redraw only the deck surface to hide vehicles travelling underneath.
-    g.fillStyle = "#d4b97e";
-    g.beginPath();
-    g.roundRect(-BRIDGE.width/2, -BRIDGE.length/2, BRIDGE.width, BRIDGE.length, 10);
-    g.fill();
-
-    g.strokeStyle = "#7d725f";
-    g.lineWidth = 4;
-    [-BRIDGE.width/2+5, BRIDGE.width/2-5].forEach(x => {
-      g.beginPath();
-      g.moveTo(x, -BRIDGE.length/2+5);
-      g.lineTo(x, BRIDGE.length/2-5);
-      g.stroke();
-    });
-    g.strokeStyle = "rgba(238,216,169,.78)";
-    g.lineWidth = 2;
-    [-BRIDGE.width/2+10, BRIDGE.width/2-10].forEach(x => {
-      g.beginPath();
-      g.moveTo(x, -BRIDGE.length/2+8);
-      g.lineTo(x, BRIDGE.length/2-8);
-      g.stroke();
-    });
     g.restore();
   }
 
@@ -1038,38 +1039,49 @@
       g.save();
       g.translate(turret.x, turret.y);
 
-      g.fillStyle = "rgba(51,47,42,.18)";
-      g.beginPath(); g.ellipse(4,8,28,18,0,0,Math.PI*2); g.fill();
+      g.fillStyle = "rgba(45,43,39,.20)";
+      g.beginPath(); g.ellipse(4,9,31,20,.08,0,Math.PI*2); g.fill();
 
-      // Hexagonal platform and pedestal.
-      g.fillStyle = "#a49576";
-      g.strokeStyle = "#665f52";
+      // Layered emplacement: broad plinth, inset ring and three chunky feet.
+      g.fillStyle = "#998c70";
+      g.strokeStyle = "#5d5a50";
       g.lineWidth = 2.5;
-      g.beginPath(); polygon(g, 0, 0, 22, 8); g.fill(); g.stroke();
-      g.fillStyle = "#716c61";
-      g.beginPath(); g.arc(0,0,14,0,Math.PI*2); g.fill();
+      g.beginPath(); polygon(g, 0, 0, 25, 8); g.fill(); g.stroke();
+      g.fillStyle = "#b0a081";
+      g.beginPath(); polygon(g, 0, 0, 19, 8); g.fill();
+      g.fillStyle = "#67675f";
+      [0, Math.PI*2/3, Math.PI*4/3].forEach(a => {
+        const fx=Math.cos(a)*22, fy=Math.sin(a)*22;
+        g.save(); g.translate(fx,fy); g.rotate(a); g.beginPath(); g.roundRect(-6,-4,12,8,3); g.fill(); g.restore();
+      });
+      g.fillStyle = "#555a55";
+      g.beginPath(); g.arc(0,0,14.5,0,Math.PI*2); g.fill();
+      g.strokeStyle = "rgba(222,204,166,.35)"; g.lineWidth = 1.5;
+      g.beginPath(); g.arc(0,0,11,0,Math.PI*2); g.stroke();
 
       if (turret.level >= 2) {
-        g.fillStyle = "#8d806c";
-        g.fillRect(-20,-6,7,12);
-        g.fillRect(13,-6,7,12);
+        g.fillStyle = "#847861";
+        g.beginPath(); g.roundRect(-24,-6,8,12,3); g.fill();
+        g.beginPath(); g.roundRect(16,-6,8,12,3); g.fill();
       }
 
       g.rotate(turret.aim + Math.PI / 2);
-      g.fillStyle = turret.flash > 0 ? "#d8b58c" : "#6c6860";
-      g.strokeStyle = "#494943";
-      g.lineWidth = 2.5;
-      g.beginPath(); g.roundRect(-10,-12,20,22,6); g.fill(); g.stroke();
+      g.fillStyle = turret.flash > 0 ? "#d9b58a" : "#74736a";
+      g.strokeStyle = "#41443f";
+      g.lineWidth = 2.4;
+      g.beginPath(); g.roundRect(-11,-13,22,23,7); g.fill(); g.stroke();
       g.fillStyle = "#a35f4b";
-      g.beginPath(); g.arc(0,-2,5.5,0,Math.PI*2); g.fill();
-      g.strokeStyle = "#494943";
-      g.lineWidth = 3.5;
+      g.beginPath(); g.arc(0,-2,6,0,Math.PI*2); g.fill();
+      g.fillStyle = "#d8c5a1";
+      g.beginPath(); g.arc(-2,-4,2,0,Math.PI*2); g.fill();
+      g.strokeStyle = "#41443f";
+      g.lineWidth = 4;
       g.lineCap = "round";
-      [-3.5,3.5].forEach(x => {
-        g.beginPath(); g.moveTo(x,-10); g.lineTo(x,-29); g.stroke();
-      });
+      [-4,4].forEach(x => { g.beginPath(); g.moveTo(x,-10); g.lineTo(x,-31); g.stroke(); });
+      g.strokeStyle = "#8d8070"; g.lineWidth = 1.4;
+      [-4,4].forEach(x => { g.beginPath(); g.moveTo(x,-13); g.lineTo(x,-29); g.stroke(); });
       g.restore();
-      drawHealthBar(g, turret.x-21, turret.y-31, 42, 5, turret.hp/turret.maxHp, "#b95c54");
+      drawHealthBar(g, turret.x-23, turret.y-35, 46, 5, turret.hp/turret.maxHp, "#b95c54");
     });
   }
 
