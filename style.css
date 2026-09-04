@@ -9612,3 +9612,156 @@ body[data-game-id="game-13"] .racer-control.go.running:not(:disabled) small{colo
   body[data-game-id="game-13"] .racer-controls{grid-template-columns:82px 68px 82px;gap:8px}
   body[data-game-id="game-13"] .racer-control.steer{width:82px;height:82px;min-height:82px}
 }
+
+/* ============================================================
+   GameHub v1.8.0 — Tower Attack playable prototype
+   ============================================================ */
+body[data-game-id="game-14"], .game-card[data-game-id="game-14"] { --gh-accent:#b36f45; }
+body[data-game-id="game-14"] #attack-screen{background:#f5efe9!important;color:var(--gh-text)!important}
+body[data-game-id="game-14"] .attack-page{
+  width:100%;max-width:560px;height:100dvh;min-height:0;margin:0 auto;
+  padding:max(10px,env(safe-area-inset-top)) 14px max(8px,env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;overflow:hidden;
+}
+body[data-game-id="game-14"] .attack-header{flex:0 0 auto;margin:0 0 9px!important}
+body[data-game-id="game-14"] .attack-header .kicker{color:#77726d!important}
+body[data-game-id="game-14"] .attack-header h1{color:var(--gh-text)!important;font-size:clamp(30px,8.5vw,42px)!important}
+body[data-game-id="game-14"] .attack-plan,
+body[data-game-id="game-14"] .attack-battle{width:min(100%,430px);min-height:0;margin:0 auto}
+body[data-game-id="game-14"] .attack-plan{flex:1;display:flex;flex-direction:column;gap:7px}
+body[data-game-id="game-14"] .attack-plan-hud,
+body[data-game-id="game-14"] .attack-battle-hud{display:grid;gap:5px;flex:0 0 auto}
+body[data-game-id="game-14"] .attack-plan-hud{grid-template-columns:.7fr 1fr 1fr}
+body[data-game-id="game-14"] .attack-plan-hud>div,
+body[data-game-id="game-14"] .attack-battle-hud>div,
+body[data-game-id="game-14"] .attack-battle-hud>button{
+  min-height:43px;border:1px solid rgba(52,57,68,.12);border-radius:12px;
+  background:rgba(255,255,255,.68);color:var(--gh-text);box-shadow:none;
+}
+body[data-game-id="game-14"] .attack-plan-hud>div,
+body[data-game-id="game-14"] .attack-battle-hud>div{padding:6px 8px;display:flex;flex-direction:column;justify-content:center}
+body[data-game-id="game-14"] .attack-plan-hud span,
+body[data-game-id="game-14"] .attack-battle-hud span,
+body[data-game-id="game-14"] .attack-wave-heading span{
+  color:#8a837d;font-size:7px;font-weight:900;letter-spacing:.1em
+}
+body[data-game-id="game-14"] .attack-plan-hud strong,
+body[data-game-id="game-14"] .attack-battle-hud strong{font-size:15px;line-height:1.05;white-space:nowrap}
+body[data-game-id="game-14"] .attack-round-note{
+  flex:0 0 auto;min-height:25px;padding:5px 9px;border-radius:10px;
+  background:#eee3da;color:#756c65;font-size:9px;font-weight:800;display:flex;align-items:center
+}
+body[data-game-id="game-14"] .attack-route-picker{
+  flex:0 0 auto;padding:8px;border:1px solid rgba(52,57,68,.1);border-radius:13px;background:rgba(255,255,255,.48)
+}
+body[data-game-id="game-14"] .attack-route-picker>p{margin:0 0 6px;color:#8a837d;font-size:7px;font-weight:900;letter-spacing:.1em}
+body[data-game-id="game-14"] .attack-route-buttons{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+body[data-game-id="game-14"] .attack-route-buttons button{
+  min-height:43px;padding:5px 8px;border:1px solid rgba(52,57,68,.12);border-radius:10px;background:#fff;color:#6f6862;text-align:left
+}
+body[data-game-id="game-14"] .attack-route-buttons button.active{
+  border-color:color-mix(in srgb,var(--gh-accent) 44%,transparent);background:color-mix(in srgb,var(--gh-accent) 12%,#fff);color:var(--gh-accent)
+}
+body[data-game-id="game-14"] .attack-route-buttons strong{display:block;font-size:10px}
+body[data-game-id="game-14"] .attack-route-buttons small{display:block;margin-top:1px;font-size:7px;font-weight:750;opacity:.85}
+body[data-game-id="game-14"] .attack-vehicle-grid{
+  flex:1 1 auto;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(2,minmax(0,1fr));gap:6px
+}
+body[data-game-id="game-14"] .attack-vehicle-card{
+  min-width:0;min-height:0;padding:8px;border:1px solid rgba(52,57,68,.12);border-radius:13px;background:rgba(255,255,255,.67);
+  display:grid;grid-template-columns:42px minmax(0,1fr);grid-template-rows:auto auto 1fr;column-gap:8px;text-align:left;color:var(--gh-text)
+}
+body[data-game-id="game-14"] .attack-vehicle-card.unaffordable{opacity:.46;filter:saturate(.35)}
+body[data-game-id="game-14"] .attack-vehicle-card:disabled{cursor:default}
+body[data-game-id="game-14"] .attack-vehicle-icon{
+  grid-row:1 / 4;width:42px;height:54px;align-self:center;border-radius:11px;background:#e2d1bd;display:grid;place-items:center
+}
+body[data-game-id="game-14"] .attack-vehicle-icon svg{width:30px;height:42px;overflow:visible}
+body[data-game-id="game-14"] .attack-vehicle-name{font-size:10px;font-weight:950;line-height:1.05}
+body[data-game-id="game-14"] .attack-vehicle-price{justify-self:end;grid-column:2;grid-row:1;font-size:10px;font-weight:950;color:var(--gh-accent)}
+body[data-game-id="game-14"] .attack-vehicle-meta{grid-column:2;grid-row:2;margin-top:2px;color:#7f7770;font-size:7px;font-weight:750}
+body[data-game-id="game-14"] .attack-vehicle-buy{grid-column:2;grid-row:3;align-self:end;margin-top:5px;color:#756d66;font-size:7px;font-weight:900;letter-spacing:.06em}
+body[data-game-id="game-14"] .attack-wave-builder{flex:0 0 auto;padding:7px 8px;border:1px solid rgba(52,57,68,.1);border-radius:13px;background:rgba(255,255,255,.48)}
+body[data-game-id="game-14"] .attack-wave-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+body[data-game-id="game-14"] .attack-wave-heading>div{display:flex;align-items:baseline;gap:7px}
+body[data-game-id="game-14"] .attack-wave-heading strong{font-size:9px;color:#756d66}
+body[data-game-id="game-14"] #attack-undo{min-height:25px;padding:3px 8px;border:1px solid rgba(52,57,68,.12);border-radius:8px;background:#fff;color:#756d66;font-size:7px;font-weight:900}
+body[data-game-id="game-14"] #attack-undo:disabled{opacity:.35}
+body[data-game-id="game-14"] .attack-queue{height:37px;margin-top:5px;display:flex;align-items:center;gap:4px;overflow:hidden}
+body[data-game-id="game-14"] .attack-queue-empty{color:#918981;font-size:8px;font-weight:750}
+body[data-game-id="game-14"] .attack-queue-unit{
+  width:35px;height:35px;flex:0 0 35px;border-radius:9px;border:1px solid rgba(52,57,68,.13);background:#fff;display:grid;place-items:center;position:relative
+}
+body[data-game-id="game-14"] .attack-queue-unit svg{width:17px;height:24px}
+body[data-game-id="game-14"] .attack-queue-unit.route-winding::after,
+body[data-game-id="game-14"] .attack-queue-unit.route-direct::after{
+  content:"";position:absolute;right:3px;bottom:3px;width:6px;height:6px;border-radius:50%
+}
+body[data-game-id="game-14"] .attack-queue-unit.route-direct::after{background:#b36f45}
+body[data-game-id="game-14"] .attack-queue-unit.route-winding::after{background:#4f847b}
+body[data-game-id="game-14"] .attack-send{
+  flex:0 0 auto;min-height:50px;border:1px solid color-mix(in srgb,var(--gh-accent) 42%,transparent);border-radius:14px;
+  background:color-mix(in srgb,var(--gh-accent) 15%,#fff);color:var(--gh-accent);display:flex;flex-direction:column;align-items:center;justify-content:center
+}
+body[data-game-id="game-14"] .attack-send:disabled{border-color:rgba(52,57,68,.1);background:#eee8e2;color:#9a928b}
+body[data-game-id="game-14"] .attack-send span{font-size:11px;font-weight:950;letter-spacing:.04em}
+body[data-game-id="game-14"] .attack-send small{font-size:7px;font-weight:800;margin-top:1px}
+
+body[data-game-id="game-14"] .attack-battle{flex:1;display:flex;flex-direction:column;gap:6px}
+body[data-game-id="game-14"] .attack-battle[hidden],body[data-game-id="game-14"] .attack-plan[hidden]{display:none!important}
+body[data-game-id="game-14"] .attack-battle-hud{grid-template-columns:.75fr 1fr 1fr 46px}
+body[data-game-id="game-14"] .attack-battle-hud>button{font-size:10px;font-weight:950;color:#756d66}
+body[data-game-id="game-14"] .attack-stage-wrap{
+  position:relative;flex:1 1 auto;min-height:0;width:min(100%,430px,calc((100dvh - 176px) * 4 / 5));min-width:225px;margin:0 auto;
+  border-radius:18px;overflow:hidden;border:1px solid rgba(52,57,68,.16);background:#cdb681;box-shadow:0 8px 22px rgba(52,57,68,.10)
+}
+body[data-game-id="game-14"] #attack-canvas{display:block;width:100%;height:100%;touch-action:none}
+body[data-game-id="game-14"] .attack-battle-footer{flex:0 0 auto;display:grid;grid-template-columns:1fr 82px;gap:7px;align-items:center}
+body[data-game-id="game-14"] #attack-battle-status{min-width:0;color:#746e69;font-size:9px;font-weight:800;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body[data-game-id="game-14"] #attack-pause{min-height:42px;border:1px solid rgba(52,57,68,.14);border-radius:12px;background:rgba(255,255,255,.68);color:#5f5a56;font-size:8px;font-weight:950;letter-spacing:.04em}
+body[data-game-id="game-14"] #attack-pause span{font-size:14px;margin-right:3px}
+body[data-game-id="game-14"] .attack-pause-overlay{position:absolute;inset:0;z-index:40;display:grid;place-items:center;padding:18px;background:rgba(38,43,45,.34);backdrop-filter:blur(2px)}
+body[data-game-id="game-14"] .attack-pause-overlay[hidden]{display:none}
+body[data-game-id="game-14"] .attack-pause-menu{width:min(100%,226px);padding:16px;border:1px solid rgba(52,57,68,.14);border-radius:17px;background:#fbf7f3;text-align:center}
+body[data-game-id="game-14"] .attack-pause-menu .kicker{margin:0 0 3px;color:#8a837d!important;font-size:7px!important}
+body[data-game-id="game-14"] .attack-pause-menu h2{margin:0 0 12px;color:var(--gh-text);font-size:20px}
+body[data-game-id="game-14"] .attack-pause-menu button{width:100%;min-height:42px;margin-top:7px;border:1px solid rgba(52,57,68,.14);border-radius:11px;background:#fff;color:#746e69;font-size:10px;font-weight:900}
+body[data-game-id="game-14"] .attack-pause-menu button.primary{margin-top:0;border-color:color-mix(in srgb,var(--gh-accent) 38%,transparent);background:color-mix(in srgb,var(--gh-accent) 13%,#fff);color:var(--gh-accent)}
+
+@media(max-height:760px){
+  body[data-game-id="game-14"] .attack-header{margin-bottom:5px!important}
+  body[data-game-id="game-14"] .attack-header h1{font-size:27px!important}
+  body[data-game-id="game-14"] .attack-plan{gap:5px}
+  body[data-game-id="game-14"] .attack-plan-hud>div{min-height:37px}
+  body[data-game-id="game-14"] .attack-round-note{min-height:21px;padding-top:3px;padding-bottom:3px}
+  body[data-game-id="game-14"] .attack-route-picker{padding:6px}
+  body[data-game-id="game-14"] .attack-route-buttons button{min-height:36px}
+  body[data-game-id="game-14"] .attack-vehicle-card{padding:6px;grid-template-columns:36px minmax(0,1fr);column-gap:6px}
+  body[data-game-id="game-14"] .attack-vehicle-icon{width:36px;height:46px}
+  body[data-game-id="game-14"] .attack-queue{height:31px}
+  body[data-game-id="game-14"] .attack-queue-unit{width:29px;height:29px;flex-basis:29px}
+  body[data-game-id="game-14"] .attack-send{min-height:43px}
+  body[data-game-id="game-14"] .attack-stage-wrap{width:min(100%,390px,calc((100dvh - 160px) * 4 / 5))}
+}
+@media(max-width:360px){
+  body[data-game-id="game-14"] .attack-page{padding-left:10px;padding-right:10px}
+  body[data-game-id="game-14"] .attack-route-buttons small{font-size:6.3px}
+  body[data-game-id="game-14"] .attack-vehicle-name,body[data-game-id="game-14"] .attack-vehicle-price{font-size:9px}
+}
+/* Preserve the same undistorted canvas geometry as Racer. */
+body[data-game-id="game-14"] .attack-stage-wrap{aspect-ratio:4 / 5;flex:0 1 auto}
+body[data-game-id="game-14"] #attack-canvas{height:auto;aspect-ratio:4 / 5}
+/* Vehicle cards: keep the readable information grouped at the top rather than
+   letting the card height push the name/price apart. */
+body[data-game-id="game-14"] .attack-vehicle-card{
+  grid-template-columns:42px minmax(0,1fr) auto;
+  grid-template-rows:auto auto 1fr;
+}
+body[data-game-id="game-14"] .attack-vehicle-name{grid-column:2;grid-row:1;align-self:start}
+body[data-game-id="game-14"] .attack-vehicle-price{grid-column:3;grid-row:1;justify-self:end;align-self:start}
+body[data-game-id="game-14"] .attack-vehicle-meta{grid-column:2 / 4;grid-row:2}
+body[data-game-id="game-14"] .attack-vehicle-buy{grid-column:2 / 4;grid-row:3;align-self:end}
+@media(max-height:760px){body[data-game-id="game-14"] .attack-vehicle-card{grid-template-columns:36px minmax(0,1fr) auto}}
+@media(max-width:350px){
+  body[data-game-id="game-14"] .attack-header h1{font-size:23px!important;letter-spacing:-.035em}
+}
