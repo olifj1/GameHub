@@ -1,11 +1,9 @@
-# GameHub v1.8.0
+# GameHub v1.8.1
 
-Adds the first playable **Tower Attack** prototype.
+Tower Attack balance and battlefield polish pass.
 
-- New prepare-wave screen with cash, vehicle purchases and per-vehicle route choice.
-- Four visible vehicle types; expensive units remain greyed out until affordable.
-- Direct and winding spline routes drawn entirely in canvas, with a real crossover bridge.
-- Automatic wave movement, turret targeting, damage, health bars and armed-vehicle return fire.
-- Surviving attackers damage the enemy base and earn bonus cash.
-- Each completed wave returns to planning with more money while enemy defences grow stronger.
-- No generated map images or baked-in gameplay artwork are used.
+- Rebalanced starting cash, vehicle costs/health, turret damage, health and round funding.
+- Turret positions now use measured offsets from the route splines; route buttons show current coverage.
+- Taller battle board with more room for the map.
+- Improved bridge, aiming turrets, vehicles, rocks, scrub, ruins/buildings and ground texture.
+- Defender coverage grows gradually by round while guaranteed funding prevents a failed wave from deadlocking the campaign.

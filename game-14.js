@@ -11,6 +11,8 @@
   const baseEl = document.getElementById("attack-base");
   const waveCountEl = document.getElementById("attack-wave-count");
   const roundNoteEl = document.getElementById("attack-round-note");
+  const directInfoEl = document.getElementById("attack-direct-info");
+  const windingInfoEl = document.getElementById("attack-winding-info");
   const battleRoundEl = document.getElementById("attack-battle-round");
   const battleUnitsEl = document.getElementById("attack-battle-units");
   const battleBaseEl = document.getElementById("attack-battle-base");
@@ -23,44 +25,43 @@
   const canvas = document.getElementById("attack-canvas");
   const ctx = canvas.getContext("2d");
 
-  const MAX_QUEUE = 8;
-  const WORLD = { width: 720, height: 900 };
-  const START = { x: 360, y: 850 };
-  const BASE = { x: 360, y: 54 };
-  const BRIDGE = { x: 352, y: 548, length: 112, width: 78 };
+  const MAX_QUEUE = 6;
+  const WORLD = { width: 720, height: 1080 };
+  const Y_SCALE = WORLD.height / 900;
+  const Y = value => value * Y_SCALE;
+  const START = { x: 360, y: Y(850) };
+  const BASE = { x: 360, y: Y(54) };
+  const STARTING_CASH = 90;
+  const STARTING_BASE_HEALTH = 14;
 
+  // Balance target for the first playable campaign:
+  // - Round 1 cash buys roughly 2–3 light vehicles.
+  // - A light turret needs about four hits to kill a Scout.
+  // - Armoured vehicles survive much longer but are correspondingly expensive.
+  // - Turret health/damage rises gently while extra turret positions appear more slowly.
+  // - Every round gives guaranteed funding so a bad wave never soft-locks the campaign.
   const VEHICLES = {
     scout: {
-      id: "scout", name: "Scout", cost: 25, speed: 92, hp: 38, armour: 0,
+      id: "scout", name: "Scout", cost: 30, speed: 95, hp: 32, armour: 0,
       attack: 0, range: 0, fireRate: 0, baseDamage: 1, body: "#d88952", accent: "#6f4b37",
-      meta: "Fast · light armour"
+      meta: "Fast · 4 light hits"
     },
     armoured: {
-      id: "armoured", name: "Armoured", cost: 45, speed: 63, hp: 92, armour: 2,
+      id: "armoured", name: "Armoured", cost: 50, speed: 67, hp: 82, armour: 2,
       attack: 0, range: 0, fireRate: 0, baseDamage: 2, body: "#758a72", accent: "#46584a",
-      meta: "Slow · tough"
+      meta: "Tough · soaks fire"
     },
     gunbuggy: {
-      id: "gunbuggy", name: "Gun Buggy", cost: 120, speed: 74, hp: 68, armour: 1,
-      attack: 18, range: 112, fireRate: .72, baseDamage: 2, body: "#c1874e", accent: "#55504a",
-      meta: "Armed · mobile"
+      id: "gunbuggy", name: "Gun Buggy", cost: 100, speed: 76, hp: 60, armour: 1,
+      attack: 18, range: 118, fireRate: .78, baseDamage: 2, body: "#c1874e", accent: "#55504a",
+      meta: "Armed · anti-turret"
     },
     tank: {
-      id: "tank", name: "Tank", cost: 190, speed: 52, hp: 165, armour: 5,
-      attack: 30, range: 124, fireRate: 1.0, baseDamage: 4, body: "#69765f", accent: "#3f493b",
-      meta: "Heavy · powerful"
+      id: "tank", name: "Tank", cost: 155, speed: 54, hp: 145, armour: 5,
+      attack: 27, range: 126, fireRate: .98, baseDamage: 3, body: "#69765f", accent: "#3f493b",
+      meta: "Heavy · breakthrough"
     }
   };
-
-  const TURRET_SLOTS = [
-    { id: "d1", route: "direct", x: 258, y: 700, unlock: 1 },
-    { id: "d2", route: "direct", x: 475, y: 568, unlock: 1 },
-    { id: "w1", route: "winding", x: 592, y: 700, unlock: 1 },
-    { id: "d3", route: "direct", x: 270, y: 365, unlock: 2 },
-    { id: "w2", route: "winding", x: 135, y: 420, unlock: 3 },
-    { id: "d4", route: "direct", x: 465, y: 215, unlock: 4 },
-    { id: "w3", route: "winding", x: 180, y: 245, unlock: 5 }
-  ];
 
   const ROUTE_DEFS = {
     direct: {
@@ -87,15 +88,65 @@
     }
   };
 
+  function scaleCommands(commands) {
+    return commands.map(command => {
+      if (command[0] === "M" || command[0] === "L") {
+        return [command[0], [command[1][0], Y(command[1][1])]];
+      }
+      if (command[0] === "C") {
+        return ["C",
+          [command[1][0], Y(command[1][1])],
+          [command[2][0], Y(command[2][1])],
+          [command[3][0], Y(command[3][1])]
+        ];
+      }
+      return command;
+    });
+  }
+
   const routes = {
-    direct: buildRoute(ROUTE_DEFS.direct.commands, 7),
-    winding: buildRoute(ROUTE_DEFS.winding.commands, 7)
+    direct: buildRoute(scaleCommands(ROUTE_DEFS.direct.commands), 7),
+    winding: buildRoute(scaleCommands(ROUTE_DEFS.winding.commands), 7)
+  };
+
+  // Turrets are positioned from route fractions rather than arbitrary screen points.
+  // That gives predictable firing exposure and makes route balancing easier to reason about.
+  const TURRET_SLOT_DEFS = [
+    { id: "d1", route: "direct", fraction: .22, side: -1, offset: 72, unlock: 1 },
+    { id: "d2", route: "direct", fraction: .58, side: 1, offset: 72, unlock: 1 },
+    { id: "w1", route: "winding", fraction: .44, side: 1, offset: 72, unlock: 1 },
+    { id: "d3", route: "direct", fraction: .78, side: -1, offset: 72, unlock: 2 },
+    { id: "w2", route: "winding", fraction: .68, side: -1, offset: 70, unlock: 3 },
+    { id: "d4", route: "direct", fraction: .40, side: -1, offset: 74, unlock: 4 },
+    { id: "w3", route: "winding", fraction: .82, side: 1, offset: 70, unlock: 5 }
+  ];
+
+  const TURRET_SLOTS = TURRET_SLOT_DEFS.map(def => {
+    const route = routes[def.route];
+    const p = pointAtDistance(route, route.length * def.fraction);
+    const nx = -Math.sin(p.heading);
+    const ny = Math.cos(p.heading);
+    return {
+      ...def,
+      x: p.x + nx * def.offset * def.side,
+      y: p.y + ny * def.offset * def.side,
+      defaultAim: p.heading + Math.PI
+    };
+  });
+
+  const bridgePoint = pointAtDistance(routes.direct, routes.direct.length * .387);
+  const BRIDGE = {
+    x: bridgePoint.x,
+    y: bridgePoint.y,
+    heading: bridgePoint.heading,
+    length: 132,
+    width: 72
   };
 
   let state = {
     round: 1,
-    cash: 100,
-    baseHealth: 12,
+    cash: STARTING_CASH,
+    baseHealth: STARTING_BASE_HEALTH,
     selectedRoute: "direct",
     queue: [],
     lastSummary: "Build your first wave."
@@ -106,9 +157,15 @@
   let lastFrame = performance.now();
   let speedMultiplier = 1;
   let paused = false;
-  let environment = makeEnvironment(52);
+  const environment = makeEnvironment(52);
+  const staticLayer = document.createElement("canvas");
+  staticLayer.width = WORLD.width;
+  staticLayer.height = WORLD.height;
+  const staticCtx = staticLayer.getContext("2d");
+  renderStaticLayer();
 
   function lerp(a, b, t) { return a + (b - a) * t; }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
   function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
   function cubic(p0, p1, p2, p3, t) {
     const it = 1 - t;
@@ -129,7 +186,9 @@
       } else if (kind === "L") {
         const end = { x: args[0][0], y: args[0][1] };
         const steps = Math.max(2, Math.ceil(dist(current, end) / 28));
-        for (let i = 1; i <= steps; i++) points.push({ x: lerp(current.x, end.x, i / steps), y: lerp(current.y, end.y, i / steps) });
+        for (let i = 1; i <= steps; i++) {
+          points.push({ x: lerp(current.x, end.x, i / steps), y: lerp(current.y, end.y, i / steps) });
+        }
         current = end;
       } else if (kind === "C") {
         const p1 = { x: args[0][0], y: args[0][1] };
@@ -193,28 +252,85 @@
     return best;
   }
 
+  function safeFromRoutes(x, y, padding = 58) {
+    return distanceToRoute(x, y, routes.direct) > padding && distanceToRoute(x, y, routes.winding) > padding;
+  }
+
+  function safeFromTurrets(x, y, padding = 45) {
+    return !TURRET_SLOTS.some(slot => Math.hypot(x - slot.x, y - slot.y) < padding);
+  }
+
   function makeEnvironment(seed) {
     const random = seededRandom(seed);
     const trees = [];
     const rocks = [];
-    for (let i = 0; i < 190; i++) {
-      const x = 24 + random() * 672;
-      const y = 70 + random() * 785;
-      if (distanceToRoute(x, y, routes.direct) < 54 || distanceToRoute(x, y, routes.winding) < 48) continue;
-      if (Math.hypot(x - START.x, y - START.y) < 90 || Math.hypot(x - BASE.x, y - BASE.y) < 90) continue;
-      if (TURRET_SLOTS.some(slot => Math.hypot(x - slot.x, y - slot.y) < 38)) continue;
-      if (random() < .72) trees.push({ x, y, r: 9 + random() * 9, v: random() });
-      else rocks.push({ x, y, r: 6 + random() * 11, v: random() });
+    const scrub = [];
+    const texture = [];
+    const patches = [];
+
+    for (let i = 0; i < 20; i++) {
+      patches.push({
+        x: random() * WORLD.width,
+        y: random() * WORLD.height,
+        rx: 70 + random() * 150,
+        ry: 45 + random() * 110,
+        rot: random() * Math.PI,
+        light: random() > .5
+      });
     }
-    return { trees, rocks };
+
+    for (let i = 0; i < 760; i++) {
+      texture.push({
+        x: random() * WORLD.width,
+        y: random() * WORLD.height,
+        r: .45 + random() * 1.2,
+        a: .025 + random() * .065,
+        light: random() > .55
+      });
+    }
+
+    for (let i = 0; i < 300; i++) {
+      const x = 20 + random() * 680;
+      const y = Y(55) + random() * (WORLD.height - Y(105));
+      if (!safeFromRoutes(x, y, 52)) continue;
+      if (!safeFromTurrets(x, y, 38)) continue;
+      if (Math.hypot(x - START.x, y - START.y) < 88 || Math.hypot(x - BASE.x, y - BASE.y) < 88) continue;
+      const pick = random();
+      if (pick < .62) trees.push({ x, y, r: 8 + random() * 10, v: random() });
+      else if (pick < .86) rocks.push({ x, y, r: 6 + random() * 12, v: random(), rot: random() * Math.PI });
+      else scrub.push({ x, y, r: 4 + random() * 7, v: random() });
+    }
+
+    const candidates = [
+      { x: 112, y: Y(170), type: "relay", rot: -.18 },
+      { x: 602, y: Y(292), type: "ruin", rot: .18 },
+      { x: 120, y: Y(600), type: "walls", rot: .22 },
+      { x: 595, y: Y(760), type: "bunker", rot: -.20 },
+      { x: 145, y: Y(790), type: "ruin", rot: -.15 }
+    ];
+    const structures = candidates.filter(s => safeFromRoutes(s.x, s.y, 76) && safeFromTurrets(s.x, s.y, 52));
+
+    return { trees, rocks, scrub, texture, patches, structures };
   }
 
-  function vehicleSvg(vehicle, compact = false) {
+  function vehicleSvg(vehicle) {
     const body = vehicle.body;
     const accent = vehicle.accent;
-    const turret = vehicle.attack > 0 ? `<circle cx="16" cy="19" r="5" fill="${accent}"/><rect x="14.5" y="4" width="3" height="14" rx="1.5" fill="${accent}"/>` : "";
-    const tankTracks = vehicle.id === "tank" ? `<rect x="4" y="8" width="5" height="28" rx="2.5" fill="#3d4140"/><rect x="23" y="8" width="5" height="28" rx="2.5" fill="#3d4140"/>` : `<rect x="4" y="10" width="4" height="9" rx="2" fill="#3d4140"/><rect x="24" y="10" width="4" height="9" rx="2" fill="#3d4140"/><rect x="4" y="25" width="4" height="9" rx="2" fill="#3d4140"/><rect x="24" y="25" width="4" height="9" rx="2" fill="#3d4140"/>`;
-    return `<svg viewBox="0 0 32 44" aria-hidden="true">${tankTracks}<rect x="8" y="6" width="16" height="32" rx="5" fill="${body}" stroke="${accent}" stroke-width="2"/><rect x="11" y="10" width="10" height="8" rx="2" fill="#d9e3dd" opacity=".75"/>${turret}</svg>`;
+    const turret = vehicle.attack > 0
+      ? `<circle cx="16" cy="20" r="5" fill="${accent}"/><rect x="14.5" y="4" width="3" height="15" rx="1.5" fill="${accent}"/>`
+      : "";
+    const tankTracks = vehicle.id === "tank"
+      ? `<rect x="3" y="7" width="6" height="30" rx="3" fill="#3d4140"/><rect x="23" y="7" width="6" height="30" rx="3" fill="#3d4140"/>`
+      : `<rect x="3" y="9" width="5" height="10" rx="2" fill="#3d4140"/><rect x="24" y="9" width="5" height="10" rx="2" fill="#3d4140"/><rect x="3" y="25" width="5" height="10" rx="2" fill="#3d4140"/><rect x="24" y="25" width="5" height="10" rx="2" fill="#3d4140"/>`;
+    return `<svg viewBox="0 0 32 44" aria-hidden="true">${tankTracks}<rect x="8" y="6" width="16" height="32" rx="5" fill="${body}" stroke="${accent}" stroke-width="2"/><path d="M11 10h10v8H11z" fill="#d9e3dd" opacity=".75"/>${turret}</svg>`;
+  }
+
+  function activeTurretSlots(round) {
+    return TURRET_SLOTS.filter(slot => slot.unlock <= round);
+  }
+
+  function routeTurretCount(routeName, round = state.round) {
+    return activeTurretSlots(round).filter(slot => slot.route === routeName).length;
   }
 
   function renderPlan() {
@@ -223,6 +339,11 @@
     baseEl.textContent = String(state.baseHealth);
     waveCountEl.textContent = `${state.queue.length} / ${MAX_QUEUE}`;
     roundNoteEl.textContent = state.lastSummary;
+
+    const directCount = routeTurretCount("direct");
+    const windingCount = routeTurretCount("winding");
+    if (directInfoEl) directInfoEl.textContent = `Short · ${directCount} turret${directCount === 1 ? "" : "s"}`;
+    if (windingInfoEl) windingInfoEl.textContent = `Long · ${windingCount} turret${windingCount === 1 ? "" : "s"}`;
 
     document.querySelectorAll("[data-attack-route]").forEach(button => {
       button.classList.toggle("active", button.dataset.attackRoute === state.selectedRoute);
@@ -244,7 +365,7 @@
     });
 
     queueEl.innerHTML = state.queue.length
-      ? state.queue.map(item => `<span class="attack-queue-unit route-${item.route}" title="${VEHICLES[item.type].name} · ${item.route}">${vehicleSvg(VEHICLES[item.type], true)}</span>`).join("")
+      ? state.queue.map(item => `<span class="attack-queue-unit route-${item.route}" title="${VEHICLES[item.type].name} · ${item.route}">${vehicleSvg(VEHICLES[item.type])}</span>`).join("")
       : `<span class="attack-queue-empty">Your purchased vehicles will appear here.</span>`;
 
     undoBtn.disabled = state.queue.length === 0;
@@ -269,22 +390,31 @@
     renderPlan();
   }
 
-  function activeTurretSlots(round) {
-    return TURRET_SLOTS.filter(slot => slot.unlock <= round);
+  function turretStats(round) {
+    const tier = Math.max(0, round - 1);
+    return {
+      level: 1 + Math.floor(tier / 2),
+      hp: Math.round(60 + tier * 6),
+      range: 116 + Math.min(12, tier * 2),
+      damage: 9 + tier * .8,
+      cooldown: Math.max(.56, .68 - tier * .012)
+    };
   }
 
   function makeTurrets(round) {
-    const stat = 1 + (round - 1) * .12;
-    return activeTurretSlots(round).map(slot => ({
+    const stat = turretStats(round);
+    return activeTurretSlots(round).map((slot, index) => ({
       ...slot,
-      maxHp: Math.round(58 * stat),
-      hp: Math.round(58 * stat),
-      range: 112 + Math.min(20, round * 2),
-      damage: 9 + Math.floor((round - 1) * 1.6),
-      cooldown: .68 - Math.min(.12, (round - 1) * .015),
-      timer: Math.random() * .35,
+      level: stat.level,
+      maxHp: stat.hp,
+      hp: stat.hp,
+      range: stat.range,
+      damage: stat.damage,
+      cooldown: stat.cooldown,
+      timer: .12 + ((index * .17) % .33),
       alive: true,
-      flash: 0
+      flash: 0,
+      aim: slot.defaultAim
     }));
   }
 
@@ -297,7 +427,7 @@
         routeName: item.route,
         profile,
         distance: -index * 9,
-        launchAt: index * .52,
+        launchAt: index * .48,
         hp: profile.hp,
         maxHp: profile.hp,
         alive: true,
@@ -324,6 +454,8 @@
       elapsed: 0,
       finished: false,
       destroyedTurrets: 0,
+      enemyShots: 0,
+      playerShots: 0,
       originalQueue: state.queue.map(item => ({ ...item })),
       spent
     };
@@ -359,11 +491,14 @@
         unit.reached = true;
         state.baseHealth = Math.max(0, state.baseHealth - unit.profile.baseDamage);
         battleBaseEl.textContent = String(state.baseHealth);
-        battle.effects.push({ x: BASE.x, y: BASE.y + 18, life: .55, max: .55, kind: "base" });
+        battle.effects.push({ x: BASE.x, y: BASE.y + 20, life: .58, max: .58, kind: "base" });
         return;
       }
+
       const p = pointAtDistance(route, Math.max(0, unit.distance));
-      unit.x = p.x; unit.y = p.y; unit.heading = p.heading;
+      unit.x = p.x;
+      unit.y = p.y;
+      unit.heading = p.heading;
       unit.hitFlash = Math.max(0, unit.hitFlash - dt * 6);
 
       if (unit.profile.attack > 0) {
@@ -372,14 +507,15 @@
           const target = nearestTurret(unit, unit.profile.range);
           if (target) {
             unit.gunTimer = unit.profile.fireRate;
-            const damage = unit.profile.attack;
-            target.hp -= damage;
+            target.hp -= unit.profile.attack;
             target.flash = 1;
-            battle.shots.push({ x1: unit.x, y1: unit.y, x2: target.x, y2: target.y, life: .11, max: .11, team: "player" });
+            battle.playerShots += 1;
+            battle.shots.push({ x1: unit.x, y1: unit.y, x2: target.x, y2: target.y, life: .12, max: .12, team: "player" });
+            battle.effects.push({ x: target.x, y: target.y, life: .15, max: .15, kind: "spark" });
             if (target.hp <= 0 && target.alive) {
               target.alive = false;
               battle.destroyedTurrets += 1;
-              battle.effects.push({ x: target.x, y: target.y, life: .65, max: .65, kind: "boom" });
+              battle.effects.push({ x: target.x, y: target.y, life: .72, max: .72, kind: "boom" });
             }
           }
         }
@@ -390,17 +526,23 @@
       if (!turret.alive) return;
       turret.timer -= dt;
       turret.flash = Math.max(0, turret.flash - dt * 7);
-      if (turret.timer > 0) return;
       const target = nearestUnit(turret, turret.range);
-      if (!target) return;
+      if (target) {
+        const wanted = Math.atan2(target.y - turret.y, target.x - turret.x);
+        turret.aim = approachAngle(turret.aim, wanted, dt * 7);
+      }
+      if (turret.timer > 0 || !target) return;
+
       turret.timer = turret.cooldown;
       const finalDamage = Math.max(2, turret.damage - target.profile.armour);
       target.hp -= finalDamage;
       target.hitFlash = 1;
-      battle.shots.push({ x1: turret.x, y1: turret.y, x2: target.x, y2: target.y, life: .12, max: .12, team: "enemy" });
+      battle.enemyShots += 1;
+      battle.shots.push({ x1: turret.x, y1: turret.y, x2: target.x, y2: target.y, life: .13, max: .13, team: "enemy" });
+      battle.effects.push({ x: turret.x + Math.cos(turret.aim) * 25, y: turret.y + Math.sin(turret.aim) * 25, life: .12, max: .12, kind: "muzzle" });
       if (target.hp <= 0 && target.alive) {
         target.alive = false;
-        battle.effects.push({ x: target.x, y: target.y, life: .62, max: .62, kind: "boom" });
+        battle.effects.push({ x: target.x, y: target.y, life: .66, max: .66, kind: "boom" });
       }
     });
 
@@ -420,6 +562,12 @@
     }
 
     if (active === 0 && waiting === 0) finishWave();
+  }
+
+  function approachAngle(current, target, amount) {
+    let delta = ((target - current + Math.PI) % (Math.PI * 2)) - Math.PI;
+    if (delta < -Math.PI) delta += Math.PI * 2;
+    return current + delta * clamp(amount, 0, 1);
   }
 
   function nearestUnit(turret, range) {
@@ -447,12 +595,14 @@
     battle.finished = true;
     const survivors = battle.units.filter(unit => unit.reached).length;
     const destroyed = battle.destroyedTurrets;
-    const income = 70 + battle.round * 10 + survivors * 18 + destroyed * 20;
+    const funding = 85 + battle.round * 15;
+    const performance = survivors * 10 + destroyed * 12;
+    const income = funding + performance;
     state.cash += income;
     state.round += 1;
-    state.lastSummary = `Wave complete · ${survivors} through · ${destroyed} turrets destroyed · +£${income}. Enemy defence upgraded.`;
+    state.lastSummary = `Wave complete · ${survivors} through · ${destroyed} turrets down · +£${income} (£${funding} funding + £${performance} bonus).`;
     battleStatusEl.textContent = `Wave complete · +£${income}`;
-    window.setTimeout(() => returnToPlan(), 850);
+    window.setTimeout(() => returnToPlan(), 900);
   }
 
   function finishCampaign() {
@@ -466,7 +616,7 @@
         gameId: "game-14",
         difficulty: "easy",
         stars: Math.max(1, Math.min(5, 6 - Math.floor(roundWon / 2))),
-        score: Math.max(100, 1200 - roundWon * 80),
+        score: Math.max(100, 1300 - roundWon * 90),
         title: "Breakthrough!",
         summary: "The enemy base has fallen.",
         metrics: [
@@ -500,7 +650,14 @@
   }
 
   function resetCampaign() {
-    state = { round: 1, cash: 100, baseHealth: 12, selectedRoute: "direct", queue: [], lastSummary: "Build your first wave." };
+    state = {
+      round: 1,
+      cash: STARTING_CASH,
+      baseHealth: STARTING_BASE_HEALTH,
+      selectedRoute: "direct",
+      queue: [],
+      lastSummary: "Build your first wave."
+    };
     battle = null;
     paused = false;
     window.GameHubResults?.close?.();
@@ -517,185 +674,489 @@
     if (battle && !battle.finished) animationFrame = requestAnimationFrame(frame);
   }
 
+  function renderStaticLayer() {
+    staticCtx.clearRect(0, 0, WORLD.width, WORLD.height);
+    drawTerrain(staticCtx);
+    drawRoutes(staticCtx);
+    drawBaseAndSpawn(staticCtx);
+  }
+
   function drawBattle() {
     ctx.clearRect(0, 0, WORLD.width, WORLD.height);
-    drawTerrain();
-    drawRoutes();
-    drawBaseAndSpawn();
-    drawTurrets();
+    ctx.drawImage(staticLayer, 0, 0);
+    drawTurrets(ctx);
 
     if (!battle) return;
-    battle.units.filter(u => u.routeName === "winding").forEach(drawUnit);
-    drawShots("enemy");
-    drawRoadBridge();
-    battle.units.filter(u => u.routeName === "direct").forEach(drawUnit);
-    drawShots("player");
-    drawEffects();
+    battle.units.filter(u => u.routeName === "winding").forEach(unit => drawUnit(ctx, unit));
+    drawShots(ctx, "enemy");
+    drawRoadBridgeDeck(ctx);
+    battle.units.filter(u => u.routeName === "direct").forEach(unit => drawUnit(ctx, unit));
+    drawShots(ctx, "player");
+    drawEffects(ctx);
   }
 
-  function drawTerrain() {
-    ctx.fillStyle = "#cdb681";
-    ctx.fillRect(0, 0, 720, 900);
+  function drawTerrain(g) {
+    g.fillStyle = "#cdb681";
+    g.fillRect(0, 0, WORLD.width, WORLD.height);
 
-    ctx.fillStyle = "#b9aa79";
-    ctx.beginPath(); ctx.ellipse(120, 210, 180, 120, -.2, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(610, 360, 160, 190, .15, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(160, 690, 210, 150, .1, 0, Math.PI * 2); ctx.fill();
-
-    // Decorative river kept away from the drivable lanes.
-    ctx.strokeStyle = "#5c9e9a"; ctx.lineWidth = 54; ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ctx.beginPath(); ctx.moveTo(-20, 360); ctx.bezierCurveTo(75, 330, 105, 405, 80, 470); ctx.bezierCurveTo(55, 535, 110, 590, 22, 625); ctx.stroke();
-    ctx.strokeStyle = "#8cc3b9"; ctx.lineWidth = 34;
-    ctx.beginPath(); ctx.moveTo(-20, 360); ctx.bezierCurveTo(75, 330, 105, 405, 80, 470); ctx.bezierCurveTo(55, 535, 110, 590, 22, 625); ctx.stroke();
-    ctx.strokeStyle = "rgba(255,255,255,.32)"; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(-10, 367); ctx.bezierCurveTo(58, 350, 77, 410, 61, 455); ctx.stroke();
-
-    environment.rocks.forEach(rock => drawRock(rock.x, rock.y, rock.r, rock.v));
-    environment.trees.forEach(tree => drawTree(tree.x, tree.y, tree.r, tree.v));
-  }
-
-  function drawTree(x, y, r, v) {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.fillStyle = "rgba(56,67,49,.17)";
-    ctx.beginPath(); ctx.ellipse(r * .28, r * .35, r * .9, r * .65, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = v > .5 ? "#617557" : "#6d805c";
-    [[0,-.35],[-.45,.1],[.42,.12],[0,.42]].forEach(([ox,oy], i) => {
-      ctx.beginPath(); ctx.arc(ox*r, oy*r, r*(i === 0 ? .62 : .54), 0, Math.PI*2); ctx.fill();
+    environment.patches.forEach(patch => {
+      g.save();
+      g.translate(patch.x, patch.y);
+      g.rotate(patch.rot);
+      g.fillStyle = patch.light ? "rgba(233,215,161,.12)" : "rgba(112,101,69,.075)";
+      g.beginPath();
+      g.ellipse(0, 0, patch.rx, patch.ry, 0, 0, Math.PI * 2);
+      g.fill();
+      g.restore();
     });
-    ctx.fillStyle = "rgba(191,199,136,.28)";
-    ctx.beginPath(); ctx.arc(-r*.18, -r*.35, r*.22, 0, Math.PI*2); ctx.fill();
-    ctx.restore();
+
+    environment.texture.forEach(mark => {
+      g.fillStyle = mark.light ? `rgba(243,227,183,${mark.a})` : `rgba(76,72,56,${mark.a})`;
+      g.beginPath();
+      g.arc(mark.x, mark.y, mark.r, 0, Math.PI * 2);
+      g.fill();
+    });
+
+    // Decorative river: a little richer than v1.8.0 but still deliberately flat and readable.
+    g.lineCap = "round";
+    g.lineJoin = "round";
+    g.strokeStyle = "rgba(68,93,88,.22)";
+    g.lineWidth = 63;
+    g.beginPath();
+    g.moveTo(-25, Y(350));
+    g.bezierCurveTo(72, Y(325), 110, Y(398), 82, Y(468));
+    g.bezierCurveTo(55, Y(535), 110, Y(592), 18, Y(632));
+    g.stroke();
+    g.strokeStyle = "#5d9e9a";
+    g.lineWidth = 54;
+    g.stroke();
+    g.strokeStyle = "#8cc3b9";
+    g.lineWidth = 34;
+    g.stroke();
+    g.strokeStyle = "rgba(255,255,255,.34)";
+    g.lineWidth = 4;
+    g.beginPath();
+    g.moveTo(-8, Y(361));
+    g.bezierCurveTo(58, Y(345), 78, Y(410), 61, Y(458));
+    g.stroke();
+
+    environment.scrub.forEach(item => drawScrub(g, item.x, item.y, item.r, item.v));
+    environment.rocks.forEach(rock => drawRock(g, rock.x, rock.y, rock.r, rock.v, rock.rot));
+    environment.trees.forEach(tree => drawTree(g, tree.x, tree.y, tree.r, tree.v));
+    environment.structures.forEach(structure => drawStructure(g, structure));
   }
 
-  function drawRock(x, y, r, v) {
-    ctx.save(); ctx.translate(x, y);
-    ctx.fillStyle = "rgba(72,67,58,.16)"; ctx.beginPath(); ctx.ellipse(3, 4, r, r*.68, .2, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = v > .5 ? "#9c9278" : "#a79a7d";
-    ctx.beginPath(); ctx.moveTo(-r*.9, r*.2); ctx.lineTo(-r*.4,-r*.7); ctx.lineTo(r*.35,-r*.8); ctx.lineTo(r*.9,-r*.1); ctx.lineTo(r*.55,r*.65); ctx.lineTo(-r*.45,r*.7); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = "rgba(75,70,61,.35)"; ctx.lineWidth = 1.5; ctx.stroke(); ctx.restore();
+  function drawScrub(g, x, y, r, v) {
+    g.save();
+    g.translate(x, y);
+    g.fillStyle = v > .5 ? "#78815c" : "#808362";
+    [[0,0],[-.55,.1],[.45,.22],[.1,-.45]].forEach(([ox, oy], i) => {
+      g.beginPath();
+      g.arc(ox * r, oy * r, r * (i === 0 ? .62 : .43), 0, Math.PI * 2);
+      g.fill();
+    });
+    g.restore();
   }
 
-  function drawRouteStroke(route, edge, fill, width) {
+  function drawTree(g, x, y, r, v) {
+    g.save();
+    g.translate(x, y);
+    g.fillStyle = "rgba(54,62,47,.18)";
+    g.beginPath();
+    g.ellipse(r * .24, r * .35, r * .95, r * .68, 0, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = v > .5 ? "#607555" : "#6b805b";
+    [[0,-.38],[-.47,.08],[.43,.12],[0,.42]].forEach(([ox,oy], i) => {
+      g.beginPath();
+      g.arc(ox*r, oy*r, r*(i === 0 ? .64 : .54), 0, Math.PI*2);
+      g.fill();
+    });
+    g.fillStyle = "rgba(197,203,141,.29)";
+    g.beginPath();
+    g.arc(-r*.20, -r*.40, r*.23, 0, Math.PI*2);
+    g.fill();
+    g.restore();
+  }
+
+  function drawRock(g, x, y, r, v, rot = 0) {
+    g.save();
+    g.translate(x, y);
+    g.rotate(rot);
+    g.fillStyle = "rgba(70,65,56,.18)";
+    g.beginPath();
+    g.ellipse(4, 5, r * 1.08, r * .76, .2, 0, Math.PI*2);
+    g.fill();
+
+    const fill = v > .5 ? "#9d9277" : "#aa9b7d";
+    g.fillStyle = fill;
+    g.strokeStyle = "rgba(73,67,57,.38)";
+    g.lineWidth = 1.5;
+    g.beginPath();
+    g.moveTo(-r*.95, r*.18);
+    g.lineTo(-r*.48,-r*.72);
+    g.lineTo(r*.28,-r*.88);
+    g.lineTo(r*.92,-r*.15);
+    g.lineTo(r*.58,r*.68);
+    g.lineTo(-r*.42,r*.74);
+    g.closePath();
+    g.fill();
+    g.stroke();
+
+    g.fillStyle = "rgba(224,209,173,.34)";
+    g.beginPath();
+    g.moveTo(-r*.45,-r*.52);
+    g.lineTo(r*.24,-r*.68);
+    g.lineTo(r*.48,-r*.18);
+    g.lineTo(-r*.08,-r*.10);
+    g.closePath();
+    g.fill();
+    g.restore();
+  }
+
+  function drawStructure(g, structure) {
+    g.save();
+    g.translate(structure.x, structure.y);
+    g.rotate(structure.rot || 0);
+    const stone = "#8c8573";
+    const dark = "#5f5d55";
+    const light = "#b8aa8d";
+    const glow = "#6ca9a3";
+
+    if (structure.type === "relay") {
+      g.fillStyle = "rgba(62,58,50,.17)";
+      g.beginPath(); g.ellipse(4, 8, 34, 23, 0, 0, Math.PI*2); g.fill();
+      g.fillStyle = "#b0a27f"; g.strokeStyle = dark; g.lineWidth = 3;
+      g.beginPath(); polygon(g, 0, 0, 31, 6); g.fill(); g.stroke();
+      [-17, 17].forEach(x => {
+        g.fillStyle = stone; g.fillRect(x-5,-22,10,32);
+        g.fillStyle = glow; g.fillRect(x-2,-16,4,17);
+      });
+    } else if (structure.type === "bunker") {
+      g.fillStyle = "rgba(62,58,50,.17)"; g.fillRect(-28,-14,62,34);
+      g.fillStyle = stone; g.strokeStyle = dark; g.lineWidth = 3;
+      g.beginPath(); g.roundRect(-30,-18,58,32,7); g.fill(); g.stroke();
+      g.fillStyle = light; g.fillRect(-20,-12,29,5);
+      g.fillStyle = dark; g.fillRect(10,-10,12,18);
+      g.fillStyle = glow; g.fillRect(12,-7,8,3);
+    } else if (structure.type === "walls") {
+      g.fillStyle = "rgba(62,58,50,.14)";
+      g.fillRect(-35,-5,68,24);
+      g.fillStyle = stone; g.strokeStyle = dark; g.lineWidth = 2.5;
+      g.fillRect(-35,-10,47,11); g.strokeRect(-35,-10,47,11);
+      g.fillRect(18,-2,17,30); g.strokeRect(18,-2,17,30);
+      g.fillStyle = light; g.fillRect(-29,-7,16,3);
+    } else {
+      g.fillStyle = "rgba(62,58,50,.15)";
+      g.beginPath(); g.ellipse(3,5,31,20,0,0,Math.PI*2); g.fill();
+      g.fillStyle = stone; g.strokeStyle = dark; g.lineWidth = 2.5;
+      g.fillRect(-28,-12,22,9); g.strokeRect(-28,-12,22,9);
+      g.fillRect(-4,-15,10,28); g.strokeRect(-4,-15,10,28);
+      g.fillRect(13,0,19,9); g.strokeRect(13,0,19,9);
+    }
+    g.restore();
+  }
+
+  function polygon(g, cx, cy, radius, sides) {
+    for (let i = 0; i < sides; i++) {
+      const a = -Math.PI/2 + i * Math.PI * 2 / sides;
+      const x = cx + Math.cos(a) * radius;
+      const y = cy + Math.sin(a) * radius;
+      if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.closePath();
+  }
+
+  function drawRoutePath(g, route) {
     const pts = route.points;
-    ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-    ctx.strokeStyle = edge; ctx.lineWidth = width + 10; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.stroke();
-    ctx.strokeStyle = fill; ctx.lineWidth = width; ctx.stroke();
+    g.beginPath();
+    g.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y);
   }
 
-  function drawRoutes() {
-    drawRouteStroke(routes.winding, "#ad9567", "#dbc38e", 48);
-    drawRouteStroke(routes.direct, "#a78f62", "#d4b97e", 56);
-
-    // A few understated direction marks make the two lanes read as routes.
-    drawRouteArrow(routes.direct, .16, "rgba(120,87,59,.34)");
-    drawRouteArrow(routes.direct, .72, "rgba(120,87,59,.34)");
-    drawRouteArrow(routes.winding, .23, "rgba(70,102,92,.35)");
-    drawRouteArrow(routes.winding, .72, "rgba(70,102,92,.35)");
+  function drawRouteStroke(g, route, edge, fill, width) {
+    drawRoutePath(g, route);
+    g.strokeStyle = "rgba(83,70,48,.16)";
+    g.lineWidth = width + 14;
+    g.lineCap = "round";
+    g.lineJoin = "round";
+    g.stroke();
+    g.strokeStyle = edge;
+    g.lineWidth = width + 8;
+    g.stroke();
+    g.strokeStyle = fill;
+    g.lineWidth = width;
+    g.stroke();
   }
 
-  function drawRouteArrow(route, fraction, colour) {
+  function drawRoutes(g) {
+    drawRouteStroke(g, routes.winding, "#ad9567", "#dbc38e", 48);
+    drawRouteStroke(g, routes.direct, "#a78f62", "#d4b97e", 56);
+
+    // Soft wheel-wear marks help the roads feel used without turning them into race tracks.
+    [
+      [routes.direct, .18], [routes.direct, .48], [routes.direct, .73],
+      [routes.winding, .16], [routes.winding, .52], [routes.winding, .76]
+    ].forEach(([route, fraction]) => drawRoadWear(g, route, fraction));
+
+    drawRouteArrow(g, routes.direct, .16, "rgba(120,87,59,.31)");
+    drawRouteArrow(g, routes.direct, .72, "rgba(120,87,59,.31)");
+    drawRouteArrow(g, routes.winding, .23, "rgba(70,102,92,.32)");
+    drawRouteArrow(g, routes.winding, .72, "rgba(70,102,92,.32)");
+    drawBridgeUnderlay(g);
+  }
+
+  function drawRoadWear(g, route, fraction) {
     const p = pointAtDistance(route, route.length * fraction);
-    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.heading + Math.PI/2); ctx.strokeStyle = colour; ctx.lineWidth = 3; ctx.lineCap = "round";
-    ctx.beginPath(); ctx.moveTo(-7, 5); ctx.lineTo(0, -5); ctx.lineTo(7, 5); ctx.stroke(); ctx.restore();
+    g.save();
+    g.translate(p.x, p.y);
+    g.rotate(p.heading);
+    g.strokeStyle = "rgba(104,82,53,.12)";
+    g.lineWidth = 2;
+    g.lineCap = "round";
+    [-9, 9].forEach(offset => {
+      g.beginPath();
+      g.moveTo(-22, offset);
+      g.lineTo(22, offset);
+      g.stroke();
+    });
+    g.restore();
   }
 
-  function drawRoadBridge() {
-    // Direct route crosses over the winding route here. The shadow hides the
-    // lower road edge and the deck is redrawn above any winding vehicle.
-    ctx.save(); ctx.translate(BRIDGE.x, BRIDGE.y); ctx.rotate(-.06);
-    ctx.fillStyle = "rgba(65,59,50,.24)"; ctx.fillRect(-BRIDGE.width/2-8, -BRIDGE.length/2+7, BRIDGE.width+16, BRIDGE.length);
-    ctx.fillStyle = "#cdb682"; ctx.fillRect(-BRIDGE.width/2, -BRIDGE.length/2, BRIDGE.width, BRIDGE.length);
-    ctx.strokeStyle = "#81745f"; ctx.lineWidth = 5; ctx.strokeRect(-BRIDGE.width/2, -BRIDGE.length/2, BRIDGE.width, BRIDGE.length);
-    ctx.strokeStyle = "#e7d4aa"; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(-BRIDGE.width/2+8,-BRIDGE.length/2); ctx.lineTo(-BRIDGE.width/2+8,BRIDGE.length/2); ctx.moveTo(BRIDGE.width/2-8,-BRIDGE.length/2); ctx.lineTo(BRIDGE.width/2-8,BRIDGE.length/2); ctx.stroke();
-    ctx.restore();
+  function drawRouteArrow(g, route, fraction, colour) {
+    const p = pointAtDistance(route, route.length * fraction);
+    g.save();
+    g.translate(p.x, p.y);
+    g.rotate(p.heading + Math.PI / 2);
+    g.strokeStyle = colour;
+    g.lineWidth = 3;
+    g.lineCap = "round";
+    g.beginPath();
+    g.moveTo(-7, 5);
+    g.lineTo(0, -5);
+    g.lineTo(7, 5);
+    g.stroke();
+    g.restore();
   }
 
-  function drawBaseAndSpawn() {
-    ctx.save();
-    // Player launch pad.
-    ctx.translate(START.x, 867);
-    ctx.fillStyle = "#b7a57f"; ctx.strokeStyle = "#81745f"; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.roundRect(-74, -26, 148, 52, 12); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = "#8d765d"; ctx.beginPath(); ctx.moveTo(0,-15); ctx.lineTo(-9,0); ctx.lineTo(9,0); ctx.closePath(); ctx.fill();
-    ctx.restore();
+  function drawBridgeUnderlay(g) {
+    g.save();
+    g.translate(BRIDGE.x, BRIDGE.y);
+    g.rotate(BRIDGE.heading + Math.PI / 2);
+    g.fillStyle = "rgba(56,51,44,.24)";
+    g.beginPath();
+    g.roundRect(-BRIDGE.width/2-8, -BRIDGE.length/2+8, BRIDGE.width+16, BRIDGE.length, 12);
+    g.fill();
 
-    // Enemy monolith/base.
-    ctx.save(); ctx.translate(BASE.x, 35);
-    ctx.fillStyle = "#807866"; ctx.strokeStyle = "#5d594e"; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.roundRect(-62,-30,124,62,13); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = "#4c5b5c"; ctx.beginPath(); ctx.roundRect(-25,-17,50,38,10); ctx.fill();
-    ctx.strokeStyle = "#75b9b2"; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(0,2,13,0,Math.PI*2); ctx.stroke();
-    ctx.restore();
+    // Four low abutments sit off the road instead of drawing lines across it.
+    g.fillStyle = "#877b65";
+    g.strokeStyle = "#625e54";
+    g.lineWidth = 2;
+    [[-44,-49],[44,-49],[-44,49],[44,49]].forEach(([x,y]) => {
+      g.beginPath();
+      g.roundRect(x-8,y-12,16,24,4);
+      g.fill();
+      g.stroke();
+    });
+    g.restore();
   }
 
-  function drawTurrets() {
+  function drawRoadBridgeDeck(g) {
+    g.save();
+    g.translate(BRIDGE.x, BRIDGE.y);
+    g.rotate(BRIDGE.heading + Math.PI / 2);
+
+    // Redraw only the deck surface to hide vehicles travelling underneath.
+    g.fillStyle = "#d4b97e";
+    g.beginPath();
+    g.roundRect(-BRIDGE.width/2, -BRIDGE.length/2, BRIDGE.width, BRIDGE.length, 10);
+    g.fill();
+
+    g.strokeStyle = "#7d725f";
+    g.lineWidth = 4;
+    [-BRIDGE.width/2+5, BRIDGE.width/2-5].forEach(x => {
+      g.beginPath();
+      g.moveTo(x, -BRIDGE.length/2+5);
+      g.lineTo(x, BRIDGE.length/2-5);
+      g.stroke();
+    });
+    g.strokeStyle = "rgba(238,216,169,.78)";
+    g.lineWidth = 2;
+    [-BRIDGE.width/2+10, BRIDGE.width/2-10].forEach(x => {
+      g.beginPath();
+      g.moveTo(x, -BRIDGE.length/2+8);
+      g.lineTo(x, BRIDGE.length/2-8);
+      g.stroke();
+    });
+    g.restore();
+  }
+
+  function drawBaseAndSpawn(g) {
+    g.save();
+    g.translate(START.x, Y(868));
+    g.fillStyle = "rgba(65,58,50,.15)";
+    g.beginPath(); g.ellipse(4,9,79,31,0,0,Math.PI*2); g.fill();
+    g.fillStyle = "#b7a57f";
+    g.strokeStyle = "#81745f";
+    g.lineWidth = 4;
+    g.beginPath();
+    g.roundRect(-74, -26, 148, 52, 12);
+    g.fill();
+    g.stroke();
+    g.fillStyle = "#8d765d";
+    g.beginPath();
+    g.moveTo(0,-15); g.lineTo(-10,1); g.lineTo(10,1); g.closePath(); g.fill();
+    g.strokeStyle = "rgba(235,216,176,.55)";
+    g.lineWidth = 2;
+    g.strokeRect(-49,-14,27,28); g.strokeRect(-13,-14,27,28); g.strokeRect(23,-14,27,28);
+    g.restore();
+
+    g.save();
+    g.translate(BASE.x, Y(36));
+    g.fillStyle = "rgba(65,58,50,.17)";
+    g.beginPath(); g.ellipse(3,12,72,34,0,0,Math.PI*2); g.fill();
+    g.fillStyle = "#807866";
+    g.strokeStyle = "#5d594e";
+    g.lineWidth = 4;
+    g.beginPath();
+    g.roundRect(-65,-31,130,64,13);
+    g.fill();
+    g.stroke();
+    g.fillStyle = "#615f57";
+    g.fillRect(-54,-22,13,43); g.fillRect(41,-22,13,43);
+    g.fillStyle = "#4c5b5c";
+    g.beginPath(); g.roundRect(-25,-17,50,39,10); g.fill();
+    g.strokeStyle = "#75b9b2";
+    g.lineWidth = 5;
+    g.beginPath(); g.arc(0,2,13,0,Math.PI*2); g.stroke();
+    g.restore();
+  }
+
+  function drawTurrets(g) {
     const list = battle ? battle.turrets : makeTurrets(state.round);
     list.forEach(turret => {
       if (!turret.alive) return;
-      ctx.save(); ctx.translate(turret.x, turret.y);
-      ctx.fillStyle = "rgba(52,48,43,.18)"; ctx.beginPath(); ctx.ellipse(3,7,24,14,0,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle = turret.flash > 0 ? "#d8b58c" : "#756e64"; ctx.strokeStyle = "#514e49"; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(0,0,18,0,Math.PI*2); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = "#9a5d49"; ctx.beginPath(); ctx.arc(0,0,9,0,Math.PI*2); ctx.fill();
-      ctx.strokeStyle = "#514e49"; ctx.lineWidth = 5; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-22); ctx.stroke();
-      drawHealthBar(-20,-30,40,5,turret.hp/turret.maxHp,"#b95c54");
-      ctx.restore();
+      g.save();
+      g.translate(turret.x, turret.y);
+
+      g.fillStyle = "rgba(51,47,42,.18)";
+      g.beginPath(); g.ellipse(4,8,28,18,0,0,Math.PI*2); g.fill();
+
+      // Hexagonal platform and pedestal.
+      g.fillStyle = "#a49576";
+      g.strokeStyle = "#665f52";
+      g.lineWidth = 2.5;
+      g.beginPath(); polygon(g, 0, 0, 22, 8); g.fill(); g.stroke();
+      g.fillStyle = "#716c61";
+      g.beginPath(); g.arc(0,0,14,0,Math.PI*2); g.fill();
+
+      if (turret.level >= 2) {
+        g.fillStyle = "#8d806c";
+        g.fillRect(-20,-6,7,12);
+        g.fillRect(13,-6,7,12);
+      }
+
+      g.rotate(turret.aim + Math.PI / 2);
+      g.fillStyle = turret.flash > 0 ? "#d8b58c" : "#6c6860";
+      g.strokeStyle = "#494943";
+      g.lineWidth = 2.5;
+      g.beginPath(); g.roundRect(-10,-12,20,22,6); g.fill(); g.stroke();
+      g.fillStyle = "#a35f4b";
+      g.beginPath(); g.arc(0,-2,5.5,0,Math.PI*2); g.fill();
+      g.strokeStyle = "#494943";
+      g.lineWidth = 3.5;
+      g.lineCap = "round";
+      [-3.5,3.5].forEach(x => {
+        g.beginPath(); g.moveTo(x,-10); g.lineTo(x,-29); g.stroke();
+      });
+      g.restore();
+      drawHealthBar(g, turret.x-21, turret.y-31, 42, 5, turret.hp/turret.maxHp, "#b95c54");
     });
   }
 
-  function drawUnit(unit) {
+  function drawUnit(g, unit) {
     if (!unit.alive || !unit.launched || unit.reached) return;
     const p = unit.profile;
-    ctx.save(); ctx.translate(unit.x, unit.y); ctx.rotate(unit.heading + Math.PI/2);
-    if (unit.hitFlash > 0) ctx.globalAlpha = .65 + Math.sin(unit.hitFlash*30)*.25;
-    ctx.fillStyle = "rgba(57,51,44,.20)"; ctx.beginPath(); ctx.ellipse(3,5,11,17,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = "#3f4140";
+    g.save();
+    g.translate(unit.x, unit.y);
+    g.rotate(unit.heading + Math.PI/2);
+    if (unit.hitFlash > 0) g.globalAlpha = .65 + Math.sin(unit.hitFlash*30)*.25;
+
+    g.fillStyle = "rgba(57,51,44,.20)";
+    g.beginPath(); g.ellipse(3,5,12,18,0,0,Math.PI*2); g.fill();
+    g.fillStyle = "#3f4140";
     if (unit.type === "tank") {
-      ctx.fillRect(-12,-17,5,34); ctx.fillRect(7,-17,5,34);
+      g.beginPath(); g.roundRect(-13,-18,5,36,2); g.fill();
+      g.beginPath(); g.roundRect(8,-18,5,36,2); g.fill();
     } else {
-      [[-11,-12],[7,-12],[-11,7],[7,7]].forEach(([x,y]) => ctx.fillRect(x,y,4,8));
+      [[-12,-13],[8,-13],[-12,7],[8,7]].forEach(([x,y]) => {
+        g.beginPath(); g.roundRect(x,y,4,9,2); g.fill();
+      });
     }
-    ctx.fillStyle = p.body; ctx.strokeStyle = p.accent; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.roundRect(-8,-17,16,34,4); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = "rgba(222,231,224,.72)"; ctx.fillRect(-5,-12,10,8);
+
+    g.fillStyle = p.body;
+    g.strokeStyle = p.accent;
+    g.lineWidth = 2;
+    g.beginPath(); g.roundRect(-8,-18,16,36,4); g.fill(); g.stroke();
+    g.fillStyle = "rgba(222,231,224,.74)";
+    g.beginPath(); g.roundRect(-5,-13,10,8,2); g.fill();
+    g.fillStyle = "rgba(255,255,255,.16)";
+    g.fillRect(-5,7,10,4);
+
     if (p.attack > 0) {
-      ctx.fillStyle = p.accent; ctx.beginPath(); ctx.arc(0,1,5,0,Math.PI*2); ctx.fill();
-      ctx.strokeStyle = p.accent; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0,-1); ctx.lineTo(0,-17); ctx.stroke();
+      g.fillStyle = p.accent;
+      g.beginPath(); g.arc(0,1,5,0,Math.PI*2); g.fill();
+      g.strokeStyle = p.accent;
+      g.lineWidth = 3;
+      g.beginPath(); g.moveTo(0,-1); g.lineTo(0,-18); g.stroke();
     }
-    ctx.restore();
-    drawHealthBar(unit.x-14,unit.y-25,28,4,unit.hp/unit.maxHp,"#5f9777");
+    g.restore();
+    drawHealthBar(g, unit.x-14, unit.y-26, 28, 4, unit.hp/unit.maxHp, "#5f9777");
   }
 
-  function drawHealthBar(x, y, w, h, ratio, colour) {
-    ctx.fillStyle = "rgba(48,45,42,.68)"; ctx.beginPath(); ctx.roundRect(x,y,w,h,h/2); ctx.fill();
-    ctx.fillStyle = colour; ctx.beginPath(); ctx.roundRect(x+1,y+1,Math.max(0,(w-2)*Math.max(0,Math.min(1,ratio))),h-2,(h-2)/2); ctx.fill();
+  function drawHealthBar(g, x, y, w, h, ratio, colour) {
+    g.fillStyle = "rgba(48,45,42,.70)";
+    g.beginPath(); g.roundRect(x,y,w,h,h/2); g.fill();
+    g.fillStyle = colour;
+    g.beginPath(); g.roundRect(x+1,y+1,Math.max(0,(w-2)*clamp(ratio,0,1)),h-2,(h-2)/2); g.fill();
   }
 
-  function drawShots(team) {
+  function drawShots(g, team) {
     if (!battle) return;
     battle.shots.filter(shot => shot.team === team).forEach(shot => {
       const alpha = Math.max(0, shot.life / shot.max);
-      ctx.save(); ctx.globalAlpha = alpha; ctx.strokeStyle = team === "enemy" ? "#c45d4d" : "#4f847b"; ctx.lineWidth = 3; ctx.lineCap = "round";
-      ctx.beginPath(); ctx.moveTo(shot.x1, shot.y1); ctx.lineTo(shot.x2, shot.y2); ctx.stroke();
-      ctx.restore();
+      g.save();
+      g.globalAlpha = alpha;
+      g.strokeStyle = team === "enemy" ? "#c45d4d" : "#4f847b";
+      g.lineWidth = team === "enemy" ? 3 : 2.7;
+      g.lineCap = "round";
+      g.beginPath(); g.moveTo(shot.x1, shot.y1); g.lineTo(shot.x2, shot.y2); g.stroke();
+      g.restore();
     });
   }
 
-  function drawEffects() {
+  function drawEffects(g) {
     if (!battle) return;
     battle.effects.forEach(effect => {
       const t = 1 - effect.life / effect.max;
-      ctx.save(); ctx.globalAlpha = 1 - t;
+      g.save();
+      g.globalAlpha = 1 - t;
       if (effect.kind === "boom") {
-        ctx.fillStyle = "#d6864f"; ctx.beginPath(); ctx.arc(effect.x,effect.y,5+t*18,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle = "#ead3a0"; ctx.beginPath(); ctx.arc(effect.x,effect.y,3+t*9,0,Math.PI*2); ctx.fill();
+        g.fillStyle = "#d6864f";
+        g.beginPath(); g.arc(effect.x,effect.y,5+t*18,0,Math.PI*2); g.fill();
+        g.fillStyle = "#ead3a0";
+        g.beginPath(); g.arc(effect.x,effect.y,3+t*9,0,Math.PI*2); g.fill();
+      } else if (effect.kind === "base") {
+        g.strokeStyle = "#6cb7ae";
+        g.lineWidth = 4;
+        g.beginPath(); g.arc(effect.x,effect.y,9+t*20,0,Math.PI*2); g.stroke();
+      } else if (effect.kind === "muzzle") {
+        g.fillStyle = "#efc777";
+        g.beginPath(); g.arc(effect.x,effect.y,2+t*5,0,Math.PI*2); g.fill();
       } else {
-        ctx.strokeStyle = "#6cb7ae"; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(effect.x,effect.y,9+t*20,0,Math.PI*2); ctx.stroke();
+        g.fillStyle = "#e7c88a";
+        g.beginPath(); g.arc(effect.x,effect.y,2+t*4,0,Math.PI*2); g.fill();
       }
-      ctx.restore();
+      g.restore();
     });
   }
 

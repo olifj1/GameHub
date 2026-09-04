@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.8.0">
+  <link rel="stylesheet" href="style.css?v=1.8.1">
   <title>Tower Attack</title>
 </head>
 <body class="modular-game" data-game-id="game-14">
@@ -44,10 +44,10 @@
             <p>ROUTE FOR NEXT VEHICLE</p>
             <div class="attack-route-buttons" role="group" aria-label="Choose route">
               <button class="active" type="button" data-attack-route="direct">
-                <strong>Direct</strong><small>Short · more turrets</small>
+                <strong>Direct</strong><small id="attack-direct-info">Short · 2 turrets</small>
               </button>
               <button type="button" data-attack-route="winding">
-                <strong>Winding</strong><small>Long · fewer turrets</small>
+                <strong>Winding</strong><small id="attack-winding-info">Long · 1 turret</small>
               </button>
             </div>
           </div>
@@ -76,7 +76,7 @@
           </div>
 
           <div class="attack-stage-wrap">
-            <canvas id="attack-canvas" width="720" height="900" aria-label="Tower attack battlefield"></canvas>
+            <canvas id="attack-canvas" width="720" height="1080" aria-label="Tower attack battlefield"></canvas>
             <div class="attack-pause-overlay" id="attack-pause-overlay" hidden>
               <div class="attack-pause-menu" role="dialog" aria-modal="true" aria-labelledby="attack-pause-title">
                 <p class="kicker">PAUSED</p>
@@ -98,8 +98,8 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.8.0"></script>
-  <script src="core.js?v=1.8.0"></script>
-  <script src="game-14.js?v=1.8.0"></script>
+  <script src="site-config.js?v=1.8.1"></script>
+  <script src="core.js?v=1.8.1"></script>
+  <script src="game-14.js?v=1.8.1"></script>
 </body>
 </html>
