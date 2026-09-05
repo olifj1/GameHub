@@ -9767,19 +9767,57 @@ body[data-game-id="game-14"] .attack-vehicle-buy{grid-column:2 / 4;grid-row:3;al
 }
 
 /* ============================================================
-   GameHub v1.8.4 — Tower Attack live deployment / tactical plan
+   GameHub v1.8.5 — Tower Attack live deployment / tactical plan
    ============================================================ */
+body[data-game-id="game-14"] #attack-screen{background:#f5efe9!important;color:var(--gh-text)!important}
+body[data-game-id="game-14"] .attack-page{
+  width:min(100%,448px)!important;
+  max-width:448px!important;
+  height:100%!important;
+  margin:0 auto!important;
+  padding-top:2px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  gap:6px!important;
+  overflow:hidden!important;
+}
+body[data-game-id="game-14"] .attack-header{flex:0 0 auto;margin:0 0 4px!important;text-align:center!important}
+body[data-game-id="game-14"] .attack-header .kicker{margin:0 0 4px!important;color:#77726d!important;font-size:10px!important}
+body[data-game-id="game-14"] .attack-header h1{margin:0!important;color:var(--gh-text)!important;font-size:clamp(29px,8.6vw,42px)!important;line-height:1.02!important;letter-spacing:-.045em!important}
+body[data-game-id="game-14"] .attack-plan,
+body[data-game-id="game-14"] .attack-battle{width:100%;min-height:0;margin:0 auto}
+body[data-game-id="game-14"] .attack-plan{flex:1;display:flex;flex-direction:column;gap:7px;overflow:hidden}
+body[data-game-id="game-14"] .attack-battle{flex:1;display:flex;flex-direction:column;gap:6px;overflow:hidden}
+body[data-game-id="game-14"] .attack-battle[hidden],body[data-game-id="game-14"] .attack-plan[hidden]{display:none!important}
+body[data-game-id="game-14"] .attack-plan-hud,
+body[data-game-id="game-14"] .attack-battle-hud{display:grid;gap:5px;flex:0 0 auto}
+body[data-game-id="game-14"] .attack-economy-hud{grid-template-columns:repeat(4,minmax(0,1fr))}
+body[data-game-id="game-14"] .attack-battle-hud.attack-economy-hud{grid-template-columns:repeat(4,minmax(0,1fr)) 52px}
+body[data-game-id="game-14"] .attack-plan-hud>div,
+body[data-game-id="game-14"] .attack-battle-hud>div,
+body[data-game-id="game-14"] .attack-battle-hud>button{
+  min-width:0;min-height:46px;border:1px solid rgba(52,57,68,.1);border-radius:16px;background:rgba(255,255,255,.74);box-shadow:0 3px 0 rgba(51,46,40,.04)
+}
+body[data-game-id="game-14"] .attack-plan-hud>div,
+body[data-game-id="game-14"] .attack-battle-hud>div{padding:6px 8px;display:flex;flex-direction:column;justify-content:center}
+body[data-game-id="game-14"] .attack-economy-hud span{font-size:6.4px;font-weight:950;letter-spacing:.12em;color:#8a837d}
+body[data-game-id="game-14"] .attack-economy-hud strong{font-size:14px;line-height:1.05;white-space:nowrap}
+body[data-game-id="game-14"] .attack-battle-hud>button{font-size:10px;font-weight:950;color:#756d66}
+body[data-game-id="game-14"] .attack-round-note{
+  min-height:26px;padding:5px 9px;border-radius:12px;background:rgba(255,255,255,.42);color:#867d75;font-size:8px;font-weight:800;line-height:1.25;text-align:center
+}
 body[data-game-id="game-14"] .attack-loadout-panel{
-  flex:0 0 auto;padding:7px 8px;border:1px solid rgba(52,57,68,.1);border-radius:13px;background:rgba(255,255,255,.48)
+  flex:0 0 auto;padding:7px 8px;border:1px solid rgba(52,57,68,.1);border-radius:14px;background:rgba(255,255,255,.48)
 }
 body[data-game-id="game-14"] .attack-loadout-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
 body[data-game-id="game-14"] .attack-loadout-heading span{display:block;color:#8a837d;font-size:7px;font-weight:950;letter-spacing:.1em}
 body[data-game-id="game-14"] .attack-loadout-heading small{display:block;margin-top:1px;color:#8a837d;font-size:6.6px;font-weight:750}
-body[data-game-id="game-14"] #attack-clear-slot{min-height:27px;padding:3px 8px;border:1px solid rgba(52,57,68,.12);border-radius:8px;background:#fff;color:#756d66;font-size:7px;font-weight:900}
+body[data-game-id="game-14"] #attack-clear-slot{min-height:30px;padding:3px 10px;border:1px solid rgba(52,57,68,.12);border-radius:10px;background:#fff;color:#756d66;font-size:7px;font-weight:900}
 body[data-game-id="game-14"] #attack-clear-slot:disabled{opacity:.35}
 body[data-game-id="game-14"] .attack-loadout-slots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
 body[data-game-id="game-14"] .attack-loadout-slot{
-  position:relative;min-width:0;min-height:64px;padding:5px 4px;border:1px solid rgba(52,57,68,.12);border-radius:10px;background:#fff;color:#67615c;
+  position:relative;min-width:0;min-height:66px;padding:5px 4px;border:1px solid rgba(52,57,68,.12);border-radius:11px;background:#fff;color:#67615c;
   display:grid;grid-template-columns:22px minmax(0,1fr);grid-template-rows:1fr;align-items:center;text-align:left
 }
 body[data-game-id="game-14"] .attack-loadout-slot.active{border-color:color-mix(in srgb,var(--gh-accent) 52%,transparent);background:color-mix(in srgb,var(--gh-accent) 10%,#fff)}
@@ -9790,56 +9828,6 @@ body[data-game-id="game-14"] .attack-slot-icon svg{width:18px;height:30px;overfl
 body[data-game-id="game-14"] .attack-slot-copy{min-width:0}
 body[data-game-id="game-14"] .attack-slot-copy strong{display:block;overflow:hidden;text-overflow:ellipsis;font-size:7.4px;font-weight:950;white-space:nowrap}
 body[data-game-id="game-14"] .attack-slot-copy small{display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;color:#817870;font-size:5.9px;font-weight:800;white-space:nowrap}
-body[data-game-id="game-14"] .attack-vehicle-card.assigned{border-color:color-mix(in srgb,var(--gh-accent) 44%,transparent);background:color-mix(in srgb,var(--gh-accent) 9%,#fff)}
-
-body[data-game-id="game-14"] .attack-battle-status-row{flex:0 0 auto;min-height:18px;display:flex;align-items:center;justify-content:center}
-body[data-game-id="game-14"] .attack-deploy-bar{flex:0 0 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
-body[data-game-id="game-14"] .attack-deploy-button{
-  position:relative;min-width:0;min-height:69px;padding:4px;border:1px solid rgba(52,57,68,.14);border-radius:12px;background:rgba(255,255,255,.78);color:#66605a;
-  display:grid;grid-template-columns:25px minmax(0,1fr);align-items:center;text-align:left
-}
-body[data-game-id="game-14"] .attack-deploy-button.route-direct{box-shadow:inset 0 -3px 0 rgba(179,111,69,.26)}
-body[data-game-id="game-14"] .attack-deploy-button.route-winding{box-shadow:inset 0 -3px 0 rgba(79,132,123,.28)}
-body[data-game-id="game-14"] .attack-deploy-button:disabled{opacity:.38;filter:saturate(.35)}
-body[data-game-id="game-14"] .attack-deploy-number{position:absolute;left:4px;top:4px;width:14px;height:14px;border-radius:50%;background:#eee6df;color:#786f68;display:grid;place-items:center;font-size:6.5px;font-weight:950}
-body[data-game-id="game-14"] .attack-deploy-icon{width:25px;height:45px;display:grid;place-items:center;font-size:18px;color:#a0948a}
-body[data-game-id="game-14"] .attack-deploy-icon svg{width:20px;height:33px;overflow:visible}
-body[data-game-id="game-14"] .attack-deploy-copy{min-width:0}
-body[data-game-id="game-14"] .attack-deploy-copy strong{display:block;overflow:hidden;text-overflow:ellipsis;font-size:7.5px;font-weight:950;white-space:nowrap}
-body[data-game-id="game-14"] .attack-deploy-copy small{display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;color:#817870;font-size:5.8px;font-weight:800;white-space:nowrap}
-body[data-game-id="game-14"] .attack-battle-footer{grid-template-columns:1fr 78px}
-body[data-game-id="game-14"] #attack-end-round{min-height:42px;border:1px solid rgba(52,57,68,.14);border-radius:12px;background:rgba(255,255,255,.68);color:#69635e;font-size:8px;font-weight:950;letter-spacing:.04em}
-body[data-game-id="game-14"] #attack-end-round:disabled{opacity:.34}
-body[data-game-id="game-14"] #attack-pause{min-height:42px}
-/* Use more of the battle screen height while retaining the exact canvas aspect. */
-body[data-game-id="game-14"] .attack-stage-wrap{width:min(100%,442px,calc((100dvh - 263px) * 33 / 56));max-height:none}
-
-@media(max-height:760px){
-  body[data-game-id="game-14"] .attack-loadout-panel{padding:5px 6px}
-  body[data-game-id="game-14"] .attack-loadout-heading{margin-bottom:4px}
-  body[data-game-id="game-14"] .attack-loadout-slot{min-height:48px}
-  body[data-game-id="game-14"] .attack-slot-icon{height:33px}
-  body[data-game-id="game-14"] .attack-slot-icon svg{height:27px}
-  body[data-game-id="game-14"] .attack-deploy-button{min-height:54px}
-  body[data-game-id="game-14"] .attack-deploy-icon{height:36px}
-  body[data-game-id="game-14"] .attack-stage-wrap{width:min(100%,400px,calc((100dvh - 222px) * 33 / 56))}
-}
-@media(max-width:350px){
-  body[data-game-id="game-14"] .attack-slot-copy small,
-  body[data-game-id="game-14"] .attack-deploy-copy small{font-size:5.2px}
-  body[data-game-id="game-14"] .attack-deploy-button{padding-left:2px;padding-right:2px}
-}
-
-/* ============================================================
-   GameHub v1.8.4 — Tower Attack drag deployment prototype
-   ============================================================ */
-body[data-game-id="game-14"] .attack-plan,
-body[data-game-id="game-14"] .attack-battle{width:min(100%,448px)}
-body[data-game-id="game-14"] .attack-economy-hud{grid-template-columns:repeat(4,minmax(0,1fr))}
-body[data-game-id="game-14"] .attack-battle-hud.attack-economy-hud{grid-template-columns:repeat(4,minmax(0,1fr)) 44px}
-body[data-game-id="game-14"] .attack-economy-hud>div{min-width:0;padding:5px 6px}
-body[data-game-id="game-14"] .attack-economy-hud span{font-size:6.3px}
-body[data-game-id="game-14"] .attack-economy-hud strong{font-size:13px}
 body[data-game-id="game-14"] .attack-roster-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:0 2px}
 body[data-game-id="game-14"] .attack-roster-heading span{color:#8a837d;font-size:7px;font-weight:950;letter-spacing:.1em}
 body[data-game-id="game-14"] .attack-roster-heading small{color:#8a837d;font-size:6.3px;font-weight:750;text-align:right}
@@ -9847,45 +9835,93 @@ body[data-game-id="game-14"] .attack-roster-grid{flex:1 1 auto;min-height:0;disp
 body[data-game-id="game-14"] .attack-roster-card{position:relative;min-width:0;min-height:0;padding:6px 7px;border:1px solid rgba(52,57,68,.12);border-radius:12px;background:rgba(255,255,255,.7);color:var(--gh-text);display:grid;grid-template-columns:35px minmax(0,1fr) auto;grid-template-rows:auto 1fr;column-gap:7px;text-align:left;overflow:hidden}
 body[data-game-id="game-14"] .attack-roster-card.assigned{border-color:color-mix(in srgb,var(--gh-accent) 50%,transparent);background:color-mix(in srgb,var(--gh-accent) 8%,#fff)}
 body[data-game-id="game-14"] .attack-roster-card.unaffordable{opacity:.6;filter:saturate(.72)}
-body[data-game-id="game-14"] .attack-roster-card .attack-vehicle-icon{grid-column:1;grid-row:1/3;width:35px;height:47px;background:#e1d2bb}
+body[data-game-id="game-14"] .attack-roster-card .attack-vehicle-icon{grid-column:1;grid-row:1/3;width:35px;height:47px;background:#e1d2bb;border-radius:10px}
 body[data-game-id="game-14"] .attack-roster-card .attack-vehicle-icon svg{width:25px;height:38px}
 body[data-game-id="game-14"] .attack-roster-copy{grid-column:2;grid-row:1/3;min-width:0;padding-top:10px}
 body[data-game-id="game-14"] .attack-roster-copy strong{display:block;font-size:8.6px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body[data-game-id="game-14"] .attack-roster-copy small{display:block;margin-top:2px;color:#7f7770;font-size:6.1px;font-weight:750;line-height:1.15}
-body[data-game-id="game-14"] .attack-roster-card .attack-vehicle-price{grid-column:3;grid-row:1;font-size:8.5px}
+body[data-game-id="game-14"] .attack-roster-card .attack-vehicle-price{grid-column:3;grid-row:1;font-size:8.5px;justify-self:end;color:var(--gh-accent);font-weight:950}
 body[data-game-id="game-14"] .attack-roster-kind{position:absolute;left:46px;top:5px;font-size:5.3px;font-weight:950;letter-spacing:.08em;color:#8a837d}
 body[data-game-id="game-14"] .attack-roster-kind.attack{color:#9a603f}
 body[data-game-id="game-14"] .attack-roster-kind.defence{color:#48766e}
-body[data-game-id="game-14"] .attack-stage-wrap{aspect-ratio:33/56;width:min(100%,448px,calc((100dvh - 254px) * 33 / 56));border-radius:18px}
-body[data-game-id="game-14"] #attack-canvas{aspect-ratio:33/56;height:auto}
-body[data-game-id="game-14"] .attack-deploy-bar{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-body[data-game-id="game-14"] .attack-deploy-button{touch-action:none;user-select:none;-webkit-user-select:none;min-height:70px;cursor:grab}
+body[data-game-id="game-14"] .attack-send{
+  flex:0 0 auto;min-height:48px;padding:0 16px;border:1px solid rgba(52,57,68,.14);border-radius:16px;background:rgba(255,255,255,.84);color:#6a635e;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center
+}
+body[data-game-id="game-14"] .attack-send:disabled{border-color:rgba(52,57,68,.1);background:#eee8e2;color:#9a928b}
+body[data-game-id="game-14"] .attack-send span{font-size:11px;font-weight:950;letter-spacing:.04em}
+body[data-game-id="game-14"] .attack-send small{font-size:7px;font-weight:800;margin-top:1px}
+body[data-game-id="game-14"] .attack-stage-wrap{
+  flex:0 1 auto;align-self:center;width:100%;max-width:404px;aspect-ratio:33 / 56;max-height:none;border-radius:22px;overflow:hidden;
+  background:linear-gradient(180deg,#cfba82 0%,#c6ae75 100%);border:1px solid rgba(108,90,61,.16);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)
+}
+body[data-game-id="game-14"] #attack-canvas{display:block;width:100%;height:100%;touch-action:none;aspect-ratio:33 / 56}
+body[data-game-id="game-14"] .attack-battle-status-row{flex:0 0 auto;min-height:20px;display:flex;align-items:center;justify-content:center}
+body[data-game-id="game-14"] #attack-battle-status{min-width:0;color:#746e69;font-size:9px;font-weight:800;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body[data-game-id="game-14"] .attack-deploy-bar{flex:0 0 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+body[data-game-id="game-14"] .attack-deploy-button{
+  position:relative;min-width:0;min-height:72px;padding:4px;border:1px solid rgba(52,57,68,.14);border-radius:14px;background:rgba(255,255,255,.78);color:#66605a;
+  display:grid;grid-template-columns:25px minmax(0,1fr);align-items:center;text-align:left;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab
+}
 body[data-game-id="game-14"] .attack-deploy-button:active{cursor:grabbing}
 body[data-game-id="game-14"] .attack-deploy-button.kind-attack{box-shadow:inset 0 -3px 0 rgba(179,111,69,.3)}
 body[data-game-id="game-14"] .attack-deploy-button.kind-defence{box-shadow:inset 0 -3px 0 rgba(79,132,123,.32)}
 body[data-game-id="game-14"] .attack-deploy-button.unaffordable{opacity:.46;filter:saturate(.45)}
 body[data-game-id="game-14"] .attack-deploy-button.armed{outline:2px solid color-mix(in srgb,var(--gh-accent) 52%,transparent);outline-offset:1px}
-body[data-game-id="game-14"] .attack-battle-footer{grid-template-columns:1fr 94px}
-body[data-game-id="game-14"] .attack-mini-stats{min-width:0;color:#746e69;font-size:8px;font-weight:850;text-align:center}
-body[data-game-id="game-14"] #attack-pause{min-height:42px}
-body[data-game-id="game-14"] .attack-drag-ghost{position:fixed;left:0;top:0;z-index:9999;width:72px;min-height:52px;padding:4px 5px;border:2px solid rgba(52,57,68,.16);border-radius:12px;background:rgba(250,247,242,.94);pointer-events:none;display:flex;align-items:center;gap:4px;box-shadow:0 6px 18px rgba(40,40,38,.2);transform:translate(-999px,-999px)}
+body[data-game-id="game-14"] .attack-deploy-number{position:absolute;left:4px;top:4px;width:14px;height:14px;border-radius:50%;background:#eee6df;color:#786f68;display:grid;place-items:center;font-size:6.5px;font-weight:950}
+body[data-game-id="game-14"] .attack-deploy-icon{width:25px;height:45px;display:grid;place-items:center;font-size:18px;color:#a0948a}
+body[data-game-id="game-14"] .attack-deploy-icon svg{width:20px;height:33px;overflow:visible}
+body[data-game-id="game-14"] .attack-deploy-copy{min-width:0}
+body[data-game-id="game-14"] .attack-deploy-copy strong{display:block;overflow:hidden;text-overflow:ellipsis;font-size:7.5px;font-weight:950;white-space:nowrap}
+body[data-game-id="game-14"] .attack-deploy-copy small{display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;color:#817870;font-size:5.8px;font-weight:800;white-space:nowrap}
+body[data-game-id="game-14"] .attack-battle-footer{flex:0 0 auto;display:grid;grid-template-columns:1fr 112px;gap:8px;align-items:center}
+body[data-game-id="game-14"] .attack-mini-stats{min-width:0;color:#746e69;font-size:8.2px;font-weight:850;text-align:center}
+body[data-game-id="game-14"] #attack-pause{
+  min-height:54px;padding:0 10px;border:1px solid rgba(52,57,68,.14);border-radius:15px;background:rgba(255,255,255,.78);color:#5f5a56;font-size:9px;font-weight:950;letter-spacing:.05em;touch-action:manipulation
+}
+body[data-game-id="game-14"] #attack-pause span{font-size:16px;margin-right:4px}
+body[data-game-id="game-14"] .attack-drag-ghost{
+  position:fixed;left:0;top:0;z-index:9999;width:74px;min-height:54px;padding:4px 5px;border:2px solid rgba(52,57,68,.16);border-radius:12px;background:rgba(250,247,242,.96);pointer-events:none;display:flex;align-items:center;gap:4px;box-shadow:0 8px 22px rgba(40,40,38,.24);transform:translate(-999px,-999px)
+}
+body[data-game-id="game-14"] .attack-drag-ghost::after{content:"";position:absolute;left:50%;top:100%;width:2px;height:24px;background:rgba(92,87,81,.35);transform:translateX(-50%)}
+body[data-game-id="game-14"] .attack-drag-ghost::before{content:"";position:absolute;left:50%;top:calc(100% + 24px);width:12px;height:12px;border:2px solid rgba(92,87,81,.45);border-radius:50%;background:rgba(255,255,255,.55);transform:translate(-50%,-50%)}
 body[data-game-id="game-14"] .attack-drag-ghost svg{width:25px;height:38px;flex:0 0 auto}
 body[data-game-id="game-14"] .attack-drag-ghost span{font-size:7px;font-weight:950;color:#625e59}
 body[data-game-id="game-14"] .attack-drag-ghost.attack{border-color:rgba(179,111,69,.42)}
+body[data-game-id="game-14"] .attack-drag-ghost.attack::before{border-color:rgba(179,111,69,.54)}
 body[data-game-id="game-14"] .attack-drag-ghost.defence{border-color:rgba(79,132,123,.46)}
+body[data-game-id="game-14"] .attack-drag-ghost.defence::before{border-color:rgba(79,132,123,.56)}
 @media(max-height:760px){
+  body[data-game-id="game-14"] .attack-page{gap:5px!important;padding-top:0!important}
+  body[data-game-id="game-14"] .attack-header .kicker{font-size:9px!important;margin-bottom:3px!important}
+  body[data-game-id="game-14"] .attack-header h1{font-size:clamp(25px,8.1vw,35px)!important}
+  body[data-game-id="game-14"] .attack-plan-hud>div,
+  body[data-game-id="game-14"] .attack-battle-hud>div,
+  body[data-game-id="game-14"] .attack-battle-hud>button{min-height:40px;border-radius:14px}
+  body[data-game-id="game-14"] .attack-economy-hud strong{font-size:12px}
+  body[data-game-id="game-14"] .attack-round-note{min-height:23px;padding-top:4px;padding-bottom:4px}
+  body[data-game-id="game-14"] .attack-loadout-panel{padding:5px 6px}
+  body[data-game-id="game-14"] .attack-loadout-slot{min-height:52px}
+  body[data-game-id="game-14"] .attack-slot-icon{height:33px}
+  body[data-game-id="game-14"] .attack-slot-icon svg{height:27px}
   body[data-game-id="game-14"] .attack-roster-grid{gap:4px}
   body[data-game-id="game-14"] .attack-roster-card{padding:4px 5px;grid-template-columns:31px minmax(0,1fr) auto;column-gap:5px}
   body[data-game-id="game-14"] .attack-roster-card .attack-vehicle-icon{width:31px;height:40px}
   body[data-game-id="game-14"] .attack-roster-card .attack-vehicle-icon svg{width:22px;height:32px}
   body[data-game-id="game-14"] .attack-roster-copy{padding-top:8px}
   body[data-game-id="game-14"] .attack-roster-kind{left:40px;top:3px}
-  body[data-game-id="game-14"] .attack-stage-wrap{width:min(100%,408px,calc((100dvh - 218px) * 33 / 56))}
-  body[data-game-id="game-14"] .attack-deploy-button{min-height:58px}
+  body[data-game-id="game-14"] .attack-send{min-height:43px}
+  body[data-game-id="game-14"] .attack-deploy-button{min-height:60px}
   body[data-game-id="game-14"] .attack-deploy-icon{height:38px}
+  body[data-game-id="game-14"] .attack-battle-footer{grid-template-columns:1fr 102px}
+  body[data-game-id="game-14"] #attack-pause{min-height:48px}
 }
 @media(max-width:350px){
+  body[data-game-id="game-14"] .attack-page{width:100%!important}
   body[data-game-id="game-14"] .attack-economy-hud strong{font-size:11px}
   body[data-game-id="game-14"] .attack-economy-hud span{font-size:5.6px}
   body[data-game-id="game-14"] .attack-roster-copy small{font-size:5.4px}
+  body[data-game-id="game-14"] .attack-slot-copy small,
+  body[data-game-id="game-14"] .attack-deploy-copy small{font-size:5.15px}
+  body[data-game-id="game-14"] .attack-deploy-button{padding-left:2px;padding-right:2px}
 }
