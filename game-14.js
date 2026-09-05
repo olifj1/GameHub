@@ -19,6 +19,7 @@
   const battleStatusEl = document.getElementById("attack-battle-status");
   const miniStatsEl = document.getElementById("attack-mini-stats");
   const speedBtn = document.getElementById("attack-speed");
+  const immersiveBtn = document.getElementById("attack-immersive");
   const pauseBtn = document.getElementById("attack-pause");
   const canvas = document.getElementById("attack-canvas");
   const stageWrap = document.getElementById("attack-stage-wrap");
@@ -78,7 +79,8 @@
     selectedSlot: 0,
     loadout: ["scout", "lightturret", "gunbuggy", "cannon"],
     started: false,
-    gameOver: false
+    gameOver: false,
+    immersive: true
   };
 
   const battle = {
@@ -257,17 +259,37 @@
 
   function openBattle(){
     state.started=true; planEl.hidden=true; battleEl.hidden=false; running=true; battle.armedSlot=null; planNoteEl.textContent="Battle paused. Remap any quick button, then return when ready.";
+    applyImmersiveMode();
     resizeBattleLayout();
     requestAnimationFrame(resizeBattleLayout);
     lastFrame=performance.now(); renderDeployBar(); renderBattleHud(); drawBattle();
   }
 
   function openCommand(){
-    running=false; cancelDrag(); planEl.hidden=false; battleEl.hidden=true; renderPlan();
+    running=false; cancelDrag(); document.body.classList.remove("attack-immersive-mode"); planEl.hidden=false; battleEl.hidden=true; renderPlan();
+  }
+
+  function toggleImmersive(){
+    state.immersive=!state.immersive;
+    applyImmersiveMode();
+    requestAnimationFrame(resizeBattleLayout);
+  }
+
+  function applyImmersiveMode(){
+    const on=!battleEl.hidden && state.immersive;
+    document.body.classList.toggle("attack-immersive-mode",on);
+    immersiveBtn.textContent=on?"↗":"↙";
+    immersiveBtn.setAttribute("aria-pressed",String(on));
+    immersiveBtn.setAttribute("aria-label",on?"Exit immersive battle view":"Enter immersive battle view");
   }
 
   function resizeBattleLayout(){
     if(battleEl.hidden) return;
+    if(state.immersive){
+      stageWrap.style.width="100%";
+      stageWrap.style.height="100%";
+      return;
+    }
     const page = document.querySelector('.attack-page');
     if(!page) return;
     const battleRect = battleEl.getBoundingClientRect();
@@ -280,6 +302,7 @@
     const widthFromHeight = availableH * WORLD.width / WORLD.height;
     const pageInnerWidth = Math.min((page.clientWidth || 0), window.innerWidth - 24);
     const width = Math.max(250, Math.min(pageInnerWidth, 404, widthFromHeight));
+    stageWrap.style.height="";
     stageWrap.style.width = `${width}px`;
   }
 
@@ -350,6 +373,12 @@
   function clientToCanvas(clientX,clientY){
     const r=canvas.getBoundingClientRect();
     if(clientX<r.left||clientX>r.right||clientY<r.top||clientY>r.bottom) return null;
+    if(state.immersive && !battleEl.hidden){
+      const scale=Math.max(r.width/WORLD.width,r.height/WORLD.height);
+      const renderedW=WORLD.width*scale, renderedH=WORLD.height*scale;
+      const offsetX=(r.width-renderedW)/2, offsetY=(r.height-renderedH)/2;
+      return {x:(clientX-r.left-offsetX)/scale,y:(clientY-r.top-offsetY)/scale};
+    }
     return {x:(clientX-r.left)*WORLD.width/r.width,y:(clientY-r.top)*WORLD.height/r.height};
   }
 
@@ -591,7 +620,7 @@
   }
 
   function resetGame(){
-    state.playerCash=START_CASH; state.enemyCash=START_CASH; state.playerBase=START_BASE; state.enemyBase=START_BASE; state.selectedSlot=0; state.loadout=["scout","lightturret","gunbuggy","cannon"]; state.started=false; state.gameOver=false;
+    state.playerCash=START_CASH; state.enemyCash=START_CASH; state.playerBase=START_BASE; state.enemyBase=START_BASE; state.selectedSlot=0; state.loadout=["scout","lightturret","gunbuggy","cannon"]; state.started=false; state.gameOver=false; state.immersive=true;
     battle.units=[]; battle.turrets=[]; battle.shots=[]; battle.effects=[]; battle.nextUnitId=1; battle.nextTurretId=1; battle.aiTimer=1.5; battle.elapsed=0; battle.armedSlot=null; battle.hoverRoute=null; battle.hoverNode=null; battle.lastPlayerRoute=null; cancelDrag(); placementNodes.forEach(n=>n.occupiedBy=null);
     openCommand(); planNoteEl.textContent="Assign anything to the four quick buttons. Cost is paid only when deployed.";
   }
@@ -738,6 +767,7 @@
   sendBtn.addEventListener("click",openBattle);
   pauseBtn.addEventListener("click",openCommand);
   speedBtn.addEventListener("click",()=>{speedMultiplier=speedMultiplier===1?2:speedMultiplier===2?3:1;speedBtn.textContent=`${speedMultiplier}×`;});
+  immersiveBtn.addEventListener("click",toggleImmersive);
   canvas.addEventListener("pointerup",canvasClick);
   window.addEventListener("pointermove",onPointerMove,{passive:false});
   window.addEventListener("pointerup",onPointerUp,{passive:false});

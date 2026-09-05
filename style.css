@@ -9793,7 +9793,7 @@ body[data-game-id="game-14"] .attack-battle[hidden],body[data-game-id="game-14"]
 body[data-game-id="game-14"] .attack-plan-hud,
 body[data-game-id="game-14"] .attack-battle-hud{display:grid;gap:5px;flex:0 0 auto}
 body[data-game-id="game-14"] .attack-economy-hud{grid-template-columns:repeat(4,minmax(0,1fr))}
-body[data-game-id="game-14"] .attack-battle-hud.attack-economy-hud{grid-template-columns:repeat(4,minmax(0,1fr)) 52px}
+body[data-game-id="game-14"] .attack-battle-hud.attack-economy-hud{grid-template-columns:repeat(4,minmax(0,1fr)) 48px 48px}
 body[data-game-id="game-14"] .attack-plan-hud>div,
 body[data-game-id="game-14"] .attack-battle-hud>div,
 body[data-game-id="game-14"] .attack-battle-hud>button{
@@ -9924,4 +9924,61 @@ body[data-game-id="game-14"] .attack-drag-ghost.defence::before{border-color:rgb
   body[data-game-id="game-14"] .attack-slot-copy small,
   body[data-game-id="game-14"] .attack-deploy-copy small{font-size:5.15px}
   body[data-game-id="game-14"] .attack-deploy-button{padding-left:2px;padding-right:2px}
+}
+
+
+/* ============================================================
+   GameHub v1.8.6 — Tower Attack immersive battle HUD
+   ============================================================ */
+body[data-game-id="game-14"] #attack-immersive{font-size:18px!important;line-height:1;font-weight:800}
+body.attack-immersive-mode[data-game-id="game-14"] .attack-header{display:none!important}
+body.attack-immersive-mode[data-game-id="game-14"] .attack-page{
+  width:100%!important;max-width:none!important;height:100%!important;margin:0!important;padding:0!important;gap:0!important;overflow:hidden!important
+}
+body.attack-immersive-mode[data-game-id="game-14"] .attack-battle{
+  position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;margin:0!important;display:block!important;overflow:hidden!important;background:#c9b27a
+}
+body.attack-immersive-mode[data-game-id="game-14"] .attack-stage-wrap{
+  position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;aspect-ratio:auto!important;border:0!important;border-radius:0!important;box-shadow:none!important;z-index:0
+}
+body.attack-immersive-mode[data-game-id="game-14"] #attack-canvas{
+  width:100%!important;height:100%!important;aspect-ratio:auto!important;object-fit:cover!important;object-position:center center!important
+}
+body.attack-immersive-mode[data-game-id="game-14"] .attack-battle-hud{
+  position:absolute!important;z-index:10!important;top:max(8px,env(safe-area-inset-top))!important;left:8px!important;right:8px!important;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr)) 42px 42px!important;gap:4px!important;pointer-events:none
+}
+body.attack-immersive-mode[data-game-id="game-14"] .attack-battle-hud>div,
+body.attack-immersive-mode[data-game-id="game-14"] .attack-battle-hud>button{
+  min-height:40px!important;border-radius:12px!important;border:1px solid rgba(255,255,255,.46)!important;background:rgba(246,241,234,.83)!important;box-shadow:0 2px 10px rgba(52,47,40,.13)!important;backdrop-filter:blur(7px);pointer-events:auto
+}
+body.attack-immersive-mode[data-game-id="game-14"] .attack-battle-hud>div{padding:4px 6px!important}
+body.attack-immersive-mode[data-game-id="game-14"] .attack-battle-hud span{font-size:5.7px!important;color:#716a63!important}
+body.attack-immersive-mode[data-game-id="game-14"] .attack-battle-hud strong{font-size:11px!important}
+body.attack-immersive-mode[data-game-id="game-14"] #attack-speed{font-size:9px!important}
+body.attack-immersive-mode[data-game-id="game-14"] #attack-immersive{font-size:17px!important}
+body.attack-immersive-mode[data-game-id="game-14"] .attack-battle-status-row{
+  position:absolute!important;z-index:11!important;left:50%!important;bottom:calc(max(8px,env(safe-area-inset-bottom)) + 82px)!important;transform:translateX(-50%);width:min(84%,330px)!important;min-height:28px!important;padding:4px 10px!important;border-radius:12px!important;background:rgba(246,241,234,.8)!important;backdrop-filter:blur(6px);pointer-events:none
+}
+body.attack-immersive-mode[data-game-id="game-14"] #attack-battle-status{font-size:8px!important;color:#645f59!important}
+body.attack-immersive-mode[data-game-id="game-14"] .attack-deploy-bar{
+  position:absolute!important;z-index:12!important;left:8px!important;right:8px!important;bottom:max(8px,env(safe-area-inset-bottom))!important;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px!important
+}
+body.attack-immersive-mode[data-game-id="game-14"] .attack-deploy-button{
+  min-height:66px!important;border-color:rgba(255,255,255,.5)!important;background:rgba(248,244,239,.86)!important;box-shadow:0 3px 12px rgba(55,50,43,.14),inset 0 -3px 0 rgba(79,132,123,.12)!important;backdrop-filter:blur(8px)
+}
+body.attack-immersive-mode[data-game-id="game-14"] .attack-deploy-button.kind-attack{box-shadow:0 3px 12px rgba(55,50,43,.14),inset 0 -3px 0 rgba(179,111,69,.32)!important}
+body.attack-immersive-mode[data-game-id="game-14"] .attack-deploy-button.kind-defence{box-shadow:0 3px 12px rgba(55,50,43,.14),inset 0 -3px 0 rgba(79,132,123,.34)!important}
+body.attack-immersive-mode[data-game-id="game-14"] .attack-battle-footer{
+  position:absolute!important;z-index:13!important;right:10px!important;bottom:calc(max(8px,env(safe-area-inset-bottom)) + 78px)!important;width:auto!important;display:block!important;pointer-events:none
+}
+body.attack-immersive-mode[data-game-id="game-14"] .attack-mini-stats{display:none!important}
+body.attack-immersive-mode[data-game-id="game-14"] #attack-pause{
+  min-width:92px!important;min-height:42px!important;padding:0 10px!important;border-color:rgba(255,255,255,.5)!important;background:rgba(248,244,239,.86)!important;box-shadow:0 3px 12px rgba(55,50,43,.14)!important;backdrop-filter:blur(8px);pointer-events:auto
+}
+@media(max-width:350px){
+  body.attack-immersive-mode[data-game-id="game-14"] .attack-battle-hud{left:5px!important;right:5px!important;gap:3px!important;grid-template-columns:repeat(4,minmax(0,1fr)) 38px 38px!important}
+  body.attack-immersive-mode[data-game-id="game-14"] .attack-battle-hud>div,
+  body.attack-immersive-mode[data-game-id="game-14"] .attack-battle-hud>button{min-height:37px!important}
+  body.attack-immersive-mode[data-game-id="game-14"] .attack-deploy-bar{left:5px!important;right:5px!important;gap:3px!important}
+  body.attack-immersive-mode[data-game-id="game-14"] .attack-deploy-button{min-height:61px!important}
 }

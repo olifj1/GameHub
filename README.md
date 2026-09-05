@@ -1,17 +1,12 @@
-# GameHub v1.8.5
+# GameHub v1.8.6
 
-This drop continues the new live Tower Attack prototype.
+This release adds an immersive battle presentation to Tower Attack.
 
-## What changed in this release
-- fixed Tower Attack to use the proper locked game-page shell again, removing the stray rotate text / plain-link issue and stopping vertical scrolling from creeping back in
-- tightened the Tower Attack layout so the battle view fits the phone screen better and the stage now auto-sizes to the available height
-- enlarged the COMMAND button hit area
-- improved drag/drop readability: stronger route highlighting, clearer valid defence nodes, and an offset drag ghost with a targeting marker so turrets do not sit under your finger
-- reworked the four routes to feel more like dirt tracks, with more variation and meandering, and pushed defence placements farther away from the crossover area
-- improved the battlefield art pass with denser scenery, more texture variation, larger painted trees, extra rocks/pebbles, and a few nicer building/ruin sprites
-- improved the basic enemy AI so it reacts more to lane pressure, builds more sensible defences, and chooses attacks with a bit more awareness of your coverage
-
-## Notes
-- this is still an early gameplay prototype for Tower Attack
-- cost is still paid on deployment rather than during loadout assignment
-- the rest of GameHub is unchanged from the previous drop
+## What changed
+- Tower Attack battles now open in an immersive full-screen-style view by default
+- the battlefield fills the available phone viewport and uses a centred cover crop rather than being squeezed between UI rows
+- credits, income, base health, deploy buttons, status and Command now float over the battlefield as translucent HUD elements
+- a small expand/collapse button in the top HUD toggles between immersive and the previous framed battle layout
+- opening Command automatically returns to the normal planning layout; returning to battle restores the chosen battle view
+- pointer/drop mapping accounts for the immersive crop so route and defence dragging remains accurate
+- no gameplay balance changes in this release
