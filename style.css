@@ -9925,3 +9925,15 @@ body[data-game-id="game-14"] .attack-drag-ghost.defence::before{border-color:rgb
   body[data-game-id="game-14"] .attack-deploy-copy small{font-size:5.15px}
   body[data-game-id="game-14"] .attack-deploy-button{padding-left:2px;padding-right:2px}
 }
+
+
+/* ============================================================
+   GameHub v1.8.8 — Tower Attack Stage 1 vehicle atlas
+   ============================================================ */
+body[data-game-id="game-14"] .tower-vehicle-atlas-icon{
+  display:block;width:100%;height:100%;background-repeat:no-repeat;background-color:transparent;background-origin:border-box;
+}
+body[data-game-id="game-14"] .attack-vehicle-icon .tower-vehicle-atlas-icon,
+body[data-game-id="game-14"] .attack-slot-icon .tower-vehicle-atlas-icon,
+body[data-game-id="game-14"] .attack-deploy-icon .tower-vehicle-atlas-icon{width:100%;height:100%}
+body[data-game-id="game-14"] .attack-drag-ghost .tower-vehicle-atlas-icon{width:28px;height:42px;flex:0 0 28px}

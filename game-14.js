@@ -35,6 +35,22 @@
     enemy: { main: "#b36f45", dark: "#75472f", pale: "#e2b79d" }
   };
 
+  // Stage 1 art pipeline: vehicles now come from a replaceable sprite atlas.
+  // The old procedural draw code remains only as a fallback if the PNG cannot load.
+  const ART = window.TowerAttackAssets || null;
+  const vehicleAtlasImage = new Image();
+  let vehicleAtlasReady = false;
+  if(ART?.vehicleAtlas?.src){
+    vehicleAtlasImage.decoding = "async";
+    vehicleAtlasImage.onload = () => {
+      vehicleAtlasReady = true;
+      renderPlan();
+      renderDeployBar();
+      drawBattle();
+    };
+    vehicleAtlasImage.src = ART.vehicleAtlas.src;
+  }
+
   const ITEMS = {
     scout: { id:"scout", kind:"attack", name:"Scout", cost:28, hp:30, speed:104, armour:0, attack:0, range:0, fireRate:0, baseDamage:1, behavior:"run", meta:"Fast · avoids fights" },
     gunbuggy: { id:"gunbuggy", kind:"attack", name:"Gun Buggy", cost:68, hp:58, speed:74, armour:1, attack:10, range:92, fireRate:.72, baseDamage:2, behavior:"fight", meta:"Mobile · stops to fight" },
@@ -218,6 +234,22 @@
     return `<svg viewBox="0 0 40 58" aria-hidden="true"><circle cx="8" cy="14" r="4" fill="#323638"/><circle cx="32" cy="14" r="4" fill="#323638"/><circle cx="8" cy="44" r="4" fill="#323638"/><circle cx="32" cy="44" r="4" fill="#323638"/><rect x="10" y="5" width="20" height="48" rx="7" fill="${c.main}" stroke="${c.dark}" stroke-width="2"/><rect x="14" y="13" width="12" height="14" rx="3" fill="${c.pale}" opacity=".7"/>${item.attack?'<circle cx="20" cy="35" r="5" fill="#414547"/><rect x="18.5" y="25" width="3" height="12" rx="1.5" fill="#414547"/>':''}</svg>`;
   }
 
+  function vehicleAtlasCss(itemId,team=PLAYER){
+    const def=ART?.vehicles?.[itemId], atlas=ART?.vehicleAtlas;
+    if(!def||!atlas) return "";
+    const row=ART.teamRows?.[team] ?? 0;
+    const x=atlas.cols<=1?0:(def.col/(atlas.cols-1))*100;
+    const y=atlas.rows<=1?0:(row/(atlas.rows-1))*100;
+    return `background-image:url('${atlas.src}');background-size:${atlas.cols*100}% ${atlas.rows*100}%;background-position:${x}% ${y}%;`;
+  }
+
+  function itemVisual(item,team=PLAYER){
+    if(item?.kind==="attack" && ART?.vehicles?.[item.id]){
+      return `<span class="tower-vehicle-atlas-icon" style="${vehicleAtlasCss(item.id,team)}" aria-hidden="true"></span>`;
+    }
+    return itemSvg(item,team);
+  }
+
   function renderPlan(){
     cashEl.textContent=money(state.playerCash); incomeEl.textContent=`+£${INCOME_PER_SECOND}/s`;
     yourBaseEl.textContent=Math.max(0,state.playerBase); enemyBaseEl.textContent=Math.max(0,state.enemyBase);
@@ -225,12 +257,12 @@
     clearSlotBtn.disabled=!state.loadout[state.selectedSlot];
     loadoutEl.innerHTML=state.loadout.map((id,index)=>{
       const item=id?ITEMS[id]:null,active=index===state.selectedSlot;
-      return `<button type="button" class="attack-loadout-slot ${active?"active":""} ${item?"":"empty"}" data-loadout-slot="${index}"><span class="attack-slot-number">${index+1}</span><span class="attack-slot-icon">${item?itemSvg(item):"+"}</span><span class="attack-slot-copy"><strong>${item?item.name:"Empty"}</strong><small>${item?`${item.kind==="attack"?"Attack":"Defence"} · £${item.cost}`:"Tap then choose"}</small></span></button>`;
+      return `<button type="button" class="attack-loadout-slot ${active?"active":""} ${item?"":"empty"}" data-loadout-slot="${index}"><span class="attack-slot-number">${index+1}</span><span class="attack-slot-icon">${item?itemVisual(item):"+"}</span><span class="attack-slot-copy"><strong>${item?item.name:"Empty"}</strong><small>${item?`${item.kind==="attack"?"Attack":"Defence"} · £${item.cost}`:"Tap then choose"}</small></span></button>`;
     }).join("");
     rosterEl.innerHTML=Object.values(ITEMS).map(item=>{
       const assigned=state.loadout[state.selectedSlot]===item.id;
       const affordable=state.playerCash>=item.cost;
-      return `<button type="button" class="attack-roster-card ${assigned?"assigned":""} ${affordable?"":"unaffordable"}" data-assign-item="${item.id}"><span class="attack-roster-kind ${item.kind}">${item.kind==="attack"?"ATTACK":"DEFENCE"}</span><span class="attack-vehicle-icon">${itemSvg(item)}</span><span class="attack-roster-copy"><strong>${item.name}</strong><small>${item.meta}</small></span><span class="attack-vehicle-price">£${item.cost}</span></button>`;
+      return `<button type="button" class="attack-roster-card ${assigned?"assigned":""} ${affordable?"":"unaffordable"}" data-assign-item="${item.id}"><span class="attack-roster-kind ${item.kind}">${item.kind==="attack"?"ATTACK":"DEFENCE"}</span><span class="attack-vehicle-icon">${itemVisual(item)}</span><span class="attack-roster-copy"><strong>${item.name}</strong><small>${item.meta}</small></span><span class="attack-vehicle-price">£${item.cost}</span></button>`;
     }).join("");
   }
 
@@ -246,7 +278,7 @@
     deployBarEl.innerHTML=state.loadout.map((id,index)=>{
       const item=id?ITEMS[id]:null,affordable=item&&state.playerCash>=item.cost;
       const armed=battle.armedSlot===index;
-      return `<button type="button" class="attack-deploy-button ${item?`kind-${item.kind}`:"empty"} ${affordable?"":"unaffordable"} ${armed?"armed":""}" data-deploy-slot="${index}" ${item?"":"disabled"}><span class="attack-deploy-number">${index+1}</span><span class="attack-deploy-icon">${item?itemSvg(item):"+"}</span><span class="attack-deploy-copy"><strong>${item?item.name:"Empty"}</strong><small>${item?`£${item.cost} · ${item.kind==="attack"?"drag to route":"drag to point"}`:"Assign in Command"}</small></span></button>`;
+      return `<button type="button" class="attack-deploy-button ${item?`kind-${item.kind}`:"empty"} ${affordable?"":"unaffordable"} ${armed?"armed":""}" data-deploy-slot="${index}" ${item?"":"disabled"}><span class="attack-deploy-number">${index+1}</span><span class="attack-deploy-icon">${item?itemVisual(item):"+"}</span><span class="attack-deploy-copy"><strong>${item?item.name:"Empty"}</strong><small>${item?`£${item.cost} · ${item.kind==="attack"?"drag to route":"drag to point"}`:"Assign in Command"}</small></span></button>`;
     }).join("");
     deployBarEl.querySelectorAll("[data-deploy-slot]").forEach(btn=>{
       const index=Number(btn.dataset.deploySlot);
@@ -298,7 +330,7 @@
     if(!item) return;
     if(state.playerCash<item.cost){ battleStatusEl.textContent=`Need ${money(item.cost-state.playerCash)} more for ${item.name}.`; return; }
     e.preventDefault();
-    const ghost=document.createElement("div"); ghost.className=`attack-drag-ghost ${item.kind}`; ghost.innerHTML=`${itemSvg(item)}<span>${item.name}</span>`; document.body.appendChild(ghost);
+    const ghost=document.createElement("div"); ghost.className=`attack-drag-ghost ${item.kind}`; ghost.innerHTML=`${itemVisual(item)}<span>${item.name}</span>`; document.body.appendChild(ghost);
     battle.drag={index,item,pointerId:e.pointerId,startX:e.clientX,startY:e.clientY,x:e.clientX,y:e.clientY,moved:false,ghost};
     moveGhost(e.clientX,e.clientY); updateDragHover(e.clientX,e.clientY);
     battleStatusEl.textContent=item.kind==="attack"?"Drop onto a highlighted route.":"Drop onto a highlighted defence point.";
@@ -694,12 +726,39 @@
     });
   }
 
+  function drawFallbackVehicle(g,item,c){
+    if(item.id==="tank"){
+      g.fillStyle="#303536";g.fillRect(-13,-20,5,40);g.fillRect(8,-20,5,40);
+      g.fillStyle=c.main;g.strokeStyle=c.dark;g.lineWidth=2;g.beginPath();g.roundRect(-10,-21,20,42,5);g.fill();g.stroke();
+      g.fillStyle=c.dark;g.beginPath();g.arc(0,-2,7,0,Math.PI*2);g.fill();g.fillStyle="#3c4142";g.fillRect(-2,-23,4,20);
+    } else {
+      g.fillStyle="#303536";[[-11,-15],[11,-15],[-11,15],[11,15]].forEach(([x,y])=>{g.beginPath();g.arc(x,y,4,0,Math.PI*2);g.fill();});
+      g.fillStyle=c.main;g.strokeStyle=c.dark;g.lineWidth=2;g.beginPath();g.roundRect(-9,-22,18,44,6);g.fill();g.stroke();
+      g.fillStyle=c.pale;g.beginPath();g.roundRect(-5,-13,10,12,3);g.fill();
+      if(item.attack){g.fillStyle="#3c4142";g.beginPath();g.arc(0,7,5,0,Math.PI*2);g.fill();g.fillRect(-1.5,-6,3,14);}
+    }
+  }
+
+  function drawVehicleFromAtlas(g,item,team){
+    const def=ART?.vehicles?.[item.id], atlas=ART?.vehicleAtlas;
+    if(!vehicleAtlasReady||!def||!atlas) return false;
+    const row=ART.teamRows?.[team] ?? 0;
+    const sx=def.col*atlas.cell, sy=row*atlas.cell;
+    const dw=def.worldWidth, dh=def.worldHeight;
+    g.drawImage(vehicleAtlasImage,sx,sy,atlas.cell,atlas.cell,-dw/2,-dh/2,dw,dh);
+    return true;
+  }
+
   function drawUnits(g){
     battle.units.forEach(u=>{
-      if(u.dead) return;const p=unitPoint(u),item=ITEMS[u.itemId],c=TEAM[u.team];g.save();g.translate(p.x,p.y);g.rotate(u.heading+Math.PI/2);
+      if(u.dead) return;
+      const p=unitPoint(u),item=ITEMS[u.itemId],c=TEAM[u.team],art=ART?.vehicles?.[item.id];
+      g.save();g.translate(p.x,p.y);g.rotate(u.heading+Math.PI/2);
       if(u.hp<u.maxHp*.45){g.globalAlpha=.16;g.fillStyle="#3e4441";g.beginPath();g.arc(0,15,5+u.smoke*5,0,Math.PI*2);g.fill();g.globalAlpha=1;}
-      if(item.id==="tank"){g.fillStyle="#303536";g.fillRect(-13,-20,5,40);g.fillRect(8,-20,5,40);g.fillStyle=c.main;g.strokeStyle=c.dark;g.lineWidth=2;g.beginPath();g.roundRect(-10,-21,20,42,5);g.fill();g.stroke();g.fillStyle=c.dark;g.beginPath();g.arc(0,-2,7,0,Math.PI*2);g.fill();g.fillStyle="#3c4142";g.fillRect(-2,-23,4,20);}else{g.fillStyle="#303536";[[-11,-15],[11,-15],[-11,15],[11,15]].forEach(([x,y])=>{g.beginPath();g.arc(x,y,4,0,Math.PI*2);g.fill();});g.fillStyle=c.main;g.strokeStyle=c.dark;g.lineWidth=2;g.beginPath();g.roundRect(-9,-22,18,44,6);g.fill();g.stroke();g.fillStyle=c.pale;g.beginPath();g.roundRect(-5,-13,10,12,3);g.fill();if(item.attack){g.fillStyle="#3c4142";g.beginPath();g.arc(0,7,5,0,Math.PI*2);g.fill();g.fillRect(-1.5,-6,3,14);}}
-      g.restore();drawHealth(g,p.x,p.y-29,28,u.hp/u.maxHp,c.main);
+      if(!drawVehicleFromAtlas(g,item,u.team)) drawFallbackVehicle(g,item,c);
+      g.restore();
+      const healthY=p.y-((art?.worldHeight||58)*.33)-8;
+      drawHealth(g,p.x,healthY,28,u.hp/u.maxHp,c.main);
     });
   }
 

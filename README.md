@@ -1,11 +1,13 @@
-# GameHub v1.8.7
+# GameHub v1.8.8
 
-Tower Attack stability release.
+Tower Attack art-pipeline Stage 1.
 
-- restores the last known-good framed Tower Attack battle layout
-- restores working quick deploy buttons, drag-to-route / drag-to-placement controls and enemy deployment AI
-- keeps the v1.8.5 route, scenery, targeting, placement and AI improvements
-- removes the experimental immersive/full-screen battle mode for now
-- bumps the offline cache so the restored build replaces v1.8.6 cleanly
+- Adds `tower-vehicles.png`: the first replaceable runtime sprite atlas.
+- Scout, Gun Buggy and Tank now use atlas sprites for both teams instead of being constructed directly on the battlefield canvas.
+- Attacker icons in Command, deployment buttons and drag previews also use the vehicle atlas.
+- Adds `tower-vehicles-guide.png`, a clean reference sheet intended for later art/style passes.
+- Adds `tower-assets.js` so sprite positions and gameplay scale live outside the combat code.
+- Keeps the previous procedural vehicle drawing only as a safety fallback if the atlas fails to load.
+- No Tower Attack gameplay, economy, route or AI balance changes in this release.
 
-No other GameHub gameplay changes in this release.
+This is deliberately the first small step of the asset conversion; defence, scenery and terrain remain procedural for now.
