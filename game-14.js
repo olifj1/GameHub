@@ -670,7 +670,7 @@
     } else {
       drawTerrain(g); drawRoutes(g); drawBases(g);
     }
-    drawScenery(g);
+    if(!ART?.terrain?.bakedScenery) drawScenery(g);
   }
 
   function drawTerrain(g){

@@ -1,26 +1,9 @@
-# GameHub v1.8.10
+# GameHub v1.8.11
 
-Tower Attack art-pipeline conversion pass.
+Terrain art test for Tower Attack.
 
-## This release
-- keeps the v1.8.9 AI vehicle sprites and gameplay unchanged
-- fixes vehicle thumbnails so atlas art preserves its aspect ratio in Command, roster and deploy buttons
-- converts Light Turret, Cannon and Rapid Gun to a replaceable two-team defence atlas
-- converts trees, rocks, ruins, relays and huts to a replaceable scenery atlas
-- converts the base terrain, four dirt routes and base structures to a replaceable background texture
-- keeps the original procedural drawing code as a fallback if any image asset fails to load
-- includes clean guide/reference PNGs for the defence, scenery and terrain groups so each can later receive a controlled generative-AI style pass
-
-## Runtime art assets
-- `tower-vehicles.png`
-- `tower-defences.png`
-- `tower-scenery.png`
-- `tower-terrain.png`
-
-## Reference / AI guide assets
-- `tower-vehicles-guide.png`
-- `tower-defences-guide.png`
-- `tower-scenery-guide.png`
-- `tower-terrain-guide.png`
-
-No gameplay, economy or AI balance changes are intended in this release.
+- Replaces the procedural/baked Tower Attack battlefield background with the first generated painterly canyon terrain pass.
+- Keeps the real four route splines, deployment logic, combat, vehicles, defences, economy and AI unchanged.
+- The generated terrain contains its own trees, rocks and ruins, so the separate scenery atlas is temporarily not drawn over this map.
+- Route and defence placement highlights remain code-driven and therefore still use the real gameplay geometry.
+- v1.8.10 remains the clean pre-generated-terrain fallback.
