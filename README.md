@@ -1,13 +1,26 @@
-# GameHub v1.8.9
+# GameHub v1.8.10
 
-Tower Attack AI vehicle-art integration test.
+Tower Attack art-pipeline conversion pass.
 
-- Replaces the Stage-1 procedural vehicle atlas artwork with the second generated transparent vehicle pass.
-- Keeps the same six-cell atlas contract: Player Scout / Gun Buggy / Tank, then Enemy Scout / Gun Buggy / Tank.
-- Generated sprites are automatically cropped, centred and normalised into the existing 256px atlas cells.
-- Slightly increases visual sprite scale so the extra painted detail remains readable on the battlefield.
-- Keeps all Tower Attack gameplay, routes, economy, AI, combat and deployment logic unchanged.
-- Keeps the procedural vehicle renderer as a load-failure fallback.
-- The game uses a cleaned/normalised `tower-vehicles.png` derived from the generated transparent sheet.
+## This release
+- keeps the v1.8.9 AI vehicle sprites and gameplay unchanged
+- fixes vehicle thumbnails so atlas art preserves its aspect ratio in Command, roster and deploy buttons
+- converts Light Turret, Cannon and Rapid Gun to a replaceable two-team defence atlas
+- converts trees, rocks, ruins, relays and huts to a replaceable scenery atlas
+- converts the base terrain, four dirt routes and base structures to a replaceable background texture
+- keeps the original procedural drawing code as a fallback if any image asset fails to load
+- includes clean guide/reference PNGs for the defence, scenery and terrain groups so each can later receive a controlled generative-AI style pass
 
-v1.8.7 remains the stable pre-atlas fallback; v1.8.8 is the procedural-atlas baseline.
+## Runtime art assets
+- `tower-vehicles.png`
+- `tower-defences.png`
+- `tower-scenery.png`
+- `tower-terrain.png`
+
+## Reference / AI guide assets
+- `tower-vehicles-guide.png`
+- `tower-defences-guide.png`
+- `tower-scenery-guide.png`
+- `tower-terrain-guide.png`
+
+No gameplay, economy or AI balance changes are intended in this release.

@@ -170,7 +170,7 @@ window.APP_CONFIG = {
       "description": "Attack and defend in real time: deploy units, place weapons and break the enemy base.",
       "icon": "⇧",
       "enabled": true,
-      "path": "game-14.html?v=1.8.9"
+      "path": "game-14.html?v=1.8.10"
     }
   ]
 };

@@ -1,4 +1,4 @@
-const CACHE = "gamehub-v1.8.9";
+const CACHE = "gamehub-v1.8.10";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -40,7 +40,10 @@ const APP_SHELL = [
   "./game-14.html",
   "./game-14.js",
   "./tower-assets.js",
-  "./tower-vehicles.png"
+  "./tower-vehicles.png",
+  "./tower-defences.png",
+  "./tower-scenery.png",
+  "./tower-terrain.png"
 ];
 
 self.addEventListener("install", event => {
@@ -69,7 +72,7 @@ self.addEventListener("fetch", event => {
         return response;
       })
       .catch(async () => {
-        // HTML uses cache-busting query strings such as style.css?v=1.8.9,
+        // HTML uses cache-busting query strings such as style.css?v=1.8.10,
         // while APP_SHELL pre-caches the same files without the query string.
         // ignoreSearch lets those pre-cached assets satisfy offline requests.
         const cached = await caches.match(event.request, { ignoreSearch: true });

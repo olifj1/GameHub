@@ -35,21 +35,35 @@
     enemy: { main: "#b36f45", dark: "#75472f", pale: "#e2b79d" }
   };
 
-  // Stage 1 art pipeline: vehicles now come from a replaceable sprite atlas.
-  // The old procedural draw code remains only as a fallback if the PNG cannot load.
+  // Replaceable art pipeline. Every major visual layer now has an image asset,
+  // while the original procedural drawing remains available as a fallback.
   const ART = window.TowerAttackAssets || null;
-  const vehicleAtlasImage = new Image();
-  let vehicleAtlasReady = false;
-  if(ART?.vehicleAtlas?.src){
-    vehicleAtlasImage.decoding = "async";
-    vehicleAtlasImage.onload = () => {
-      vehicleAtlasReady = true;
+  const assetImages = {
+    vehicle: new Image(),
+    defence: new Image(),
+    scenery: new Image(),
+    terrain: new Image()
+  };
+  const assetReady = { vehicle:false, defence:false, scenery:false, terrain:false };
+
+  function loadArtImage(key, src){
+    if(!src) return;
+    const image=assetImages[key];
+    image.decoding="async";
+    image.onload=()=>{
+      assetReady[key]=true;
+      if(key==="terrain" || key==="scenery") renderStaticLayer();
       renderPlan();
       renderDeployBar();
       drawBattle();
     };
-    vehicleAtlasImage.src = ART.vehicleAtlas.src;
+    image.src=src;
   }
+  loadArtImage("vehicle", ART?.vehicleAtlas?.src);
+  loadArtImage("defence", ART?.defenceAtlas?.src);
+  loadArtImage("scenery", ART?.sceneryAtlas?.src);
+  loadArtImage("terrain", ART?.terrain?.src);
+
 
   const ITEMS = {
     scout: { id:"scout", kind:"attack", name:"Scout", cost:28, hp:30, speed:104, armour:0, attack:0, range:0, fireRate:0, baseDamage:1, behavior:"run", meta:"Fast · avoids fights" },
@@ -234,21 +248,27 @@
     return `<svg viewBox="0 0 40 58" aria-hidden="true"><circle cx="8" cy="14" r="4" fill="#323638"/><circle cx="32" cy="14" r="4" fill="#323638"/><circle cx="8" cy="44" r="4" fill="#323638"/><circle cx="32" cy="44" r="4" fill="#323638"/><rect x="10" y="5" width="20" height="48" rx="7" fill="${c.main}" stroke="${c.dark}" stroke-width="2"/><rect x="14" y="13" width="12" height="14" rx="3" fill="${c.pale}" opacity=".7"/>${item.attack?'<circle cx="20" cy="35" r="5" fill="#414547"/><rect x="18.5" y="25" width="3" height="12" rx="1.5" fill="#414547"/>':''}</svg>`;
   }
 
-  function vehicleAtlasCss(itemId,team=PLAYER){
-    const def=ART?.vehicles?.[itemId], atlas=ART?.vehicleAtlas;
+  function atlasCss(def,atlas,row=0,scale=1){
     if(!def||!atlas) return "";
-    const row=ART.teamRows?.[team] ?? 0;
     const x=atlas.cols<=1?0:(def.col/(atlas.cols-1))*100;
     const y=atlas.rows<=1?0:(row/(atlas.rows-1))*100;
-    return `background-image:url('${atlas.src}');background-size:${atlas.cols*100}% ${atlas.rows*100}%;background-position:${x}% ${y}%;`;
+    return `--tower-icon-scale:${scale};background-image:url('${atlas.src}');background-size:${atlas.cols*100}% ${atlas.rows*100}%;background-position:${x}% ${y}%;`;
   }
 
   function itemVisual(item,team=PLAYER){
     if(item?.kind==="attack" && ART?.vehicles?.[item.id]){
-      return `<span class="tower-vehicle-atlas-icon" style="${vehicleAtlasCss(item.id,team)}" aria-hidden="true"></span>`;
+      const def=ART.vehicles[item.id];
+      const row=ART.teamRows?.[team] ?? 0;
+      return `<span class="tower-atlas-icon tower-vehicle-atlas-icon" style="${atlasCss(def,ART.vehicleAtlas,row,def.uiScale||1)}" aria-hidden="true"></span>`;
+    }
+    if(item?.kind==="defence" && ART?.defences?.[item.id]){
+      const def=ART.defences[item.id];
+      const row=ART.teamRows?.[team] ?? 0;
+      return `<span class="tower-atlas-icon tower-defence-atlas-icon" style="${atlasCss(def,ART.defenceAtlas,row,def.uiScale||1)}" aria-hidden="true"></span>`;
     }
     return itemSvg(item,team);
   }
+
 
   function renderPlan(){
     cashEl.textContent=money(state.playerCash); incomeEl.textContent=`+£${INCOME_PER_SECOND}/s`;
@@ -643,7 +663,14 @@
   }
 
   function renderStaticLayer(){
-    const g=staticCtx; g.clearRect(0,0,WORLD.width,WORLD.height); drawTerrain(g); drawRoutes(g); drawBases(g); drawScenery(g);
+    const g=staticCtx;
+    g.clearRect(0,0,WORLD.width,WORLD.height);
+    if(assetReady.terrain && ART?.terrain){
+      g.drawImage(assetImages.terrain,0,0,ART.terrain.width,ART.terrain.height,0,0,WORLD.width,WORLD.height);
+    } else {
+      drawTerrain(g); drawRoutes(g); drawBases(g);
+    }
+    drawScenery(g);
   }
 
   function drawTerrain(g){
@@ -681,9 +708,37 @@
     g.fillStyle=c.dark;g.beginPath();g.roundRect(-35,-20,70,30,8);g.fill();g.fillStyle=c.main;g.beginPath();g.arc(0,-4,14,0,Math.PI*2);g.fill();g.strokeStyle=c.pale;g.lineWidth=3;g.stroke();g.restore();
   }
 
-  function drawScenery(g){
-    environment.rocks.forEach(r=>drawRock(g,r)); environment.trees.forEach(t=>drawTree(g,t)); environment.structures.forEach(s=>drawStructure(g,s));
+  function drawAtlasCell(g,image,atlas,def,x,y,w,h,rotation=0){
+    if(!image||!atlas||!def) return false;
+    const sx=def.col*atlas.cell, sy=(def.row||0)*atlas.cell;
+    g.save();g.translate(x,y);g.rotate(rotation);
+    g.drawImage(image,sx,sy,atlas.cell,atlas.cell,-w/2,-h/2,w,h);
+    g.restore();
+    return true;
   }
+
+  function drawScenery(g){
+    if(assetReady.scenery && ART?.sceneryAtlas){
+      environment.rocks.forEach(r=>{
+        const key=`rock${Math.min(3,Math.floor(r.v*4))}`;
+        const size=Math.max(28,r.r*3.0);
+        drawAtlasCell(g,assetImages.scenery,ART.sceneryAtlas,ART.scenery?.[key],r.x,r.y,size,size,r.rot);
+      });
+      environment.trees.forEach(tr=>{
+        const key=`tree${Math.min(3,Math.floor(tr.v*4))}`;
+        const size=Math.max(34,tr.r*3.05);
+        drawAtlasCell(g,assetImages.scenery,ART.sceneryAtlas,ART.scenery?.[key],tr.x,tr.y,size,size,tr.rot);
+      });
+      environment.structures.forEach(s=>{
+        const key=ART.scenery?.[s.type]?s.type:"ruin";
+        const size=Math.max(s.w,s.h)*1.9;
+        drawAtlasCell(g,assetImages.scenery,ART.sceneryAtlas,ART.scenery?.[key],s.x,s.y,size,size,s.rot);
+      });
+      return;
+    }
+    environment.rocks.forEach(r=>drawRock(g,r)); environment.trees.forEach(tr=>drawTree(g,tr)); environment.structures.forEach(s=>drawStructure(g,s));
+  }
+
 
   function drawTree(g,t){
     g.save();g.translate(t.x,t.y);g.rotate(t.rot);g.fillStyle="rgba(54,61,47,.15)";g.beginPath();g.ellipse(4,6,t.r*1.12,t.r*.84,0,0,Math.PI*2);g.fill();
@@ -715,16 +770,36 @@
     g.restore();
   }
 
+  function drawFallbackTurret(g,t,item,c){
+    g.fillStyle="rgba(55,51,46,.2)";g.beginPath();g.ellipse(4,7,23,14,0,0,Math.PI*2);g.fill();
+    g.fillStyle="#c2af8d";g.strokeStyle="#786c5d";g.lineWidth=2;g.beginPath();g.arc(0,0,20,0,Math.PI*2);g.fill();g.stroke();
+    g.fillStyle=c.dark;g.beginPath();g.arc(0,0,13,0,Math.PI*2);g.fill();g.fillStyle=c.main;g.beginPath();g.arc(0,-1,9,0,Math.PI*2);g.fill();
+    g.rotate(t.heading+Math.PI/2);const recoil=t.recoil*5;g.fillStyle="#414648";if(item.id==="rapid"){g.fillRect(-7,-29+recoil,4,25);g.fillRect(3,-29+recoil,4,25);}else{g.fillRect(-3,-32+recoil,6,29);}g.fillStyle=c.pale;g.beginPath();g.arc(0,0,3.5,0,Math.PI*2);g.fill();
+  }
+
+  function drawDefenceFromAtlas(g,t,item){
+    const def=ART?.defences?.[item.id],atlas=ART?.defenceAtlas;
+    if(!assetReady.defence||!def||!atlas) return false;
+    const row=ART.teamRows?.[t.team] ?? 0;
+    const sx=def.col*atlas.cell, sy=row*atlas.cell;
+    const dw=def.worldWidth, dh=def.worldHeight;
+    g.rotate(t.heading+Math.PI/2);
+    g.drawImage(assetImages.defence,sx,sy,atlas.cell,atlas.cell,-dw/2,-dh/2,dw,dh);
+    return true;
+  }
+
   function drawTurrets(g){
     battle.turrets.forEach(t=>{
-      if(t.dead) return; const item=ITEMS[t.itemId],c=TEAM[t.team];g.save();g.translate(t.x,t.y);
-      g.fillStyle="rgba(55,51,46,.2)";g.beginPath();g.ellipse(4,7,23,14,0,0,Math.PI*2);g.fill();
-      g.fillStyle="#c2af8d";g.strokeStyle="#786c5d";g.lineWidth=2;g.beginPath();g.arc(0,0,20,0,Math.PI*2);g.fill();g.stroke();
-      g.fillStyle=c.dark;g.beginPath();g.arc(0,0,13,0,Math.PI*2);g.fill();g.fillStyle=c.main;g.beginPath();g.arc(0,-1,9,0,Math.PI*2);g.fill();
-      g.rotate(t.heading+Math.PI/2);const recoil=t.recoil*5;g.fillStyle="#414648";if(item.id==="rapid"){g.fillRect(-7,-29+recoil,4,25);g.fillRect(3,-29+recoil,4,25);}else{g.fillRect(-3,-32+recoil,6,29);}g.fillStyle=c.pale;g.beginPath();g.arc(0,0,3.5,0,Math.PI*2);g.fill();g.restore();
-      drawHealth(g,t.x,t.y-28,34,t.hp/t.maxHp,c.main);
+      if(t.dead) return;
+      const item=ITEMS[t.itemId],c=TEAM[t.team],art=ART?.defences?.[item.id];
+      g.save();g.translate(t.x,t.y);
+      if(!drawDefenceFromAtlas(g,t,item)) drawFallbackTurret(g,t,item,c);
+      g.restore();
+      const healthY=t.y-((art?.worldHeight||68)*.36)-7;
+      drawHealth(g,t.x,healthY,34,t.hp/t.maxHp,c.main);
     });
   }
+
 
   function drawFallbackVehicle(g,item,c){
     if(item.id==="tank"){
@@ -741,11 +816,11 @@
 
   function drawVehicleFromAtlas(g,item,team){
     const def=ART?.vehicles?.[item.id], atlas=ART?.vehicleAtlas;
-    if(!vehicleAtlasReady||!def||!atlas) return false;
+    if(!assetReady.vehicle||!def||!atlas) return false;
     const row=ART.teamRows?.[team] ?? 0;
     const sx=def.col*atlas.cell, sy=row*atlas.cell;
     const dw=def.worldWidth, dh=def.worldHeight;
-    g.drawImage(vehicleAtlasImage,sx,sy,atlas.cell,atlas.cell,-dw/2,-dh/2,dw,dh);
+    g.drawImage(assetImages.vehicle,sx,sy,atlas.cell,atlas.cell,-dw/2,-dh/2,dw,dh);
     return true;
   }
 
