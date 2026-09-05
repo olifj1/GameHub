@@ -1,105 +1,95 @@
 <!doctype html>
-<html lang="en" class="gh-game-page">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.8.2">
+  <link rel="stylesheet" href="style.css?v=1.8.3">
   <title>Tower Attack</title>
 </head>
 <body class="modular-game" data-game-id="game-14">
-  <a class="game-home-button" href="index.html" aria-label="Back to games">← Games</a>
-  <button class="game-info-button" type="button" aria-label="How to play" aria-haspopup="dialog">i</button>
-
-  <div class="game-info-overlay" hidden>
-    <div class="game-info-dialog" role="dialog" aria-modal="true" aria-labelledby="game-14-info-title">
+  <div class="rotate-overlay" aria-hidden="true"><div>↻<br><strong>Rotate your device</strong></div></div>
+  <div class="game-info-overlay" id="game-info-overlay" hidden>
+    <div class="game-info-card" role="dialog" aria-modal="true" aria-labelledby="game-14-info-title">
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="game-14-info-title">Instructions</h2>
-      <p>Build an attack force with the cash available, choose the route for each vehicle, then send the wave. The Direct route is shorter but has more enemy turrets. The Winding route takes longer but is less heavily defended. Surviving vehicles damage the enemy base and earn extra cash. After every wave the defenders get stronger and you return here to plan the next attack.</p>
+      <p>Set up four deployment buttons with vehicles and routes. Start the attack, then launch vehicles whenever you choose; cash is spent when a vehicle deploys. Direct is shorter but more heavily defended. Winding is longer with fewer turrets. Pause returns to planning without resetting the battle, so you can remap your buttons and jump back in. When the field is clear, end the round to receive funding and face stronger defenders.</p>
     </div>
   </div>
 
-  <main class="screen-wrap">
-    <section class="screen active" id="attack-screen" aria-labelledby="attack-title">
-      <div class="page attack-page">
-        <header class="page-header attack-header">
-          <p class="kicker" data-site-name="">GameHub</p>
-          <h1 id="attack-title">Tower Attack</h1>
-        </header>
+  <main class="game-screen active" id="attack-screen">
+    <section class="game-shell attack-page">
+      <header class="game-header attack-header">
+        <a class="game-back" href="index.html" aria-label="Back to games">← Games</a>
+        <div class="game-title"><p class="kicker">GameHub</p><h1 id="attack-title">Tower Attack</h1></div>
+        <button class="game-info" type="button" aria-label="Instructions">i</button>
+      </header>
 
-        <section class="attack-plan" id="attack-plan" aria-label="Prepare wave">
-          <div class="attack-plan-hud">
-            <div><span>ROUND</span><strong id="attack-round">1</strong></div>
-            <div><span>CASH</span><strong id="attack-cash">£100</strong></div>
-            <div><span>ENEMY BASE</span><strong id="attack-base">12</strong></div>
+      <section class="attack-plan" id="attack-plan" aria-label="Plan attack">
+        <div class="attack-plan-hud">
+          <div><span>ROUND</span><strong id="attack-round">1</strong></div>
+          <div><span>CASH</span><strong id="attack-cash">£90</strong></div>
+          <div><span>ENEMY BASE</span><strong id="attack-base">14</strong></div>
+        </div>
+
+        <div class="attack-round-note" id="attack-round-note">Set up your deployment buttons.</div>
+
+        <div class="attack-loadout-panel">
+          <div class="attack-loadout-heading">
+            <div><span>DEPLOY BUTTONS</span><small>Choose a slot, then assign its route and vehicle.</small></div>
+            <button id="attack-clear-slot" type="button">Clear</button>
           </div>
+          <div class="attack-loadout-slots" id="attack-loadout-slots" role="group" aria-label="Deployment buttons"></div>
+        </div>
 
-          <div class="attack-round-note" id="attack-round-note">Build your first wave.</div>
-
-          <div class="attack-route-picker" aria-label="Route for next vehicle">
-            <p>ROUTE FOR NEXT VEHICLE</p>
-            <div class="attack-route-buttons" role="group" aria-label="Choose route">
-              <button class="active" type="button" data-attack-route="direct">
-                <strong>Direct</strong><small id="attack-direct-info">Short · 2 turrets</small>
-              </button>
-              <button type="button" data-attack-route="winding">
-                <strong>Winding</strong><small id="attack-winding-info">Long · 1 turret</small>
-              </button>
-            </div>
-          </div>
-
-          <div class="attack-vehicle-grid" id="attack-vehicle-grid" aria-label="Vehicles"></div>
-
-          <div class="attack-wave-builder">
-            <div class="attack-wave-heading">
-              <div><span>YOUR WAVE</span><strong id="attack-wave-count">0 / 8</strong></div>
-              <button id="attack-undo" type="button" disabled>Undo last</button>
-            </div>
-            <div class="attack-queue" id="attack-queue" aria-live="polite"></div>
-          </div>
-
-          <button class="attack-send" id="attack-send" type="button" disabled>
-            <span>SEND WAVE</span><small id="attack-send-copy">Buy at least one vehicle</small>
-          </button>
-        </section>
-
-        <section class="attack-battle" id="attack-battle" hidden aria-label="Battle view">
-          <div class="attack-battle-hud">
-            <div><span>ROUND</span><strong id="attack-battle-round">1</strong></div>
-            <div><span>VEHICLES</span><strong id="attack-battle-units">0</strong></div>
-            <div><span>BASE</span><strong id="attack-battle-base">12</strong></div>
-            <button id="attack-speed" type="button" aria-label="Battle speed">1×</button>
-          </div>
-
-          <div class="attack-stage-wrap">
-            <canvas id="attack-canvas" width="660" height="1120" aria-label="Tower attack battlefield"></canvas>
-            <div class="attack-pause-overlay" id="attack-pause-overlay" hidden>
-              <div class="attack-pause-menu" role="dialog" aria-modal="true" aria-labelledby="attack-pause-title">
-                <p class="kicker">PAUSED</p>
-                <h2 id="attack-pause-title">Wave paused</h2>
-                <button class="primary" id="attack-resume" type="button">Resume</button>
-                <button id="attack-abort" type="button">Abort wave</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="attack-battle-footer">
-            <span id="attack-battle-status">Wave in progress</span>
-            <button id="attack-pause" type="button" aria-label="Pause battle">
-              <span aria-hidden="true">Ⅱ</span> PAUSE
+        <div class="attack-route-picker" aria-label="Route for selected deploy button">
+          <p>ROUTE FOR SELECTED BUTTON</p>
+          <div class="attack-route-buttons" role="group" aria-label="Choose route">
+            <button class="active" type="button" data-attack-route="direct">
+              <strong>Direct</strong><small id="attack-direct-info">Short · 2 turrets</small>
+            </button>
+            <button type="button" data-attack-route="winding">
+              <strong>Winding</strong><small id="attack-winding-info">Long · 1 turret</small>
             </button>
           </div>
-        </section>
-      </div>
+        </div>
+
+        <div class="attack-vehicle-grid" id="attack-vehicle-grid" aria-label="Vehicles"></div>
+
+        <button class="attack-send" id="attack-send" type="button">
+          <span id="attack-send-label">START ATTACK</span>
+          <small id="attack-send-copy">Cash is spent only when you deploy</small>
+        </button>
+      </section>
+
+      <section class="attack-battle" id="attack-battle" hidden aria-label="Battle view">
+        <div class="attack-battle-hud">
+          <div><span>ROUND</span><strong id="attack-battle-round">1</strong></div>
+          <div><span>CASH</span><strong id="attack-battle-cash">£90</strong></div>
+          <div><span>BASE</span><strong id="attack-battle-base">14</strong></div>
+          <button id="attack-speed" type="button" aria-label="Battle speed">1×</button>
+        </div>
+
+        <div class="attack-stage-wrap">
+          <canvas id="attack-canvas" width="660" height="1120" aria-label="Tower Attack battlefield"></canvas>
+        </div>
+
+        <div class="attack-battle-status-row"><span id="attack-battle-status">Choose when to deploy.</span></div>
+        <div class="attack-deploy-bar" id="attack-deploy-bar" aria-label="Deploy vehicles"></div>
+
+        <div class="attack-battle-footer">
+          <button id="attack-end-round" type="button" disabled>END ROUND</button>
+          <button id="attack-pause" type="button" aria-label="Pause and return to planning"><span aria-hidden="true">Ⅱ</span> PLAN</button>
+        </div>
+      </section>
     </section>
   </main>
 
-  <script src="site-config.js?v=1.8.2"></script>
-  <script src="core.js?v=1.8.2"></script>
-  <script src="game-14.js?v=1.8.2"></script>
+  <script src="site-config.js?v=1.8.3"></script>
+  <script src="core.js?v=1.8.3"></script>
+  <script src="game-14.js?v=1.8.3"></script>
 </body>
 </html>

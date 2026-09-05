@@ -2,30 +2,29 @@
   const planEl = document.getElementById("attack-plan");
   const battleEl = document.getElementById("attack-battle");
   const vehicleGrid = document.getElementById("attack-vehicle-grid");
-  const queueEl = document.getElementById("attack-queue");
-  const undoBtn = document.getElementById("attack-undo");
+  const loadoutSlotsEl = document.getElementById("attack-loadout-slots");
+  const deployBarEl = document.getElementById("attack-deploy-bar");
+  const clearSlotBtn = document.getElementById("attack-clear-slot");
   const sendBtn = document.getElementById("attack-send");
+  const sendLabel = document.getElementById("attack-send-label");
   const sendCopy = document.getElementById("attack-send-copy");
   const roundEl = document.getElementById("attack-round");
   const cashEl = document.getElementById("attack-cash");
   const baseEl = document.getElementById("attack-base");
-  const waveCountEl = document.getElementById("attack-wave-count");
   const roundNoteEl = document.getElementById("attack-round-note");
   const directInfoEl = document.getElementById("attack-direct-info");
   const windingInfoEl = document.getElementById("attack-winding-info");
   const battleRoundEl = document.getElementById("attack-battle-round");
-  const battleUnitsEl = document.getElementById("attack-battle-units");
+  const battleCashEl = document.getElementById("attack-battle-cash");
   const battleBaseEl = document.getElementById("attack-battle-base");
   const battleStatusEl = document.getElementById("attack-battle-status");
+  const endRoundBtn = document.getElementById("attack-end-round");
   const speedBtn = document.getElementById("attack-speed");
   const pauseBtn = document.getElementById("attack-pause");
-  const pauseOverlay = document.getElementById("attack-pause-overlay");
-  const resumeBtn = document.getElementById("attack-resume");
-  const abortBtn = document.getElementById("attack-abort");
   const canvas = document.getElementById("attack-canvas");
   const ctx = canvas.getContext("2d");
 
-  const MAX_QUEUE = 6;
+  const LOADOUT_SLOTS = 4;
   // A slightly narrower, taller world makes the battlefield read closer on phone
   // without enlarging the surrounding GameHub chrome.
   const WORLD = { width: 660, height: 1120 };
@@ -120,13 +119,13 @@
   // Turrets are positioned from route fractions rather than arbitrary screen points.
   // That gives predictable firing exposure and makes route balancing easier to reason about.
   const TURRET_SLOT_DEFS = [
-    { id: "d1", route: "direct", fraction: .18, side: -1, offset: 92, unlock: 1 },
-    { id: "d2", route: "direct", fraction: .70, side: 1, offset: 96, unlock: 1 },
-    { id: "w1", route: "winding", fraction: .34, side: -1, offset: 92, unlock: 1 },
-    { id: "d3", route: "direct", fraction: .80, side: 1, offset: 96, unlock: 2 },
-    { id: "w2", route: "winding", fraction: .64, side: 1, offset: 94, unlock: 3 },
-    { id: "d4", route: "direct", fraction: .32, side: -1, offset: 98, unlock: 4 },
-    { id: "w3", route: "winding", fraction: .82, side: -1, offset: 94, unlock: 5 }
+    { id: "d1", route: "direct", fraction: .16, side: -1, offset: 118, unlock: 1 },
+    { id: "d2", route: "direct", fraction: .74, side: 1, offset: 122, unlock: 1 },
+    { id: "w1", route: "winding", fraction: .28, side: -1, offset: 116, unlock: 1 },
+    { id: "d3", route: "direct", fraction: .88, side: 1, offset: 120, unlock: 2 },
+    { id: "w2", route: "winding", fraction: .61, side: 1, offset: 118, unlock: 3 },
+    { id: "d4", route: "direct", fraction: .31, side: -1, offset: 124, unlock: 4 },
+    { id: "w3", route: "winding", fraction: .83, side: -1, offset: 118, unlock: 5 }
   ];
 
   const TURRET_SLOTS = TURRET_SLOT_DEFS.map(def => {
@@ -142,13 +141,21 @@
     };
   });
 
+  const DEFAULT_LOADOUT = [
+    { type: "scout", route: "direct" },
+    { type: "scout", route: "winding" },
+    { type: "armoured", route: "direct" },
+    { type: null, route: "winding" }
+  ];
+  function freshLoadout() { return DEFAULT_LOADOUT.map(slot => ({ ...slot })); }
+
   let state = {
     round: 1,
     cash: STARTING_CASH,
     baseHealth: STARTING_BASE_HEALTH,
-    selectedRoute: "direct",
-    queue: [],
-    lastSummary: "Build your first wave."
+    selectedSlot: 0,
+    loadout: freshLoadout(),
+    lastSummary: "Set up your deployment buttons."
   };
 
   let battle = null;
@@ -345,60 +352,78 @@
     return activeTurretSlots(round).filter(slot => slot.route === routeName).length;
   }
 
+
+  function selectedLoadoutSlot() {
+    return state.loadout[state.selectedSlot] || state.loadout[0];
+  }
+
   function renderPlan() {
     roundEl.textContent = String(state.round);
     cashEl.textContent = `£${state.cash}`;
     baseEl.textContent = String(state.baseHealth);
-    waveCountEl.textContent = `${state.queue.length} / ${MAX_QUEUE}`;
-    roundNoteEl.textContent = state.lastSummary;
+    roundNoteEl.textContent = battle
+      ? `Battle paused · ${battle.units.filter(u => u.alive && !u.reached).length} active · remap and return when ready.`
+      : state.lastSummary;
 
     const directCount = routeTurretCount("direct");
     const windingCount = routeTurretCount("winding");
-    if (directInfoEl) directInfoEl.textContent = `Short · ${directCount} turret${directCount === 1 ? "" : "s"}`;
-    if (windingInfoEl) windingInfoEl.textContent = `Long · ${windingCount} turret${windingCount === 1 ? "" : "s"}`;
+    directInfoEl.textContent = `Short · ${directCount} turret${directCount === 1 ? "" : "s"}`;
+    windingInfoEl.textContent = `Long · ${windingCount} turret${windingCount === 1 ? "" : "s"}`;
 
+    const selected = selectedLoadoutSlot();
     document.querySelectorAll("[data-attack-route]").forEach(button => {
-      button.classList.toggle("active", button.dataset.attackRoute === state.selectedRoute);
+      button.classList.toggle("active", button.dataset.attackRoute === selected.route);
+    });
+
+    loadoutSlotsEl.innerHTML = state.loadout.map((slot, index) => {
+      const profile = slot.type ? VEHICLES[slot.type] : null;
+      const active = index === state.selectedSlot;
+      return `<button type="button" class="attack-loadout-slot ${active ? "active" : ""} ${slot.type ? "" : "empty"}" data-loadout-slot="${index}">
+        <span class="attack-slot-number">${index + 1}</span>
+        <span class="attack-slot-icon">${profile ? vehicleSvg(profile) : "+"}</span>
+        <span class="attack-slot-copy"><strong>${profile ? profile.name : "Empty"}</strong><small>${slot.route === "direct" ? "Direct" : "Winding"}${profile ? ` · £${profile.cost}` : ""}</small></span>
+      </button>`;
+    }).join("");
+
+    loadoutSlotsEl.querySelectorAll("[data-loadout-slot]").forEach(button => {
+      button.addEventListener("click", () => {
+        state.selectedSlot = Number(button.dataset.loadoutSlot);
+        renderPlan();
+      });
     });
 
     vehicleGrid.innerHTML = Object.values(VEHICLES).map(vehicle => {
-      const affordable = state.cash >= vehicle.cost && state.queue.length < MAX_QUEUE;
-      return `<button class="attack-vehicle-card ${affordable ? "" : "unaffordable"}" type="button" data-buy-vehicle="${vehicle.id}" ${affordable ? "" : "disabled"}>
+      const affordable = state.cash >= vehicle.cost;
+      const assigned = selected.type === vehicle.id;
+      return `<button type="button" class="attack-vehicle-card ${affordable ? "" : "unaffordable"} ${assigned ? "assigned" : ""}" data-assign-vehicle="${vehicle.id}" ${affordable ? "" : "disabled"}>
         <span class="attack-vehicle-icon">${vehicleSvg(vehicle)}</span>
         <span class="attack-vehicle-name">${vehicle.name}</span>
         <span class="attack-vehicle-price">£${vehicle.cost}</span>
         <span class="attack-vehicle-meta">${vehicle.meta}</span>
-        <span class="attack-vehicle-buy">${affordable ? `BUY · ${state.selectedRoute.toUpperCase()}` : state.cash < vehicle.cost ? "NOT ENOUGH CASH" : "WAVE FULL"}</span>
+        <span class="attack-vehicle-buy">${assigned ? `BUTTON ${state.selectedSlot + 1}` : affordable ? `ASSIGN TO ${state.selectedSlot + 1}` : "NOT ENOUGH CASH"}</span>
       </button>`;
     }).join("");
 
-    vehicleGrid.querySelectorAll("[data-buy-vehicle]").forEach(button => {
-      button.addEventListener("click", () => buyVehicle(button.dataset.buyVehicle));
+    vehicleGrid.querySelectorAll("[data-assign-vehicle]").forEach(button => {
+      button.addEventListener("click", () => assignVehicle(button.dataset.assignVehicle));
     });
 
-    queueEl.innerHTML = state.queue.length
-      ? state.queue.map(item => `<span class="attack-queue-unit route-${item.route}" title="${VEHICLES[item.type].name} · ${item.route}">${vehicleSvg(VEHICLES[item.type])}</span>`).join("")
-      : `<span class="attack-queue-empty">Your purchased vehicles will appear here.</span>`;
-
-    undoBtn.disabled = state.queue.length === 0;
-    sendBtn.disabled = state.queue.length === 0;
-    sendCopy.textContent = state.queue.length
-      ? `${state.queue.filter(v => v.route === "direct").length} direct · ${state.queue.filter(v => v.route === "winding").length} winding`
-      : "Buy at least one vehicle";
+    clearSlotBtn.disabled = !selected.type;
+    sendLabel.textContent = battle ? "RETURN TO BATTLE" : "START ATTACK";
+    sendCopy.textContent = battle
+      ? "Battle remains frozen while you change the loadout"
+      : "Cash is spent only when you deploy";
   }
 
-  function buyVehicle(type) {
+  function assignVehicle(type) {
     const vehicle = VEHICLES[type];
-    if (!vehicle || state.cash < vehicle.cost || state.queue.length >= MAX_QUEUE) return;
-    state.cash -= vehicle.cost;
-    state.queue.push({ type, route: state.selectedRoute });
+    if (!vehicle || state.cash < vehicle.cost) return;
+    selectedLoadoutSlot().type = type;
     renderPlan();
   }
 
-  function undoLast() {
-    const item = state.queue.pop();
-    if (!item) return;
-    state.cash += VEHICLES[item.type].cost;
+  function clearSelectedSlot() {
+    selectedLoadoutSlot().type = null;
     renderPlan();
   }
 
@@ -406,10 +431,10 @@
     const tier = Math.max(0, round - 1);
     return {
       level: 1 + Math.floor(tier / 2),
-      hp: Math.round(60 + tier * 6),
-      range: 116 + Math.min(12, tier * 2),
-      damage: 9 + tier * .8,
-      cooldown: Math.max(.56, .68 - tier * .012)
+      hp: Math.round(60 + tier * 7),
+      range: 132 + Math.min(14, tier * 2),
+      damage: 9 + tier * .85,
+      cooldown: Math.max(.55, .69 - tier * .012)
     };
   }
 
@@ -426,92 +451,137 @@
       timer: .12 + ((index * .17) % .33),
       alive: true,
       flash: 0,
+      recoil: 0,
+      smokeTimer: .1 + index * .11,
       aim: slot.defaultAim
     }));
   }
 
-  function makeBattleUnits(queue) {
-    return queue.map((item, index) => {
-      const profile = VEHICLES[item.type];
-      return {
-        id: `${Date.now()}-${index}`,
-        type: item.type,
-        routeName: item.route,
-        profile,
-        distance: -index * 9,
-        launchAt: index * .48,
-        hp: profile.hp,
-        maxHp: profile.hp,
-        alive: true,
-        launched: false,
-        reached: false,
-        gunTimer: .15 + index * .07,
-        x: START.x,
-        y: START.y,
-        heading: -Math.PI / 2,
-        hitFlash: 0
-      };
-    });
+  function makeUnit(type, routeName, id) {
+    const profile = VEHICLES[type];
+    return {
+      id,
+      type,
+      routeName,
+      profile,
+      distance: 0,
+      hp: profile.hp,
+      maxHp: profile.hp,
+      alive: true,
+      launched: true,
+      reached: false,
+      gunTimer: .10,
+      dustTimer: 0,
+      smokeTimer: .15,
+      recoil: 0,
+      x: START.x,
+      y: START.y,
+      heading: -Math.PI / 2,
+      hitFlash: 0
+    };
   }
 
-  function startWave() {
-    if (!state.queue.length) return;
-    const spent = state.queue.reduce((sum, item) => sum + VEHICLES[item.type].cost, 0);
-    battle = {
-      round: state.round,
-      units: makeBattleUnits(state.queue),
-      turrets: makeTurrets(state.round),
-      shots: [],
-      effects: [],
-      elapsed: 0,
-      finished: false,
-      destroyedTurrets: 0,
-      enemyShots: 0,
-      playerShots: 0,
-      originalQueue: state.queue.map(item => ({ ...item })),
-      spent
-    };
-    state.queue = [];
+  function startOrResumeAttack() {
+    if (!battle) {
+      battle = {
+        round: state.round,
+        units: [],
+        turrets: makeTurrets(state.round),
+        shots: [],
+        effects: [],
+        elapsed: 0,
+        finished: false,
+        destroyedTurrets: 0,
+        enemyShots: 0,
+        playerShots: 0,
+        deployedCount: 0,
+        through: 0,
+        lost: 0,
+        slotCooldowns: Array(LOADOUT_SLOTS).fill(0)
+      };
+    }
     planEl.hidden = true;
     battleEl.hidden = false;
     paused = false;
-    speedMultiplier = 1;
-    speedBtn.textContent = "1×";
-    pauseOverlay.hidden = true;
+    speedBtn.textContent = `${speedMultiplier}×`;
     battleRoundEl.textContent = String(state.round);
+    battleCashEl.textContent = `£${state.cash}`;
     battleBaseEl.textContent = String(state.baseHealth);
-    battleStatusEl.textContent = "Wave in progress";
     lastFrame = performance.now();
+    renderDeployBar();
+    updateBattleStatus();
     cancelAnimationFrame(animationFrame);
     animationFrame = requestAnimationFrame(frame);
+  }
+
+  function pauseToPlanning() {
+    if (!battle || battle.finished) return;
+    paused = true;
+    cancelAnimationFrame(animationFrame);
+    battleEl.hidden = true;
+    planEl.hidden = false;
+    renderPlan();
+  }
+
+  function deploySlot(index) {
+    if (!battle || paused || battle.finished) return;
+    const slot = state.loadout[index];
+    if (!slot?.type) return;
+    const profile = VEHICLES[slot.type];
+    if (!profile || state.cash < profile.cost || battle.slotCooldowns[index] > 0) return;
+
+    state.cash -= profile.cost;
+    battle.deployedCount += 1;
+    battle.slotCooldowns[index] = .24;
+    const unit = makeUnit(slot.type, slot.route, `${state.round}-${battle.deployedCount}-${performance.now().toFixed(0)}`);
+    battle.units.push(unit);
+    battle.effects.push({ x: START.x, y: START.y, life: .42, max: .42, kind: "dustBurst" });
+    battleCashEl.textContent = `£${state.cash}`;
+    renderDeployBar();
+    updateBattleStatus();
   }
 
   function updateBattle(dt) {
     if (!battle || battle.finished) return;
     battle.elapsed += dt;
+    battle.slotCooldowns = battle.slotCooldowns.map(v => Math.max(0, v - dt));
 
     battle.units.forEach(unit => {
       if (!unit.alive || unit.reached) return;
-      if (!unit.launched) {
-        if (battle.elapsed < unit.launchAt) return;
-        unit.launched = true;
-      }
       const route = routes[unit.routeName];
       unit.distance += unit.profile.speed * dt;
       if (unit.distance >= route.length) {
         unit.distance = route.length;
         unit.reached = true;
+        battle.through += 1;
         state.baseHealth = Math.max(0, state.baseHealth - unit.profile.baseDamage);
         battleBaseEl.textContent = String(state.baseHealth);
         battle.effects.push({ x: BASE.x, y: BASE.y + 20, life: .58, max: .58, kind: "base" });
         return;
       }
 
-      const p = pointAtDistance(route, Math.max(0, unit.distance));
+      const p = pointAtDistance(route, unit.distance);
       unit.x = p.x;
       unit.y = p.y;
       unit.heading = p.heading;
       unit.hitFlash = Math.max(0, unit.hitFlash - dt * 6);
+      unit.recoil = Math.max(0, unit.recoil - dt * 5.5);
+      unit.dustTimer -= dt;
+      if (unit.dustTimer <= 0) {
+        unit.dustTimer = .13 + (unit.profile.speed < 60 ? .04 : 0);
+        battle.effects.push({
+          x: unit.x - Math.cos(unit.heading) * 8,
+          y: unit.y - Math.sin(unit.heading) * 8,
+          life: .42, max: .42, kind: "dust"
+        });
+      }
+      if (unit.hp / unit.maxHp < .38) {
+        unit.smokeTimer -= dt;
+        if (unit.smokeTimer <= 0) {
+          unit.smokeTimer = .24;
+          battle.effects.push({ x: unit.x, y: unit.y, life: .72, max: .72, kind: "smoke" });
+        }
+      }
 
       if (unit.profile.attack > 0) {
         unit.gunTimer -= dt;
@@ -519,6 +589,7 @@
           const target = nearestTurret(unit, unit.profile.range);
           if (target) {
             unit.gunTimer = unit.profile.fireRate;
+            unit.recoil = 1;
             target.hp -= unit.profile.attack;
             target.flash = 1;
             battle.playerShots += 1;
@@ -527,7 +598,8 @@
             if (target.hp <= 0 && target.alive) {
               target.alive = false;
               battle.destroyedTurrets += 1;
-              battle.effects.push({ x: target.x, y: target.y, life: .72, max: .72, kind: "boom" });
+              battle.effects.push({ x: target.x, y: target.y, life: .82, max: .82, kind: "boom" });
+              battle.effects.push({ x: target.x, y: target.y, life: 1.1, max: 1.1, kind: "smoke" });
             }
           }
         }
@@ -538,6 +610,7 @@
       if (!turret.alive) return;
       turret.timer -= dt;
       turret.flash = Math.max(0, turret.flash - dt * 7);
+      turret.recoil = Math.max(0, turret.recoil - dt * 5.7);
       const target = nearestUnit(turret, turret.range);
       if (target) {
         const wanted = Math.atan2(target.y - turret.y, target.x - turret.x);
@@ -546,15 +619,18 @@
       if (turret.timer > 0 || !target) return;
 
       turret.timer = turret.cooldown;
+      turret.recoil = 1;
       const finalDamage = Math.max(2, turret.damage - target.profile.armour);
       target.hp -= finalDamage;
       target.hitFlash = 1;
       battle.enemyShots += 1;
       battle.shots.push({ x1: turret.x, y1: turret.y, x2: target.x, y2: target.y, life: .13, max: .13, team: "enemy" });
-      battle.effects.push({ x: turret.x + Math.cos(turret.aim) * 25, y: turret.y + Math.sin(turret.aim) * 25, life: .12, max: .12, kind: "muzzle" });
+      battle.effects.push({ x: turret.x + Math.cos(turret.aim) * 28, y: turret.y + Math.sin(turret.aim) * 28, life: .12, max: .12, kind: "muzzle" });
       if (target.hp <= 0 && target.alive) {
         target.alive = false;
-        battle.effects.push({ x: target.x, y: target.y, life: .66, max: .66, kind: "boom" });
+        battle.lost += 1;
+        battle.effects.push({ x: target.x, y: target.y, life: .72, max: .72, kind: "boom" });
+        battle.effects.push({ x: target.x, y: target.y, life: .88, max: .88, kind: "smoke" });
       }
     });
 
@@ -563,17 +639,12 @@
     battle.shots = battle.shots.filter(shot => shot.life > 0);
     battle.effects = battle.effects.filter(effect => effect.life > 0);
 
-    const active = battle.units.filter(unit => unit.alive && !unit.reached).length;
-    const waiting = battle.units.filter(unit => unit.alive && !unit.reached && !unit.launched).length;
-    battleUnitsEl.textContent = String(active);
-    battleStatusEl.textContent = `${battle.units.filter(u => u.reached).length} through · ${battle.units.filter(u => !u.alive).length} lost · ${battle.turrets.filter(t => !t.alive).length} turrets down`;
-
     if (state.baseHealth <= 0) {
       finishCampaign();
       return;
     }
 
-    if (active === 0 && waiting === 0) finishWave();
+    updateBattleStatus();
   }
 
   function approachAngle(current, target, amount) {
@@ -585,7 +656,7 @@
   function nearestUnit(turret, range) {
     let best = null, bestDistance = range;
     battle.units.forEach(unit => {
-      if (!unit.alive || !unit.launched || unit.reached) return;
+      if (!unit.alive || unit.reached) return;
       if (unit.routeName !== turret.route) return;
       const d = Math.hypot(unit.x - turret.x, unit.y - turret.y);
       if (d < bestDistance) { bestDistance = d; best = unit; }
@@ -596,27 +667,60 @@
   function nearestTurret(unit, range) {
     let best = null, bestDistance = range;
     battle.turrets.forEach(turret => {
-      if (!turret.alive) return;
-      if (turret.route !== unit.routeName) return;
+      if (!turret.alive || turret.route !== unit.routeName) return;
       const d = Math.hypot(unit.x - turret.x, unit.y - turret.y);
       if (d < bestDistance) { bestDistance = d; best = turret; }
     });
     return best;
   }
 
-  function finishWave() {
-    if (!battle || battle.finished) return;
+  function activeUnitCount() {
+    return battle ? battle.units.filter(unit => unit.alive && !unit.reached).length : 0;
+  }
+
+  function updateBattleStatus() {
+    if (!battle) return;
+    const active = activeUnitCount();
+    const cheapestMapped = Math.min(...state.loadout.filter(s => s.type).map(s => VEHICLES[s.type].cost), Infinity);
+    const deployHint = active === 0
+      ? (state.cash >= cheapestMapped ? "Deploy when ready" : "No affordable mapped vehicles · plan or end round")
+      : `${active} active`;
+    battleStatusEl.textContent = `${battle.through} through · ${battle.lost} lost · ${battle.destroyedTurrets} turrets down · ${deployHint}`;
+    endRoundBtn.disabled = battle.deployedCount === 0 || active > 0;
+  }
+
+  function renderDeployBar() {
+    if (!deployBarEl) return;
+    deployBarEl.innerHTML = state.loadout.map((slot, index) => {
+      const profile = slot.type ? VEHICLES[slot.type] : null;
+      const affordable = !!profile && state.cash >= profile.cost;
+      return `<button type="button" class="attack-deploy-button route-${slot.route} ${profile ? "" : "empty"}" data-deploy-slot="${index}" ${affordable && !paused ? "" : "disabled"}>
+        <span class="attack-deploy-number">${index + 1}</span>
+        <span class="attack-deploy-icon">${profile ? vehicleSvg(profile) : "+"}</span>
+        <span class="attack-deploy-copy"><strong>${profile ? profile.name : "Empty"}</strong><small>${slot.route === "direct" ? "Direct" : "Winding"}${profile ? ` · £${profile.cost}` : ""}</small></span>
+      </button>`;
+    }).join("");
+    deployBarEl.querySelectorAll("[data-deploy-slot]").forEach(button => {
+      button.addEventListener("click", () => deploySlot(Number(button.dataset.deploySlot)));
+    });
+    battleCashEl.textContent = `£${state.cash}`;
+  }
+
+  function finishRound() {
+    if (!battle || battle.finished || battle.deployedCount === 0 || activeUnitCount() > 0) return;
     battle.finished = true;
-    const survivors = battle.units.filter(unit => unit.reached).length;
-    const destroyed = battle.destroyedTurrets;
-    const funding = 85 + battle.round * 15;
-    const performance = survivors * 10 + destroyed * 12;
+    cancelAnimationFrame(animationFrame);
+    const funding = 72 + state.round * 14;
+    const performance = battle.through * 9 + battle.destroyedTurrets * 11;
     const income = funding + performance;
     state.cash += income;
     state.round += 1;
-    state.lastSummary = `Wave complete · ${survivors} through · ${destroyed} turrets down · +£${income} (£${funding} funding + £${performance} bonus).`;
-    battleStatusEl.textContent = `Wave complete · +£${income}`;
-    window.setTimeout(() => returnToPlan(), 900);
+    state.lastSummary = `Round complete · ${battle.through} through · ${battle.destroyedTurrets} turrets down · +£${income}.`;
+    battle = null;
+    paused = true;
+    battleEl.hidden = true;
+    planEl.hidden = false;
+    renderPlan();
   }
 
   function finishCampaign() {
@@ -624,7 +728,6 @@
     battle.finished = true;
     cancelAnimationFrame(animationFrame);
     const roundWon = state.round;
-    const remaining = battle.units.filter(unit => unit.reached || unit.alive).length;
     if (window.GameHubResults) {
       window.GameHubResults.show({
         gameId: "game-14",
@@ -633,10 +736,10 @@
         score: Math.max(100, 1300 - roundWon * 90),
         title: "Breakthrough!",
         summary: "The enemy base has fallen.",
-        metrics: [
-          { label: "Rounds", value: roundWon },
+        stats: [
+          { label: "Round", value: roundWon },
           { label: "Cash", value: `£${state.cash}` },
-          { label: "Vehicles left", value: remaining }
+          { label: "Vehicles sent", value: battle.deployedCount }
         ],
         againLabel: "New campaign",
         onAgain: resetCampaign
@@ -646,38 +749,23 @@
     }
   }
 
-  function returnToPlan() {
-    cancelAnimationFrame(animationFrame);
-    battle = null;
-    battleEl.hidden = true;
-    planEl.hidden = false;
-    renderPlan();
-  }
-
-  function abortWave() {
-    if (!battle) return;
-    state.cash += battle.spent;
-    state.queue = battle.originalQueue.map(item => ({ ...item }));
-    state.lastSummary = "Wave aborted · purchases refunded.";
-    paused = false;
-    returnToPlan();
-  }
-
   function resetCampaign() {
     state = {
       round: 1,
       cash: STARTING_CASH,
       baseHealth: STARTING_BASE_HEALTH,
-      selectedRoute: "direct",
-      queue: [],
-      lastSummary: "Build your first wave."
+      selectedSlot: 0,
+      loadout: freshLoadout(),
+      lastSummary: "Set up your deployment buttons."
     };
     battle = null;
-    paused = false;
+    paused = true;
+    speedMultiplier = 1;
     window.GameHubResults?.close?.();
     battleEl.hidden = true;
     planEl.hidden = false;
     renderPlan();
+    drawBattle();
   }
 
   function frame(now) {
@@ -685,7 +773,7 @@
     lastFrame = now;
     if (!paused) updateBattle(rawDt * speedMultiplier);
     drawBattle();
-    if (battle && !battle.finished) animationFrame = requestAnimationFrame(frame);
+    if (battle && !battle.finished && !paused && !battleEl.hidden) animationFrame = requestAnimationFrame(frame);
   }
 
   function renderStaticLayer() {
@@ -1172,37 +1260,184 @@
     });
   }
 
+  // v1.8.3 art pass: richer sprite vocabulary, environmental storytelling and
+  // more animated combat while remaining entirely code/canvas based.
+  function renderStaticLayer() {
+    staticCtx.clearRect(0, 0, WORLD.width, WORLD.height);
+    drawTerrain(staticCtx);
+    drawStoryDetails(staticCtx);
+    drawRoutes(staticCtx);
+    drawBaseAndSpawn(staticCtx);
+  }
+
+  function drawStoryDetails(g) {
+    const details = [
+      [X(88),Y(252),"monolith",-.13], [X(606),Y(160),"rubble",.18],
+      [X(565),Y(535),"wall",-.22], [X(92),Y(695),"rubble",.08],
+      [X(575),Y(805),"monolith",.11]
+    ];
+    details.forEach(([x,y,type,rot]) => {
+      if (!safeFromRoutes(x,y,70)) return;
+      g.save(); g.translate(x,y); g.rotate(rot);
+      if (type === "monolith") {
+        g.fillStyle = "rgba(62,55,45,.16)"; g.beginPath(); g.ellipse(5,10,24,15,0,0,Math.PI*2); g.fill();
+        g.fillStyle = "#7b786e"; g.strokeStyle="#565750"; g.lineWidth=2;
+        g.beginPath(); g.roundRect(-11,-28,22,51,5); g.fill(); g.stroke();
+        g.fillStyle="#969181"; g.beginPath(); g.roundRect(-7,-24,14,18,3); g.fill();
+        g.fillStyle="#5f8e89"; g.fillRect(-2,-17,4,22);
+      } else if (type === "wall") {
+        g.fillStyle="#8f846f"; g.strokeStyle="#625d52"; g.lineWidth=2;
+        [[-30,-4,26,10],[2,-8,34,11],[-7,7,23,9]].forEach(([a,b,w,h])=>{g.beginPath();g.roundRect(a,b,w,h,3);g.fill();g.stroke();});
+        g.fillStyle="rgba(229,213,181,.28)"; g.fillRect(-25,-2,18,2); g.fillRect(7,-6,22,2);
+      } else {
+        g.fillStyle="#91866f"; g.strokeStyle="#615b50"; g.lineWidth=1.6;
+        [[-18,-7,11,8],[-4,2,13,9],[12,-10,10,7],[18,5,8,6]].forEach(([a,b,w,h])=>{g.save();g.translate(a,b);g.rotate((a+b)*.03);g.beginPath();g.roundRect(-w/2,-h/2,w,h,2);g.fill();g.stroke();g.restore();});
+      }
+      g.restore();
+    });
+  }
+
+  function drawTree(g, x, y, r, v, rot = 0) {
+    g.save(); g.translate(x,y); g.rotate(rot);
+    g.fillStyle="rgba(38,47,34,.20)"; g.beginPath(); g.ellipse(r*.22,r*.32,r*1.02,r*.78,.14,0,Math.PI*2); g.fill();
+    const palette = v < .25 ? ["#405840","#5c7550","#829468"] : v < .55 ? ["#4b6045","#657a54","#8a986b"] : v < .78 ? ["#3f5d4a","#55735a","#75906b"] : ["#526448","#6f8056","#909a6c"];
+    const blobs = v < .33
+      ? [[-.38,-.05,.52],[.34,-.13,.55],[-.18,.35,.50],[.31,.31,.44],[0,-.34,.55]]
+      : v < .66
+        ? [[-.44,.03,.48],[.42,.02,.48],[-.23,-.33,.47],[.22,-.35,.50],[0,.31,.55]]
+        : [[-.42,-.18,.46],[.38,-.22,.50],[-.32,.28,.48],[.31,.27,.49],[0,0,.60]];
+    g.fillStyle=palette[0]; g.strokeStyle="rgba(40,49,36,.32)"; g.lineWidth=1.3;
+    blobs.forEach(([ox,oy,s])=>{g.beginPath();g.arc(ox*r,oy*r,s*r,0,Math.PI*2);g.fill();g.stroke();});
+    g.fillStyle=palette[1];
+    [[-.10,-.27,.35],[.22,.02,.31],[-.25,.10,.28]].forEach(([ox,oy,s])=>{g.beginPath();g.arc(ox*r,oy*r,s*r,0,Math.PI*2);g.fill();});
+    g.fillStyle=palette[2]; g.globalAlpha=.78;
+    g.beginPath(); g.arc(-r*.22,-r*.31,r*.22,0,Math.PI*2); g.fill();
+    g.globalAlpha=1; g.fillStyle="rgba(84,68,45,.46)"; g.beginPath(); g.arc(0,r*.04,Math.max(2,r*.075),0,Math.PI*2); g.fill();
+    g.restore();
+  }
+
+  function drawRock(g, x, y, r, v, rot = 0, cluster = .5) {
+    g.save(); g.translate(x,y); g.rotate(rot);
+    const count = cluster > .72 ? 4 : cluster > .38 ? 3 : 2;
+    const offsets = [[0,0,1],[-.70,.30,.55],[.65,.36,.50],[.18,-.70,.42]];
+    for (let i=0;i<count;i++) {
+      const [ox,oy,scale]=offsets[i], rr=r*scale;
+      g.save();g.translate(ox*r,oy*r);
+      g.fillStyle="rgba(62,56,47,.18)";g.beginPath();g.ellipse(3,5,rr*1.05,rr*.72,.18,0,Math.PI*2);g.fill();
+      const grad=g.createLinearGradient(-rr,-rr,rr,rr);grad.addColorStop(0,v>.5?"#c1b497":"#b8aa8c");grad.addColorStop(1,v>.5?"#8c846f":"#92866d");g.fillStyle=grad;
+      g.strokeStyle="rgba(73,66,55,.38)";g.lineWidth=1.3;
+      g.beginPath();g.moveTo(-rr*.9,rr*.15);g.lineTo(-rr*.55,-rr*.55);g.lineTo(rr*.08,-rr*.9);g.lineTo(rr*.82,-rr*.28);g.lineTo(rr*.64,rr*.60);g.lineTo(-rr*.34,rr*.76);g.closePath();g.fill();g.stroke();
+      g.strokeStyle="rgba(238,220,183,.30)";g.lineWidth=1.2;g.beginPath();g.moveTo(-rr*.42,-rr*.44);g.lineTo(rr*.18,-rr*.62);g.lineTo(rr*.46,-rr*.22);g.stroke();
+      if (rr>10){g.strokeStyle="rgba(69,63,53,.24)";g.lineWidth=1;g.beginPath();g.moveTo(-rr*.12,-rr*.48);g.lineTo(rr*.08,-rr*.12);g.lineTo(-rr*.03,rr*.28);g.stroke();}
+      g.restore();
+    }
+    g.restore();
+  }
+
+  function drawStructure(g, structure) {
+    g.save(); g.translate(structure.x,structure.y); g.rotate(structure.rot||0);
+    const shadow="rgba(56,49,42,.20)", edge="#585850", stone="#928873", light="#b5a68a", roof="#676b64", glow="#5b9f98";
+    g.fillStyle=shadow;g.beginPath();g.ellipse(5,10,38,25,.1,0,Math.PI*2);g.fill();
+    if(structure.type==="relay"){
+      g.fillStyle=stone;g.strokeStyle=edge;g.lineWidth=2.2;g.beginPath();g.moveTo(-31,10);g.lineTo(-24,-18);g.lineTo(0,-27);g.lineTo(28,-16);g.lineTo(32,10);g.lineTo(0,23);g.closePath();g.fill();g.stroke();
+      g.fillStyle=roof;g.beginPath();g.ellipse(0,-2,16,12,0,0,Math.PI*2);g.fill();g.strokeStyle=glow;g.lineWidth=3.5;g.beginPath();g.arc(0,-2,7,0,Math.PI*2);g.stroke();
+      [-23,23].forEach(px=>{g.fillStyle="#77766b";g.beginPath();g.roundRect(px-5,-27,10,37,3);g.fill();g.fillStyle=glow;g.fillRect(px-1,-20,2,20);});
+    }else if(structure.type==="bunker"){
+      g.fillStyle=stone;g.strokeStyle=edge;g.lineWidth=2.2;g.beginPath();g.moveTo(-33,13);g.lineTo(-26,-16);g.lineTo(18,-21);g.lineTo(33,-8);g.lineTo(28,17);g.closePath();g.fill();g.stroke();
+      g.fillStyle=roof;g.beginPath();g.roundRect(-20,-14,35,21,6);g.fill();g.fillStyle="#3f4746";g.beginPath();g.roundRect(12,-7,13,19,3);g.fill();g.fillStyle=glow;g.fillRect(15,-3,7,3);
+      g.strokeStyle="rgba(233,217,184,.30)";g.beginPath();g.moveTo(-23,-10);g.lineTo(7,-15);g.stroke();
+    }else if(structure.type==="walls"){
+      g.fillStyle=stone;g.strokeStyle=edge;g.lineWidth=2;[[ -34,-10,48,11],[18,-4,16,35],[-26,10,31,9]].forEach(([a,b,w,h])=>{g.beginPath();g.roundRect(a,b,w,h,3);g.fill();g.stroke();});
+      g.fillStyle=light;g.globalAlpha=.35;g.fillRect(-27,-7,31,2);g.fillRect(20,-1,2,22);g.globalAlpha=1;
+    }else{
+      g.fillStyle=stone;g.strokeStyle=edge;g.lineWidth=2;g.beginPath();g.moveTo(-31,-9);g.lineTo(-8,-17);g.lineTo(5,-6);g.lineTo(30,-9);g.lineTo(25,10);g.lineTo(8,13);g.lineTo(-5,7);g.lineTo(-29,13);g.closePath();g.fill();g.stroke();
+      g.fillStyle=light;g.globalAlpha=.42;g.beginPath();g.moveTo(-24,-7);g.lineTo(-8,-12);g.lineTo(-3,-8);g.lineTo(-19,-3);g.closePath();g.fill();g.globalAlpha=1;
+    }
+    g.restore();
+  }
+
+  function drawTurretGround(g, turret) {
+    g.save(); g.translate(turret.x,turret.y);
+    const grad=g.createRadialGradient(0,0,7,0,0,46);grad.addColorStop(0,"rgba(111,88,60,.15)");grad.addColorStop(1,"rgba(111,88,60,0)");g.fillStyle=grad;g.beginPath();g.arc(0,0,46,0,Math.PI*2);g.fill();
+    g.strokeStyle="rgba(92,72,51,.12)";g.lineWidth=2;g.setLineDash([5,7]);g.beginPath();g.arc(0,0,34,0,Math.PI*2);g.stroke();g.setLineDash([]);g.restore();
+  }
+
+  function drawBattle() {
+    ctx.clearRect(0,0,WORLD.width,WORLD.height);ctx.drawImage(staticLayer,0,0);
+    const turrets=battle?battle.turrets:makeTurrets(state.round);turrets.forEach(t=>{if(t.alive)drawTurretGround(ctx,t);});
+    drawTurrets(ctx);
+    if(!battle)return;
+    battle.units.forEach(unit=>drawUnit(ctx,unit));drawShots(ctx,"enemy");drawShots(ctx,"player");drawEffects(ctx);
+  }
+
+  function drawTurrets(g) {
+    const list=battle?battle.turrets:makeTurrets(state.round);
+    list.forEach(t=>{if(!t.alive)return;g.save();g.translate(t.x,t.y);
+      g.fillStyle="rgba(45,43,39,.22)";g.beginPath();g.ellipse(5,10,32,20,.08,0,Math.PI*2);g.fill();
+      g.fillStyle="#8d826c";g.strokeStyle="#55554f";g.lineWidth=2.3;g.beginPath();polygon(g,0,0,27,8);g.fill();g.stroke();
+      g.fillStyle="#a79a7f";g.beginPath();polygon(g,0,0,20,8);g.fill();
+      g.fillStyle="#5d625d";g.beginPath();g.arc(0,0,15,0,Math.PI*2);g.fill();g.strokeStyle="rgba(224,207,174,.34)";g.lineWidth=1.5;g.beginPath();g.arc(0,0,11,0,Math.PI*2);g.stroke();
+      if(t.level>=2){g.fillStyle="#766e60";[-1,1].forEach(s=>{g.beginPath();g.roundRect(s*17-4,-7,8,14,3);g.fill();});}
+      g.rotate(t.aim+Math.PI/2);const recoil=t.recoil*5;
+      g.fillStyle=t.flash>0?"#c5a27f":"#6b6f68";g.strokeStyle="#3f433f";g.lineWidth=2.2;g.beginPath();g.roundRect(-12,-14,24,24,7);g.fill();g.stroke();
+      g.fillStyle="#a05f4c";g.beginPath();g.arc(0,-2,6,0,Math.PI*2);g.fill();g.fillStyle="#82aaa2";g.beginPath();g.arc(-2,-4,2.1,0,Math.PI*2);g.fill();
+      g.strokeStyle="#3f433f";g.lineWidth=4;g.lineCap="round";[-4,4].forEach(x=>{g.beginPath();g.moveTo(x,-10+recoil);g.lineTo(x,-33+recoil);g.stroke();});
+      g.strokeStyle="#9a8a76";g.lineWidth=1.2;[-4,4].forEach(x=>{g.beginPath();g.moveTo(x,-14+recoil);g.lineTo(x,-30+recoil);g.stroke();});g.restore();
+      drawHealthBar(g,t.x-24,t.y-37,48,5,t.hp/t.maxHp,"#b95c54");
+    });
+  }
+
+  function drawUnit(g, unit) {
+    if(!unit.alive||unit.reached)return;const p=unit.profile;g.save();g.translate(unit.x,unit.y);g.rotate(unit.heading+Math.PI/2);if(unit.hitFlash>0)g.globalAlpha=.70+Math.sin(unit.hitFlash*28)*.20;
+    g.fillStyle="rgba(57,51,44,.20)";g.beginPath();g.ellipse(3,6,13,19,0,0,Math.PI*2);g.fill();
+    if(unit.type==="scout"){
+      g.fillStyle="#3d4140";[[-11,-12],[7,-12],[-11,7],[7,7]].forEach(([a,b])=>{g.beginPath();g.roundRect(a,b,4,9,2);g.fill();});
+      g.fillStyle=p.body;g.strokeStyle=p.accent;g.lineWidth=2;g.beginPath();g.moveTo(0,-18);g.lineTo(8,-11);g.lineTo(8,14);g.lineTo(0,18);g.lineTo(-8,14);g.lineTo(-8,-11);g.closePath();g.fill();g.stroke();
+      g.fillStyle="rgba(220,231,225,.75)";g.beginPath();g.roundRect(-5,-11,10,8,2);g.fill();
+    }else if(unit.type==="armoured"){
+      g.fillStyle="#3f4140";[[-12,-13],[8,-13],[-12,8],[8,8]].forEach(([a,b])=>{g.beginPath();g.roundRect(a,b,4,10,2);g.fill();});
+      g.fillStyle=p.body;g.strokeStyle=p.accent;g.lineWidth=2;g.beginPath();g.roundRect(-9,-19,18,38,5);g.fill();g.stroke();g.fillStyle="rgba(220,231,225,.62)";g.beginPath();g.roundRect(-6,-13,12,9,2);g.fill();g.strokeStyle="rgba(52,63,54,.45)";g.lineWidth=1.4;g.beginPath();g.moveTo(-7,6);g.lineTo(7,6);g.stroke();
+    }else if(unit.type==="tank"){
+      g.fillStyle="#343938";g.beginPath();g.roundRect(-14,-19,5,38,2);g.fill();g.beginPath();g.roundRect(9,-19,5,38,2);g.fill();
+      g.fillStyle=p.body;g.strokeStyle=p.accent;g.lineWidth=2;g.beginPath();g.roundRect(-9,-18,18,36,4);g.fill();g.stroke();g.fillStyle=p.accent;g.beginPath();g.arc(0,1,7,0,Math.PI*2);g.fill();const recoil=unit.recoil*4;g.strokeStyle=p.accent;g.lineWidth=4;g.beginPath();g.moveTo(0,-3+recoil);g.lineTo(0,-22+recoil);g.stroke();
+    }else{
+      g.fillStyle="#3f4140";[[-12,-13],[8,-13],[-12,7],[8,7]].forEach(([a,b])=>{g.beginPath();g.roundRect(a,b,4,9,2);g.fill();});
+      g.fillStyle=p.body;g.strokeStyle=p.accent;g.lineWidth=2;g.beginPath();g.roundRect(-8,-18,16,36,4);g.fill();g.stroke();g.fillStyle="rgba(222,231,224,.70)";g.beginPath();g.roundRect(-5,-13,10,8,2);g.fill();g.fillStyle=p.accent;g.beginPath();g.arc(0,1,5.5,0,Math.PI*2);g.fill();const recoil=unit.recoil*4;g.strokeStyle=p.accent;g.lineWidth=3;g.beginPath();g.moveTo(0,-2+recoil);g.lineTo(0,-19+recoil);g.stroke();
+    }
+    g.restore();drawHealthBar(g,unit.x-15,unit.y-27,30,4,unit.hp/unit.maxHp,"#5f9777");
+  }
+
+  function drawEffects(g) {
+    if(!battle)return;battle.effects.forEach(effect=>{const t=1-effect.life/effect.max;g.save();g.globalAlpha=Math.max(0,1-t);
+      if(effect.kind==="boom"){g.fillStyle="#d6864f";g.beginPath();g.arc(effect.x,effect.y,5+t*19,0,Math.PI*2);g.fill();g.fillStyle="#ead3a0";g.beginPath();g.arc(effect.x,effect.y,3+t*10,0,Math.PI*2);g.fill();}
+      else if(effect.kind==="base"){g.strokeStyle="#6cb7ae";g.lineWidth=4;g.beginPath();g.arc(effect.x,effect.y,9+t*21,0,Math.PI*2);g.stroke();}
+      else if(effect.kind==="muzzle"){g.fillStyle="#efc777";g.beginPath();g.arc(effect.x,effect.y,2+t*6,0,Math.PI*2);g.fill();}
+      else if(effect.kind==="dust"||effect.kind==="dustBurst"){g.globalAlpha=(1-t)*(effect.kind==="dustBurst"?.26:.16);g.fillStyle="#d9c28f";g.beginPath();g.ellipse(effect.x,effect.y,5+t*(effect.kind==="dustBurst"?17:9),3+t*6,0,0,Math.PI*2);g.fill();}
+      else if(effect.kind==="smoke"){g.globalAlpha=(1-t)*.24;g.fillStyle="#4f524d";g.beginPath();g.arc(effect.x+t*4,effect.y-t*13,4+t*10,0,Math.PI*2);g.fill();}
+      else{g.fillStyle="#e7c88a";g.beginPath();g.arc(effect.x,effect.y,2+t*4,0,Math.PI*2);g.fill();}g.restore();});
+  }
+
+
   document.querySelectorAll("[data-attack-route]").forEach(button => {
     button.addEventListener("click", () => {
-      state.selectedRoute = button.dataset.attackRoute;
+      selectedLoadoutSlot().route = button.dataset.attackRoute;
       renderPlan();
     });
   });
-  undoBtn.addEventListener("click", undoLast);
-  sendBtn.addEventListener("click", startWave);
+  clearSlotBtn.addEventListener("click", clearSelectedSlot);
+  sendBtn.addEventListener("click", startOrResumeAttack);
+  endRoundBtn.addEventListener("click", finishRound);
   speedBtn.addEventListener("click", () => {
     speedMultiplier = speedMultiplier === 1 ? 2 : 1;
     speedBtn.textContent = `${speedMultiplier}×`;
   });
-  pauseBtn.addEventListener("click", () => {
-    if (!battle || battle.finished) return;
-    paused = true;
-    pauseOverlay.hidden = false;
-  });
-  resumeBtn.addEventListener("click", () => {
-    paused = false;
-    pauseOverlay.hidden = true;
-    lastFrame = performance.now();
-  });
-  abortBtn.addEventListener("click", abortWave);
+  pauseBtn.addEventListener("click", pauseToPlanning);
 
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden && battle && !battle.finished) {
-      paused = true;
-      pauseOverlay.hidden = false;
-    }
+    if (document.hidden && battle && !battle.finished && !battleEl.hidden) pauseToPlanning();
   });
 
+  paused = true;
   renderPlan();
   drawBattle();
 })();
