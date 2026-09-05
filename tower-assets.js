@@ -1,7 +1,7 @@
 window.TowerAttackAssets = Object.freeze({
-  version: "1.8.8-stage1",
+  version: "1.8.9-ai-vehicle-pass",
   vehicleAtlas: Object.freeze({
-    src: "tower-vehicles.png?v=1.8.8",
+    src: "tower-vehicles.png?v=1.8.9",
     width: 768,
     height: 512,
     cell: 256,
@@ -9,9 +9,9 @@ window.TowerAttackAssets = Object.freeze({
     rows: 2
   }),
   vehicles: Object.freeze({
-    scout: Object.freeze({ col: 0, worldWidth: 78, worldHeight: 78 }),
-    gunbuggy: Object.freeze({ col: 1, worldWidth: 78, worldHeight: 78 }),
-    tank: Object.freeze({ col: 2, worldWidth: 86, worldHeight: 90 })
+    scout: Object.freeze({ col: 0, worldWidth: 86, worldHeight: 86 }),
+    gunbuggy: Object.freeze({ col: 1, worldWidth: 86, worldHeight: 86 }),
+    tank: Object.freeze({ col: 2, worldWidth: 92, worldHeight: 96 })
   }),
   teamRows: Object.freeze({ player: 0, enemy: 1 })
 });
