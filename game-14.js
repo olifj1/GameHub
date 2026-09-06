@@ -125,7 +125,7 @@
     playerRouteUse: [0,0,0,0],
     playerUnitUse: { scout:0, gunbuggy:0, tank:0 },
     playerDefenceUse: { lightturret:0, cannon:0, rapid:0 },
-    drag: null, armedSlot: null,
+    drag: null, pendingDeploy: null, armedSlot: null, armedItemId: null, suppressClickUntil: 0,
     hoverRoute: null, hoverNode: null,
     elapsed: 0,
     lastPlayerRoute: null
@@ -304,28 +304,57 @@
     miniStatsEl.textContent=`${playerUnits} units · ${playerDef} defences`;
   }
 
+  let deployRenderSignature = "";
+
+  function deploymentRoster(){
+    const ordered=[];
+    state.loadout.forEach(id=>{ if(id && ITEMS[id] && !ordered.includes(id)) ordered.push(id); });
+    Object.keys(ITEMS).forEach(id=>{ if(!ordered.includes(id)) ordered.push(id); });
+    return ordered;
+  }
+
+  function quickSlotsFor(itemId){
+    const slots=[];
+    state.loadout.forEach((id,index)=>{ if(id===itemId) slots.push(index+1); });
+    return slots;
+  }
+
   function renderDeployBar(){
-    deployBarEl.innerHTML=state.loadout.map((id,index)=>{
-      const item=id?ITEMS[id]:null,affordable=item&&state.playerCash>=item.cost;
-      const armed=battle.armedSlot===index;
-      return `<button type="button" class="attack-deploy-button ${item?`kind-${item.kind}`:"empty"} ${affordable?"":"unaffordable"} ${armed?"armed":""}" data-deploy-slot="${index}" ${item?"":"disabled"}><span class="attack-deploy-number">${index+1}</span><span class="attack-deploy-icon">${item?itemVisual(item):"+"}</span><span class="attack-deploy-copy"><strong>${item?item.name:"Empty"}</strong><small>${item?`£${item.cost} · ${item.kind==="attack"?"drag to route":"drag to point"}`:"Assign in Command"}</small></span></button>`;
+    const roster=deploymentRoster();
+    const afford=roster.map(id=>state.playerCash>=ITEMS[id].cost?1:0).join("");
+    const signature=`${state.loadout.join("|")}|${battle.armedItemId||""}|${afford}`;
+    if(signature===deployRenderSignature) return;
+    deployRenderSignature=signature;
+    const oldScroll=deployBarEl.parentElement?.scrollLeft || 0;
+    deployBarEl.innerHTML=roster.map(id=>{
+      const item=ITEMS[id],affordable=state.playerCash>=item.cost;
+      const armed=battle.armedItemId===id;
+      const slots=quickSlotsFor(id);
+      const slotIndex=slots.length?slots[0]-1:-1;
+      const badge=slots.length?slots.join("·"):"";
+      return `<button type="button" class="attack-deploy-button kind-${item.kind} ${affordable?"":"unaffordable"} ${armed?"armed":""}" data-deploy-item="${id}" data-deploy-slot="${slotIndex}" aria-label="${item.name}, £${item.cost}${slots.length?`, quick ${badge}`:""}">${badge?`<span class="attack-deploy-number">${badge}</span>`:""}<span class="attack-deploy-icon">${itemVisual(item)}</span><span class="attack-deploy-copy"><strong>${item.name}</strong><small>£${item.cost} · ${item.kind==="attack"?"drag to route":"drag to point"}</small></span></button>`;
     }).join("");
-    deployBarEl.querySelectorAll("[data-deploy-slot]").forEach(btn=>{
+    if(deployBarEl.parentElement) deployBarEl.parentElement.scrollLeft=oldScroll;
+    deployBarEl.querySelectorAll("[data-deploy-item]").forEach(btn=>{
+      const itemId=btn.dataset.deployItem;
       const index=Number(btn.dataset.deploySlot);
-      btn.addEventListener("pointerdown",e=>beginDrag(index,e));
-      btn.addEventListener("click",e=>{ if(e.detail===0) armSlot(index); });
+      btn.addEventListener("pointerdown",e=>beginDeployGesture(itemId,index,e));
+      btn.addEventListener("click",e=>{
+        if(Date.now()<battle.suppressClickUntil) return;
+        if(e.detail===0) armItem(itemId,index);
+      });
     });
   }
 
   function openBattle(){
-    state.started=true; planEl.hidden=true; battleEl.hidden=false; running=true; battle.armedSlot=null; planNoteEl.textContent="Battle paused. Remap any quick button, then return when ready.";
+    state.started=true; planEl.hidden=true; battleEl.hidden=false; running=true; battle.armedSlot=null; battle.armedItemId=null; deployRenderSignature=""; document.body.classList.add("tower-battle-active"); planNoteEl.textContent="Battle paused. Change your favourites, then return when ready.";
     resizeBattleLayout();
     requestAnimationFrame(resizeBattleLayout);
     lastFrame=performance.now(); renderDeployBar(); renderBattleHud(); drawBattle();
   }
 
   function openCommand(){
-    running=false; cancelDrag(); planEl.hidden=false; battleEl.hidden=true; renderPlan();
+    running=false; cancelDrag(); battle.pendingDeploy=null; document.body.classList.remove("tower-battle-active"); planEl.hidden=false; battleEl.hidden=true; renderPlan();
   }
 
   function resizeBattleLayout(){
@@ -335,33 +364,41 @@
     const battleRect = battleEl.getBoundingClientRect();
     const hudH = document.querySelector('.attack-battle-hud')?.offsetHeight || 0;
     const statusH = document.querySelector('.attack-battle-status-row')?.offsetHeight || 0;
-    const deployH = deployBarEl.offsetHeight || 0;
-    const footerH = document.querySelector('.attack-battle-footer')?.offsetHeight || 0;
-    const gaps = 28;
-    const availableH = Math.max(260, battleRect.height - hudH - statusH - deployH - footerH - gaps);
+    const dockH = document.querySelector('.attack-battle-dock')?.offsetHeight || 0;
+    const gaps = 18;
+    const availableH = Math.max(300, battleRect.height - hudH - statusH - dockH - gaps);
     const widthFromHeight = availableH * WORLD.width / WORLD.height;
-    const pageInnerWidth = Math.min((page.clientWidth || 0), window.innerWidth - 24);
-    const width = Math.max(250, Math.min(pageInnerWidth, 404, widthFromHeight));
+    const pageInnerWidth = Math.min((page.clientWidth || 0), window.innerWidth - 10);
+    const width = Math.max(260, Math.min(pageInnerWidth, 448, widthFromHeight));
     stageWrap.style.width = `${width}px`;
   }
 
-  function armSlot(index){
-    const id=state.loadout[index],item=id?ITEMS[id]:null;
+  function armItem(itemId,index=-1){
+    const item=ITEMS[itemId];
     if(!item) return;
-    battle.armedSlot=index;
+    battle.armedItemId=itemId;
+    battle.armedSlot=index>=0?index:null;
     battle.hoverRoute=null; battle.hoverNode=null;
-    battleStatusEl.textContent=item.kind==="attack"?`Button ${index+1}: drag or tap one of the four routes.`:`Button ${index+1}: drag or tap a highlighted emplacement.`;
-    renderDeployBar(); drawBattle();
+    battleStatusEl.textContent=item.kind==="attack"?`${item.name}: drag or tap one of the four routes.`:`${item.name}: drag or tap a highlighted emplacement.`;
+    deployRenderSignature=""; renderDeployBar(); drawBattle();
   }
 
-  function beginDrag(index,e){
+  function beginDeployGesture(itemId,index,e){
     if(!running || state.gameOver) return;
-    const id=state.loadout[index],item=id?ITEMS[id]:null;
+    const item=ITEMS[itemId];
     if(!item) return;
     if(state.playerCash<item.cost){ battleStatusEl.textContent=`Need ${money(item.cost-state.playerCash)} more for ${item.name}.`; return; }
+    battle.pendingDeploy={itemId,index,item,pointerId:e.pointerId,startX:e.clientX,startY:e.clientY};
+  }
+
+  function startDragFromPending(e){
+    const pending=battle.pendingDeploy;
+    if(!pending) return;
+    const {itemId,index,item}=pending;
+    battle.pendingDeploy=null;
     e.preventDefault();
     const ghost=document.createElement("div"); ghost.className=`attack-drag-ghost ${item.kind}`; ghost.innerHTML=`${itemVisual(item)}<span>${item.name}</span>`; document.body.appendChild(ghost);
-    battle.drag={index,item,pointerId:e.pointerId,startX:e.clientX,startY:e.clientY,x:e.clientX,y:e.clientY,moved:false,ghost};
+    battle.drag={index,itemId,item,pointerId:e.pointerId,startX:e.clientX,startY:e.clientY,x:e.clientX,y:e.clientY,moved:true,ghost};
     moveGhost(e.clientX,e.clientY); updateDragHover(e.clientX,e.clientY);
     battleStatusEl.textContent=item.kind==="attack"?"Drop onto a highlighted route.":"Drop onto a highlighted defence point.";
     drawBattle();
@@ -389,20 +426,32 @@
   }
 
   function onPointerMove(e){
+    if(battle.pendingDeploy && e.pointerId===battle.pendingDeploy.pointerId){
+      const dx=e.clientX-battle.pendingDeploy.startX,dy=e.clientY-battle.pendingDeploy.startY;
+      if(Math.hypot(dx,dy)>8){
+        if(Math.abs(dx)>Math.abs(dy)*1.12){ battle.pendingDeploy=null; return; }
+        startDragFromPending(e);
+      }
+    }
     if(!battle.drag||e.pointerId!==battle.drag.pointerId) return;
-    if(Math.hypot(e.clientX-battle.drag.startX,e.clientY-battle.drag.startY)>7) battle.drag.moved=true;
     moveGhost(e.clientX,e.clientY); updateDragHover(e.clientX,e.clientY); drawBattle();
   }
 
   function onPointerUp(e){
+    if(battle.pendingDeploy && e.pointerId===battle.pendingDeploy.pointerId){ battle.pendingDeploy=null; return; }
     if(!battle.drag||e.pointerId!==battle.drag.pointerId) return;
     const drag=battle.drag,local=clientToCanvas(e.clientX,e.clientY);
-    if(!drag.moved){ cancelDrag(); armSlot(drag.index); return; }
     if(local){
       if(drag.item.kind==="attack") tryDropAttack(drag.item,local);
       else tryDropDefence(drag.item,local);
     }
+    battle.suppressClickUntil=Date.now()+300;
     cancelDrag();
+  }
+
+  function onPointerCancel(e){
+    if(battle.pendingDeploy && e.pointerId===battle.pendingDeploy.pointerId) battle.pendingDeploy=null;
+    if(battle.drag && e.pointerId===battle.drag.pointerId) cancelDrag();
   }
 
   function cancelDrag(){
@@ -420,7 +469,7 @@
     let best=-1,bestD=Infinity;
     routes.forEach((route,i)=>{ const d=distanceToRoute(p.x,p.y,route); if(d<bestD){bestD=d;best=i;} });
     if(bestD>62){ battleStatusEl.textContent="Drop onto one of the highlighted routes."; return; }
-    deployUnit(PLAYER,item.id,best); state.playerCash-=item.cost; battle.armedSlot=null; battle.lastPlayerRoute=best;
+    deployUnit(PLAYER,item.id,best); state.playerCash-=item.cost; battle.armedSlot=null; battle.armedItemId=null; deployRenderSignature=""; battle.lastPlayerRoute=best;
     battle.playerRouteUse[best]+=1;
     if(Object.prototype.hasOwnProperty.call(battle.playerUnitUse,item.id)) battle.playerUnitUse[item.id]+=1;
     battleStatusEl.textContent=`${item.name} launched on Route ${best+1}.`; renderDeployBar(); renderBattleHud();
@@ -432,7 +481,7 @@
     let best=null,bestD=Infinity;
     candidates.forEach(n=>{ const d=Math.hypot(p.x-n.x,p.y-n.y); if(d<bestD){bestD=d;best=n;} });
     if(!best||bestD>65){ battleStatusEl.textContent="Drop onto one of the highlighted defence points."; return; }
-    buildTurret(PLAYER,item.id,best); state.playerCash-=item.cost; battle.armedSlot=null;
+    buildTurret(PLAYER,item.id,best); state.playerCash-=item.cost; battle.armedSlot=null; battle.armedItemId=null; deployRenderSignature="";
     if(Object.prototype.hasOwnProperty.call(battle.playerDefenceUse,item.id)) battle.playerDefenceUse[item.id]+=1;
     battleStatusEl.textContent=`${item.name} built.`; renderDeployBar(); renderBattleHud();
   }
@@ -844,14 +893,14 @@
     battle.units=[]; battle.turrets=[]; battle.shots=[]; battle.effects=[]; battle.nextUnitId=1; battle.nextTurretId=1;
     battle.aiTimer=1.15; battle.aiPlan=[]; battle.aiPlanName="opening"; battle.aiLastPlanName=null; battle.aiReplanAt=0; battle.aiEmergencyCooldown=0; battle.aiFocusRoute=0; battle.aiSecondaryRoute=1;
     battle.playerRouteUse=[0,0,0,0]; battle.playerUnitUse={scout:0,gunbuggy:0,tank:0}; battle.playerDefenceUse={lightturret:0,cannon:0,rapid:0};
-    battle.elapsed=0; battle.armedSlot=null; battle.hoverRoute=null; battle.hoverNode=null; battle.lastPlayerRoute=null; cancelDrag(); placementNodes.forEach(n=>n.occupiedBy=null);
-    openCommand(); planNoteEl.textContent="Assign anything to the four quick buttons. Cost is paid only when deployed.";
+    battle.elapsed=0; battle.armedSlot=null; battle.armedItemId=null; battle.pendingDeploy=null; deployRenderSignature=""; battle.hoverRoute=null; battle.hoverNode=null; battle.lastPlayerRoute=null; cancelDrag(); placementNodes.forEach(n=>n.occupiedBy=null);
+    openCommand(); planNoteEl.textContent="Choose four favourites for the front of the battle carousel. Cost is paid only when deployed.";
   }
 
   function canvasClick(e){
-    if(!running||battle.drag||battle.armedSlot===null) return;
+    if(!running||battle.drag||!battle.armedItemId) return;
     const p=clientToCanvas(e.clientX,e.clientY); if(!p) return;
-    const id=state.loadout[battle.armedSlot],item=id?ITEMS[id]:null; if(!item) return;
+    const item=ITEMS[battle.armedItemId]; if(!item) return;
     if(state.playerCash<item.cost){ battleStatusEl.textContent=`Need ${money(item.cost-state.playerCash)} more for ${item.name}.`; return; }
     if(item.kind==="attack") tryDropAttack(item,p); else tryDropDefence(item,p);
   }
@@ -1042,9 +1091,8 @@
   function drawEffects(g){battle.effects.forEach(e=>{g.save();g.globalAlpha=clamp(e.ttl/(e.type==="boom"?.55:.18),0,1);g.strokeStyle=e.type==="boom"?"#e7b878":"#fff4d5";g.lineWidth=e.type==="boom"?4:2;g.beginPath();g.arc(e.x,e.y,e.r,0,Math.PI*2);g.stroke();g.restore();});}
 
   function drawDeploymentOverlay(g){
-    const slot=battle.drag?.index ?? battle.armedSlot;
-    if(slot===null||slot===undefined) return;
-    const id=state.loadout[slot],item=id?ITEMS[id]:null;if(!item) return;
+    const item=battle.drag?.item || (battle.armedItemId?ITEMS[battle.armedItemId]:null);
+    if(!item) return;
     g.save();
     if(item.kind==="attack"){
       routes.forEach((route,i)=>{
@@ -1075,11 +1123,11 @@
   canvas.addEventListener("pointerup",canvasClick);
   window.addEventListener("pointermove",onPointerMove,{passive:false});
   window.addEventListener("pointerup",onPointerUp,{passive:false});
-  window.addEventListener("pointercancel",onPointerUp,{passive:false});
+  window.addEventListener("pointercancel",onPointerCancel,{passive:false});
   window.addEventListener("resize",()=>{ resizeBattleLayout(); },{passive:true});
   window.addEventListener("orientationchange",()=>setTimeout(resizeBattleLayout,120),{passive:true});
 
 
-  renderPlan(); renderBattleHud(); renderDeployBar(); drawBattle();
+  document.body.classList.remove("tower-battle-active"); renderPlan(); renderBattleHud(); renderDeployBar(); drawBattle();
   animationFrame=requestAnimationFrame(frame);
 })();

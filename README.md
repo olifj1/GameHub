@@ -1,12 +1,13 @@
-# GameHub v1.8.12
+# GameHub v1.8.13
 
-Tower Attack AI tactics pass.
+Tower Attack battle-layout and deployment-carousel pass.
 
-- enemy now acts in short tactical plans instead of isolated random purchases
-- added scout probes, focused rushes, split-lane rushes, escort pushes, double-buggy pressure, heavy tank pushes, fortify phases and counterattacks
-- AI can deliberately save credits for a stronger combined push
-- AI remembers which routes and unit types the player has been favouring during the current match
-- defensive choices respond to incoming unit mix: rapid fire against scout-heavy pressure, cannon against heavier units
-- emergency defence can interrupt a longer plan when a lane is genuinely exposed
-- attacking plans increasingly look for weakly defended routes and can switch lanes rather than repeating one pattern
-- no visual, economy, unit-stat or terrain changes in this release
+- battle view now hides the Tower Attack title/header and uses that vertical space for the live HUD and battlefield
+- battlefield expands much closer to the available phone width/height
+- deployment controls sit in a bottom dock
+- deployment is now a horizontal swipe carousel containing the full current roster, not only the four quick assignments
+- Command quick slots are now favourites: they determine which roster items appear first in the battle carousel
+- drag up from a carousel item to deploy it; horizontal swipes scroll the roster
+- deploy cards have substantially larger sprites and labels
+- Command roster cards use much larger artwork, names, prices and descriptions
+- existing v1.8.12 AI tactics, economy, generated terrain and combat behaviour are unchanged

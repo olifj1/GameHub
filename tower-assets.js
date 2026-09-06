@@ -1,7 +1,7 @@
 window.TowerAttackAssets = Object.freeze({
-  version: "1.8.12-genai-terrain-test",
+  version: "1.8.13-layout-carousel",
   vehicleAtlas: Object.freeze({
-    src: "tower-vehicles.png?v=1.8.12",
+    src: "tower-vehicles.png?v=1.8.13",
     width: 768,
     height: 512,
     cell: 256,
@@ -14,7 +14,7 @@ window.TowerAttackAssets = Object.freeze({
     tank: Object.freeze({ col: 2, worldWidth: 92, worldHeight: 96, uiScale: .96 })
   }),
   defenceAtlas: Object.freeze({
-    src: "tower-defences.png?v=1.8.12",
+    src: "tower-defences.png?v=1.8.13",
     width: 768,
     height: 512,
     cell: 256,
@@ -27,7 +27,7 @@ window.TowerAttackAssets = Object.freeze({
     rapid: Object.freeze({ col: 2, worldWidth: 78, worldHeight: 78, uiScale: .94 })
   }),
   sceneryAtlas: Object.freeze({
-    src: "tower-scenery.png?v=1.8.12",
+    src: "tower-scenery.png?v=1.8.13",
     width: 768,
     height: 576,
     cell: 192,
@@ -49,7 +49,7 @@ window.TowerAttackAssets = Object.freeze({
     wall: Object.freeze({ col:3,row:2 })
   }),
   terrain: Object.freeze({
-    src: "tower-terrain.png?v=1.8.12",
+    src: "tower-terrain.png?v=1.8.13",
     width: 660,
     height: 1120,
     bakedScenery: true
