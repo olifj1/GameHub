@@ -1,9 +1,12 @@
-# GameHub v1.8.11
+# GameHub v1.8.12
 
-Terrain art test for Tower Attack.
+Tower Attack AI tactics pass.
 
-- Replaces the procedural/baked Tower Attack battlefield background with the first generated painterly canyon terrain pass.
-- Keeps the real four route splines, deployment logic, combat, vehicles, defences, economy and AI unchanged.
-- The generated terrain contains its own trees, rocks and ruins, so the separate scenery atlas is temporarily not drawn over this map.
-- Route and defence placement highlights remain code-driven and therefore still use the real gameplay geometry.
-- v1.8.10 remains the clean pre-generated-terrain fallback.
+- enemy now acts in short tactical plans instead of isolated random purchases
+- added scout probes, focused rushes, split-lane rushes, escort pushes, double-buggy pressure, heavy tank pushes, fortify phases and counterattacks
+- AI can deliberately save credits for a stronger combined push
+- AI remembers which routes and unit types the player has been favouring during the current match
+- defensive choices respond to incoming unit mix: rapid fire against scout-heavy pressure, cannon against heavier units
+- emergency defence can interrupt a longer plan when a lane is genuinely exposed
+- attacking plans increasingly look for weakly defended routes and can switch lanes rather than repeating one pattern
+- no visual, economy, unit-stat or terrain changes in this release

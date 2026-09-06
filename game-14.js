@@ -114,7 +114,17 @@
   const battle = {
     units: [], turrets: [], shots: [], effects: [],
     nextUnitId: 1, nextTurretId: 1,
-    aiTimer: 1.5,
+    aiTimer: 1.15,
+    aiPlan: [],
+    aiPlanName: "opening",
+    aiLastPlanName: null,
+    aiReplanAt: 0,
+    aiEmergencyCooldown: 0,
+    aiFocusRoute: 0,
+    aiSecondaryRoute: 1,
+    playerRouteUse: [0,0,0,0],
+    playerUnitUse: { scout:0, gunbuggy:0, tank:0 },
+    playerDefenceUse: { lightturret:0, cannon:0, rapid:0 },
     drag: null, armedSlot: null,
     hoverRoute: null, hoverNode: null,
     elapsed: 0,
@@ -411,6 +421,8 @@
     routes.forEach((route,i)=>{ const d=distanceToRoute(p.x,p.y,route); if(d<bestD){bestD=d;best=i;} });
     if(bestD>62){ battleStatusEl.textContent="Drop onto one of the highlighted routes."; return; }
     deployUnit(PLAYER,item.id,best); state.playerCash-=item.cost; battle.armedSlot=null; battle.lastPlayerRoute=best;
+    battle.playerRouteUse[best]+=1;
+    if(Object.prototype.hasOwnProperty.call(battle.playerUnitUse,item.id)) battle.playerUnitUse[item.id]+=1;
     battleStatusEl.textContent=`${item.name} launched on Route ${best+1}.`; renderDeployBar(); renderBattleHud();
   }
 
@@ -421,6 +433,7 @@
     candidates.forEach(n=>{ const d=Math.hypot(p.x-n.x,p.y-n.y); if(d<bestD){bestD=d;best=n;} });
     if(!best||bestD>65){ battleStatusEl.textContent="Drop onto one of the highlighted defence points."; return; }
     buildTurret(PLAYER,item.id,best); state.playerCash-=item.cost; battle.armedSlot=null;
+    if(Object.prototype.hasOwnProperty.call(battle.playerDefenceUse,item.id)) battle.playerDefenceUse[item.id]+=1;
     battleStatusEl.textContent=`${item.name} built.`; renderDeployBar(); renderBattleHud();
   }
 
@@ -441,7 +454,8 @@
     battle.elapsed+=step;
     state.playerCash+=INCOME_PER_SECOND*step; state.enemyCash+=INCOME_PER_SECOND*step;
     battle.aiTimer-=step;
-    if(battle.aiTimer<=0){ aiDecision(); battle.aiTimer=.95+Math.random()*1.15; }
+    battle.aiEmergencyCooldown=Math.max(0,battle.aiEmergencyCooldown-step);
+    if(battle.aiTimer<=0){ aiDecision(); battle.aiTimer=.62+Math.random()*.58; }
 
     battle.units.forEach(unit=>updateUnit(unit,step));
     battle.turrets.forEach(t=>updateTurret(t,step));
@@ -552,45 +566,246 @@
 
   function aiDecision(){
     if(state.gameOver) return;
-    const emptyNodes=placementNodes.filter(n=>n.team===ENEMY&&!n.occupiedBy);
+
+    const metrics = getAiMetrics();
+
+    // An urgent push that is already close to the enemy base can interrupt a
+    // longer plan once. This stops the AI stubbornly saving for a tank while
+    // several player units simply roll past an undefended lane.
+    if(battle.aiEmergencyCooldown<=0 && shouldAiEmergencyDefend(metrics)){
+      if(aiEmergencyDefence(metrics)){
+        battle.aiEmergencyCooldown=5.5;
+        return;
+      }
+    }
+
+    // Plans are intentionally short and recognisable. When one completes the
+    // AI pauses briefly, reassesses the battlefield and chooses a different
+    // technique rather than making every purchase as an isolated dice roll.
+    if(!battle.aiPlan.length && battle.elapsed>=battle.aiReplanAt){
+      planAiTactic(metrics);
+    }
+
+    processAiPlan(metrics);
+  }
+
+  function getAiMetrics(){
     const playerPressureByRoute = routeAttackStrength(PLAYER);
     const enemyPressureByRoute = routeAttackStrength(ENEMY);
     const enemyTurretsByRoute = routeTurretCounts(ENEMY);
     const playerTurretsByRoute = routeTurretCounts(PLAYER);
+    const playerUnits = battle.units.filter(u=>u.team===PLAYER&&!u.dead);
+    const enemyUnits = battle.units.filter(u=>u.team===ENEMY&&!u.dead);
+    const enemyTurrets = battle.turrets.filter(t=>t.team===ENEMY&&!t.dead);
+    const playerTurrets = battle.turrets.filter(t=>t.team===PLAYER&&!t.dead);
     const pressureTotal = playerPressureByRoute.reduce((a,b)=>a+b,0);
-    const baseDanger = state.enemyBase < state.playerBase || pressureTotal > 2.8;
-    const wantDefence = emptyNodes.length && (
-      enemyTurretsByRoute.reduce((a,b)=>a+b,0) < 3 ||
-      baseDanger ||
-      playerPressureByRoute.some((v,i)=>v > enemyTurretsByRoute[i] + 1.2) ||
-      Math.random() < .18
-    );
+    const routeUseTotal = battle.playerRouteUse.reduce((a,b)=>a+b,0);
+    const favouritePlayerRoute = routeUseTotal
+      ? battle.playerRouteUse.indexOf(Math.max(...battle.playerRouteUse))
+      : playerPressureByRoute.indexOf(Math.max(...playerPressureByRoute));
+    const unitUseTotal = Object.values(battle.playerUnitUse).reduce((a,b)=>a+b,0) || 1;
+    return {
+      playerPressureByRoute, enemyPressureByRoute, enemyTurretsByRoute, playerTurretsByRoute,
+      playerUnits, enemyUnits, enemyTurrets, playerTurrets, pressureTotal,
+      favouritePlayerRoute,
+      scoutShare:battle.playerUnitUse.scout/unitUseTotal,
+      armedShare:(battle.playerUnitUse.gunbuggy+battle.playerUnitUse.tank)/unitUseTotal,
+      baseDanger: state.enemyBase <= state.playerBase-3 || pressureTotal>3.2,
+      weakAttackRoutes: rankAiAttackRoutes(playerTurretsByRoute,playerPressureByRoute,enemyPressureByRoute)
+    };
+  }
 
-    if(wantDefence){
-      const choices=[ITEMS.lightturret,ITEMS.cannon,ITEMS.rapid].filter(i=>state.enemyCash>=i.cost);
-      if(choices.length){
-        const hotRoute = playerPressureByRoute.indexOf(Math.max(...playerPressureByRoute));
-        let item = choices[0];
-        if(state.enemyCash>=ITEMS.cannon.cost && playerPressureByRoute[hotRoute] > 1.6) item = ITEMS.cannon;
-        else if(state.enemyCash>=ITEMS.rapid.cost && playerPressureByRoute[hotRoute] > 2.2) item = ITEMS.rapid;
-        const node=chooseAiNode(emptyNodes, playerPressureByRoute, enemyTurretsByRoute);
-        if(node){ buildTurret(ENEMY,item.id,node); state.enemyCash-=item.cost; return; }
-      }
+  function shouldAiEmergencyDefend(m){
+    if(m.enemyTurrets.length>=8) return false;
+    if(state.enemyCash<ITEMS.lightturret.cost) return false;
+    if(!m.playerUnits.length) return false;
+    const urgent=m.playerPressureByRoute.some((v,i)=>v>2.1 && m.enemyTurretsByRoute[i]<1.1);
+    return urgent || (state.enemyBase<=6 && m.pressureTotal>1.4);
+  }
+
+  function aiEmergencyDefence(m){
+    const hotRoutes=[0,1,2,3].sort((a,b)=>
+      (m.playerPressureByRoute[b]-m.enemyTurretsByRoute[b])-(m.playerPressureByRoute[a]-m.enemyTurretsByRoute[a])
+    );
+    for(const route of hotRoutes){
+      const node=chooseAiBuildNode(route,true);
+      if(!node) continue;
+      const item=chooseAiCounterDefence(route,m);
+      if(state.enemyCash<item.cost) continue;
+      buildTurret(ENEMY,item.id,node); state.enemyCash-=item.cost;
+      return true;
+    }
+    return false;
+  }
+
+  function planAiTactic(m){
+    const choices=[];
+    const add=(name,weight)=>{ if(weight>0 && name!==battle.aiPlanName) choices.push({name,weight}); };
+    const t=battle.elapsed;
+    const totalPlayerTurrets=m.playerTurrets.length;
+    const defenceRoom=m.enemyTurrets.length<6;
+
+    if(t<18){
+      add("probe",4.2); add("rush",4.0); add("fortify",defenceRoom?1.1:0); add("escort",1.4);
+    } else {
+      add("rush",2.1);
+      add("split",2.0);
+      add("escort",2.4);
+      add("counter",m.baseDanger?4.8:2.1);
+      add("fortify",defenceRoom?(m.baseDanger?5.2:1.5):0);
+      add("heavy",t>28 ? (state.enemyCash>105?3.4:2.0) : 0);
+      add("pressure",t>20 ? 2.0 : 0);
+      if(totalPlayerTurrets>=5){ add("heavy",4.6); add("split",3.2); }
+      if(m.scoutShare>.58){ add("fortify",3.4); add("counter",3.0); }
+      if(m.armedShare>.58){ add("counter",3.1); add("heavy",3.0); }
     }
 
-    const attackChoices=[];
-    if(state.enemyCash>=ITEMS.scout.cost) attackChoices.push(ITEMS.scout);
-    if(state.enemyCash>=ITEMS.gunbuggy.cost&&battle.elapsed>10) attackChoices.push(ITEMS.gunbuggy);
-    if(state.enemyCash>=ITEMS.tank.cost&&battle.elapsed>32) attackChoices.push(ITEMS.tank);
-    if(!attackChoices.length) return;
+    const picked=weightedPick(choices)?.name || "probe";
+    battle.aiLastPlanName=battle.aiPlanName;
+    battle.aiPlanName=picked;
+    buildAiPlan(picked,m);
+  }
 
-    const routeIndex=chooseAiRoute(playerTurretsByRoute, playerPressureByRoute, enemyPressureByRoute);
-    let item = ITEMS.scout;
-    const routeThreat = playerTurretsByRoute[routeIndex] + playerPressureByRoute[routeIndex] * .5;
-    if(state.enemyCash>=ITEMS.tank.cost && battle.elapsed>36 && routeThreat >= 2.2 && Math.random()<.55) item = ITEMS.tank;
-    else if(state.enemyCash>=ITEMS.gunbuggy.cost && battle.elapsed>12 && (routeThreat >= 1.2 || Math.random()<.68)) item = ITEMS.gunbuggy;
-    else if(state.enemyCash>=ITEMS.scout.cost) item = ITEMS.scout;
-    deployUnit(ENEMY,item.id,routeIndex); state.enemyCash-=item.cost;
+  function weightedPick(items){
+    const total=items.reduce((sum,item)=>sum+item.weight,0);
+    if(total<=0) return null;
+    let r=Math.random()*total;
+    for(const item of items){ r-=item.weight; if(r<=0) return item; }
+    return items[items.length-1] || null;
+  }
+
+  function buildAiPlan(name,m){
+    battle.aiPlan=[];
+    const weak=m.weakAttackRoutes;
+    const focus=weak[0] ?? 0;
+    const second=weak[1] ?? ((focus+2)%4);
+    battle.aiFocusRoute=focus;
+    battle.aiSecondaryRoute=second;
+    const now=battle.elapsed;
+    const unit=(itemId,route,delay=0)=>battle.aiPlan.push({type:"unit",itemId,routeIndex:route,notBefore:now+delay});
+    const defence=(route,delay=0,preferred=null)=>battle.aiPlan.push({type:"defence",routeIndex:route,preferred,notBefore:now+delay});
+
+    switch(name){
+      case "rush":
+        // Cheap units arrive in a compact packet, usually down a lightly
+        // defended lane. Occasionally the final scout swaps lane to create a
+        // small feint rather than four evenly spaced independent launches.
+        unit("scout",focus,0); unit("scout",focus,.55); unit("scout",Math.random()<.7?focus:second,1.1);
+        if(state.enemyCash>95 || now>28) unit("scout",second,1.7);
+        break;
+      case "split":
+        unit("scout",focus,0); unit("scout",second,.4); unit("scout",focus,.85); unit("scout",second,1.25);
+        break;
+      case "escort":
+        // A cheap scout is sent just ahead of the gun buggy so it tends to
+        // absorb the first turret volley. It makes the same units feel much
+        // more deliberate without adding any special rules.
+        unit("scout",focus,0); unit("gunbuggy",focus,.75); unit("scout",second,1.75);
+        break;
+      case "pressure":
+        unit("gunbuggy",focus,0); unit("gunbuggy",focus,1.15);
+        if(Math.random()<.55) unit("scout",second,1.8);
+        break;
+      case "heavy":
+        // This plan deliberately waits for the combined cost if necessary.
+        // Saving therefore becomes visible to the player as a lull before a
+        // much more dangerous push.
+        unit("scout",focus,0); unit("tank",focus,.8);
+        if(now>55) unit("gunbuggy",second,1.9);
+        break;
+      case "fortify": {
+        const hot=rankPlayerPressureRoutes(m)[0];
+        const hot2=rankPlayerPressureRoutes(m)[1] ?? hot;
+        if(m.enemyTurrets.length<6){ defence(hot,0,"counter"); defence(hot2,.9,"counter"); }
+        if(Math.random()<.45) unit("scout",focus,2.0);
+        break;
+      }
+      case "counter": {
+        const hot=rankPlayerPressureRoutes(m)[0];
+        if(m.enemyTurrets.length<7) defence(hot,0,"counter");
+        unit(state.enemyCash>110?"gunbuggy":"scout",focus,.85);
+        unit("scout",second,1.55);
+        break;
+      }
+      case "probe":
+      default:
+        // A probe gives the AI information visually: one cheap unit on several
+        // routes, after which the next plan tends to exploit the lane where the
+        // player has spent the least on defence.
+        unit("scout",focus,0); unit("scout",second,.85);
+        if(now<22 || state.enemyCash>85) unit("scout",weak[2] ?? ((focus+1)%4),1.7);
+        break;
+    }
+
+    battle.aiReplanAt=now+4.5+Math.random()*2.5;
+  }
+
+  function processAiPlan(m){
+    if(!battle.aiPlan.length) return;
+    const order=battle.aiPlan[0];
+    if(battle.elapsed<order.notBefore) return;
+
+    if(order.type==="unit"){
+      const item=ITEMS[order.itemId];
+      if(!item){ battle.aiPlan.shift(); return; }
+      if(state.enemyCash<item.cost) return; // deliberate saving
+      deployUnit(ENEMY,item.id,order.routeIndex); state.enemyCash-=item.cost;
+      battle.aiPlan.shift();
+      if(!battle.aiPlan.length) battle.aiReplanAt=Math.max(battle.aiReplanAt,battle.elapsed+1.8+Math.random()*2.0);
+      return;
+    }
+
+    if(order.type==="defence"){
+      const node=chooseAiBuildNode(order.routeIndex,false) || chooseAiBuildNode(rankPlayerPressureRoutes(m)[0],false);
+      if(!node){ battle.aiPlan.shift(); return; }
+      const item=order.preferred==="counter" ? chooseAiCounterDefence(order.routeIndex,m) : ITEMS.lightturret;
+      if(state.enemyCash<item.cost) return;
+      buildTurret(ENEMY,item.id,node); state.enemyCash-=item.cost;
+      battle.aiPlan.shift();
+      if(!battle.aiPlan.length) battle.aiReplanAt=Math.max(battle.aiReplanAt,battle.elapsed+1.8+Math.random()*2.0);
+    }
+  }
+
+  function rankAiAttackRoutes(playerTurretsByRoute,playerPressureByRoute,enemyPressureByRoute){
+    return [0,1,2,3].map(i=>{
+      const history=battle.playerRouteUse[i];
+      const score=5
+        - playerTurretsByRoute[i]*1.65
+        - playerPressureByRoute[i]*.35
+        + enemyPressureByRoute[i]*.12
+        - history*.05
+        + Math.random()*.65;
+      return {i,score};
+    }).sort((a,b)=>b.score-a.score).map(v=>v.i);
+  }
+
+  function rankPlayerPressureRoutes(m){
+    return [0,1,2,3].sort((a,b)=>{
+      const aScore=m.playerPressureByRoute[a]*2.4 + battle.playerRouteUse[a]*.22 - m.enemyTurretsByRoute[a]*.7;
+      const bScore=m.playerPressureByRoute[b]*2.4 + battle.playerRouteUse[b]*.22 - m.enemyTurretsByRoute[b]*.7;
+      return bScore-aScore;
+    });
+  }
+
+  function chooseAiBuildNode(routeIndex,frontFirst){
+    let nodes=placementNodes.filter(n=>n.team===ENEMY&&!n.occupiedBy&&n.routeIndex===routeIndex);
+    if(!nodes.length) return null;
+    nodes=[...nodes].sort((a,b)=>frontFirst?a.fraction-b.fraction:b.fraction-a.fraction);
+    // Small jitter prevents every match using the exact same emplacement order.
+    if(nodes.length>1 && Math.random()<.28) return nodes[1];
+    return nodes[0];
+  }
+
+  function chooseAiCounterDefence(routeIndex,m){
+    const routeUnits=battle.units.filter(u=>u.team===PLAYER&&!u.dead&&u.routeIndex===routeIndex);
+    const hasTank=routeUnits.some(u=>u.itemId==="tank");
+    const armed=routeUnits.some(u=>u.itemId==="gunbuggy");
+    const scouts=routeUnits.filter(u=>u.itemId==="scout").length;
+
+    if((hasTank || (m.armedShare>.55 && battle.elapsed>25)) && state.enemyCash>=ITEMS.cannon.cost) return ITEMS.cannon;
+    if((scouts>=2 || m.scoutShare>.58) && state.enemyCash>=ITEMS.rapid.cost) return ITEMS.rapid;
+    if(armed && state.enemyCash>=ITEMS.cannon.cost && Math.random()<.65) return ITEMS.cannon;
+    return ITEMS.lightturret;
   }
 
   function routeAttackStrength(team){
@@ -612,24 +827,6 @@
     return arr;
   }
 
-  function chooseAiNode(nodes, playerPressureByRoute, enemyTurretsByRoute){
-    const sorted=[...nodes].sort((a,b)=>{
-      const sa = playerPressureByRoute[a.routeIndex]*3 - enemyTurretsByRoute[a.routeIndex]*1.1 - a.fraction*2 + Math.random()*.45;
-      const sb = playerPressureByRoute[b.routeIndex]*3 - enemyTurretsByRoute[b.routeIndex]*1.1 - b.fraction*2 + Math.random()*.45;
-      return sb - sa;
-    });
-    return sorted[0];
-  }
-
-  function chooseAiRoute(playerTurretsByRoute, playerPressureByRoute, enemyPressureByRoute){
-    const scores = [0,1,2,3].map(i=>{
-      const followPlayer = battle.lastPlayerRoute===i ? .4 : 0;
-      const score = (4 - playerTurretsByRoute[i]*1.3) - playerPressureByRoute[i]*.45 + enemyPressureByRoute[i]*.15 + followPlayer + Math.random()*.75;
-      return {i,score};
-    }).sort((a,b)=>b.score-a.score);
-    return scores[0].i;
-  }
-
   function checkGameOver(){
     if(state.enemyBase>0&&state.playerBase>0) return;
     state.gameOver=true; running=false; renderBattleHud(); renderDeployBar(); drawBattle();
@@ -644,7 +841,10 @@
 
   function resetGame(){
     state.playerCash=START_CASH; state.enemyCash=START_CASH; state.playerBase=START_BASE; state.enemyBase=START_BASE; state.selectedSlot=0; state.loadout=["scout","lightturret","gunbuggy","cannon"]; state.started=false; state.gameOver=false;
-    battle.units=[]; battle.turrets=[]; battle.shots=[]; battle.effects=[]; battle.nextUnitId=1; battle.nextTurretId=1; battle.aiTimer=1.5; battle.elapsed=0; battle.armedSlot=null; battle.hoverRoute=null; battle.hoverNode=null; battle.lastPlayerRoute=null; cancelDrag(); placementNodes.forEach(n=>n.occupiedBy=null);
+    battle.units=[]; battle.turrets=[]; battle.shots=[]; battle.effects=[]; battle.nextUnitId=1; battle.nextTurretId=1;
+    battle.aiTimer=1.15; battle.aiPlan=[]; battle.aiPlanName="opening"; battle.aiLastPlanName=null; battle.aiReplanAt=0; battle.aiEmergencyCooldown=0; battle.aiFocusRoute=0; battle.aiSecondaryRoute=1;
+    battle.playerRouteUse=[0,0,0,0]; battle.playerUnitUse={scout:0,gunbuggy:0,tank:0}; battle.playerDefenceUse={lightturret:0,cannon:0,rapid:0};
+    battle.elapsed=0; battle.armedSlot=null; battle.hoverRoute=null; battle.hoverNode=null; battle.lastPlayerRoute=null; cancelDrag(); placementNodes.forEach(n=>n.occupiedBy=null);
     openCommand(); planNoteEl.textContent="Assign anything to the four quick buttons. Cost is paid only when deployed.";
   }
 
@@ -878,6 +1078,7 @@
   window.addEventListener("pointercancel",onPointerUp,{passive:false});
   window.addEventListener("resize",()=>{ resizeBattleLayout(); },{passive:true});
   window.addEventListener("orientationchange",()=>setTimeout(resizeBattleLayout,120),{passive:true});
+
 
   renderPlan(); renderBattleHud(); renderDeployBar(); drawBattle();
   animationFrame=requestAnimationFrame(frame);
