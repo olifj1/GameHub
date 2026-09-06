@@ -171,6 +171,14 @@ window.APP_CONFIG = {
       "icon": "⇧",
       "enabled": true,
       "path": "game-14.html?v=1.8.13"
+    },
+    {
+      "id": "game-15",
+      "displayName": "My Room",
+      "description": "Furnish a little 3D bedroom, move things around and make it your own.",
+      "icon": "⌂",
+      "enabled": true,
+      "path": "game-15.html?v=1.8.14"
     }
   ]
 };

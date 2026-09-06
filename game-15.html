@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en" class="gh-game-page">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#e7dbd2">
+  <link rel="stylesheet" href="style.css?v=1.8.14">
+  <title>My Room</title>
+</head>
+<body class="modular-game" data-game-id="game-15">
+  <a class="game-home-button" href="index.html" aria-label="Back to games">← Games</a>
+  <button class="game-info-button" type="button" aria-label="How to play" aria-haspopup="dialog">i</button>
+
+  <div class="game-info-overlay" hidden>
+    <div class="game-info-dialog" role="dialog" aria-modal="true" aria-labelledby="game-15-info-title">
+      <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
+      <p class="kicker">HOW TO PLAY</p>
+      <h2 id="game-15-info-title">Make the room your own</h2>
+      <p>Choose furniture from the carousel, then drag it around the room. Tap an item to select it, rotate it or put it away. Use the colour buttons to change the walls and floor. Your room saves automatically on this device.</p>
+    </div>
+  </div>
+
+  <main class="screen-wrap room-game-wrap">
+    <section class="screen active" aria-labelledby="room-title">
+      <div class="page room-page">
+        <header class="page-header room-header">
+          <p class="kicker" data-site-name="">GameHub</p>
+          <h1 id="room-title">My Room</h1>
+        </header>
+
+        <section class="room-stage-card" aria-label="3D bedroom">
+          <canvas id="room-canvas" width="720" height="760" aria-label="A three dimensional bedroom you can furnish"></canvas>
+          <div class="room-stage-hint" id="room-stage-hint">Choose something below to add it</div>
+        </section>
+
+        <section class="room-selection-bar" id="room-selection-bar" aria-live="polite">
+          <strong id="room-selection-name">Nothing selected</strong>
+          <div class="room-selection-actions">
+            <button id="room-rotate" type="button" disabled aria-label="Rotate selected furniture">↻ <span>Rotate</span></button>
+            <button id="room-remove" type="button" disabled aria-label="Put selected furniture away">⌂ <span>Put away</span></button>
+          </div>
+        </section>
+
+        <section class="room-inventory-panel" aria-label="Furniture inventory">
+          <div class="room-panel-heading">
+            <div><span>FURNITURE</span><small>Tap to add</small></div>
+            <button id="room-clear" type="button">Clear room</button>
+          </div>
+          <div class="room-carousel-shell">
+            <button class="room-carousel-arrow" id="room-carousel-prev" type="button" aria-label="Previous furniture">‹</button>
+            <div class="room-carousel" id="room-carousel" tabindex="0"></div>
+            <button class="room-carousel-arrow" id="room-carousel-next" type="button" aria-label="Next furniture">›</button>
+          </div>
+        </section>
+
+        <section class="room-decor-panel" aria-label="Room colours">
+          <div class="room-swatch-row">
+            <span>WALLS</span>
+            <div id="room-wall-swatches" class="room-swatches" role="group" aria-label="Wall colours"></div>
+          </div>
+          <div class="room-swatch-row">
+            <span>FLOOR</span>
+            <div id="room-floor-swatches" class="room-swatches" role="group" aria-label="Floor colours"></div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script src="site-config.js?v=1.8.14"></script>
+  <script src="core.js?v=1.8.14"></script>
+  <script src="game-15.js?v=1.8.14"></script>
+</body>
+</html>
