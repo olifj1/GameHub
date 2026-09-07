@@ -1,11 +1,10 @@
-# GameHub v1.8.17
+# GameHub v1.8.18
 
-My House WebGL foundation pass.
+My House architecture, interaction, lamp and modelling pass.
 
-- Moves My House from the custom canvas painter to a real Three.js/WebGL scene with depth buffering and smooth mesh shading.
-- Rebuilds the 2-up / 2-down house at metre-like real-world scale, including 2.04 m door openings, a continuous shell, floor slab and proportioned staircase.
-- Adds real directional sunlight with soft dynamic shadows plus true local point lighting from placed lamps in evening mode.
-- Adds ray-cast object picking with larger invisible touch targets for small dressing items.
-- Adds one-finger empty-space panning and two-finger pinch zoom while keeping the dollhouse orientation fixed.
-- Makes tabletop objects children of their support furniture, so moving or rotating a table carries its objects with it.
-- Keeps the existing furniture recipes mostly unchanged to make the renderer comparison useful.
+- Refines the four-room house around a more believable compact floor plan: 2.4 m ceilings, standard-sized internal door openings, a rear hall stair, real stairwell opening, guarded landing and an upstairs landing/bedroom partition.
+- Uses a 14-rise private stair at about 189 mm rise and 240 mm going.
+- Changes furniture interaction to tap-to-select first; only an already-selected item can be dragged, reducing accidental moves. Empty-space drag pans, empty-space tap deselects, and pinch zoom now has a wider range for detailed placement.
+- Adds per-lamp brightness control, lowers the default lamp output, and lets one active-room lamp cast real point-light shadows for mobile-friendly performance.
+- Rebuilds the bed as the first advanced procedural model using custom extruded/bevelled profiles, a shaped upholstered headboard, padded channels, layered bedding, piping and tapered feet.
+- Resets the My House prototype save because the revised floor plan changes placement bounds.

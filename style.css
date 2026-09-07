@@ -10122,3 +10122,20 @@ body[data-game-id="game-14"] .attack-slot-copy small{font-size:6.8px}
 /* v1.8.17 WebGL interaction */
 #room-canvas{cursor:grab;-webkit-user-select:none;user-select:none;}
 #room-canvas:active{cursor:grabbing;}
+
+/* My House v1.8.18 — selected-lamp control */
+.room-light-control{display:grid;grid-template-columns:minmax(0,150px) 1fr;align-items:center;gap:12px;margin-top:7px;padding:8px 12px;border:1.5px solid rgba(43,39,36,.22);border-radius:14px;background:rgba(255,255,255,.42);}
+.room-light-control[hidden]{display:none;}
+.room-light-control label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;font-weight:850;letter-spacing:.08em;color:#5b534e;}
+.room-light-control label strong{font-size:11px;letter-spacing:0;color:#423b37;}
+.room-light-control input[type="range"]{width:100%;min-width:0;accent-color:#a67c61;}
+@media(max-width:430px){.room-light-control{grid-template-columns:126px 1fr;gap:9px;padding:7px 10px;}.room-light-control label{font-size:9px;}}
+
+/* Compact v1.8.18 lamp control lives inside the existing selection bar. */
+.room-selection-info{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1 1 auto;}
+.room-selection-info>strong{font-size:14px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.room-selection-info .room-light-control{display:flex;align-items:center;gap:7px;margin:0;padding:0;border:0;border-radius:0;background:transparent;min-width:0;}
+.room-selection-info .room-light-control[hidden]{display:none;}
+.room-selection-info .room-light-control label{display:flex;align-items:center;gap:5px;min-width:61px;font-size:8px;font-weight:850;letter-spacing:.07em;color:#625954;}
+.room-selection-info .room-light-control label strong{font-size:9px;letter-spacing:0;color:#443d38;}
+.room-selection-info .room-light-control input[type="range"]{width:min(150px,100%);min-width:75px;height:16px;accent-color:#a67c61;}
