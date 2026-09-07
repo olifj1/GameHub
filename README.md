@@ -1,10 +1,11 @@
-# GameHub v1.8.14
+# GameHub v1.8.15
 
-Adds **My Room**, the first 3D room GameHub prototype.
+Develops **My Room** into the first **My House** dollhouse prototype.
 
-- One furnished-room sandbox with a fixed dollhouse camera.
-- Furniture carousel with 10 code-built items.
-- Tap to add, tap to select, drag across the floor, rotate, or put away.
-- Wall and floor colour choices.
-- Room layout saves automatically on the device.
-- Added to the offline PWA cache.
+- Open-front, fixed-orientation dollhouse camera with drag-to-pan navigation.
+- Three rooms arranged across two floors to test moving around a larger house.
+- New rounded, caricatured furniture set built in code.
+- Day/evening lighting with directional shading, dynamic furniture shadows and lamp light pools.
+- Furniture stays within its room and away from the open fourth wall.
+- Wall/floor colours are now saved independently for each room.
+- Existing tap, drag, rotate, put-away and offline saving behaviour retained.
