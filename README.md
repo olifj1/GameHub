@@ -1,10 +1,10 @@
-# GameHub v1.8.18
+# GameHub v1.8.19
 
-My House architecture, interaction, lamp and modelling pass.
+My House lighting, navigation, stairs and bedroom-detail pass.
 
-- Refines the four-room house around a more believable compact floor plan: 2.4 m ceilings, standard-sized internal door openings, a rear hall stair, real stairwell opening, guarded landing and an upstairs landing/bedroom partition.
-- Uses a 14-rise private stair at about 189 mm rise and 240 mm going.
-- Changes furniture interaction to tap-to-select first; only an already-selected item can be dragged, reducing accidental moves. Empty-space drag pans, empty-space tap deselects, and pinch zoom now has a wider range for detailed placement.
-- Adds per-lamp brightness control, lowers the default lamp output, and lets one active-room lamp cast real point-light shadows for mobile-friendly performance.
-- Rebuilds the bed as the first advanced procedural model using custom extruded/bevelled profiles, a shaped upholstered headboard, padded channels, layered bedding, piping and tapered feet.
-- Resets the My House prototype save because the revised floor plan changes placement bounds.
+- Makes one-finger navigation more forgiving: tap/release selects, dragging an unselected object or background pans the house, and only dragging the already-selected item moves it.
+- Enables shadows on every active lamp, with a per-lamp SHADOWS ON/OFF toggle and brightness control.
+- Limits each lamp's shadow-camera rendering to geometry in that lamp's room and adds an on-screen render-time / approximate-FPS readout for performance testing.
+- Reworks the hall stair to run front-to-back against the outside wall, with an accessible bottom, rear landing and clear downstairs/upstairs door routes.
+- Adds bedside tables, bedside lamps, an alarm clock, movable wall pictures and six selectable wallpaper finishes.
+- Keeps small details parented to support furniture so they move with tables/drawers.

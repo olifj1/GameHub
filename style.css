@@ -10139,3 +10139,23 @@ body[data-game-id="game-14"] .attack-slot-copy small{font-size:6.8px}
 .room-selection-info .room-light-control label{display:flex;align-items:center;gap:5px;min-width:61px;font-size:8px;font-weight:850;letter-spacing:.07em;color:#625954;}
 .room-selection-info .room-light-control label strong{font-size:9px;letter-spacing:0;color:#443d38;}
 .room-selection-info .room-light-control input[type="range"]{width:min(150px,100%);min-width:75px;height:16px;accent-color:#a67c61;}
+
+/* My House v1.8.19 — room-local shadows, wallpaper and dressing controls */
+.room-perf-badge{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:2;pointer-events:none;padding:5px 8px;border:1px solid rgba(53,47,43,.16);border-radius:999px;background:rgba(250,247,242,.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);color:#655c56;font-size:8px;font-weight:800;letter-spacing:.025em;white-space:nowrap;}
+.room-selection-info .room-light-control{flex-wrap:wrap;row-gap:4px;}
+.room-shadow-toggle{min-height:25px;border:1px solid rgba(74,65,59,.34);border-radius:999px;background:#f8f2ea;color:#544b45;padding:0 8px;font:inherit;font-size:7px;font-weight:900;letter-spacing:.055em;white-space:nowrap;}
+.room-shadow-toggle.off{opacity:.58;background:rgba(87,78,72,.07);}
+.room-wallpaper-row{grid-template-columns:72px minmax(0,1fr);}
+.room-wallpaper-row>span{font-size:9px;letter-spacing:.07em;}
+.room-pattern-swatches{gap:7px;overflow-x:auto;scrollbar-width:none;padding:5px 4px;}
+.room-pattern-swatches::-webkit-scrollbar{display:none;}
+.room-pattern-swatch{flex:0 0 34px;width:34px;height:34px;border-radius:9px;border:2px solid rgba(43,39,36,.22);background-color:#f8f3ed;background-size:24px 24px;padding:0;position:relative;color:#746a63;font:inherit;font-size:15px;font-weight:800;}
+.room-pattern-swatch.active::after{content:"";position:absolute;inset:-5px;border:2px solid #fff;border-radius:12px;box-shadow:0 0 0 1.5px rgba(43,39,36,.55);pointer-events:none;}
+@media(max-width:430px){
+  .room-perf-badge{top:45px;font-size:7px;padding:4px 7px;}
+  .room-selection-info .room-light-control input[type="range"]{min-width:62px;width:92px;}
+  .room-shadow-toggle{font-size:6px;padding:0 6px;min-height:23px;}
+  .room-wallpaper-row{grid-template-columns:62px minmax(0,1fr);}
+  .room-wallpaper-row>span{font-size:8px;}
+  .room-pattern-swatch{flex-basis:31px;width:31px;height:31px;}
+}

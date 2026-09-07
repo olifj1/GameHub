@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.8.18">
+  <link rel="stylesheet" href="style.css?v=1.8.19">
   <title>My House</title>
 </head>
 <body class="modular-game" data-game-id="game-15">
@@ -19,7 +19,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="game-15-info-title">Make the house your own</h2>
-      <p>Choose furniture and little details from the carousel. Tap an item once to select it, then drag the selected item to move it. Drag empty space to slide around the house and pinch to zoom. Small objects can sit on tables and drawers and travel with the furniture underneath them. Select a lamp to adjust its brightness. Rotate or put away selected items, change each room’s walls and floor, and switch between day and evening lighting. Your house saves automatically on this device.</p>
+      <p>Choose furniture, wall art and little details from the carousel. Tap an item and release to select it, then drag that selected item to move it. Dragging anywhere except the currently selected item — including directly over other furniture — slides the view, so you never need to hunt for an empty patch of floor. Pinch to zoom. Small objects can sit on tables and drawers and travel with the furniture underneath them. Select a lamp to adjust its brightness and switch that lamp’s shadows on or off; lamp shadow maps are limited to the lamp’s own room to keep the test lighter on the phone. Rotate or put away selected items, change each room’s walls, wallpaper and floor, and switch between day and evening lighting. Your house saves automatically on this device.</p>
     </div>
   </div>
 
@@ -37,15 +37,17 @@
             <span id="room-current-label">Bedroom</span>
             <button id="room-lighting" type="button" aria-label="Switch to evening lighting">☀ Day</button>
           </div>
-          <div class="room-stage-hint" id="room-stage-hint">Tap to select · drag selected item · pinch to zoom</div>
+          <div class="room-perf-badge" id="room-perf-badge" aria-label="3D render performance">Render —</div>
+          <div class="room-stage-hint" id="room-stage-hint">Tap selects · selected item moves · other drags explore</div>
         </section>
 
         <section class="room-selection-bar" id="room-selection-bar" aria-live="polite">
           <div class="room-selection-info">
             <strong id="room-selection-name">Nothing selected</strong>
-            <div class="room-light-control" id="room-light-control" aria-label="Selected lamp brightness" hidden>
-              <label for="room-light-level"><span>LIGHT</span><strong id="room-light-value">40%</strong></label>
-              <input id="room-light-level" type="range" min="0" max="100" step="5" value="40" aria-label="Lamp brightness">
+            <div class="room-light-control" id="room-light-control" aria-label="Selected lamp controls" hidden>
+              <label for="room-light-level"><span>LIGHT</span><strong id="room-light-value">28%</strong></label>
+              <input id="room-light-level" type="range" min="0" max="100" step="5" value="28" aria-label="Lamp brightness">
+              <button id="room-light-shadow" class="room-shadow-toggle" type="button" aria-pressed="true">SHADOWS ON</button>
             </div>
           </div>
           <div class="room-selection-actions">
@@ -75,14 +77,18 @@
             <span>FLOOR</span>
             <div id="room-floor-swatches" class="room-swatches" role="group" aria-label="Floor colours"></div>
           </div>
+          <div class="room-swatch-row room-wallpaper-row">
+            <span>WALLPAPER</span>
+            <div id="room-wallpaper-swatches" class="room-swatches room-pattern-swatches" role="group" aria-label="Wallpaper patterns"></div>
+          </div>
         </section>
       </div>
     </section>
   </main>
 
-  <script src="site-config.js?v=1.8.18"></script>
-  <script src="core.js?v=1.8.18"></script>
+  <script src="site-config.js?v=1.8.19"></script>
+  <script src="core.js?v=1.8.19"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.1/three.min.js"></script>
-  <script src="game-15.js?v=1.8.18"></script>
+  <script src="game-15.js?v=1.8.19"></script>
 </body>
 </html>
