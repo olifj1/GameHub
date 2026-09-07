@@ -31,19 +31,19 @@
   }
 
   const THREE = window.THREE;
-  const STORAGE_KEY = 'gamehub-my-house-webgl-v6';
+  const STORAGE_KEY = 'gamehub-my-house-webgl-v7';
   const MODEL_SCALE = 0.62;
   const TAU = Math.PI * 2;
 
   // More generous proportions and a central circulation core inspired by the
   // concept reference. The four principal rooms now flank a dedicated hall /
   // stair / landing module, which is the groundwork for a more modular house.
-  const SIDE_ROOM_W = 5.25;
-  const CORE_W = 2.35;
-  const ROOM_D = 5.55;
-  const ROOM_H = 2.55;
+  const SIDE_ROOM_W = 5.55;
+  const CORE_W = 2.55;
+  const ROOM_D = 5.80;
+  const ROOM_H = 2.58;
   const SLAB_H = 0.24;
-  const WALL_T = 0.15;
+  const WALL_T = 0.11;
   const UPPER_Y = ROOM_H + SLAB_H;
   const HOUSE_W = SIDE_ROOM_W * 2 + CORE_W;
   const HOUSE_H = UPPER_Y + ROOM_H;
@@ -65,10 +65,10 @@
   // This is simpler than the concept image's wraparound stair, but it creates
   // the right architectural idea: circulation as its own reusable module.
   const STAIR = {
-    x0: -0.54,
-    width: 1.08,
+    x0: -0.50,
+    width: 1.00,
     going: 0.245,
-    zBottom: FRONT_Z - 0.52,
+    zBottom: 0.68,
     steps: 13
   };
   STAIR.x1 = STAIR.x0 + STAIR.width;
@@ -85,17 +85,17 @@
     {id:'stripe',name:'Soft stripe'},
     {id:'dot',name:'Confetti dots'},
     {id:'stars',name:'Little stars'},
+    {id:'clouds',name:'Clouds'},
     {id:'arch',name:'Little arches'},
-    {id:'sprig',name:'Leaf sprigs'},
-    {id:'check',name:'Tiny check'}
+    {id:'sprig',name:'Leaf sprigs'}
   ];
   const floorTexturePatterns = [
     {id:'plain',name:'Plain'},
-    {id:'plank',name:'Wide plank'},
-    {id:'herringbone',name:'Herringbone'},
-    {id:'tile',name:'Tile'},
-    {id:'checker',name:'Soft checker'},
-    {id:'terrazzo',name:'Terrazzo'}
+    {id:'plank',name:'Floor boards'},
+    {id:'carpet',name:'Carpet'},
+    {id:'tile',name:'Tiles'},
+    {id:'herringbone',name:'Parquet'},
+    {id:'checker',name:'Checker'}
   ];
 
   const rooms = [
@@ -241,6 +241,42 @@
     ];
   }
 
+  function makeKitchenCabinet(){
+    return [
+      box(0,0.40,0,1.36,0.80,0.70,'#bcc8af'),
+      box(0,0.84,0,1.46,0.08,0.76,'#dec8ad'),
+      box(-0.31,0.41,0.36,0.52,0.60,0.05,'#d3b89b'),box(0.31,0.41,0.36,0.52,0.60,0.05,'#d3b89b'),
+      ellipsoid(-0.14,0.41,0.40,0.04,0.04,0.03,'#7d9b8d'),ellipsoid(0.14,0.41,0.40,0.04,0.04,0.03,'#7d9b8d')
+    ];
+  }
+
+  function makeSinkCabinet(){
+    return [
+      box(0,0.40,0,1.56,0.80,0.74,'#b8c3aa'),
+      box(0,0.84,0,1.66,0.08,0.80,'#dec8ad'),
+      box(-0.38,0.41,0.38,0.58,0.60,0.05,'#d3b89b'),box(0.38,0.41,0.38,0.58,0.60,0.05,'#d3b89b'),
+      box(0,0.88,0.02,0.72,0.05,0.34,'#f6f3ef'),box(0,0.83,0.02,0.54,0.10,0.24,'#ece8e1'),
+      cyl(0,0.88,0.20,0.02,0.18,'#7a6b60',{rotX:Math.PI/2}),box(0.10,1.00,0.20,0.16,0.03,0.03,'#7a6b60')
+    ];
+  }
+
+  function makeWallCabinet(){
+    return [
+      box(0,0,0,1.28,0.74,0.34,'#a8b499'),
+      box(-0.30,0,0.18,0.52,0.58,0.04,'#ced7c3'),box(0.30,0,0.18,0.52,0.58,0.04,'#ced7c3'),
+      ellipsoid(-0.14,0,0.21,0.04,0.04,0.03,'#dfc178'),ellipsoid(0.14,0,0.21,0.04,0.04,0.03,'#dfc178')
+    ];
+  }
+
+  function makeFridge(){
+    return [
+      box(0,1.00,0,1.10,2.00,0.98,'#c5d2d7'),
+      box(0,1.00,0.50,0.98,1.88,0.04,'#d7e1e4'),
+      box(0,1.56,0.53,0.98,0.04,0.03,'#abb8bd'),
+      box(-0.36,1.28,0.54,0.05,0.42,0.03,'#8b9aa0'),box(-0.36,0.56,0.54,0.05,0.42,0.03,'#8b9aa0')
+    ];
+  }
+
   function makeSunPrint(){
     const parts=[box(0,0,0,1.12,0.88,0.08,'#866f62'),box(0,0,0.065,1.00,0.76,0.045,'#f6efe5')];
     parts.push(ellipsoid(0,0,0.105,0.19,0.19,0.025,'#e5b962'));
@@ -286,38 +322,45 @@
     { id:'bedside', name:'Bedside table', glyph:'▣', colour:'#c59d79', footprint:[0.96,0.82], supportHeight:1.15, supportSize:[0.86,0.64], maker:makeBedsideTable },
     { id:'bedlamp', name:'Bedside lamp', glyph:'◉', colour:'#efc983', footprint:[0.72,0.72], place:'surface', maker:makeBedsideLamp, lightHeight:0.84, lightScale:0.56, lightDistance:2.8 },
     { id:'clock', name:'Alarm clock', glyph:'◷', colour:'#7896a2', footprint:[0.78,0.52], place:'surface', maker:makeAlarmClock },
+    { id:'cabinet', name:'Base cabinet', glyph:'▥', colour:'#b8c3aa', footprint:[1.46,0.82], supportHeight:0.88, supportSize:[1.30,0.62], maker:makeKitchenCabinet },
+    { id:'sinkcab', name:'Sink cabinet', glyph:'▤', colour:'#bcc7ad', footprint:[1.66,0.86], supportHeight:0.88, supportSize:[1.42,0.68], maker:makeSinkCabinet },
+    { id:'fridge', name:'Fridge', glyph:'▯', colour:'#c5d2d7', footprint:[1.14,1.02], maker:makeFridge },
+    { id:'wallcab', name:'Wall cabinet', glyph:'☰', colour:'#a8b499', footprint:[1.28,0.20], wallSize:[1.28,0.74], place:'wall', canRotate:false, maker:makeWallCabinet },
     { id:'sunprint', name:'Sun picture', glyph:'☼', colour:'#e5b962', footprint:[1.12,0.14], wallSize:[1.12,0.88], place:'wall', canRotate:false, maker:makeSunPrint },
     { id:'archprint', name:'Arch picture', glyph:'∩', colour:'#d7a28e', footprint:[0.86,0.14], wallSize:[0.86,1.10], place:'wall', canRotate:false, maker:makeArchPrint },
     { id:'leafprint', name:'Leaf picture', glyph:'❧', colour:'#76977a', footprint:[1.00,0.14], wallSize:[1.00,0.78], place:'wall', canRotate:false, maker:makeLeafPrint }
   ];
 
   const defaultItems = [
-    { id:'seed-bed', type:'bed', room:'bedroom', x:-4.05, z:0.98, rot:0 },
-    { id:'seed-bedside-l', type:'bedside', room:'bedroom', x:-5.30, z:0.54, rot:0 },
-    { id:'seed-bedside-r', type:'bedside', room:'bedroom', x:-2.80, z:0.54, rot:0 },
-    { id:'seed-bedlamp-l', type:'bedlamp', room:'bedroom', x:0, z:0, rot:0, supportId:'seed-bedside-l', lightLevel:0.24, shadowEnabled:true },
-    { id:'seed-bedlamp-r', type:'bedlamp', room:'bedroom', x:-0.12, z:0, rot:0, supportId:'seed-bedside-r', lightLevel:0.24, shadowEnabled:true },
+    { id:'seed-bed', type:'bed', room:'bedroom', x:-4.30, z:0.90, rot:0 },
+    { id:'seed-bedside-l', type:'bedside', room:'bedroom', x:-5.68, z:0.52, rot:0 },
+    { id:'seed-bedside-r', type:'bedside', room:'bedroom', x:-2.92, z:0.52, rot:0 },
+    { id:'seed-bedlamp-l', type:'bedlamp', room:'bedroom', x:0, z:0, rot:0, supportId:'seed-bedside-l', lightLevel:0.22, shadowEnabled:true },
+    { id:'seed-bedlamp-r', type:'bedlamp', room:'bedroom', x:-0.12, z:0, rot:0, supportId:'seed-bedside-r', lightLevel:0.22, shadowEnabled:true },
     { id:'seed-clock', type:'clock', room:'bedroom', x:0.23, z:0.00, rot:0, supportId:'seed-bedside-r' },
     { id:'seed-books-bed', type:'books', room:'bedroom', x:0.18, z:0.03, rot:-0.05, supportId:'seed-bedside-l' },
-    { id:'seed-archprint', type:'archprint', room:'bedroom', x:-4.00, y:1.55, z:0, rot:0 },
-    { id:'seed-kids-chair', type:'chair', room:'kids', x:4.10, z:-0.38, rot:0 },
-    { id:'seed-kids-box', type:'toybox', room:'kids', x:5.15, z:1.16, rot:0 },
-    { id:'seed-kids-drawers', type:'drawers', room:'kids', x:2.35, z:1.10, rot:0 },
-    { id:'seed-kids-plant', type:'plant', room:'kids', x:5.35, z:-1.35, rot:0 },
-    { id:'seed-rug-living', type:'rug', room:'living', x:-4.05, z:0.68, rot:0 },
-    { id:'seed-sofa', type:'sofa', room:'living', x:-4.15, z:-1.28, rot:0 },
-    { id:'seed-chair', type:'chair', room:'living', x:-2.42, z:0.82, rot:-Math.PI/2 },
-    { id:'seed-coffee', type:'coffee', room:'living', x:-4.00, z:0.60, rot:0 },
-    { id:'seed-lamp', type:'lamp', room:'living', x:-5.55, z:-1.22, rot:0, lightLevel:LAMP_DEFAULT_LEVEL, shadowEnabled:true },
+    { id:'seed-kids-chair', type:'chair', room:'kids', x:4.85, z:-0.35, rot:0 },
+    { id:'seed-kids-box', type:'toybox', room:'kids', x:6.10, z:1.18, rot:0 },
+    { id:'seed-kids-drawers', type:'drawers', room:'kids', x:3.25, z:1.12, rot:0 },
+    { id:'seed-kids-plant', type:'plant', room:'kids', x:6.05, z:-1.42, rot:0 },
+    { id:'seed-rug-living', type:'rug', room:'living', x:-4.35, z:0.70, rot:0 },
+    { id:'seed-sofa', type:'sofa', room:'living', x:-4.45, z:-1.20, rot:0 },
+    { id:'seed-chair', type:'chair', room:'living', x:-2.68, z:0.82, rot:-Math.PI/2 },
+    { id:'seed-coffee', type:'coffee', room:'living', x:-4.24, z:0.58, rot:0 },
+    { id:'seed-lamp', type:'lamp', room:'living', x:-5.98, z:-1.12, rot:0, lightLevel:LAMP_DEFAULT_LEVEL, shadowEnabled:true },
     { id:'seed-books', type:'books', room:'living', x:-0.37, z:0.02, rot:0.08, supportId:'seed-coffee' },
     { id:'seed-mug', type:'mug', room:'living', x:0.35, z:0.04, rot:0, supportId:'seed-coffee' },
     { id:'seed-vase', type:'vase', room:'living', x:0.03, z:-0.18, rot:0, supportId:'seed-coffee' },
-    { id:'seed-kitchen-drawers', type:'drawers', room:'kitchen', x:4.10, z:1.18, rot:0 },
-    { id:'seed-kitchen-lamp', type:'lamp', room:'kitchen', x:5.40, z:-1.12, rot:0, lightLevel:0.22, shadowEnabled:true },
-    { id:'seed-kitchen-plant', type:'plant', room:'kitchen', x:2.75, z:-1.35, rot:0 },
-    { id:'seed-kitchen-fruit', type:'fruit', room:'kitchen', x:0.10, z:0.04, rot:0, supportId:'seed-kitchen-drawers' },
-    { id:'seed-kitchen-vase', type:'vase', room:'kitchen', x:-0.18, z:-0.08, rot:0, supportId:'seed-kitchen-drawers' },
-    { id:'seed-kitchen-sun', type:'sunprint', room:'kitchen', x:4.15, y:1.58, z:0, rot:0 }
+    { id:'seed-kitchen-fridge', type:'fridge', room:'kitchen', x:2.28, z:-1.82, rot:0 },
+    { id:'seed-kitchen-cab1', type:'cabinet', room:'kitchen', x:3.78, z:-2.12, rot:0 },
+    { id:'seed-kitchen-sink', type:'sinkcab', room:'kitchen', x:5.42, z:-2.12, rot:0 },
+    { id:'seed-kitchen-cab2', type:'cabinet', room:'kitchen', x:6.55, z:0.92, rot:-Math.PI/2 },
+    { id:'seed-kitchen-wall1', type:'wallcab', room:'kitchen', x:3.80, y:1.58, z:0, rot:0 },
+    { id:'seed-kitchen-wall2', type:'wallcab', room:'kitchen', x:5.48, y:1.58, z:0, rot:0 },
+    { id:'seed-kitchen-lamp', type:'lamp', room:'kitchen', x:6.18, z:1.08, rot:0, lightLevel:0.20, shadowEnabled:true },
+    { id:'seed-kitchen-plant', type:'plant', room:'kitchen', x:6.18, z:-1.05, rot:0 },
+    { id:'seed-kitchen-fruit', type:'fruit', room:'kitchen', x:0.00, z:0.00, rot:0, supportId:'seed-kitchen-cab1' },
+    { id:'seed-kitchen-vase', type:'vase', room:'kitchen', x:-0.24, z:-0.10, rot:0, supportId:'seed-kitchen-sink' }
   ];
 
 
@@ -352,7 +395,7 @@
 
   const camera = new THREE.PerspectiveCamera(31, 1, 0.1, 60);
   camera.layers.enableAll();
-  const cameraOffset = new THREE.Vector3(0, 1.2, 13.85);
+  const cameraOffset = new THREE.Vector3(0, 0.72, 14.15);
   const raycaster = new THREE.Raycaster();
   const pointerNdc = new THREE.Vector2();
   const plane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
@@ -477,22 +520,24 @@
         }
         ctx.closePath();ctx.fill();
       });
+    }else if(patternId==='clouds'){
+      ctx.fillStyle='#dbe6f3';ctx.fillRect(0,0,128,128);
+      ctx.fillStyle='#f5f0df';
+      [[22,32],[76,28],[40,84],[96,92]].forEach(([x,y])=>{
+        ctx.beginPath();ctx.ellipse(x,y,14,10,0,0,TAU);ctx.ellipse(x+12,y+2,12,9,0,0,TAU);ctx.ellipse(x-11,y+3,10,8,0,0,TAU);ctx.fill();
+      });
     }else if(patternId==='arch'){
       ctx.strokeStyle='#d5d0c8';ctx.lineWidth=7;
       for(let y=34;y<150;y+=48){
         for(let x=-8;x<150;x+=48){ctx.beginPath();ctx.arc(x,y,18,Math.PI,0);ctx.stroke();}
       }
     }else if(patternId==='sprig'){
-      ctx.strokeStyle='#d0d5cd';ctx.fillStyle='#d7ddd4';ctx.lineWidth=4;
+      ctx.fillStyle='#eef1ec';ctx.fillRect(0,0,128,128);
+      ctx.strokeStyle='#c6cebf';ctx.fillStyle='#d5ddd0';ctx.lineWidth=4;
       [[28,34],[94,82]].forEach(([x,y],i)=>{
         ctx.beginPath();ctx.moveTo(x,y+25);ctx.quadraticCurveTo(x+(i?8:-8),y,x,y-24);ctx.stroke();
         [[-11,-10],[10,1],[-9,12]].forEach(([dx,dy])=>{ctx.beginPath();ctx.ellipse(x+dx,y+dy,8,4,dx<0?-0.6:0.6,0,TAU);ctx.fill();});
       });
-    }else if(patternId==='check'){
-      ctx.fillStyle='#ebe7e1';
-      for(let y=0;y<128;y+=32)for(let x=0;x<128;x+=32)if(((x+y)/32)%2===0)ctx.fillRect(x,y,16,16);
-      ctx.strokeStyle='#ddd8d1';ctx.lineWidth=2;
-      for(let i=0;i<=128;i+=32){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,128);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(128,i);ctx.stroke();}
     }
     const tex=new THREE.CanvasTexture(c);
     tex.colorSpace=THREE.SRGBColorSpace;
@@ -531,17 +576,15 @@
       ctx.strokeStyle='#cec8c0';ctx.lineWidth=4;
       for(let x=0;x<=192;x+=48){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,192);ctx.stroke();}
       for(let y=0;y<=192;y+=48){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(192,y);ctx.stroke();}
+    }else if(patternId==='carpet'){
+      ctx.fillStyle='#e9dcc8';ctx.fillRect(0,0,192,192);
+      ctx.strokeStyle='rgba(255,255,255,0.22)';ctx.lineWidth=1;
+      for(let y=4;y<192;y+=8){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(192,y);ctx.stroke();}
+      ctx.strokeStyle='rgba(180,150,120,0.18)';
+      for(let x=4;x<192;x+=8){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,192);ctx.stroke();}
     }else if(patternId==='checker'){
       const cols=['#f3efe7','#ddd4c6'];
       for(let y=0;y<192;y+=32)for(let x=0;x<192;x+=32){ctx.fillStyle=cols[((x+y)/32)%2];ctx.fillRect(x,y,32,32);}
-    }else if(patternId==='terrazzo'){
-      ctx.fillStyle='#ece8e1';ctx.fillRect(0,0,192,192);
-      const chips=['#d8c3a9','#c6b2a2','#b0c2b4','#bac6d8','#d8b6b6'];
-      for(let i=0;i<90;i++){
-        ctx.fillStyle=chips[i%chips.length];
-        const x=(i*37)%192, y=(i*53)%192;
-        ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+6+(i%5),y+2);ctx.lineTo(x+2,y+7+(i%4));ctx.closePath();ctx.fill();
-      }
     }
     const tex=new THREE.CanvasTexture(c);
     tex.colorSpace=THREE.SRGBColorSpace;
@@ -797,6 +840,36 @@
     }
   }
 
+  function addSideWindow(room, side='left', opts={}){
+    const width=opts.width??1.58;
+    const height=opts.height??1.22;
+    const sill=opts.sill??0.88;
+    const cz=(opts.offsetZ??0);
+    const cy=room.floorY+sill+height/2;
+    const frameCol=opts.frameColor||'#cbb7a7';
+    const glassCol=opts.glassColor||'#cfe1e6';
+    const left=side==='left';
+    const x=left?room.minX+0.038:room.maxX-0.038;
+    const sign=left?1:-1;
+    addBox(decorGroup,x+sign*0.020,cy,cz,0.04,height+0.24,width+0.28,frameCol,{castShadow:false});
+    addBox(decorGroup,x+sign*0.036,cy,cz,0.025,height,width,glassCol,{castShadow:false});
+    addBox(decorGroup,x+sign*0.050,cy,cz,0.016,height,0.045,'#f8f3ec',{castShadow:false});
+    addBox(decorGroup,x+sign*0.050,cy,cz,0.016,0.045,width,'#f8f3ec',{castShadow:false});
+    if(opts.panes===6||opts.panes===4){
+      addBox(decorGroup,x+sign*0.050,cy-height/4,cz,0.016,0.036,width,'#f8f3ec',{castShadow:false});
+      addBox(decorGroup,x+sign*0.050,cy+height/4,cz,0.016,0.036,width,'#f8f3ec',{castShadow:false});
+      addBox(decorGroup,x+sign*0.050,cy,cz,0.016,height,0.036,'#f8f3ec',{castShadow:false});
+    }
+    addBox(decorGroup,x+sign*0.10,room.floorY+sill-0.06,cz,0.18,0.05,width+0.12,'#eee4d5',{castShadow:false});
+    if(opts.curtains){
+      const drop=(opts.curtainDrop??(height*0.86));
+      const edge=(opts.curtainWidth??0.22);
+      addBox(decorGroup,x+sign*0.018,cy+0.02,cz-width/2-edge/2,0.024,drop,edge,opts.curtainColor||'#d7a39b',{castShadow:false});
+      addBox(decorGroup,x+sign*0.018,cy+0.02,cz+width/2+edge/2,0.024,drop,edge,opts.curtainColor||'#d7a39b',{castShadow:false});
+      addBox(decorGroup,x+sign*0.016,cy+height/2+0.11,cz,0.02,0.05,width+0.42,'#f4efe8',{castShadow:false});
+    }
+  }
+
   function buildRoom(room){
     const houseStart=houseGroup.children.length;
     const decorStart=decorGroup.children.length;
@@ -818,44 +891,13 @@
     skirt.userData.decor=true;
 
     if(room.decor==='bedroom'){
-      addRoomWindow(room,{width:1.95,height:1.18,sill:0.94,curtains:true,curtainColor:'#d7a39b',panes:4});
+      addSideWindow(room,'left',{width:1.26,height:1.34,sill:0.78,curtains:true,curtainColor:'#d7a39b',panes:4,offsetZ:-0.45});
     }else if(room.decor==='kids'){
-      addRoomWindow(room,{width:1.68,height:1.10,sill:0.88,curtains:true,curtainColor:'#d9c0a6',panes:4});
-      addBox(decorGroup,room.cx-1.10,room.floorY+1.38,BACK_Z+0.04,0.58,0.78,0.04,'#806e63',{castShadow:false});
-      addBox(decorGroup,room.cx-1.10,room.floorY+1.38,BACK_Z+0.065,0.50,0.70,0.025,'#f2ece3',{castShadow:false});
-      addBox(decorGroup,room.cx-1.10,room.floorY+1.38,BACK_Z+0.085,0.18,0.26,0.02,'#7fa097',{castShadow:false});
+      addSideWindow(room,'right',{width:1.18,height:1.30,sill:0.76,curtains:true,curtainColor:'#7fa0ba',panes:4,offsetZ:-0.55});
     }else if(room.decor==='living'){
-      addRoomWindow(room,{width:3.02,height:1.40,sill:0.76,curtains:true,curtainColor:'#d3b59f',panes:6});
-      addBox(decorGroup,room.cx+1.06,room.floorY+1.60,BACK_Z+0.04,1.40,0.66,0.04,'#826f64',{castShadow:false});
-      addBox(decorGroup,room.cx+1.06,room.floorY+1.60,BACK_Z+0.065,1.30,0.56,0.025,'#f0e9df',{castShadow:false});
-      ['#e1a07f','#e8c46e','#7d9c8f','#829caf'].forEach((c,i)=>addBox(decorGroup,room.cx+0.58+i*0.26,room.floorY+1.60,BACK_Z+0.085,0.18,0.24+(i%2)*0.07,0.02,c,{castShadow:false}));
+      addSideWindow(room,'left',{width:1.30,height:1.62,sill:0.48,curtains:true,curtainColor:'#d3b59f',panes:4,offsetZ:-0.35});
     }else if(room.decor==='kitchen'){
-      addRoomWindow(room,{width:1.92,height:1.20,sill:0.98,curtains:false,panes:4,offsetX:0.55});
-      const left=room.minX+0.34, right=room.maxX-0.28, back=BACK_Z+0.22;
-      const baseCol='#b8c3aa', counterCol='#dbc5aa', topCol='#a9b59b';
-      // Back run of lower cabinets and worktop.
-      addBox(decorGroup,room.cx+0.18,room.floorY+0.42,back,room.width-0.78,0.82,0.58,baseCol,{castShadow:false,receiveShadow:true});
-      addBox(decorGroup,room.cx+0.18,room.floorY+0.86,back,room.width-0.70,0.08,0.64,counterCol,{castShadow:false,receiveShadow:true});
-      // Right-hand return run.
-      addBox(decorGroup,right-0.34,room.floorY+0.42,-0.20,0.68,0.82,ROOM_D-1.36,baseCol,{castShadow:false,receiveShadow:true});
-      addBox(decorGroup,right-0.34,room.floorY+0.86,-0.20,0.76,0.08,ROOM_D-1.28,counterCol,{castShadow:false,receiveShadow:true});
-      // Upper cabinets on back wall, split to leave the window readable.
-      addBox(decorGroup,room.cx-1.22,room.floorY+1.86,BACK_Z+0.12,1.16,0.82,0.34,topCol,{castShadow:false});
-      addBox(decorGroup,room.cx+1.48,room.floorY+1.86,BACK_Z+0.12,1.36,0.82,0.34,topCol,{castShadow:false});
-      addBox(decorGroup,right-0.36,room.floorY+1.74,-1.10,0.52,0.66,1.56,topCol,{castShadow:false});
-      // Simple sink and backsplash.
-      addBox(decorGroup,room.cx+0.58,room.floorY+0.89,back+0.03,0.84,0.03,0.34,'#efe7dc',{castShadow:false});
-      addBox(decorGroup,room.cx+0.58,room.floorY+0.84,back+0.05,0.58,0.10,0.28,'#f7f4ef',{castShadow:false});
-      addBox(decorGroup,room.cx+0.58,room.floorY+1.10,back+0.10,0.04,0.22,0.04,'#7a685e',{castShadow:false});
-      addBox(decorGroup,room.cx+0.58,room.floorY+1.18,back+0.12,0.16,0.03,0.05,'#7a685e',{castShadow:false});
-      addBox(decorGroup,room.cx+0.18,room.floorY+1.25,BACK_Z+0.03,room.width-0.84,0.62,0.03,'#f3ece2',{castShadow:false});
-      // Fridge and open shelf for extra kitchen language.
-      addBox(decorGroup,left+0.42,room.floorY+1.02,-1.35,0.72,2.04,0.78,'#c8d1d6',{castShadow:false,receiveShadow:true});
-      addBox(decorGroup,left+0.46,room.floorY+1.56,-0.08,0.56,0.10,1.12,'#9f7f57',{castShadow:false});
-      addBox(decorGroup,left+0.46,room.floorY+1.86,-0.08,0.56,0.10,1.12,'#9f7f57',{castShadow:false});
-      addBox(decorGroup,left+0.46,room.floorY+1.71,-0.08,0.52,0.20,1.02,'#d4b995',{castShadow:false});
-      addBox(decorGroup,left+0.42,room.floorY+1.36,-1.02,0.10,0.54,0.02,'#b59e86',{castShadow:false});
-      addBox(decorGroup,left+0.42,room.floorY+0.80,-1.02,0.10,0.54,0.02,'#b59e86',{castShadow:false});
+      addSideWindow(room,'right',{width:1.12,height:1.18,sill:0.84,curtains:false,panes:4,offsetZ:0.12});
     }
 
     houseGroup.children.slice(houseStart).forEach(obj=>enableRoomLayers(obj,room.id));
@@ -921,24 +963,19 @@
     enableRoomLayers(addArchitectureBox(HOUSE_MIN_X-WALL_T,HOUSE_MAX_X+WALL_T,-0.20,0,BACK_Z-WALL_T,FRONT_Z+0.02,cut),Object.keys(ROOM_LAYERS));
     enableRoomLayers(addArchitectureBox(HOUSE_MIN_X-WALL_T,HOUSE_MAX_X+WALL_T,HOUSE_H,HOUSE_H+0.22,BACK_Z-WALL_T,FRONT_Z+0.02,cut),Object.keys(ROOM_LAYERS));
 
-    // Central upper landing slab behind the stair opening.
-    addArchitectureBox(CORE_MIN_X,CORE_MAX_X,ROOM_H,UPPER_Y,BACK_Z,LANDING_FRONT_Z,cut);
-
-    // Core back walls for hall and landing.
+    // Central hall / landing core: thinner separators, open front hall areas, and a stair pushed toward the back.
+    addArchitectureBox(CORE_MIN_X,CORE_MAX_X,ROOM_H,UPPER_Y,BACK_Z,FRONT_Z,cut);
     addArchitectureBox(CORE_MIN_X,CORE_MAX_X,0,ROOM_H,BACK_Z-WALL_T,BACK_Z,shell);
     addArchitectureBox(CORE_MIN_X,CORE_MAX_X,UPPER_Y,UPPER_Y+ROOM_H,BACK_Z-WALL_T,BACK_Z,shell);
-    addCoreWindow(0,{width:0.90,height:1.45,sill:0.78});
-    addCoreWindow(UPPER_Y,{width:1.05,height:1.05,sill:0.98});
-    addBox(decorGroup,0,0.075,BACK_Z+0.015,CORE_W-0.08,0.15,0.035,'#f6f0e8',{castShadow:false,receiveShadow:true});
-    addBox(decorGroup,0,UPPER_Y+0.075,BACK_Z+0.015,CORE_W-0.08,0.15,0.035,'#f6f0e8',{castShadow:false,receiveShadow:true});
+    addBox(decorGroup,0,0.075,0,CORE_W-0.12,0.15,ROOM_D-0.10,'#f6f0e8',{castShadow:false,receiveShadow:true});
+    addBox(decorGroup,0,UPPER_Y+0.075,0,CORE_W-0.12,0.15,ROOM_D-0.10,'#f6f0e8',{castShadow:false,receiveShadow:true});
 
-    // Interior walls between principal rooms and the central circulation module.
-    addDoorOpeningInXWall(CORE_MIN_X,0,LOWER_DOOR_CENTRE_Z,shell,trim,['living']);
-    addDoorOpeningInXWall(CORE_MAX_X,0,LOWER_DOOR_CENTRE_Z,shell,trim,['kitchen']);
-    addDoorOpeningInXWall(CORE_MIN_X,UPPER_Y,UPPER_DOOR_CENTRE_Z,shell,trim,['bedroom']);
-    addDoorOpeningInXWall(CORE_MAX_X,UPPER_Y,UPPER_DOOR_CENTRE_Z,shell,trim,['kids']);
+    // Openings into rooms are slightly more forward so the hall reads as usable.
+    addDoorOpeningInXWall(CORE_MIN_X,0,-0.10,shell,trim,['living']);
+    addDoorOpeningInXWall(CORE_MAX_X,0,-0.10,shell,trim,['kitchen']);
+    addDoorOpeningInXWall(CORE_MIN_X,UPPER_Y,-0.06,shell,trim,['bedroom']);
+    addDoorOpeningInXWall(CORE_MAX_X,UPPER_Y,-0.06,shell,trim,['kids']);
 
-    // Switch to a dedicated central stair/hall/landing layout.
     const stairRise=UPPER_Y/STAIR.steps;
     for(let i=0;i<STAIR.steps;i++){
       const z1=STAIR.zBottom-i*STAIR.going;
@@ -946,23 +983,21 @@
       const h=(i+1)*stairRise;
       addArchitectureBox(STAIR.x0,STAIR.x1,0,h,z0,z1,'#b99372');
     }
-
-    // Soft stair cheek walls to make the circulation more self-contained.
-    addArchitectureBox(CORE_MIN_X,STAIR.x0-0.06,0,UPPER_Y,STAIR.zTop-0.10,FRONT_Z,'#d0c3b7');
-    addArchitectureBox(STAIR.x1+0.06,CORE_MAX_X,0,UPPER_Y,STAIR.zTop-0.10,FRONT_Z,'#d0c3b7');
+    addArchitectureBox(CORE_MIN_X,STAIR.x0-0.07,0,UPPER_Y,STAIR.zTop-0.10,STAIR.zBottom+0.08,'#d0c3b7');
+    addArchitectureBox(STAIR.x1+0.07,CORE_MAX_X,0,UPPER_Y,STAIR.zTop-0.10,STAIR.zBottom+0.08,'#d0c3b7');
 
     const railX=STAIR.x1+0.08;
     const railHeight=0.86;
     for(let i=0;i<=STAIR.steps;i+=2){
       const z=STAIR.zBottom-Math.min(i,STAIR.steps)*STAIR.going;
       const baseY=Math.min(UPPER_Y,(i+0.25)*stairRise);
-      addCylinder(houseGroup,railX,baseY,z,0.024,railHeight,'#7b685a',{castShadow:true});
+      addCylinder(houseGroup,railX,baseY,z,0.022,railHeight,'#7b685a',{castShadow:true});
     }
-    addSoftPipe(houseGroup,[[railX,railHeight,STAIR.zBottom],[railX,UPPER_Y+railHeight,STAIR.zTop]],0.032,'#7b685a');
-    for(let x=STAIR.x0-0.02;x<=STAIR.x1+0.001;x+=0.36){
-      addCylinder(houseGroup,Math.min(x,STAIR.x1),UPPER_Y,LANDING_FRONT_Z+0.055,0.023,0.86,'#7b685a',{castShadow:true});
+    addSoftPipe(houseGroup,[[railX,railHeight,STAIR.zBottom],[railX,UPPER_Y+railHeight,STAIR.zTop]],0.030,'#7b685a');
+    for(let x=CORE_MIN_X+0.18;x<=CORE_MAX_X-0.18;x+=0.34){
+      addCylinder(houseGroup,Math.min(x,CORE_MAX_X-0.18),UPPER_Y,0.58,0.82,'#7b685a',{castShadow:true});
     }
-    addHorizontalRail(STAIR.x0-0.02,STAIR.x1,UPPER_Y+0.88,LANDING_FRONT_Z+0.055);
+    addHorizontalRail(CORE_MIN_X+0.18,CORE_MAX_X-0.18,UPPER_Y+0.84,0.58);
 
     invalidateShadows();
   }
@@ -1606,7 +1641,7 @@
       else if(pattern.id==='stars')b.style.background='linear-gradient(#dbe5ee,#dbe5ee)', b.style.backgroundImage='radial-gradient(circle at 20% 28%,#f6edd7 0 3px,transparent 4px),radial-gradient(circle at 55% 24%,#f6edd7 0 3px,transparent 4px),radial-gradient(circle at 78% 52%,#f6edd7 0 3px,transparent 4px),radial-gradient(circle at 36% 74%,#f6edd7 0 3px,transparent 4px)';
       else if(pattern.id==='arch')b.style.backgroundImage='radial-gradient(ellipse at 50% 72%,transparent 0 9px,#d2cbc3 10px 12px,transparent 13px)';
       else if(pattern.id==='sprig')b.style.backgroundImage='radial-gradient(ellipse at 35% 40%,#c9d0c6 0 4px,transparent 5px),radial-gradient(ellipse at 65% 62%,#c9d0c6 0 4px,transparent 5px)';
-      else if(pattern.id==='check')b.style.backgroundImage='linear-gradient(45deg,#ded8d1 25%,transparent 25%,transparent 75%,#ded8d1 75%),linear-gradient(45deg,#ded8d1 25%,transparent 25%,transparent 75%,#ded8d1 75%)';
+      else if(pattern.id==='clouds')b.style.backgroundImage='linear-gradient(#dbe5ee,#dbe5ee),radial-gradient(circle at 32% 36%,#f5f0df 0 5px,transparent 6px),radial-gradient(circle at 46% 38%,#f5f0df 0 5px,transparent 6px),radial-gradient(circle at 67% 66%,#f5f0df 0 5px,transparent 6px)';
       else b.textContent='—';
       if((style.wallpaper||'plain')===pattern.id)b.classList.add('active');
       b.addEventListener('click',()=>{
@@ -1631,7 +1666,7 @@
       else if(pattern.id==='herringbone')b.style.backgroundImage='repeating-linear-gradient(45deg,#e5d8c7 0 8px,#cdbca6 8px 10px,#ede3d7 10px 18px,#cdbca6 18px 20px)';
       else if(pattern.id==='tile')b.style.backgroundImage='linear-gradient(#d0cbc5 2px,transparent 2px),linear-gradient(90deg,#d0cbc5 2px,transparent 2px)';
       else if(pattern.id==='checker')b.style.backgroundImage='linear-gradient(45deg,#e9dfd0 25%,transparent 25%,transparent 75%,#e9dfd0 75%),linear-gradient(45deg,#d8cec0 25%,transparent 25%,transparent 75%,#d8cec0 75%)';
-      else if(pattern.id==='terrazzo')b.style.backgroundImage='radial-gradient(circle at 22% 28%,#d8b6b6 0 3px,transparent 4px),radial-gradient(circle at 70% 34%,#bac6d8 0 3px,transparent 4px),radial-gradient(circle at 58% 72%,#b0c2b4 0 3px,transparent 4px),radial-gradient(circle at 34% 68%,#d8c3a9 0 3px,transparent 4px)';
+      else if(pattern.id==='carpet')b.style.backgroundImage='repeating-linear-gradient(0deg,#e9dcc8 0 6px,#e4d4c0 6px 7px),repeating-linear-gradient(90deg,#e9dcc8 0 6px,#deccb7 6px 7px)';
       else b.textContent='—';
       if((style.floorTexture||'plain')===pattern.id)b.classList.add('active');
       b.addEventListener('click',()=>{

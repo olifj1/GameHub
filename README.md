@@ -1,15 +1,15 @@
-# GameHub v1.8.21
+# GameHub v1.8.22
 
-This drop continues refining **My House** and focuses on bringing the layout closer to the pastel dollhouse reference while fixing the mobile layout so the controls fit on screen more comfortably.
+This drop continues the **My House** rework and focuses on the house structure, window placement, kitchen modularity, and fitting the controls better on shorter phone screens.
 
 ## Updated in this version
-- Adjusted the **central section** to feel more like a hall / landing core.
-- Tweaked the **camera angle** to be a little more level, so you see slightly more of the room tops / ceilings.
-- Refined **window placement**, including a larger feature window in the living room.
-- Added more convincing **kitchen cabinetry / worktop** dressing to help sell the kitchen.
-- Kept the new **wall texture** and **floor texture** controls.
-- Added a **compact mobile layout pass** so the wall / floor options are less likely to fall off the bottom of the screen on shorter phones.
-- Reset the My House local save version as the room structure and defaults have changed again.
+- Reworked the **central hall / stair section** so it feels more open, with the stair pushed further back and slimmer divider walls.
+- Moved the main **room windows** toward the far left / far right walls instead of always using the back wall.
+- Removed the fixed wall art from the built-in room dressing so **pictures can be placed manually**.
+- Added a more modular **kitchen pack** with placeable base cabinet, sink cabinet, fridge, and wall cabinet objects.
+- Expanded finish choices with more usable **floor textures** such as boards, carpet, tiles, and parquet, plus extra **kids-style wallpaper** options.
+- Added a tighter **mobile layout pass** so the lower decor / texture controls fit more comfortably on short screens.
+- Reset the My House save key again because the room layout and default furnishing changed.
 
 ## Files
 Upload the contents of this ZIP to the root of your `GameHub` repository, replacing the existing files.
