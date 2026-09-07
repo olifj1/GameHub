@@ -10140,7 +10140,7 @@ body[data-game-id="game-14"] .attack-slot-copy small{font-size:6.8px}
 .room-selection-info .room-light-control label strong{font-size:9px;letter-spacing:0;color:#443d38;}
 .room-selection-info .room-light-control input[type="range"]{width:min(150px,100%);min-width:75px;height:16px;accent-color:#a67c61;}
 
-/* My House v1.8.19 — room-local shadows, wallpaper and dressing controls */
+/* My House v1.8.20 — room-local shadows, wallpaper and dressing controls */
 .room-perf-badge{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:2;pointer-events:none;padding:5px 8px;border:1px solid rgba(53,47,43,.16);border-radius:999px;background:rgba(250,247,242,.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);color:#655c56;font-size:8px;font-weight:800;letter-spacing:.025em;white-space:nowrap;}
 .room-selection-info .room-light-control{flex-wrap:wrap;row-gap:4px;}
 .room-shadow-toggle{min-height:25px;border:1px solid rgba(74,65,59,.34);border-radius:999px;background:#f8f2ea;color:#544b45;padding:0 8px;font:inherit;font-size:7px;font-weight:900;letter-spacing:.055em;white-space:nowrap;}

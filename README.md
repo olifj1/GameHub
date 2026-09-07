@@ -1,10 +1,16 @@
-# GameHub v1.8.19
+# GameHub v1.8.20
 
-My House lighting, navigation, stairs and bedroom-detail pass.
+This drop develops **My House** further and focuses on the architectural groundwork before wider furniture/style packs.
 
-- Makes one-finger navigation more forgiving: tap/release selects, dragging an unselected object or background pans the house, and only dragging the already-selected item moves it.
-- Enables shadows on every active lamp, with a per-lamp SHADOWS ON/OFF toggle and brightness control.
-- Limits each lamp's shadow-camera rendering to geometry in that lamp's room and adds an on-screen render-time / approximate-FPS readout for performance testing.
-- Reworks the hall stair to run front-to-back against the outside wall, with an accessible bottom, rear landing and clear downstairs/upstairs door routes.
-- Adds bedside tables, bedside lamps, an alarm clock, movable wall pictures and six selectable wallpaper finishes.
-- Keeps small details parented to support furniture so they move with tables/drawers.
+## Updated in this version
+- Reworked the house into a **wider, less cramped layout**.
+- Added a **central hall / staircase / landing core** between the main rooms.
+- Added **windows to every main room**.
+- Gave the **living room a larger feature window**.
+- Added **wall texture** choices alongside wall colours.
+- Added **floor texture** choices alongside floor colours.
+- Seeded the new layout with a bedroom, kids room, living room and kitchen setup.
+- Reset My House local save data version so the new structure starts cleanly.
+
+## Files
+Upload the contents of this ZIP to the root of your `GameHub` repository, replacing the existing files.

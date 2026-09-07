@@ -19,6 +19,7 @@
   const lightValue = document.getElementById('room-light-value');
   const lightShadowBtn = document.getElementById('room-light-shadow');
   const wallpaperSwatches = document.getElementById('room-wallpaper-swatches');
+  const floorTextureSwatches = document.getElementById('room-floor-texture-swatches');
   const perfBadge = document.getElementById('room-perf-badge');
 
   if (!canvas) return;
@@ -30,50 +31,52 @@
   }
 
   const THREE = window.THREE;
-  const STORAGE_KEY = 'gamehub-my-house-webgl-v4';
+  const STORAGE_KEY = 'gamehub-my-house-webgl-v5';
   const MODEL_SCALE = 0.62;
   const TAU = Math.PI * 2;
 
-  // Metre-like proportions for a believable small detached/semi dollhouse.
-  // The rooms remain generous enough for play, while the circulation uses
-  // domestic-scale doors, an 840 mm stair and a proper landing corridor.
-  const ROOM_W = 4.60;
-  const ROOM_D = 4.80;
-  const ROOM_H = 2.45;
+  // More generous proportions and a central circulation core inspired by the
+  // concept reference. The four principal rooms now flank a dedicated hall /
+  // stair / landing module, which is the groundwork for a more modular house.
+  const SIDE_ROOM_W = 5.25;
+  const CORE_W = 2.35;
+  const ROOM_D = 5.55;
+  const ROOM_H = 2.55;
   const SLAB_H = 0.24;
   const WALL_T = 0.15;
   const UPPER_Y = ROOM_H + SLAB_H;
-  const HOUSE_W = ROOM_W * 2;
+  const HOUSE_W = SIDE_ROOM_W * 2 + CORE_W;
   const HOUSE_H = UPPER_Y + ROOM_H;
   const HOUSE_MIN_X = -HOUSE_W / 2;
   const HOUSE_MAX_X = HOUSE_W / 2;
+  const CORE_MIN_X = -CORE_W / 2;
+  const CORE_MAX_X = CORE_W / 2;
   const BACK_Z = -ROOM_D / 2;
   const FRONT_Z = ROOM_D / 2;
   const DOOR_OPEN_W = 0.826;
   const DOOR_OPEN_H = 2.04;
-  const LOWER_DOOR_CENTRE_Z = 0.95;
+  const LOWER_DOOR_CENTRE_Z = 0.62;
   const UPPER_DOOR_CENTRE_Z = -1.42;
-  const LANDING_FRONT_Z = -0.45;
-  const BEDROOM_DOOR_CENTRE_X = -2.18;
   const LAMP_DEFAULT_LEVEL = 0.28;
   const LAMP_MAX_INTENSITY = 6.2;
+  const LANDING_FRONT_Z = -1.08;
 
-  // A compact straight domestic stair runs front-to-back against the outside
-  // hall wall. The low end starts in the open-front entrance area, while the
-  // high end arrives onto a rear landing, clear of both room doorways.
+  // The central hall contains a straight stair rising toward a rear landing.
+  // This is simpler than the concept image's wraparound stair, but it creates
+  // the right architectural idea: circulation as its own reusable module.
   const STAIR = {
-    x0: HOUSE_MIN_X + 0.42,
-    width: 0.88,
-    going: 0.24,
-    zBottom: FRONT_Z - 0.34,
-    steps: 13
+    x0: -0.54,
+    width: 1.08,
+    going: 0.285,
+    zBottom: FRONT_Z - 0.40,
+    steps: 14
   };
   STAIR.x1 = STAIR.x0 + STAIR.width;
   STAIR.zTop = STAIR.zBottom - STAIR.going * STAIR.steps;
   STAIR.z0 = STAIR.zTop;
   STAIR.z1 = STAIR.zBottom;
 
-  const ROOM_LAYERS = { bedroom:1, studio:2, hall:3, living:4 };
+  const ROOM_LAYERS = { bedroom:1, kids:2, living:3, kitchen:4 };
 
   const wallPalette = ['#f1dfd6', '#eadcc9', '#d8e6dc', '#dbe3ef', '#ead9e5', '#efe5bf'];
   const floorPalette = ['#c8a883', '#b9906c', '#d2c3ae', '#9ca99c', '#b4a297', '#c9b596'];
@@ -85,18 +88,26 @@
     {id:'sprig',name:'Leaf sprigs'},
     {id:'check',name:'Tiny check'}
   ];
+  const floorTexturePatterns = [
+    {id:'plain',name:'Plain'},
+    {id:'plank',name:'Wide plank'},
+    {id:'herringbone',name:'Herringbone'},
+    {id:'tile',name:'Tile'},
+    {id:'checker',name:'Soft checker'},
+    {id:'terrazzo',name:'Terrazzo'}
+  ];
 
   const rooms = [
-    { id:'bedroom', name:'Bedroom', cx:-ROOM_W/2, floorY:UPPER_Y, wall:wallPalette[0], floor:floorPalette[0], wallpaper:'sprig', decor:'window' },
-    { id:'studio', name:'Studio', cx: ROOM_W/2, floorY:UPPER_Y, wall:wallPalette[1], floor:floorPalette[2], wallpaper:'plain', decor:'gallery' },
-    { id:'hall', name:'Hall', cx:-ROOM_W/2, floorY:0, wall:wallPalette[3], floor:floorPalette[4], wallpaper:'stripe', decor:'stars' },
-    { id:'living', name:'Living room', cx: ROOM_W/2, floorY:0, wall:wallPalette[2], floor:floorPalette[0], wallpaper:'plain', decor:'living' }
+    { id:'bedroom', name:'Bedroom', minX:HOUSE_MIN_X, maxX:CORE_MIN_X, floorY:UPPER_Y, wall:wallPalette[0], floor:floorPalette[0], wallpaper:'sprig', floorTexture:'plank', decor:'bedroom' },
+    { id:'kids', name:'Kids room', minX:CORE_MAX_X, maxX:HOUSE_MAX_X, floorY:UPPER_Y, wall:wallPalette[1], floor:floorPalette[2], wallpaper:'dot', floorTexture:'checker', decor:'kids' },
+    { id:'living', name:'Living room', minX:HOUSE_MIN_X, maxX:CORE_MIN_X, floorY:0, wall:wallPalette[2], floor:floorPalette[0], wallpaper:'plain', floorTexture:'herringbone', decor:'living' },
+    { id:'kitchen', name:'Kitchen', minX:CORE_MAX_X, maxX:HOUSE_MAX_X, floorY:0, wall:wallPalette[3], floor:floorPalette[4], wallpaper:'check', floorTexture:'tile', decor:'kitchen' }
   ];
 
   rooms.forEach(room => {
-    room.minX = room.cx - ROOM_W/2;
-    room.maxX = room.cx + ROOM_W/2;
-    room.wallPlaneZ = room.id === 'bedroom' ? LANDING_FRONT_Z + WALL_T/2 + 0.035 : BACK_Z + 0.075;
+    room.cx = (room.minX + room.maxX) / 2;
+    room.width = room.maxX - room.minX;
+    room.wallPlaneZ = BACK_Z + 0.075;
   });
 
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -280,33 +291,40 @@
   ];
 
   const defaultItems = [
-    { id:'seed-bed', type:'bed', room:'bedroom', x:-1.58, z:1.18, rot:0 },
-    { id:'seed-bedside-l', type:'bedside', room:'bedroom', x:-2.78, z:0.72, rot:0 },
-    { id:'seed-bedside-r', type:'bedside', room:'bedroom', x:-0.38, z:0.72, rot:0 },
-    { id:'seed-bedlamp-l', type:'bedlamp', room:'bedroom', x:0, z:0, rot:0, supportId:'seed-bedside-l', lightLevel:0.28, shadowEnabled:true },
-    { id:'seed-bedlamp-r', type:'bedlamp', room:'bedroom', x:-0.15, z:0, rot:0, supportId:'seed-bedside-r', lightLevel:0.28, shadowEnabled:true },
-    { id:'seed-clock', type:'clock', room:'bedroom', x:0.25, z:0.02, rot:0, supportId:'seed-bedside-r' },
-    { id:'seed-books-bed', type:'books', room:'bedroom', x:0.22, z:0.02, rot:-0.05, supportId:'seed-bedside-l' },
-    { id:'seed-archprint', type:'archprint', room:'bedroom', x:-1.58, y:1.58, z:0, rot:0 },
-    { id:'seed-chair-studio', type:'chair', room:'studio', x:1.55, z:-0.72, rot:0 },
-    { id:'seed-plant-studio', type:'plant', room:'studio', x:3.75, z:-1.30, rot:0 },
-    { id:'seed-studio-lamp', type:'lamp', room:'studio', x:3.75, z:0.72, rot:0, lightLevel:0.26, shadowEnabled:true },
-    { id:'seed-rug-living', type:'rug', room:'living', x:2.50, z:0.62, rot:0 },
-    { id:'seed-sofa', type:'sofa', room:'living', x:2.45, z:-1.35, rot:0 },
-    { id:'seed-chair', type:'chair', room:'living', x:4.00, z:0.56, rot:-Math.PI/2 },
-    { id:'seed-coffee', type:'coffee', room:'living', x:2.45, z:0.54, rot:0 },
-    { id:'seed-lamp', type:'lamp', room:'living', x:0.72, z:-1.28, rot:0, lightLevel:LAMP_DEFAULT_LEVEL, shadowEnabled:true },
+    { id:'seed-bed', type:'bed', room:'bedroom', x:-4.05, z:0.98, rot:0 },
+    { id:'seed-bedside-l', type:'bedside', room:'bedroom', x:-5.30, z:0.54, rot:0 },
+    { id:'seed-bedside-r', type:'bedside', room:'bedroom', x:-2.80, z:0.54, rot:0 },
+    { id:'seed-bedlamp-l', type:'bedlamp', room:'bedroom', x:0, z:0, rot:0, supportId:'seed-bedside-l', lightLevel:0.24, shadowEnabled:true },
+    { id:'seed-bedlamp-r', type:'bedlamp', room:'bedroom', x:-0.12, z:0, rot:0, supportId:'seed-bedside-r', lightLevel:0.24, shadowEnabled:true },
+    { id:'seed-clock', type:'clock', room:'bedroom', x:0.23, z:0.00, rot:0, supportId:'seed-bedside-r' },
+    { id:'seed-books-bed', type:'books', room:'bedroom', x:0.18, z:0.03, rot:-0.05, supportId:'seed-bedside-l' },
+    { id:'seed-archprint', type:'archprint', room:'bedroom', x:-4.00, y:1.55, z:0, rot:0 },
+    { id:'seed-kids-chair', type:'chair', room:'kids', x:4.10, z:-0.38, rot:0 },
+    { id:'seed-kids-box', type:'toybox', room:'kids', x:5.15, z:1.16, rot:0 },
+    { id:'seed-kids-drawers', type:'drawers', room:'kids', x:2.35, z:1.10, rot:0 },
+    { id:'seed-kids-plant', type:'plant', room:'kids', x:5.35, z:-1.35, rot:0 },
+    { id:'seed-rug-living', type:'rug', room:'living', x:-4.05, z:0.68, rot:0 },
+    { id:'seed-sofa', type:'sofa', room:'living', x:-4.15, z:-1.28, rot:0 },
+    { id:'seed-chair', type:'chair', room:'living', x:-2.42, z:0.82, rot:-Math.PI/2 },
+    { id:'seed-coffee', type:'coffee', room:'living', x:-4.00, z:0.60, rot:0 },
+    { id:'seed-lamp', type:'lamp', room:'living', x:-5.55, z:-1.22, rot:0, lightLevel:LAMP_DEFAULT_LEVEL, shadowEnabled:true },
     { id:'seed-books', type:'books', room:'living', x:-0.37, z:0.02, rot:0.08, supportId:'seed-coffee' },
     { id:'seed-mug', type:'mug', room:'living', x:0.35, z:0.04, rot:0, supportId:'seed-coffee' },
-    { id:'seed-vase', type:'vase', room:'living', x:0.03, z:-0.18, rot:0, supportId:'seed-coffee' }
+    { id:'seed-vase', type:'vase', room:'living', x:0.03, z:-0.18, rot:0, supportId:'seed-coffee' },
+    { id:'seed-kitchen-drawers', type:'drawers', room:'kitchen', x:4.10, z:1.18, rot:0 },
+    { id:'seed-kitchen-lamp', type:'lamp', room:'kitchen', x:5.40, z:-1.12, rot:0, lightLevel:0.22, shadowEnabled:true },
+    { id:'seed-kitchen-plant', type:'plant', room:'kitchen', x:2.75, z:-1.35, rot:0 },
+    { id:'seed-kitchen-fruit', type:'fruit', room:'kitchen', x:0.10, z:0.04, rot:0, supportId:'seed-kitchen-drawers' },
+    { id:'seed-kitchen-vase', type:'vase', room:'kitchen', x:-0.18, z:-0.08, rot:0, supportId:'seed-kitchen-drawers' },
+    { id:'seed-kitchen-sun', type:'sunprint', room:'kitchen', x:4.15, y:1.58, z:0, rot:0 }
   ];
 
 
   let state = {
     lighting:'day',
-    rooms:Object.fromEntries(rooms.map(r => [r.id,{wall:r.wall,floor:r.floor,wallpaper:r.wallpaper}])),
+    rooms:Object.fromEntries(rooms.map(r => [r.id,{wall:r.wall,floor:r.floor,wallpaper:r.wallpaper,floorTexture:r.floorTexture}])),
     items:defaultItems.map(i => ({...i})),
-    camera:{x:2.2,y:1.20,zoom:1.35}
+    camera:{x:-3.9,y:1.20,zoom:1.22}
   };
 
   let selectedId = null;
@@ -333,7 +351,7 @@
 
   const camera = new THREE.PerspectiveCamera(31, 1, 0.1, 60);
   camera.layers.enableAll();
-  const cameraOffset = new THREE.Vector3(0, 2.55, 11.8);
+  const cameraOffset = new THREE.Vector3(0, 2.72, 13.1);
   const raycaster = new THREE.Raycaster();
   const pointerNdc = new THREE.Vector2();
   const plane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
@@ -376,6 +394,7 @@
 
   const roomMaterials = new Map();
   const wallpaperTextures = new Map();
+  const floorTextures = new Map();
   const itemGroups = new Map();
   const supportAnchors = new Map();
   const supportPlanes = [];
@@ -468,12 +487,70 @@
     return tex;
   }
 
+  function floorTexture(patternId){
+    if(!patternId||patternId==='plain')return null;
+    if(floorTextures.has(patternId))return floorTextures.get(patternId);
+    const c=document.createElement('canvas');
+    c.width=192;c.height=192;
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,0,c.width,c.height);
+    if(patternId==='plank'){
+      ctx.fillStyle='#efe8dd';ctx.fillRect(0,0,192,192);
+      ctx.strokeStyle='#d4c4b1';ctx.lineWidth=3;
+      for(let x=0;x<=192;x+=32){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,192);ctx.stroke();}
+      ctx.lineWidth=1.5;ctx.strokeStyle='#c3b19c';
+      for(let y=22;y<192;y+=32){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(96,y);ctx.stroke();ctx.beginPath();ctx.moveTo(96,y+16);ctx.lineTo(192,y+16);ctx.stroke();}
+    }else if(patternId==='herringbone'){
+      ctx.fillStyle='#f0e7da';ctx.fillRect(0,0,192,192);
+      ctx.strokeStyle='#cfbeaa';ctx.lineWidth=2;
+      for(let y=-48;y<240;y+=24){
+        for(let x=-48;x<240;x+=48){
+          ctx.beginPath();ctx.moveTo(x,y+24);ctx.lineTo(x+24,y);ctx.lineTo(x+48,y+24);ctx.stroke();
+          ctx.beginPath();ctx.moveTo(x+24,y+24);ctx.lineTo(x+48,y+48);ctx.lineTo(x+72,y+24);ctx.stroke();
+        }
+      }
+    }else if(patternId==='tile'){
+      ctx.fillStyle='#f3f1ed';ctx.fillRect(0,0,192,192);
+      ctx.strokeStyle='#cec8c0';ctx.lineWidth=4;
+      for(let x=0;x<=192;x+=48){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,192);ctx.stroke();}
+      for(let y=0;y<=192;y+=48){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(192,y);ctx.stroke();}
+    }else if(patternId==='checker'){
+      const cols=['#f3efe7','#ddd4c6'];
+      for(let y=0;y<192;y+=32)for(let x=0;x<192;x+=32){ctx.fillStyle=cols[((x+y)/32)%2];ctx.fillRect(x,y,32,32);}
+    }else if(patternId==='terrazzo'){
+      ctx.fillStyle='#ece8e1';ctx.fillRect(0,0,192,192);
+      const chips=['#d8c3a9','#c6b2a2','#b0c2b4','#bac6d8','#d8b6b6'];
+      for(let i=0;i<90;i++){
+        ctx.fillStyle=chips[i%chips.length];
+        const x=(i*37)%192, y=(i*53)%192;
+        ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+6+(i%5),y+2);ctx.lineTo(x+2,y+7+(i%4));ctx.closePath();ctx.fill();
+      }
+    }
+    const tex=new THREE.CanvasTexture(c);
+    tex.colorSpace=THREE.SRGBColorSpace;
+    tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
+    tex.repeat.set(3.4,3.4);
+    tex.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy?.()||1);
+    floorTextures.set(patternId,tex);
+    return tex;
+  }
+
   function applyRoomWallFinish(roomId){
     const style=state.rooms[roomId];
     const mat=roomMaterials.get(`${roomId}:wall`);
     if(!style||!mat)return;
     mat.color.set(style.wall);
     mat.map=wallpaperTexture(style.wallpaper||'plain');
+    mat.needsUpdate=true;
+  }
+
+  function applyRoomFloorFinish(roomId){
+    const style=state.rooms[roomId];
+    const mat=roomMaterials.get(`${roomId}:floor`);
+    if(!style||!mat)return;
+    mat.color.set(style.floor);
+    mat.map=floorTexture(style.floorTexture||'plain');
     mat.needsUpdate=true;
   }
 
@@ -667,12 +744,41 @@
   function makeRoomMaterial(roomId, key, color){
     const mat=material(color,{roughness:0.96});
     if(key==='wall')mat.map=wallpaperTexture(state.rooms[roomId]?.wallpaper||'plain');
+    if(key==='floor')mat.map=floorTexture(state.rooms[roomId]?.floorTexture||'plain');
     roomMaterials.set(`${roomId}:${key}`,mat);
     return mat;
   }
 
   function addDecorBox(parent,x,y,z,w,h,d,color){
     return addBox(parent,x,y,z,w,h,d,color,{castShadow:false,receiveShadow:true,roughness:0.9});
+  }
+
+  function addRoomWindow(room, opts={}){
+    const width=opts.width??1.55;
+    const height=opts.height??1.10;
+    const sill=opts.sill??0.92;
+    const cx=room.cx+(opts.offsetX??0);
+    const cy=room.floorY+sill+height/2;
+    const frameCol=opts.frame||'#d1b7a6';
+    const glassCol=opts.glass||'#cadfe3';
+    const frameZ=BACK_Z+0.040;
+    addBox(decorGroup,cx,cy,frameZ,width+0.28,height+0.28,0.04,frameCol,{castShadow:false});
+    addBox(decorGroup,cx,cy,frameZ+0.022,width,height,0.025,glassCol,{castShadow:false});
+    addBox(decorGroup,cx,cy,frameZ+0.036,0.045,height,0.016,'#f8f3ec',{castShadow:false});
+    addBox(decorGroup,cx,cy,frameZ+0.036,width,0.045,0.016,'#f8f3ec',{castShadow:false});
+    if(opts.panes===6){
+      addBox(decorGroup,cx-width/3,cy,frameZ+0.036,0.036,height,0.016,'#f8f3ec',{castShadow:false});
+      addBox(decorGroup,cx+width/3,cy,frameZ+0.036,0.036,height,0.016,'#f8f3ec',{castShadow:false});
+      addBox(decorGroup,cx,cy-height/4,frameZ+0.036,width,0.036,0.016,'#f8f3ec',{castShadow:false});
+      addBox(decorGroup,cx,cy+height/4,frameZ+0.036,width,0.036,0.016,'#f8f3ec',{castShadow:false});
+    }
+    if(opts.curtains){
+      const drop=(opts.curtainDrop??(height*0.55));
+      const edge=(opts.curtainWidth??0.18);
+      addBox(decorGroup,cx-width/2-edge/2,cy+0.02,frameZ+0.020,edge,drop,0.024,opts.curtainColor||'#d7a39b',{castShadow:false});
+      addBox(decorGroup,cx+width/2+edge/2,cy+0.02,frameZ+0.020,edge,drop,0.024,opts.curtainColor||'#d7a39b',{castShadow:false});
+      addBox(decorGroup,cx,cy+height/2+0.11,frameZ+0.018,width+0.42,0.05,0.02,'#f4efe8',{castShadow:false});
+    }
   }
 
   function buildRoom(room){
@@ -682,55 +788,38 @@
     const floorMat=makeRoomMaterial(room.id,'floor',styles.floor);
     const wallMat=makeRoomMaterial(room.id,'wall',styles.wall);
 
-    const addFloorPiece=(x0,x1,z0,z1)=>{
-      if(x1<=x0||z1<=z0)return;
-      const floor=new THREE.Mesh(new THREE.BoxGeometry(x1-x0,0.055,z1-z0),floorMat);
-      floor.position.set((x0+x1)/2,room.floorY-0.027,(z0+z1)/2);
-      floor.receiveShadow=true;
-      houseGroup.add(floor);
-    };
-    if(room.id==='bedroom'){
-      // Match the visible finish floor to the structural stairwell opening below it.
-      addFloorPiece(room.minX+0.02,STAIR.x0-0.01,BACK_Z+0.02,FRONT_Z-0.02);
-      addFloorPiece(STAIR.x1+0.01,room.maxX-0.02,BACK_Z+0.02,FRONT_Z-0.02);
-      addFloorPiece(STAIR.x0-0.01,STAIR.x1+0.01,BACK_Z+0.02,STAIR.z0-0.01);
-      addFloorPiece(STAIR.x0-0.01,STAIR.x1+0.01,STAIR.z1+0.01,FRONT_Z-0.02);
-    }else{
-      addFloorPiece(room.minX+0.02,room.maxX-0.02,BACK_Z+0.02,FRONT_Z-0.02);
-    }
+    const floor=new THREE.Mesh(new THREE.BoxGeometry(room.width-0.04,0.055,ROOM_D-0.04),floorMat);
+    floor.position.set(room.cx,room.floorY-0.027,(BACK_Z+FRONT_Z)/2);
+    floor.receiveShadow=true;
+    houseGroup.add(floor);
 
-    const back=new THREE.Mesh(new THREE.BoxGeometry(ROOM_W,ROOM_H,0.10),wallMat);
+    const back=new THREE.Mesh(new THREE.BoxGeometry(room.width,ROOM_H,0.10),wallMat);
     back.position.set(room.cx,room.floorY+ROOM_H/2,BACK_Z-0.05);
     back.receiveShadow=true;
     houseGroup.add(back);
 
-    const skirt=addBox(decorGroup,room.cx,room.floorY+0.075,BACK_Z+0.015,ROOM_W-0.08,0.15,0.035,'#f6f0e8',{castShadow:false,receiveShadow:true});
+    const skirt=addBox(decorGroup,room.cx,room.floorY+0.075,BACK_Z+0.015,room.width-0.08,0.15,0.035,'#f6f0e8',{castShadow:false,receiveShadow:true});
     skirt.userData.decor=true;
 
-    if(room.decor==='window'){
-      const frame=addBox(decorGroup,room.cx,room.floorY+1.48,BACK_Z+0.035,1.48,1.05,0.035,'#d99a91',{castShadow:false});
-      addBox(decorGroup,room.cx,room.floorY+1.48,BACK_Z+0.058,1.22,0.82,0.025,'#c8dde2',{castShadow:false});
-      addBox(decorGroup,room.cx,room.floorY+1.48,BACK_Z+0.078,0.045,0.82,0.02,'#f5efe8',{castShadow:false});
-      addBox(decorGroup,room.cx,room.floorY+1.48,BACK_Z+0.078,1.22,0.045,0.02,'#f5efe8',{castShadow:false});
-      frame.userData.decor=true;
-    }else if(room.decor==='gallery'){
-      const colours=['#799b91','#d79582','#cfbb79'];
-      [-0.72,0,0.72].forEach((dx,i)=>{
-        addBox(decorGroup,room.cx+dx,room.floorY+1.48+(i===1?0.12:0),BACK_Z+0.04,0.58,0.78,0.04,'#806e63',{castShadow:false});
-        addBox(decorGroup,room.cx+dx,room.floorY+1.48+(i===1?0.12:0),BACK_Z+0.065,0.50,0.70,0.025,'#f2ece3',{castShadow:false});
-        addBox(decorGroup,room.cx+dx,room.floorY+1.48+(i===1?0.12:0),BACK_Z+0.085,0.18,0.26,0.02,colours[i],{castShadow:false});
-      });
+    if(room.decor==='bedroom'){
+      addRoomWindow(room,{width:1.95,height:1.18,sill:0.94,curtains:true,curtainColor:'#d7a39b',panes:4});
+    }else if(room.decor==='kids'){
+      addRoomWindow(room,{width:1.68,height:1.10,sill:0.88,curtains:true,curtainColor:'#d9c0a6',panes:4});
+      addBox(decorGroup,room.cx-1.10,room.floorY+1.38,BACK_Z+0.04,0.58,0.78,0.04,'#806e63',{castShadow:false});
+      addBox(decorGroup,room.cx-1.10,room.floorY+1.38,BACK_Z+0.065,0.50,0.70,0.025,'#f2ece3',{castShadow:false});
+      addBox(decorGroup,room.cx-1.10,room.floorY+1.38,BACK_Z+0.085,0.18,0.26,0.02,'#7fa097',{castShadow:false});
     }else if(room.decor==='living'){
-      addBox(decorGroup,room.cx,room.floorY+1.65,BACK_Z+0.04,1.65,0.68,0.04,'#826f64',{castShadow:false});
-      addBox(decorGroup,room.cx,room.floorY+1.65,BACK_Z+0.065,1.55,0.58,0.025,'#f0e9df',{castShadow:false});
-      ['#e1a07f','#e8c46e','#7d9c8f','#829caf'].forEach((c,i)=>addBox(decorGroup,room.cx-0.55+i*0.36,room.floorY+1.65,BACK_Z+0.085,0.22,0.28+(i%2)*0.08,0.02,c,{castShadow:false}));
-    }else{
-      const coords=[[-1.5,1.7],[-0.9,1.42],[-0.2,1.82],[0.55,1.48],[1.2,1.75]];
-      coords.forEach((p,i)=>addBox(decorGroup,room.cx+p[0],room.floorY+p[1],BACK_Z+0.07,0.18,0.18,0.025,i%2?'#e0b867':'#d18f86',{castShadow:false}));
+      addRoomWindow(room,{width:2.95,height:1.36,sill:0.74,curtains:true,curtainColor:'#d3b59f',panes:6});
+      addBox(decorGroup,room.cx+1.06,room.floorY+1.60,BACK_Z+0.04,1.40,0.66,0.04,'#826f64',{castShadow:false});
+      addBox(decorGroup,room.cx+1.06,room.floorY+1.60,BACK_Z+0.065,1.30,0.56,0.025,'#f0e9df',{castShadow:false});
+      ['#e1a07f','#e8c46e','#7d9c8f','#829caf'].forEach((c,i)=>addBox(decorGroup,room.cx+0.58+i*0.26,room.floorY+1.60,BACK_Z+0.085,0.18,0.24+(i%2)*0.07,0.02,c,{castShadow:false}));
+    }else if(room.decor==='kitchen'){
+      addRoomWindow(room,{width:1.74,height:1.18,sill:0.96,curtains:false,panes:4});
+      addBox(decorGroup,room.cx,room.floorY+1.30,BACK_Z+0.04,1.08,0.82,0.04,'#7f7267',{castShadow:false});
+      addBox(decorGroup,room.cx,room.floorY+1.30,BACK_Z+0.065,0.96,0.70,0.025,'#f2ece3',{castShadow:false});
+      addBox(decorGroup,room.cx,room.floorY+1.30,BACK_Z+0.085,0.42,0.30,0.02,'#d7c57f',{castShadow:false});
     }
 
-    // Tag only this room's finish/decor with its local-light layer. The camera
-    // still sees layer 0, while room lamps can now cull every other room.
     houseGroup.children.slice(houseStart).forEach(obj=>enableRoomLayers(obj,room.id));
     decorGroup.children.slice(decorStart).forEach(obj=>enableRoomLayers(obj,room.id));
   }
@@ -745,64 +834,38 @@
     return mesh;
   }
 
-  function addDoorOpeningInZWall(floorY,centreZ,shell,trim,roomIds){
+  function addDoorOpeningInXWall(xCentre,floorY,centreZ,shell,trim,roomIds){
+    const x0=xCentre-WALL_T/2;
+    const x1=xCentre+WALL_T/2;
     const z0=centreZ-DOOR_OPEN_W/2;
     const z1=centreZ+DOOR_OPEN_W/2;
     const add=(...args)=>enableRoomLayers(addArchitectureBox(...args),roomIds);
-    add(-WALL_T/2,WALL_T/2,floorY,floorY+ROOM_H,BACK_Z,z0,shell);
-    add(-WALL_T/2,WALL_T/2,floorY,floorY+ROOM_H,z1,FRONT_Z,shell);
-    add(-WALL_T/2,WALL_T/2,floorY+DOOR_OPEN_H,floorY+ROOM_H,z0,z1,shell);
-    add(-WALL_T*0.82,WALL_T*0.82,floorY,floorY+DOOR_OPEN_H,z0-0.03,z0+0.03,trim,{castShadow:false});
-    add(-WALL_T*0.82,WALL_T*0.82,floorY,floorY+DOOR_OPEN_H,z1-0.03,z1+0.03,trim,{castShadow:false});
-    add(-WALL_T*0.82,WALL_T*0.82,floorY+DOOR_OPEN_H-0.03,floorY+DOOR_OPEN_H+0.03,z0,z1,trim,{castShadow:false});
+    add(x0,x1,floorY,floorY+ROOM_H,BACK_Z,z0,shell);
+    add(x0,x1,floorY,floorY+ROOM_H,z1,FRONT_Z,shell);
+    add(x0,x1,floorY+DOOR_OPEN_H,floorY+ROOM_H,z0,z1,shell);
+    add(x0-0.02,x1+0.02,floorY,floorY+DOOR_OPEN_H,z0-0.03,z0+0.03,trim,{castShadow:false});
+    add(x0-0.02,x1+0.02,floorY,floorY+DOOR_OPEN_H,z1-0.03,z1+0.03,trim,{castShadow:false});
+    add(x0-0.02,x1+0.02,floorY+DOOR_OPEN_H-0.03,floorY+DOOR_OPEN_H+0.03,z0,z1,trim,{castShadow:false});
   }
 
-  function addBedroomLandingPartition(shell,trim){
-    const doorX0=BEDROOM_DOOR_CENTRE_X-DOOR_OPEN_W/2;
-    const doorX1=BEDROOM_DOOR_CENTRE_X+DOOR_OPEN_W/2;
-    const stairGapX0=STAIR.x0-0.08;
-    const stairGapX1=STAIR.x1+0.12;
-    const z0=LANDING_FRONT_Z-WALL_T/2;
-    const z1=LANDING_FRONT_Z+WALL_T/2;
-    const add=(...args)=>enableRoomLayers(addArchitectureBox(...args),'bedroom');
-
-    // Full-height opening over the stair flight preserves headroom. A separate
-    // standard door farther inward connects the rear landing to the bedroom.
-    add(HOUSE_MIN_X,stairGapX0,UPPER_Y,UPPER_Y+ROOM_H,z0,z1,shell);
-    add(stairGapX1,doorX0,UPPER_Y,UPPER_Y+ROOM_H,z0,z1,shell);
-    add(doorX1,0,UPPER_Y,UPPER_Y+ROOM_H,z0,z1,shell);
-    add(doorX0,doorX1,UPPER_Y+DOOR_OPEN_H,UPPER_Y+ROOM_H,z0,z1,shell);
-
-    // Trim the bedroom doorway only; the stair opening stays deliberately open
-    // and is protected by the stair/landing balustrade instead.
-    add(doorX0-0.03,doorX0+0.03,UPPER_Y,UPPER_Y+DOOR_OPEN_H,z0-0.02,z1+0.02,trim,{castShadow:false});
-    add(doorX1-0.03,doorX1+0.03,UPPER_Y,UPPER_Y+DOOR_OPEN_H,z0-0.02,z1+0.02,trim,{castShadow:false});
-    add(doorX0,doorX1,UPPER_Y+DOOR_OPEN_H-0.03,UPPER_Y+DOOR_OPEN_H+0.03,z0-0.02,z1+0.02,trim,{castShadow:false});
-
-    // The bedroom-facing side receives the same wallpaper material as the room.
-    const wallMat=roomMaterials.get('bedroom:wall');
-    if(wallMat){
-      const finishZ=z1+0.018;
-      const finish=(a,b)=>{
-        if(b-a<0.04)return;
-        addArchitectureMaterialBox(a,b,UPPER_Y+0.01,UPPER_Y+ROOM_H-0.01,finishZ,finishZ+0.025,wallMat,'bedroom');
-        enableRoomLayers(addBox(decorGroup,(a+b)/2,UPPER_Y+0.075,finishZ+0.025,b-a-0.03,0.15,0.03,'#f6f0e8',{castShadow:false}),'bedroom');
-      };
-      finish(HOUSE_MIN_X+0.01,stairGapX0-0.02);
-      finish(stairGapX1+0.02,doorX0-0.02);
-      finish(doorX1+0.02,-0.01);
-      addArchitectureMaterialBox(doorX0-0.01,doorX1+0.01,UPPER_Y+DOOR_OPEN_H+0.02,UPPER_Y+ROOM_H-0.01,finishZ,finishZ+0.025,wallMat,'bedroom');
-    }
+  function addCoreWindow(floorY,opts={}){
+    const width=opts.width??0.92;
+    const height=opts.height??1.20;
+    const y=floorY+(opts.sill??1.02)+height/2;
+    const z=BACK_Z+0.040;
+    addBox(decorGroup,0,y,z,width+0.24,height+0.24,0.04,'#ccb8a8',{castShadow:false});
+    addBox(decorGroup,0,y,z+0.022,width,height,0.024,'#cfe1e6',{castShadow:false});
+    addBox(decorGroup,0,y,z+0.035,0.04,height,0.016,'#f7f2ec',{castShadow:false});
+    addBox(decorGroup,0,y,z+0.035,width,0.04,0.016,'#f7f2ec',{castShadow:false});
   }
 
-  function addHorizontalRail(x0,x1,y,z,color='#7b685a',roomIds=['hall','bedroom']){
+  function addHorizontalRail(x0,x1,y,z,color='#7b685a'){
     const len=Math.max(0.01,x1-x0);
     const rail=new THREE.Mesh(new THREE.CylinderGeometry(0.026,0.026,len,14),material(color,{roughness:0.9}));
     rail.rotation.z=Math.PI/2;
     rail.position.set((x0+x1)/2,y,z);
     rail.castShadow=true;
     houseGroup.add(rail);
-    enableRoomLayers(rail,roomIds);
     return rail;
   }
 
@@ -814,66 +877,54 @@
     rooms.forEach(buildRoom);
 
     const shell='#c9beb2', cut='#b8aa9d', trim='#efe6dd';
-    enableRoomLayers(addArchitectureBox(HOUSE_MIN_X-WALL_T,HOUSE_MIN_X,-0.16,HOUSE_H+0.18,BACK_Z-WALL_T,FRONT_Z+0.02,shell),['bedroom','hall']);
-    enableRoomLayers(addArchitectureBox(HOUSE_MAX_X,HOUSE_MAX_X+WALL_T,-0.16,HOUSE_H+0.18,BACK_Z-WALL_T,FRONT_Z+0.02,shell),['studio','living']);
+
+    enableRoomLayers(addArchitectureBox(HOUSE_MIN_X-WALL_T,HOUSE_MIN_X,-0.16,HOUSE_H+0.18,BACK_Z-WALL_T,FRONT_Z+0.02,shell),['bedroom','living']);
+    enableRoomLayers(addArchitectureBox(HOUSE_MAX_X,HOUSE_MAX_X+WALL_T,-0.16,HOUSE_H+0.18,BACK_Z-WALL_T,FRONT_Z+0.02,shell),['kids','kitchen']);
     enableRoomLayers(addArchitectureBox(HOUSE_MIN_X-WALL_T,HOUSE_MAX_X+WALL_T,-0.20,0,BACK_Z-WALL_T,FRONT_Z+0.02,cut),Object.keys(ROOM_LAYERS));
     enableRoomLayers(addArchitectureBox(HOUSE_MIN_X-WALL_T,HOUSE_MAX_X+WALL_T,HOUSE_H,HOUSE_H+0.22,BACK_Z-WALL_T,FRONT_Z+0.02,cut),Object.keys(ROOM_LAYERS));
 
-    // Upper-floor structure is split around the stairwell so there is a real
-    // opening, while the front strip forms a usable upstairs landing corridor.
-    enableRoomLayers(addArchitectureBox(HOUSE_MIN_X,STAIR.x0,ROOM_H,UPPER_Y,BACK_Z,FRONT_Z,cut),['bedroom','hall']);
-    enableRoomLayers(addArchitectureBox(STAIR.x1,0,ROOM_H,UPPER_Y,BACK_Z,FRONT_Z,cut),['bedroom','hall']);
-    enableRoomLayers(addArchitectureBox(0,HOUSE_MAX_X,ROOM_H,UPPER_Y,BACK_Z,FRONT_Z,cut),['studio','living']);
-    enableRoomLayers(addArchitectureBox(STAIR.x0,STAIR.x1,ROOM_H,UPPER_Y,BACK_Z,STAIR.z0,cut),['bedroom','hall']);
-    enableRoomLayers(addArchitectureBox(STAIR.x0,STAIR.x1,ROOM_H,UPPER_Y,STAIR.z1,FRONT_Z,cut),['bedroom','hall']);
+    // Central upper landing slab behind the stair opening.
+    addArchitectureBox(CORE_MIN_X,CORE_MAX_X,ROOM_H,UPPER_Y,BACK_Z,LANDING_FRONT_Z,cut);
 
-    // Downstairs circulation sits in front of the stair. Upstairs, both the
-    // bedroom door and the door into the right-hand room open from the landing.
-    addDoorOpeningInZWall(0,LOWER_DOOR_CENTRE_Z,shell,trim,['hall','living']);
-    addDoorOpeningInZWall(UPPER_Y,UPPER_DOOR_CENTRE_Z,shell,trim,['bedroom','studio']);
-    addBedroomLandingPartition(shell,trim);
+    // Core back walls for hall and landing.
+    addArchitectureBox(CORE_MIN_X,CORE_MAX_X,0,ROOM_H,BACK_Z-WALL_T,BACK_Z,shell);
+    addArchitectureBox(CORE_MIN_X,CORE_MAX_X,UPPER_Y,UPPER_Y+ROOM_H,BACK_Z-WALL_T,BACK_Z,shell);
+    addCoreWindow(0,{width:0.90,height:1.45,sill:0.78});
+    addCoreWindow(UPPER_Y,{width:1.05,height:1.05,sill:0.98});
+    addBox(decorGroup,0,0.075,BACK_Z+0.015,CORE_W-0.08,0.15,0.035,'#f6f0e8',{castShadow:false,receiveShadow:true});
+    addBox(decorGroup,0,UPPER_Y+0.075,BACK_Z+0.015,CORE_W-0.08,0.15,0.035,'#f6f0e8',{castShadow:false,receiveShadow:true});
 
-    // Straight domestic stair: low end at the open front of the hall, rising
-    // toward the rear landing. Running in depth keeps the central room doorway
-    // and the upstairs bedroom doorway completely clear.
+    // Interior walls between principal rooms and the central circulation module.
+    addDoorOpeningInXWall(CORE_MIN_X,0,LOWER_DOOR_CENTRE_Z,shell,trim,['living']);
+    addDoorOpeningInXWall(CORE_MAX_X,0,LOWER_DOOR_CENTRE_Z,shell,trim,['kitchen']);
+    addDoorOpeningInXWall(CORE_MIN_X,UPPER_Y,UPPER_DOOR_CENTRE_Z,shell,trim,['bedroom']);
+    addDoorOpeningInXWall(CORE_MAX_X,UPPER_Y,UPPER_DOOR_CENTRE_Z,shell,trim,['kids']);
+
+    // Switch to a dedicated central stair/hall/landing layout.
     const stairRise=UPPER_Y/STAIR.steps;
     for(let i=0;i<STAIR.steps;i++){
       const z1=STAIR.zBottom-i*STAIR.going;
       const z0=z1-STAIR.going-0.008;
       const h=(i+1)*stairRise;
-      enableRoomLayers(addArchitectureBox(STAIR.x0,STAIR.x1,0,h,z0,z1,'#b99372'),['hall','bedroom']);
+      addArchitectureBox(STAIR.x0,STAIR.x1,0,h,z0,z1,'#b99372');
     }
 
-    // Handrail follows the pitch on the inner/open side of the flight.
-    const railX=STAIR.x1+0.055;
+    // Soft stair cheek walls to make the circulation more self-contained.
+    addArchitectureBox(CORE_MIN_X,STAIR.x0-0.06,0,UPPER_Y,STAIR.zTop-0.10,FRONT_Z,'#d0c3b7');
+    addArchitectureBox(STAIR.x1+0.06,CORE_MAX_X,0,UPPER_Y,STAIR.zTop-0.10,FRONT_Z,'#d0c3b7');
+
+    const railX=STAIR.x1+0.08;
     const railHeight=0.86;
     for(let i=0;i<=STAIR.steps;i+=2){
       const z=STAIR.zBottom-Math.min(i,STAIR.steps)*STAIR.going;
       const baseY=Math.min(UPPER_Y,(i+0.25)*stairRise);
-      enableRoomLayers(addCylinder(houseGroup,railX,baseY,z,0.024,railHeight,'#7b685a',{castShadow:true}),['hall','bedroom']);
+      addCylinder(houseGroup,railX,baseY,z,0.024,railHeight,'#7b685a',{castShadow:true});
     }
-    const rail=addSoftPipe(
-      houseGroup,
-      [[railX,railHeight,STAIR.zBottom],[railX,UPPER_Y+railHeight,STAIR.zTop]],
-      0.032,
-      '#7b685a'
-    );
-    enableRoomLayers(rail,['hall','bedroom']);
-
-    // Guard the long inner edge of the upstairs opening, leaving the rear/top
-    // end open as the actual landing exit. A short front guard closes the
-    // opposite end of the stairwell.
-    const guardY=UPPER_Y+0.88;
-    const guardX=STAIR.x1+0.055;
-    for(let z=STAIR.zTop+0.34;z<=STAIR.zBottom+0.001;z+=0.72){
-      enableRoomLayers(addCylinder(houseGroup,guardX,UPPER_Y,Math.min(z,STAIR.zBottom),0.023,0.86,'#7b685a',{castShadow:true}),['hall','bedroom']);
+    addSoftPipe(houseGroup,[[railX,railHeight,STAIR.zBottom],[railX,UPPER_Y+railHeight,STAIR.zTop]],0.032,'#7b685a');
+    for(let x=STAIR.x0-0.02;x<=STAIR.x1+0.001;x+=0.36){
+      addCylinder(houseGroup,Math.min(x,STAIR.x1),UPPER_Y,LANDING_FRONT_Z+0.055,0.023,0.86,'#7b685a',{castShadow:true});
     }
-    const longGuard=addSoftPipe(houseGroup,[[guardX,guardY,STAIR.zTop+0.30],[guardX,guardY,STAIR.zBottom]],0.032,'#7b685a');
-    enableRoomLayers(longGuard,['hall','bedroom']);
-    for(let x=STAIR.x0+0.08;x<=STAIR.x1+0.001;x+=0.38){
-      enableRoomLayers(addCylinder(houseGroup,Math.min(x,STAIR.x1),UPPER_Y,STAIR.zBottom+0.055,0.023,0.86,'#7b685a',{castShadow:true}),['hall','bedroom']);
-    }
-    addHorizontalRail(STAIR.x0+0.06,STAIR.x1,guardY,STAIR.zBottom+0.055);
+    addHorizontalRail(STAIR.x0-0.02,STAIR.x1,UPPER_Y+0.88,LANDING_FRONT_Z+0.055);
 
     invalidateShadows();
   }
@@ -1053,33 +1104,9 @@
     const halfX=(Math.abs(Math.cos(a))*fw+Math.abs(Math.sin(a))*fd)/2;
     const halfZ=(Math.abs(Math.sin(a))*fw+Math.abs(Math.cos(a))*fd)/2;
     item.x=clamp(item.x,room.minX+halfX+0.08,room.maxX-halfX-0.08);
-    let minZ=BACK_Z+halfZ+0.10;
+    const minZ=BACK_Z+halfZ+0.10;
     const maxZ=FRONT_Z-halfZ-0.12;
-
-    // Upstairs furniture belongs in the bedroom, not on the rear landing.
-    if(item.room==='bedroom') minZ=Math.max(minZ,LANDING_FRONT_Z+WALL_T/2+halfZ+0.10);
     item.z=clamp(item.z,Math.min(minZ,maxZ),maxZ);
-
-    // The stairwell is a genuine opening in the bedroom floor. Furniture that
-    // would overlap it is nudged inward onto usable floor.
-    if(item.room==='bedroom'){
-      const overlapsX=item.x+halfX>STAIR.x0-0.06 && item.x-halfX<STAIR.x1+0.06;
-      const overlapsZ=item.z+halfZ>STAIR.z0-0.06 && item.z-halfZ<STAIR.z1+0.06;
-      if(overlapsX&&overlapsZ){
-        item.x=clamp(STAIR.x1+halfX+0.12,room.minX+halfX+0.08,room.maxX-halfX-0.08);
-      }
-    }
-
-    // Downstairs hall furniture is kept clear of the full stair run. Because
-    // the flight sits against the outside wall, displaced items are nudged
-    // inward rather than blocking the approach to the bottom step.
-    if(item.room==='hall'){
-      const overlapsX=item.x+halfX>STAIR.x0-0.08 && item.x-halfX<STAIR.x1+0.08;
-      const overlapsZ=item.z+halfZ>STAIR.z0-0.08 && item.z-halfZ<STAIR.z1+0.08;
-      if(overlapsX&&overlapsZ){
-        item.x=clamp(STAIR.x1+halfX+0.16,room.minX+halfX+0.08,room.maxX-halfX-0.08);
-      }
-    }
   }
 
   function clampSupportedItem(item){
@@ -1113,13 +1140,14 @@
   function updateActiveRoom(force=false){
     const x=state.camera.x;
     const upstairs=state.camera.y>UPPER_Y-0.25;
-    const roomId=upstairs?(x<0?'bedroom':'studio'):(x<0?'hall':'living');
+    const roomId=upstairs?(x<0?'bedroom':'kids'):(x<0?'living':'kitchen');
     if(!force&&roomId===activeRoomId)return;
     activeRoomId=roomId;
     roomLabel.textContent=roomById(activeRoomId).name;
     buildSwatches(wallSwatches,wallPalette,'wall');
     buildSwatches(floorSwatches,floorPalette,'floor');
     buildWallpaperSwatches();
+    buildFloorTextureSwatches();
     updateLocalLightShadows();
   }
 
@@ -1518,7 +1546,9 @@
       b.addEventListener('click',()=>{
         style[key]=col;
         const mat=roomMaterials.get(`${activeRoomId}:${key}`);
-        if(key==='wall')applyRoomWallFinish(activeRoomId);else if(mat)mat.color.set(col);
+        if(key==='wall')applyRoomWallFinish(activeRoomId);
+        else if(key==='floor')applyRoomFloorFinish(activeRoomId);
+        else if(mat)mat.color.set(col);
         [...holder.children].forEach(x=>x.classList.toggle('active',x===b));save();render();
       });
       holder.appendChild(b);
@@ -1547,6 +1577,31 @@
         save();render();
       });
       wallpaperSwatches.appendChild(b);
+    });
+  }
+
+  function buildFloorTextureSwatches(){
+    if(!floorTextureSwatches)return;
+    const style=state.rooms[activeRoomId];
+    floorTextureSwatches.innerHTML='';
+    floorTexturePatterns.forEach(pattern=>{
+      const b=document.createElement('button');
+      b.type='button';b.className='room-pattern-swatch';
+      b.dataset.pattern=pattern.id;b.setAttribute('aria-label',pattern.name);b.title=pattern.name;
+      if(pattern.id==='plank')b.style.backgroundImage='repeating-linear-gradient(90deg,#e6dccf 0 11px,#cdbca6 11px 13px)';
+      else if(pattern.id==='herringbone')b.style.backgroundImage='repeating-linear-gradient(45deg,#e5d8c7 0 8px,#cdbca6 8px 10px,#ede3d7 10px 18px,#cdbca6 18px 20px)';
+      else if(pattern.id==='tile')b.style.backgroundImage='linear-gradient(#d0cbc5 2px,transparent 2px),linear-gradient(90deg,#d0cbc5 2px,transparent 2px)';
+      else if(pattern.id==='checker')b.style.backgroundImage='linear-gradient(45deg,#e9dfd0 25%,transparent 25%,transparent 75%,#e9dfd0 75%),linear-gradient(45deg,#d8cec0 25%,transparent 25%,transparent 75%,#d8cec0 75%)';
+      else if(pattern.id==='terrazzo')b.style.backgroundImage='radial-gradient(circle at 22% 28%,#d8b6b6 0 3px,transparent 4px),radial-gradient(circle at 70% 34%,#bac6d8 0 3px,transparent 4px),radial-gradient(circle at 58% 72%,#b0c2b4 0 3px,transparent 4px),radial-gradient(circle at 34% 68%,#d8c3a9 0 3px,transparent 4px)';
+      else b.textContent='—';
+      if((style.floorTexture||'plain')===pattern.id)b.classList.add('active');
+      b.addEventListener('click',()=>{
+        style.floorTexture=pattern.id;
+        applyRoomFloorFinish(activeRoomId);
+        [...floorTextureSwatches.children].forEach(x=>x.classList.toggle('active',x===b));
+        save();render();
+      });
+      floorTextureSwatches.appendChild(b);
     });
   }
 
@@ -1580,22 +1635,24 @@
     try{
       const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return;
       const parsed=JSON.parse(raw);if(!parsed||!Array.isArray(parsed.items))return;
-      const roomState=Object.fromEntries(rooms.map(r=>[r.id,{wall:r.wall,floor:r.floor,wallpaper:r.wallpaper}]));
+      const roomState=Object.fromEntries(rooms.map(r=>[r.id,{wall:r.wall,floor:r.floor,wallpaper:r.wallpaper,floorTexture:r.floorTexture}]));
       rooms.forEach(r=>{
         if(parsed.rooms&&parsed.rooms[r.id]){
           roomState[r.id].wall=parsed.rooms[r.id].wall||r.wall;
           roomState[r.id].floor=parsed.rooms[r.id].floor||r.floor;
           const wp=parsed.rooms[r.id].wallpaper;
           roomState[r.id].wallpaper=wallpaperPatterns.some(p=>p.id===wp)?wp:r.wallpaper;
+          const ft=parsed.rooms[r.id].floorTexture;
+          roomState[r.id].floorTexture=floorTexturePatterns.some(p=>p.id===ft)?ft:r.floorTexture;
         }
       });
       state={
         lighting:parsed.lighting==='evening'?'evening':'day', rooms:roomState,
         items:parsed.items.filter(i=>templateById(i.type)&&rooms.some(r=>r.id===i.room)).slice(0,120),
         camera:{
-          x:clamp(Number(parsed.camera?.x)||2.2,HOUSE_MIN_X+0.75,HOUSE_MAX_X-0.75),
+          x:clamp(Number(parsed.camera?.x)||-3.9,HOUSE_MIN_X+0.75,HOUSE_MAX_X-0.75),
           y:clamp(Number(parsed.camera?.y)||1.2,0.85,HOUSE_H-0.35),
-          zoom:clamp(Number(parsed.camera?.zoom)||1.35,0.82,3.0)
+          zoom:clamp(Number(parsed.camera?.zoom)||1.22,0.82,3.0)
         }
       };
       validateSupports();
