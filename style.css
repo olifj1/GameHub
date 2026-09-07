@@ -10140,7 +10140,7 @@ body[data-game-id="game-14"] .attack-slot-copy small{font-size:6.8px}
 .room-selection-info .room-light-control label strong{font-size:9px;letter-spacing:0;color:#443d38;}
 .room-selection-info .room-light-control input[type="range"]{width:min(150px,100%);min-width:75px;height:16px;accent-color:#a67c61;}
 
-/* My House v1.8.20 — room-local shadows, wallpaper and dressing controls */
+/* My House v1.8.21 — room-local shadows, wallpaper and dressing controls */
 .room-perf-badge{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:2;pointer-events:none;padding:5px 8px;border:1px solid rgba(53,47,43,.16);border-radius:999px;background:rgba(250,247,242,.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);color:#655c56;font-size:8px;font-weight:800;letter-spacing:.025em;white-space:nowrap;}
 .room-selection-info .room-light-control{flex-wrap:wrap;row-gap:4px;}
 .room-shadow-toggle{min-height:25px;border:1px solid rgba(74,65,59,.34);border-radius:999px;background:#f8f2ea;color:#544b45;padding:0 8px;font:inherit;font-size:7px;font-weight:900;letter-spacing:.055em;white-space:nowrap;}
@@ -10158,4 +10158,43 @@ body[data-game-id="game-14"] .attack-slot-copy small{font-size:6.8px}
   .room-wallpaper-row{grid-template-columns:62px minmax(0,1fr);}
   .room-wallpaper-row>span{font-size:8px;}
   .room-pattern-swatch{flex-basis:31px;width:31px;height:31px;}
+}
+
+
+/* My House v1.8.21 — compact mobile layout so the texture controls stay on screen */
+@media (max-width:430px) and (max-height:900px){
+  body[data-game-id="game-15"] .room-header{margin-bottom:6px;}
+  body[data-game-id="game-15"] #room-canvas{min-height:320px;max-height:42vh;}
+  body[data-game-id="game-15"] .room-stage-hint{bottom:7px;font-size:11px;padding:6px 10px;max-width:92%;}
+  body[data-game-id="game-15"] .room-selection-bar{margin-top:6px;min-height:46px;padding:6px 7px 6px 10px;}
+  body[data-game-id="game-15"] .room-selection-info>strong{font-size:13px;}
+  body[data-game-id="game-15"] .room-selection-actions{gap:6px;}
+  body[data-game-id="game-15"] .room-selection-actions button{min-height:34px;font-size:11px;padding:0 9px;border-radius:10px;}
+  body[data-game-id="game-15"] .room-inventory-panel,
+  body[data-game-id="game-15"] .room-decor-panel{margin-top:6px;padding:7px 8px;border-radius:14px;}
+  body[data-game-id="game-15"] .room-panel-heading{margin-bottom:6px;}
+  body[data-game-id="game-15"] .room-panel-heading span,
+  body[data-game-id="game-15"] .room-swatch-row>span{font-size:10px;}
+  body[data-game-id="game-15"] .room-panel-heading small{font-size:10px;}
+  body[data-game-id="game-15"] .room-item-card{flex-basis:68px;min-height:72px;padding:5px 4px 4px;}
+  body[data-game-id="game-15"] .room-item-card strong{font-size:10px;}
+  body[data-game-id="game-15"] .room-item-card small{font-size:8px;}
+  body[data-game-id="game-15"] .room-item-glyph{width:32px;height:32px;font-size:18px;}
+  body[data-game-id="game-15"] .room-carousel-shell{grid-template-columns:24px minmax(0,1fr) 24px;gap:4px;}
+  body[data-game-id="game-15"] .room-carousel-arrow{font-size:23px;border-radius:9px;}
+  body[data-game-id="game-15"] .room-swatch-row{grid-template-columns:62px minmax(0,1fr);gap:6px;}
+  body[data-game-id="game-15"] .room-swatches{gap:6px;}
+  body[data-game-id="game-15"] .room-swatch{width:28px;height:28px;}
+  body[data-game-id="game-15"] .room-pattern-swatches{gap:6px;padding:4px 3px;}
+  body[data-game-id="game-15"] .room-pattern-swatch{flex-basis:28px;width:28px;height:28px;border-radius:8px;}
+  body[data-game-id="game-15"] .room-wallpaper-row{grid-template-columns:70px minmax(0,1fr);}
+  body[data-game-id="game-15"] .room-wallpaper-row>span{font-size:8px;letter-spacing:.06em;}
+}
+
+@media (max-width:430px) and (max-height:780px){
+  body[data-game-id="game-15"] #room-canvas{min-height:290px;max-height:38vh;}
+  body[data-game-id="game-15"] .room-selection-actions button span{display:none;}
+  body[data-game-id="game-15"] .room-stage-toolbar span,
+  body[data-game-id="game-15"] .room-stage-toolbar button{min-height:29px;font-size:9px;}
+  body[data-game-id="game-15"] .room-perf-badge{display:none;}
 }

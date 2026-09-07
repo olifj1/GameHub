@@ -31,7 +31,7 @@
   }
 
   const THREE = window.THREE;
-  const STORAGE_KEY = 'gamehub-my-house-webgl-v5';
+  const STORAGE_KEY = 'gamehub-my-house-webgl-v6';
   const MODEL_SCALE = 0.62;
   const TAU = Math.PI * 2;
 
@@ -55,11 +55,11 @@
   const FRONT_Z = ROOM_D / 2;
   const DOOR_OPEN_W = 0.826;
   const DOOR_OPEN_H = 2.04;
-  const LOWER_DOOR_CENTRE_Z = 0.62;
-  const UPPER_DOOR_CENTRE_Z = -1.42;
+  const LOWER_DOOR_CENTRE_Z = -0.72;
+  const UPPER_DOOR_CENTRE_Z = -0.54;
   const LAMP_DEFAULT_LEVEL = 0.28;
   const LAMP_MAX_INTENSITY = 6.2;
-  const LANDING_FRONT_Z = -1.08;
+  const LANDING_FRONT_Z = -0.18;
 
   // The central hall contains a straight stair rising toward a rear landing.
   // This is simpler than the concept image's wraparound stair, but it creates
@@ -67,9 +67,9 @@
   const STAIR = {
     x0: -0.54,
     width: 1.08,
-    going: 0.285,
-    zBottom: FRONT_Z - 0.40,
-    steps: 14
+    going: 0.245,
+    zBottom: FRONT_Z - 0.52,
+    steps: 13
   };
   STAIR.x1 = STAIR.x0 + STAIR.width;
   STAIR.zTop = STAIR.zBottom - STAIR.going * STAIR.steps;
@@ -84,6 +84,7 @@
     {id:'plain',name:'Plain'},
     {id:'stripe',name:'Soft stripe'},
     {id:'dot',name:'Confetti dots'},
+    {id:'stars',name:'Little stars'},
     {id:'arch',name:'Little arches'},
     {id:'sprig',name:'Leaf sprigs'},
     {id:'check',name:'Tiny check'}
@@ -98,10 +99,10 @@
   ];
 
   const rooms = [
-    { id:'bedroom', name:'Bedroom', minX:HOUSE_MIN_X, maxX:CORE_MIN_X, floorY:UPPER_Y, wall:wallPalette[0], floor:floorPalette[0], wallpaper:'sprig', floorTexture:'plank', decor:'bedroom' },
-    { id:'kids', name:'Kids room', minX:CORE_MAX_X, maxX:HOUSE_MAX_X, floorY:UPPER_Y, wall:wallPalette[1], floor:floorPalette[2], wallpaper:'dot', floorTexture:'checker', decor:'kids' },
-    { id:'living', name:'Living room', minX:HOUSE_MIN_X, maxX:CORE_MIN_X, floorY:0, wall:wallPalette[2], floor:floorPalette[0], wallpaper:'plain', floorTexture:'herringbone', decor:'living' },
-    { id:'kitchen', name:'Kitchen', minX:CORE_MAX_X, maxX:HOUSE_MAX_X, floorY:0, wall:wallPalette[3], floor:floorPalette[4], wallpaper:'check', floorTexture:'tile', decor:'kitchen' }
+    { id:'bedroom', name:'Bedroom', minX:HOUSE_MIN_X, maxX:CORE_MIN_X, floorY:UPPER_Y, wall:wallPalette[0], floor:floorPalette[0], wallpaper:'plain', floorTexture:'plank', decor:'bedroom' },
+    { id:'kids', name:'Kids room', minX:CORE_MAX_X, maxX:HOUSE_MAX_X, floorY:UPPER_Y, wall:'#cfd8df', floor:floorPalette[2], wallpaper:'stars', floorTexture:'plank', decor:'kids' },
+    { id:'living', name:'Living room', minX:HOUSE_MIN_X, maxX:CORE_MIN_X, floorY:0, wall:'#f0e3d6', floor:floorPalette[0], wallpaper:'plain', floorTexture:'plank', decor:'living' },
+    { id:'kitchen', name:'Kitchen', minX:CORE_MAX_X, maxX:HOUSE_MAX_X, floorY:0, wall:'#eef0eb', floor:floorPalette[0], wallpaper:'plain', floorTexture:'plank', decor:'kitchen' }
   ];
 
   rooms.forEach(room => {
@@ -351,7 +352,7 @@
 
   const camera = new THREE.PerspectiveCamera(31, 1, 0.1, 60);
   camera.layers.enableAll();
-  const cameraOffset = new THREE.Vector3(0, 2.72, 13.1);
+  const cameraOffset = new THREE.Vector3(0, 1.2, 13.85);
   const raycaster = new THREE.Raycaster();
   const pointerNdc = new THREE.Vector2();
   const plane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
@@ -461,6 +462,21 @@
     }else if(patternId==='dot'){
       ctx.fillStyle='#d7d2cb';
       [[20,22],[64,50],[108,22],[20,90],[64,118],[108,90]].forEach(([x,y])=>{ctx.beginPath();ctx.arc(x,y,5,0,TAU);ctx.fill();});
+    }else if(patternId==='stars'){
+      ctx.fillStyle='#dce6ee';ctx.fillRect(0,0,128,128);
+      ctx.fillStyle='#f6edd7';
+      const stars=[[18,20],[56,18],[98,26],[32,64],[84,62],[18,104],[64,100],[110,94]];
+      stars.forEach(([x,y])=>{
+        ctx.beginPath();
+        for(let i=0;i<5;i++){
+          const a=-Math.PI/2+i*TAU/5;
+          const b=a+TAU/10;
+          if(i===0)ctx.moveTo(x+Math.cos(a)*7,y+Math.sin(a)*7);
+          else ctx.lineTo(x+Math.cos(a)*7,y+Math.sin(a)*7);
+          ctx.lineTo(x+Math.cos(b)*3.2,y+Math.sin(b)*3.2);
+        }
+        ctx.closePath();ctx.fill();
+      });
     }else if(patternId==='arch'){
       ctx.strokeStyle='#d5d0c8';ctx.lineWidth=7;
       for(let y=34;y<150;y+=48){
@@ -809,15 +825,37 @@
       addBox(decorGroup,room.cx-1.10,room.floorY+1.38,BACK_Z+0.065,0.50,0.70,0.025,'#f2ece3',{castShadow:false});
       addBox(decorGroup,room.cx-1.10,room.floorY+1.38,BACK_Z+0.085,0.18,0.26,0.02,'#7fa097',{castShadow:false});
     }else if(room.decor==='living'){
-      addRoomWindow(room,{width:2.95,height:1.36,sill:0.74,curtains:true,curtainColor:'#d3b59f',panes:6});
+      addRoomWindow(room,{width:3.02,height:1.40,sill:0.76,curtains:true,curtainColor:'#d3b59f',panes:6});
       addBox(decorGroup,room.cx+1.06,room.floorY+1.60,BACK_Z+0.04,1.40,0.66,0.04,'#826f64',{castShadow:false});
       addBox(decorGroup,room.cx+1.06,room.floorY+1.60,BACK_Z+0.065,1.30,0.56,0.025,'#f0e9df',{castShadow:false});
       ['#e1a07f','#e8c46e','#7d9c8f','#829caf'].forEach((c,i)=>addBox(decorGroup,room.cx+0.58+i*0.26,room.floorY+1.60,BACK_Z+0.085,0.18,0.24+(i%2)*0.07,0.02,c,{castShadow:false}));
     }else if(room.decor==='kitchen'){
-      addRoomWindow(room,{width:1.74,height:1.18,sill:0.96,curtains:false,panes:4});
-      addBox(decorGroup,room.cx,room.floorY+1.30,BACK_Z+0.04,1.08,0.82,0.04,'#7f7267',{castShadow:false});
-      addBox(decorGroup,room.cx,room.floorY+1.30,BACK_Z+0.065,0.96,0.70,0.025,'#f2ece3',{castShadow:false});
-      addBox(decorGroup,room.cx,room.floorY+1.30,BACK_Z+0.085,0.42,0.30,0.02,'#d7c57f',{castShadow:false});
+      addRoomWindow(room,{width:1.92,height:1.20,sill:0.98,curtains:false,panes:4,offsetX:0.55});
+      const left=room.minX+0.34, right=room.maxX-0.28, back=BACK_Z+0.22;
+      const baseCol='#b8c3aa', counterCol='#dbc5aa', topCol='#a9b59b';
+      // Back run of lower cabinets and worktop.
+      addBox(decorGroup,room.cx+0.18,room.floorY+0.42,back,room.width-0.78,0.82,0.58,baseCol,{castShadow:false,receiveShadow:true});
+      addBox(decorGroup,room.cx+0.18,room.floorY+0.86,back,room.width-0.70,0.08,0.64,counterCol,{castShadow:false,receiveShadow:true});
+      // Right-hand return run.
+      addBox(decorGroup,right-0.34,room.floorY+0.42,-0.20,0.68,0.82,ROOM_D-1.36,baseCol,{castShadow:false,receiveShadow:true});
+      addBox(decorGroup,right-0.34,room.floorY+0.86,-0.20,0.76,0.08,ROOM_D-1.28,counterCol,{castShadow:false,receiveShadow:true});
+      // Upper cabinets on back wall, split to leave the window readable.
+      addBox(decorGroup,room.cx-1.22,room.floorY+1.86,BACK_Z+0.12,1.16,0.82,0.34,topCol,{castShadow:false});
+      addBox(decorGroup,room.cx+1.48,room.floorY+1.86,BACK_Z+0.12,1.36,0.82,0.34,topCol,{castShadow:false});
+      addBox(decorGroup,right-0.36,room.floorY+1.74,-1.10,0.52,0.66,1.56,topCol,{castShadow:false});
+      // Simple sink and backsplash.
+      addBox(decorGroup,room.cx+0.58,room.floorY+0.89,back+0.03,0.84,0.03,0.34,'#efe7dc',{castShadow:false});
+      addBox(decorGroup,room.cx+0.58,room.floorY+0.84,back+0.05,0.58,0.10,0.28,'#f7f4ef',{castShadow:false});
+      addBox(decorGroup,room.cx+0.58,room.floorY+1.10,back+0.10,0.04,0.22,0.04,'#7a685e',{castShadow:false});
+      addBox(decorGroup,room.cx+0.58,room.floorY+1.18,back+0.12,0.16,0.03,0.05,'#7a685e',{castShadow:false});
+      addBox(decorGroup,room.cx+0.18,room.floorY+1.25,BACK_Z+0.03,room.width-0.84,0.62,0.03,'#f3ece2',{castShadow:false});
+      // Fridge and open shelf for extra kitchen language.
+      addBox(decorGroup,left+0.42,room.floorY+1.02,-1.35,0.72,2.04,0.78,'#c8d1d6',{castShadow:false,receiveShadow:true});
+      addBox(decorGroup,left+0.46,room.floorY+1.56,-0.08,0.56,0.10,1.12,'#9f7f57',{castShadow:false});
+      addBox(decorGroup,left+0.46,room.floorY+1.86,-0.08,0.56,0.10,1.12,'#9f7f57',{castShadow:false});
+      addBox(decorGroup,left+0.46,room.floorY+1.71,-0.08,0.52,0.20,1.02,'#d4b995',{castShadow:false});
+      addBox(decorGroup,left+0.42,room.floorY+1.36,-1.02,0.10,0.54,0.02,'#b59e86',{castShadow:false});
+      addBox(decorGroup,left+0.42,room.floorY+0.80,-1.02,0.10,0.54,0.02,'#b59e86',{castShadow:false});
     }
 
     houseGroup.children.slice(houseStart).forEach(obj=>enableRoomLayers(obj,room.id));
@@ -1565,6 +1603,7 @@
       b.dataset.pattern=pattern.id;b.setAttribute('aria-label',pattern.name);b.title=pattern.name;
       if(pattern.id==='stripe')b.style.backgroundImage='repeating-linear-gradient(90deg,#f8f3ed 0 8px,#d9d3cc 8px 12px)';
       else if(pattern.id==='dot')b.style.backgroundImage='radial-gradient(circle at 30% 30%,#cfc8bf 0 3px,transparent 4px),radial-gradient(circle at 72% 68%,#cfc8bf 0 3px,transparent 4px)';
+      else if(pattern.id==='stars')b.style.background='linear-gradient(#dbe5ee,#dbe5ee)', b.style.backgroundImage='radial-gradient(circle at 20% 28%,#f6edd7 0 3px,transparent 4px),radial-gradient(circle at 55% 24%,#f6edd7 0 3px,transparent 4px),radial-gradient(circle at 78% 52%,#f6edd7 0 3px,transparent 4px),radial-gradient(circle at 36% 74%,#f6edd7 0 3px,transparent 4px)';
       else if(pattern.id==='arch')b.style.backgroundImage='radial-gradient(ellipse at 50% 72%,transparent 0 9px,#d2cbc3 10px 12px,transparent 13px)';
       else if(pattern.id==='sprig')b.style.backgroundImage='radial-gradient(ellipse at 35% 40%,#c9d0c6 0 4px,transparent 5px),radial-gradient(ellipse at 65% 62%,#c9d0c6 0 4px,transparent 5px)';
       else if(pattern.id==='check')b.style.backgroundImage='linear-gradient(45deg,#ded8d1 25%,transparent 25%,transparent 75%,#ded8d1 75%),linear-gradient(45deg,#ded8d1 25%,transparent 25%,transparent 75%,#ded8d1 75%)';
