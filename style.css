@@ -10098,7 +10098,7 @@ body[data-game-id="game-14"] .attack-slot-copy small{font-size:6.8px}
 }
 
 /* ============================================================
-   My House — cohesive four-room dollhouse prototype (v1.8.16)
+   My House — WebGL foundation prototype (v1.8.17)
    ============================================================ */
 .room-stage-card{background:#dcd3c9;}
 #room-canvas{min-height:410px;max-height:590px;}
@@ -10117,3 +10117,8 @@ body[data-game-id="game-14"] .attack-slot-copy small{font-size:6.8px}
   .room-stage-toolbar span{padding:0 10px;}
   .room-stage-toolbar button{min-width:70px;padding:0 9px;}
 }
+
+
+/* v1.8.17 WebGL interaction */
+#room-canvas{cursor:grab;-webkit-user-select:none;user-select:none;}
+#room-canvas:active{cursor:grabbing;}

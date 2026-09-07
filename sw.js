@@ -1,4 +1,4 @@
-const CACHE = "gamehub-v1.8.16";
+const CACHE = "gamehub-v1.8.17";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -48,8 +48,17 @@ const APP_SHELL = [
   "./tower-terrain.png"
 ];
 
+const THREE_URL = "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.1/three.min.js";
+
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(APP_SHELL)));
+  event.waitUntil(
+    caches.open(CACHE).then(async cache => {
+      await cache.addAll(APP_SHELL);
+      // Three.js is cached separately so a temporary CDN failure cannot block
+      // the rest of the GameHub service-worker update.
+      try { await cache.add(THREE_URL); } catch (_) {}
+    })
+  );
   self.skipWaiting();
 });
 
@@ -67,7 +76,7 @@ self.addEventListener("fetch", event => {
   event.respondWith(
     fetch(event.request, { cache: "no-store" })
       .then(response => {
-        if (response && response.ok) {
+        if (response && (response.ok || response.type === "opaque")) {
           const copy = response.clone();
           caches.open(CACHE).then(cache => cache.put(event.request, copy));
         }
