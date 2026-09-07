@@ -178,7 +178,7 @@ window.APP_CONFIG = {
       "description": "Furnish a four-room 3D dollhouse, dress the rooms and make it your own.",
       "icon": "⌂",
       "enabled": true,
-      "path": "game-15.html?v=1.8.22"
+      "path": "game-15.html?v=1.8.23"
     }
   ]
 };

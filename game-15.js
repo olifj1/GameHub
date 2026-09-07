@@ -31,19 +31,20 @@
   }
 
   const THREE = window.THREE;
-  const STORAGE_KEY = 'gamehub-my-house-webgl-v7';
+  const STORAGE_KEY = 'gamehub-my-house-webgl-v8';
   const MODEL_SCALE = 0.62;
   const TAU = Math.PI * 2;
 
-  // More generous proportions and a central circulation core inspired by the
-  // concept reference. The four principal rooms now flank a dedicated hall /
-  // stair / landing module, which is the groundwork for a more modular house.
-  const SIDE_ROOM_W = 5.55;
-  const CORE_W = 2.55;
-  const ROOM_D = 5.80;
-  const ROOM_H = 2.58;
-  const SLAB_H = 0.24;
-  const WALL_T = 0.11;
+  // Reference-derived house proportions (measured from the pastel dollhouse
+  // concept): main room width ≈ 1.78 × clear room height, and the central
+  // circulation core ≈ half a main-room width.  We keep metre-like units so
+  // furniture can stay grounded in believable real-world scale.
+  const ROOM_H = 2.50;
+  const SIDE_ROOM_W = 4.45;
+  const CORE_W = 2.22;
+  const ROOM_D = 4.20;
+  const SLAB_H = 0.20;
+  const WALL_T = 0.12;
   const UPPER_Y = ROOM_H + SLAB_H;
   const HOUSE_W = SIDE_ROOM_W * 2 + CORE_W;
   const HOUSE_H = UPPER_Y + ROOM_H;
@@ -55,28 +56,31 @@
   const FRONT_Z = ROOM_D / 2;
   const DOOR_OPEN_W = 0.826;
   const DOOR_OPEN_H = 2.04;
-  const LOWER_DOOR_CENTRE_Z = -0.72;
-  const UPPER_DOOR_CENTRE_Z = -0.54;
   const LAMP_DEFAULT_LEVEL = 0.28;
   const LAMP_MAX_INTENSITY = 6.2;
-  const LANDING_FRONT_Z = -0.18;
 
-  // The central hall contains a straight stair rising toward a rear landing.
-  // This is simpler than the concept image's wraparound stair, but it creates
-  // the right architectural idea: circulation as its own reusable module.
+  // Compact dog-leg / return stair kept in the rear half of the central core,
+  // leaving a real hall and upper landing at the open front of the dollhouse.
   const STAIR = {
-    x0: -0.50,
-    width: 1.00,
-    going: 0.245,
-    zBottom: 0.68,
-    steps: 13
+    stepsPerFlight: 7,
+    going: 0.25,
+    frontZ: 0.42,
+    landingDepth: 0.48,
+    sideInset: 0.12,
+    centreGap: 0.08
   };
-  STAIR.x1 = STAIR.x0 + STAIR.width;
-  STAIR.zTop = STAIR.zBottom - STAIR.going * STAIR.steps;
-  STAIR.z0 = STAIR.zTop;
-  STAIR.z1 = STAIR.zBottom;
+  STAIR.totalSteps = STAIR.stepsPerFlight * 2;
+  STAIR.rise = UPPER_Y / STAIR.totalSteps;
+  STAIR.midY = STAIR.rise * STAIR.stepsPerFlight;
+  STAIR.flightBackZ = STAIR.frontZ - STAIR.going * STAIR.stepsPerFlight;
+  STAIR.landingBackZ = STAIR.flightBackZ - STAIR.landingDepth;
+  STAIR.leftX0 = CORE_MIN_X + STAIR.sideInset;
+  STAIR.leftX1 = -STAIR.centreGap;
+  STAIR.rightX0 = STAIR.centreGap;
+  STAIR.rightX1 = CORE_MAX_X - STAIR.sideInset;
+  const CORE_DRESS_MIN_Z = 0.68;
 
-  const ROOM_LAYERS = { bedroom:1, kids:2, living:3, kitchen:4 };
+  const ROOM_LAYERS = { bedroom:1, landing:2, kids:3, living:4, hall:5, kitchen:6 };
 
   const wallPalette = ['#f1dfd6', '#eadcc9', '#d8e6dc', '#dbe3ef', '#ead9e5', '#efe5bf'];
   const floorPalette = ['#c8a883', '#b9906c', '#d2c3ae', '#9ca99c', '#b4a297', '#c9b596'];
@@ -100,8 +104,10 @@
 
   const rooms = [
     { id:'bedroom', name:'Bedroom', minX:HOUSE_MIN_X, maxX:CORE_MIN_X, floorY:UPPER_Y, wall:wallPalette[0], floor:floorPalette[0], wallpaper:'plain', floorTexture:'plank', decor:'bedroom' },
+    { id:'landing', name:'Landing', minX:CORE_MIN_X, maxX:CORE_MAX_X, floorY:UPPER_Y, wall:'#e9e0d5', floor:floorPalette[0], wallpaper:'plain', floorTexture:'plank', core:true, allowWall:false, placeMinZ:CORE_DRESS_MIN_Z, placeMaxZ:FRONT_Z-0.10 },
     { id:'kids', name:'Kids room', minX:CORE_MAX_X, maxX:HOUSE_MAX_X, floorY:UPPER_Y, wall:'#cfd8df', floor:floorPalette[2], wallpaper:'stars', floorTexture:'plank', decor:'kids' },
     { id:'living', name:'Living room', minX:HOUSE_MIN_X, maxX:CORE_MIN_X, floorY:0, wall:'#f0e3d6', floor:floorPalette[0], wallpaper:'plain', floorTexture:'plank', decor:'living' },
+    { id:'hall', name:'Hall', minX:CORE_MIN_X, maxX:CORE_MAX_X, floorY:0, wall:'#eee5da', floor:floorPalette[0], wallpaper:'plain', floorTexture:'plank', core:true, allowWall:false, placeMinZ:CORE_DRESS_MIN_Z, placeMaxZ:FRONT_Z-0.10 },
     { id:'kitchen', name:'Kitchen', minX:CORE_MAX_X, maxX:HOUSE_MAX_X, floorY:0, wall:'#eef0eb', floor:floorPalette[0], wallpaper:'plain', floorTexture:'plank', decor:'kitchen' }
   ];
 
@@ -332,35 +338,43 @@
   ];
 
   const defaultItems = [
-    { id:'seed-bed', type:'bed', room:'bedroom', x:-4.30, z:0.90, rot:0 },
-    { id:'seed-bedside-l', type:'bedside', room:'bedroom', x:-5.68, z:0.52, rot:0 },
-    { id:'seed-bedside-r', type:'bedside', room:'bedroom', x:-2.92, z:0.52, rot:0 },
+    { id:'seed-bed', type:'bed', room:'bedroom', x:-3.55, z:0.38, rot:0 },
+    { id:'seed-bedside-l', type:'bedside', room:'bedroom', x:-4.72, z:0.18, rot:0 },
+    { id:'seed-bedside-r', type:'bedside', room:'bedroom', x:-2.38, z:0.18, rot:0 },
     { id:'seed-bedlamp-l', type:'bedlamp', room:'bedroom', x:0, z:0, rot:0, supportId:'seed-bedside-l', lightLevel:0.22, shadowEnabled:true },
-    { id:'seed-bedlamp-r', type:'bedlamp', room:'bedroom', x:-0.12, z:0, rot:0, supportId:'seed-bedside-r', lightLevel:0.22, shadowEnabled:true },
-    { id:'seed-clock', type:'clock', room:'bedroom', x:0.23, z:0.00, rot:0, supportId:'seed-bedside-r' },
-    { id:'seed-books-bed', type:'books', room:'bedroom', x:0.18, z:0.03, rot:-0.05, supportId:'seed-bedside-l' },
-    { id:'seed-kids-chair', type:'chair', room:'kids', x:4.85, z:-0.35, rot:0 },
-    { id:'seed-kids-box', type:'toybox', room:'kids', x:6.10, z:1.18, rot:0 },
-    { id:'seed-kids-drawers', type:'drawers', room:'kids', x:3.25, z:1.12, rot:0 },
-    { id:'seed-kids-plant', type:'plant', room:'kids', x:6.05, z:-1.42, rot:0 },
-    { id:'seed-rug-living', type:'rug', room:'living', x:-4.35, z:0.70, rot:0 },
-    { id:'seed-sofa', type:'sofa', room:'living', x:-4.45, z:-1.20, rot:0 },
-    { id:'seed-chair', type:'chair', room:'living', x:-2.68, z:0.82, rot:-Math.PI/2 },
-    { id:'seed-coffee', type:'coffee', room:'living', x:-4.24, z:0.58, rot:0 },
-    { id:'seed-lamp', type:'lamp', room:'living', x:-5.98, z:-1.12, rot:0, lightLevel:LAMP_DEFAULT_LEVEL, shadowEnabled:true },
-    { id:'seed-books', type:'books', room:'living', x:-0.37, z:0.02, rot:0.08, supportId:'seed-coffee' },
-    { id:'seed-mug', type:'mug', room:'living', x:0.35, z:0.04, rot:0, supportId:'seed-coffee' },
-    { id:'seed-vase', type:'vase', room:'living', x:0.03, z:-0.18, rot:0, supportId:'seed-coffee' },
-    { id:'seed-kitchen-fridge', type:'fridge', room:'kitchen', x:2.28, z:-1.82, rot:0 },
-    { id:'seed-kitchen-cab1', type:'cabinet', room:'kitchen', x:3.78, z:-2.12, rot:0 },
-    { id:'seed-kitchen-sink', type:'sinkcab', room:'kitchen', x:5.42, z:-2.12, rot:0 },
-    { id:'seed-kitchen-cab2', type:'cabinet', room:'kitchen', x:6.55, z:0.92, rot:-Math.PI/2 },
-    { id:'seed-kitchen-wall1', type:'wallcab', room:'kitchen', x:3.80, y:1.58, z:0, rot:0 },
-    { id:'seed-kitchen-wall2', type:'wallcab', room:'kitchen', x:5.48, y:1.58, z:0, rot:0 },
-    { id:'seed-kitchen-lamp', type:'lamp', room:'kitchen', x:6.18, z:1.08, rot:0, lightLevel:0.20, shadowEnabled:true },
-    { id:'seed-kitchen-plant', type:'plant', room:'kitchen', x:6.18, z:-1.05, rot:0 },
+    { id:'seed-bedlamp-r', type:'bedlamp', room:'bedroom', x:-0.10, z:0, rot:0, supportId:'seed-bedside-r', lightLevel:0.22, shadowEnabled:true },
+    { id:'seed-clock', type:'clock', room:'bedroom', x:0.21, z:0.00, rot:0, supportId:'seed-bedside-r' },
+    { id:'seed-books-bed', type:'books', room:'bedroom', x:0.16, z:0.03, rot:-0.05, supportId:'seed-bedside-l' },
+
+    { id:'seed-landing-plant', type:'plant', room:'landing', x:0.58, z:1.42, rot:0 },
+
+    { id:'seed-kids-chair', type:'chair', room:'kids', x:3.55, z:0.08, rot:0 },
+    { id:'seed-kids-box', type:'toybox', room:'kids', x:4.62, z:0.88, rot:0 },
+    { id:'seed-kids-drawers', type:'drawers', room:'kids', x:2.30, z:0.90, rot:0 },
+    { id:'seed-kids-plant', type:'plant', room:'kids', x:4.72, z:-0.92, rot:0 },
+
+    { id:'seed-rug-living', type:'rug', room:'living', x:-3.55, z:0.44, rot:0 },
+    { id:'seed-sofa', type:'sofa', room:'living', x:-3.58, z:-0.76, rot:0 },
+    { id:'seed-chair', type:'chair', room:'living', x:-2.18, z:0.62, rot:-Math.PI/2 },
+    { id:'seed-coffee', type:'coffee', room:'living', x:-3.50, z:0.54, rot:0 },
+    { id:'seed-lamp', type:'lamp', room:'living', x:-4.76, z:-0.78, rot:0, lightLevel:LAMP_DEFAULT_LEVEL, shadowEnabled:true },
+    { id:'seed-books', type:'books', room:'living', x:-0.32, z:0.02, rot:0.08, supportId:'seed-coffee' },
+    { id:'seed-mug', type:'mug', room:'living', x:0.31, z:0.04, rot:0, supportId:'seed-coffee' },
+    { id:'seed-vase', type:'vase', room:'living', x:0.03, z:-0.16, rot:0, supportId:'seed-coffee' },
+
+    { id:'seed-hall-bedside', type:'bedside', room:'hall', x:-0.52, z:1.38, rot:0 },
+    { id:'seed-hall-lamp', type:'bedlamp', room:'hall', x:0.00, z:0.00, rot:0, supportId:'seed-hall-bedside', lightLevel:0.20, shadowEnabled:true },
+
+    { id:'seed-kitchen-fridge', type:'fridge', room:'kitchen', x:2.05, z:-1.22, rot:0 },
+    { id:'seed-kitchen-cab1', type:'cabinet', room:'kitchen', x:3.20, z:-1.46, rot:0 },
+    { id:'seed-kitchen-sink', type:'sinkcab', room:'kitchen', x:4.42, z:-1.46, rot:0 },
+    { id:'seed-kitchen-cab2', type:'cabinet', room:'kitchen', x:4.75, z:0.64, rot:-Math.PI/2 },
+    { id:'seed-kitchen-wall1', type:'wallcab', room:'kitchen', x:2.85, y:1.56, z:0, rot:0 },
+    { id:'seed-kitchen-wall2', type:'wallcab', room:'kitchen', x:4.18, y:1.56, z:0, rot:0 },
+    { id:'seed-kitchen-lamp', type:'lamp', room:'kitchen', x:4.72, z:0.72, rot:0, lightLevel:0.20, shadowEnabled:true },
+    { id:'seed-kitchen-plant', type:'plant', room:'kitchen', x:4.58, z:-0.62, rot:0 },
     { id:'seed-kitchen-fruit', type:'fruit', room:'kitchen', x:0.00, z:0.00, rot:0, supportId:'seed-kitchen-cab1' },
-    { id:'seed-kitchen-vase', type:'vase', room:'kitchen', x:-0.24, z:-0.10, rot:0, supportId:'seed-kitchen-sink' }
+    { id:'seed-kitchen-vase', type:'vase', room:'kitchen', x:-0.22, z:-0.08, rot:0, supportId:'seed-kitchen-sink' }
   ];
 
 
@@ -368,7 +382,7 @@
     lighting:'day',
     rooms:Object.fromEntries(rooms.map(r => [r.id,{wall:r.wall,floor:r.floor,wallpaper:r.wallpaper,floorTexture:r.floorTexture}])),
     items:defaultItems.map(i => ({...i})),
-    camera:{x:-3.9,y:1.20,zoom:1.22}
+    camera:{x:-3.30,y:1.18,zoom:1.24}
   };
 
   let selectedId = null;
@@ -395,7 +409,7 @@
 
   const camera = new THREE.PerspectiveCamera(31, 1, 0.1, 60);
   camera.layers.enableAll();
-  const cameraOffset = new THREE.Vector3(0, 0.72, 14.15);
+  const cameraOffset = new THREE.Vector3(0, 0.68, 12.20);
   const raycaster = new THREE.Raycaster();
   const pointerNdc = new THREE.Vector2();
   const plane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
@@ -954,50 +968,82 @@
     decorGroup.clear();
     roomMaterials.clear();
 
-    rooms.forEach(buildRoom);
+    rooms.filter(room=>!room.core).forEach(buildRoom);
 
     const shell='#c9beb2', cut='#b8aa9d', trim='#efe6dd';
 
     enableRoomLayers(addArchitectureBox(HOUSE_MIN_X-WALL_T,HOUSE_MIN_X,-0.16,HOUSE_H+0.18,BACK_Z-WALL_T,FRONT_Z+0.02,shell),['bedroom','living']);
     enableRoomLayers(addArchitectureBox(HOUSE_MAX_X,HOUSE_MAX_X+WALL_T,-0.16,HOUSE_H+0.18,BACK_Z-WALL_T,FRONT_Z+0.02,shell),['kids','kitchen']);
-    enableRoomLayers(addArchitectureBox(HOUSE_MIN_X-WALL_T,HOUSE_MAX_X+WALL_T,-0.20,0,BACK_Z-WALL_T,FRONT_Z+0.02,cut),Object.keys(ROOM_LAYERS));
-    enableRoomLayers(addArchitectureBox(HOUSE_MIN_X-WALL_T,HOUSE_MAX_X+WALL_T,HOUSE_H,HOUSE_H+0.22,BACK_Z-WALL_T,FRONT_Z+0.02,cut),Object.keys(ROOM_LAYERS));
+    enableRoomLayers(addArchitectureBox(HOUSE_MIN_X-WALL_T,HOUSE_MAX_X+WALL_T,-0.18,0,BACK_Z-WALL_T,FRONT_Z+0.02,cut),Object.keys(ROOM_LAYERS));
+    enableRoomLayers(addArchitectureBox(HOUSE_MIN_X-WALL_T,HOUSE_MAX_X+WALL_T,HOUSE_H,HOUSE_H+0.20,BACK_Z-WALL_T,FRONT_Z+0.02,cut),Object.keys(ROOM_LAYERS));
 
-    // Central hall / landing core: thinner separators, open front hall areas, and a stair pushed toward the back.
-    addArchitectureBox(CORE_MIN_X,CORE_MAX_X,ROOM_H,UPPER_Y,BACK_Z,FRONT_Z,cut);
-    addArchitectureBox(CORE_MIN_X,CORE_MAX_X,0,ROOM_H,BACK_Z-WALL_T,BACK_Z,shell);
-    addArchitectureBox(CORE_MIN_X,CORE_MAX_X,UPPER_Y,UPPER_Y+ROOM_H,BACK_Z-WALL_T,BACK_Z,shell);
-    addBox(decorGroup,0,0.075,0,CORE_W-0.12,0.15,ROOM_D-0.10,'#f6f0e8',{castShadow:false,receiveShadow:true});
-    addBox(decorGroup,0,UPPER_Y+0.075,0,CORE_W-0.12,0.15,ROOM_D-0.10,'#f6f0e8',{castShadow:false,receiveShadow:true});
+    // Hall and landing are now true rooms with independent materials / save state.
+    const hallStyle=state.rooms.hall, landingStyle=state.rooms.landing;
+    const hallFloorMat=makeRoomMaterial('hall','floor',hallStyle.floor);
+    const hallWallMat=makeRoomMaterial('hall','wall',hallStyle.wall);
+    const landingFloorMat=makeRoomMaterial('landing','floor',landingStyle.floor);
+    const landingWallMat=makeRoomMaterial('landing','wall',landingStyle.wall);
 
-    // Openings into rooms are slightly more forward so the hall reads as usable.
-    addDoorOpeningInXWall(CORE_MIN_X,0,-0.10,shell,trim,['living']);
-    addDoorOpeningInXWall(CORE_MAX_X,0,-0.10,shell,trim,['kitchen']);
-    addDoorOpeningInXWall(CORE_MIN_X,UPPER_Y,-0.06,shell,trim,['bedroom']);
-    addDoorOpeningInXWall(CORE_MAX_X,UPPER_Y,-0.06,shell,trim,['kids']);
+    const hallFloor=new THREE.Mesh(new THREE.BoxGeometry(CORE_W-0.04,0.055,ROOM_D-0.04),hallFloorMat);
+    hallFloor.position.set(0,-0.027,0); hallFloor.receiveShadow=true; houseGroup.add(hallFloor); enableRoomLayers(hallFloor,'hall');
+    const hallBack=new THREE.Mesh(new THREE.BoxGeometry(CORE_W,ROOM_H,0.10),hallWallMat);
+    hallBack.position.set(0,ROOM_H/2,BACK_Z-0.05); hallBack.receiveShadow=true; houseGroup.add(hallBack); enableRoomLayers(hallBack,'hall');
 
-    const stairRise=UPPER_Y/STAIR.steps;
-    for(let i=0;i<STAIR.steps;i++){
-      const z1=STAIR.zBottom-i*STAIR.going;
-      const z0=z1-STAIR.going-0.008;
-      const h=(i+1)*stairRise;
-      addArchitectureBox(STAIR.x0,STAIR.x1,0,h,z0,z1,'#b99372');
+    const landingDepth=FRONT_Z-CORE_DRESS_MIN_Z;
+    const landingFloor=new THREE.Mesh(new THREE.BoxGeometry(CORE_W-0.04,0.055,landingDepth),landingFloorMat);
+    landingFloor.position.set(0,UPPER_Y-0.027,(CORE_DRESS_MIN_Z+FRONT_Z)/2); landingFloor.receiveShadow=true; houseGroup.add(landingFloor); enableRoomLayers(landingFloor,'landing');
+    enableRoomLayers(addArchitectureBox(CORE_MIN_X,CORE_MAX_X,ROOM_H,UPPER_Y,CORE_DRESS_MIN_Z,FRONT_Z,cut),['landing']);
+    const landingBack=new THREE.Mesh(new THREE.BoxGeometry(CORE_W,ROOM_H,0.10),landingWallMat);
+    landingBack.position.set(0,UPPER_Y+ROOM_H/2,BACK_Z-0.05); landingBack.receiveShadow=true; houseGroup.add(landingBack); enableRoomLayers(landingBack,'landing');
+
+    addBox(decorGroup,0,0.075,BACK_Z+0.015,CORE_W-0.08,0.15,0.035,'#f6f0e8',{castShadow:false,receiveShadow:true});
+    addBox(decorGroup,0,UPPER_Y+0.075,CORE_DRESS_MIN_Z+0.015,CORE_W-0.08,0.15,0.035,'#f6f0e8',{castShadow:false,receiveShadow:true});
+
+    // Slim separators with door openings into the side rooms.
+    addDoorOpeningInXWall(CORE_MIN_X,0,-0.02,shell,trim,['living','hall']);
+    addDoorOpeningInXWall(CORE_MAX_X,0,-0.02,shell,trim,['kitchen','hall']);
+    addDoorOpeningInXWall(CORE_MIN_X,UPPER_Y,-0.02,shell,trim,['bedroom','landing']);
+    addDoorOpeningInXWall(CORE_MAX_X,UPPER_Y,-0.02,shell,trim,['kids','landing']);
+
+    // Rear dog-leg stair: lower flight runs back on the left, turns across a
+    // half landing, then returns toward the front on the right.
+    const stairMeshes=[];
+    for(let i=0;i<STAIR.stepsPerFlight;i++){
+      const z1=STAIR.frontZ-i*STAIR.going;
+      const z0=z1-STAIR.going-0.006;
+      const top=(i+1)*STAIR.rise;
+      stairMeshes.push(addArchitectureBox(STAIR.leftX0,STAIR.leftX1,0,top,z0,z1,'#b99372'));
     }
-    addArchitectureBox(CORE_MIN_X,STAIR.x0-0.07,0,UPPER_Y,STAIR.zTop-0.10,STAIR.zBottom+0.08,'#d0c3b7');
-    addArchitectureBox(STAIR.x1+0.07,CORE_MAX_X,0,UPPER_Y,STAIR.zTop-0.10,STAIR.zBottom+0.08,'#d0c3b7');
+    const halfLanding=addArchitectureBox(CORE_MIN_X+0.10,CORE_MAX_X-0.10,STAIR.midY-0.07,STAIR.midY,STAIR.landingBackZ,STAIR.flightBackZ,'#b99372');
+    stairMeshes.push(halfLanding);
+    for(let i=0;i<STAIR.stepsPerFlight;i++){
+      const z0=STAIR.flightBackZ+i*STAIR.going;
+      const z1=z0+STAIR.going+0.006;
+      const top=STAIR.midY+(i+1)*STAIR.rise;
+      stairMeshes.push(addArchitectureBox(STAIR.rightX0,STAIR.rightX1,STAIR.midY,top,z0,z1,'#b99372'));
+    }
+    stairMeshes.filter(Boolean).forEach(m=>enableRoomLayers(m,['hall','landing']));
 
-    const railX=STAIR.x1+0.08;
-    const railHeight=0.86;
-    for(let i=0;i<=STAIR.steps;i+=2){
-      const z=STAIR.zBottom-Math.min(i,STAIR.steps)*STAIR.going;
-      const baseY=Math.min(UPPER_Y,(i+0.25)*stairRise);
-      addCylinder(houseGroup,railX,baseY,z,0.022,railHeight,'#7b685a',{castShadow:true});
+    // Light, open balustrades rather than solid stair cheeks.
+    const railCol='#7b685a';
+    const postH=0.82;
+    for(let i=0;i<=STAIR.stepsPerFlight;i+=2){
+      const z=STAIR.frontZ-Math.min(i,STAIR.stepsPerFlight)*STAIR.going;
+      const baseY=Math.min(STAIR.midY,(i+0.2)*STAIR.rise);
+      const post=addCylinder(houseGroup,STAIR.leftX1+0.035,baseY,z,0.021,postH,railCol,{castShadow:true}); enableRoomLayers(post,['hall','landing']);
     }
-    addSoftPipe(houseGroup,[[railX,railHeight,STAIR.zBottom],[railX,UPPER_Y+railHeight,STAIR.zTop]],0.030,'#7b685a');
-    for(let x=CORE_MIN_X+0.18;x<=CORE_MAX_X-0.18;x+=0.34){
-      addCylinder(houseGroup,Math.min(x,CORE_MAX_X-0.18),UPPER_Y,0.58,0.82,'#7b685a',{castShadow:true});
+    const lowerRail=addSoftPipe(houseGroup,[[STAIR.leftX1+0.035,postH,STAIR.frontZ],[STAIR.leftX1+0.035,STAIR.midY+postH,STAIR.flightBackZ]],0.028,railCol); enableRoomLayers(lowerRail,['hall','landing']);
+    for(let i=0;i<=STAIR.stepsPerFlight;i+=2){
+      const z=STAIR.flightBackZ+Math.min(i,STAIR.stepsPerFlight)*STAIR.going;
+      const baseY=STAIR.midY+Math.min(STAIR.midY,(i+0.2)*STAIR.rise);
+      const post=addCylinder(houseGroup,STAIR.rightX0-0.035,baseY,z,0.021,postH,railCol,{castShadow:true}); enableRoomLayers(post,['hall','landing']);
     }
-    addHorizontalRail(CORE_MIN_X+0.18,CORE_MAX_X-0.18,UPPER_Y+0.84,0.58);
+    const upperRail=addSoftPipe(houseGroup,[[STAIR.rightX0-0.035,STAIR.midY+postH,STAIR.flightBackZ],[STAIR.rightX0-0.035,UPPER_Y+postH,STAIR.frontZ]],0.028,railCol); enableRoomLayers(upperRail,['hall','landing']);
+
+    for(let x=CORE_MIN_X+0.16;x<=CORE_MAX_X-0.16;x+=0.32){
+      const post=addCylinder(houseGroup,x,UPPER_Y,CORE_DRESS_MIN_Z-0.06,0.021,0.82,railCol,{castShadow:true}); enableRoomLayers(post,'landing');
+    }
+    const landingRail=addHorizontalRail(CORE_MIN_X+0.16,CORE_MAX_X-0.16,UPPER_Y+0.84,CORE_DRESS_MIN_Z-0.06); enableRoomLayers(landingRail,'landing');
 
     invalidateShadows();
   }
@@ -1177,8 +1223,8 @@
     const halfX=(Math.abs(Math.cos(a))*fw+Math.abs(Math.sin(a))*fd)/2;
     const halfZ=(Math.abs(Math.sin(a))*fw+Math.abs(Math.cos(a))*fd)/2;
     item.x=clamp(item.x,room.minX+halfX+0.08,room.maxX-halfX-0.08);
-    const minZ=BACK_Z+halfZ+0.10;
-    const maxZ=FRONT_Z-halfZ-0.12;
+    const minZ=(room.placeMinZ??BACK_Z)+halfZ+0.10;
+    const maxZ=(room.placeMaxZ??FRONT_Z)-halfZ-0.10;
     item.z=clamp(item.z,Math.min(minZ,maxZ),maxZ);
   }
 
@@ -1213,7 +1259,9 @@
   function updateActiveRoom(force=false){
     const x=state.camera.x;
     const upstairs=state.camera.y>UPPER_Y-0.25;
-    const roomId=upstairs?(x<0?'bedroom':'kids'):(x<0?'living':'kitchen');
+    let roomId;
+    if(x>=CORE_MIN_X&&x<=CORE_MAX_X) roomId=upstairs?'landing':'hall';
+    else roomId=upstairs?(x<CORE_MIN_X?'bedroom':'kids'):(x<CORE_MIN_X?'living':'kitchen');
     if(!force&&roomId===activeRoomId)return;
     activeRoomId=roomId;
     roomLabel.textContent=roomById(activeRoomId).name;
@@ -1425,7 +1473,7 @@
       const mid=pointerMidpoint();
       if(mid&&gesture.startMid){
         const unitsPerPixel=5.4/(mid.h*Math.max(0.75,state.camera.zoom));
-        state.camera.x=clamp(gesture.startCamX-(mid.x-gesture.startMid.x)*unitsPerPixel,HOUSE_MIN_X+0.75,HOUSE_MAX_X-0.75);
+        state.camera.x=clamp(gesture.startCamX-(mid.x-gesture.startMid.x)*unitsPerPixel,HOUSE_MIN_X+0.65,HOUSE_MAX_X-0.65);
         state.camera.y=clamp(gesture.startCamY+(mid.y-gesture.startMid.y)*unitsPerPixel,0.85,HOUSE_H-0.35);
       }
       updateActiveRoom();
@@ -1442,7 +1490,7 @@
       gesture.mode='pan';
       gesture.moved=true;
       const unitsPerPixel=5.8/(p.h*Math.max(0.78,state.camera.zoom));
-      state.camera.x=clamp(gesture.startCamX-dx*unitsPerPixel,HOUSE_MIN_X+0.75,HOUSE_MAX_X-0.75);
+      state.camera.x=clamp(gesture.startCamX-dx*unitsPerPixel,HOUSE_MIN_X+0.65,HOUSE_MAX_X-0.65);
       state.camera.y=clamp(gesture.startCamY+dy*unitsPerPixel,0.85,HOUSE_H-0.35);
       updateActiveRoom();
       render();
@@ -1584,8 +1632,21 @@
 
   function addItem(type){
     const t=templateById(type),room=roomById(activeRoomId); if(!t)return;
+    if(t.place==='wall'&&room.allowWall===false){
+      hint.textContent='Hall and landing wall placement comes next · use floor furniture and lights here for now';
+      return;
+    }
+    if(room.core&&t.place!=='wall'&&t.place!=='surface'){
+      const usableW=room.width-0.18;
+      const usableD=(room.placeMaxZ-room.placeMinZ)-0.18;
+      if(scaled(t.footprint[0])>usableW||scaled(t.footprint[1])>usableD){
+        hint.textContent=`${t.name} is too large for this ${room.name.toLowerCase()}`;
+        return;
+      }
+    }
     const count=state.items.filter(i=>i.room===room.id).length;
-    const item={id:`item-${Date.now()}-${idCounter++}`,type,room:room.id,x:room.cx+((count%3)-1)*0.24,z:0.25+((count%2)?0.20:-0.12),rot:0};
+    const zMid=((room.placeMinZ??BACK_Z)+(room.placeMaxZ??FRONT_Z))/2;
+    const item={id:`item-${Date.now()}-${idCounter++}`,type,room:room.id,x:room.cx+((count%3)-1)*0.20,z:zMid+((count%2)?0.14:-0.10),rot:0};
     if(t.lightHeight){item.lightLevel=LAMP_DEFAULT_LEVEL;item.shadowEnabled=true;}
     if(t.place==='wall'){
       item.x=room.cx;item.y=1.48;item.z=0;
@@ -1724,9 +1785,9 @@
         lighting:parsed.lighting==='evening'?'evening':'day', rooms:roomState,
         items:parsed.items.filter(i=>templateById(i.type)&&rooms.some(r=>r.id===i.room)).slice(0,120),
         camera:{
-          x:clamp(Number(parsed.camera?.x)||-3.9,HOUSE_MIN_X+0.75,HOUSE_MAX_X-0.75),
+          x:clamp(Number(parsed.camera?.x)||-3.30,HOUSE_MIN_X+0.65,HOUSE_MAX_X-0.65),
           y:clamp(Number(parsed.camera?.y)||1.2,0.85,HOUSE_H-0.35),
-          zoom:clamp(Number(parsed.camera?.zoom)||1.22,0.82,3.0)
+          zoom:clamp(Number(parsed.camera?.zoom)||1.24,0.82,3.0)
         }
       };
       validateSupports();
@@ -1744,7 +1805,9 @@
 
   function resizeRenderer(){
     const r=canvas.getBoundingClientRect();if(!r.width)return;
-    const cssW=r.width,cssH=Math.max(410,Math.min(590,cssW*1.05));
+    const cssW=r.width;
+    const viewportH=Math.max(640,window.innerHeight||800);
+    const cssH=Math.max(270,Math.min(500,cssW*0.88,viewportH*0.38));
     canvas.style.height=`${cssH}px`;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.6));
     renderer.setSize(cssW,cssH,false);
@@ -1755,6 +1818,16 @@
   function queueResize(){cancelAnimationFrame(resizeRaf);resizeRaf=requestAnimationFrame(resizeRenderer);}
 
   load();
+  validateSupports();
+  state.items.forEach(i=>{
+    const t=templateById(i.type);
+    if(t?.lightHeight){
+      i.lightLevel=clamp(Number(i.lightLevel??LAMP_DEFAULT_LEVEL),0,1);
+      if(typeof i.shadowEnabled!=='boolean')i.shadowEnabled=true;
+    }
+    if(t?.place==='wall')clampWallItem(i);
+    else if(!i.supportId)clampFloorItem(i);
+  });
   buildArchitecture();
   rebuildItems();
   buildCarousel();
