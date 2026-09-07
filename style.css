@@ -10098,10 +10098,10 @@ body[data-game-id="game-14"] .attack-slot-copy small{font-size:6.8px}
 }
 
 /* ============================================================
-   My House — open-front dollhouse prototype (v1.8.15)
+   My House — cohesive four-room dollhouse prototype (v1.8.16)
    ============================================================ */
 .room-stage-card{background:#dcd3c9;}
-#room-canvas{min-height:390px;max-height:560px;}
+#room-canvas{min-height:410px;max-height:590px;}
 .room-stage-toolbar{position:absolute;left:10px;right:10px;top:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;pointer-events:none;}
 .room-stage-toolbar span,.room-stage-toolbar button{min-height:34px;display:flex;align-items:center;border:1px solid rgba(53,47,43,.2);border-radius:999px;background:rgba(250,247,242,.9);color:#443d38;font:inherit;font-size:11px;font-weight:850;box-shadow:0 1px 0 rgba(255,255,255,.5);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);}
 .room-stage-toolbar span{padding:0 12px;letter-spacing:.025em;}

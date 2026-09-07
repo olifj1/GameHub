@@ -175,10 +175,10 @@ window.APP_CONFIG = {
     {
       "id": "game-15",
       "displayName": "My House",
-      "description": "Furnish a little 3D dollhouse, slide between rooms and make it your own.",
+      "description": "Furnish a four-room 3D dollhouse, dress the rooms and make it your own.",
       "icon": "⌂",
       "enabled": true,
-      "path": "game-15.html?v=1.8.15"
+      "path": "game-15.html?v=1.8.16"
     }
   ]
 };
