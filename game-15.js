@@ -21,6 +21,9 @@
   const wallpaperSwatches = document.getElementById('room-wallpaper-swatches');
   const floorTextureSwatches = document.getElementById('room-floor-texture-swatches');
   const perfBadge = document.getElementById('room-perf-badge');
+  const inventoryTitle = document.getElementById('room-inventory-title');
+  const inventorySubtitle = document.getElementById('room-inventory-subtitle');
+  const categoryRow = document.getElementById('room-category-row');
 
   if (!canvas) return;
 
@@ -31,7 +34,7 @@
   }
 
   const THREE = window.THREE;
-  const STORAGE_KEY = 'gamehub-my-house-webgl-v8';
+  const STORAGE_KEY = 'gamehub-my-house-webgl-v9';
   const MODEL_SCALE = 0.62;
   const TAU = Math.PI * 2;
 
@@ -58,6 +61,7 @@
   const DOOR_OPEN_H = 2.04;
   const LAMP_DEFAULT_LEVEL = 0.28;
   const LAMP_MAX_INTENSITY = 6.2;
+  const CEILING_MOUNT_Y = ROOM_H - 0.04;
 
   // Compact dog-leg / return stair kept in the rear half of the central core,
   // leaving a real hall and upper landing at the open front of the dollhouse.
@@ -81,6 +85,24 @@
   const CORE_DRESS_MIN_Z = 0.68;
 
   const ROOM_LAYERS = { bedroom:1, landing:2, kids:3, living:4, hall:5, kitchen:6 };
+  const INVENTORY_CATEGORIES = {
+    furniture:'Big pieces',
+    storage:'Storage',
+    soft:'Soft',
+    play:'Kids room',
+    decor:'Ornaments',
+    lighting:'Lighting',
+    wall:'Wall art',
+    kitchen:'Kitchen'
+  };
+  const ROOM_CATEGORY_ORDER = {
+    bedroom:['furniture','storage','soft','decor','lighting','wall'],
+    landing:['furniture','soft','decor','lighting'],
+    kids:['furniture','storage','soft','play','decor','lighting','wall'],
+    living:['furniture','soft','storage','decor','lighting','wall'],
+    hall:['furniture','soft','decor','lighting'],
+    kitchen:['kitchen','furniture','decor','lighting','wall']
+  };
 
   const wallPalette = ['#f1dfd6', '#eadcc9', '#d8e6dc', '#dbe3ef', '#ead9e5', '#efe5bf'];
   const floorPalette = ['#c8a883', '#b9906c', '#d2c3ae', '#9ca99c', '#b4a297', '#c9b596'];
@@ -247,39 +269,172 @@
     ];
   }
 
+  function makeCeilingPendant(){
+    return [
+      cyl(0,-0.08,0,0.022,0.16,'#8b7361'),
+      ellipsoid(0,0,0,0.18,0.05,0.18,'#b89d83'),
+      cyl(0,-0.42,0,0.42,0.42,'#efd6a4',{taper:0.58,emissive:true,castShadow:false}),
+      ellipsoid(0,-0.63,0,0.29,0.05,0.29,'#f7e5b5',{emissive:true,castShadow:false})
+    ];
+  }
+
+  function makeCloudCeilingLight(){
+    return [
+      cyl(0,-0.09,0,0.02,0.18,'#9b8678'),
+      ellipsoid(0,0,0,0.16,0.05,0.16,'#bba696'),
+      ellipsoid(-0.30,-0.30,0.03,0.28,0.16,0.19,'#f3efe7',{emissive:true,castShadow:false}),
+      ellipsoid(0.02,-0.34,0,0.36,0.18,0.23,'#fff7ea',{emissive:true,castShadow:false}),
+      ellipsoid(0.34,-0.29,-0.02,0.28,0.16,0.19,'#f3efe7',{emissive:true,castShadow:false}),
+      ellipsoid(0.03,-0.22,0.03,0.24,0.14,0.18,'#f6f0dd',{emissive:true,castShadow:false})
+    ];
+  }
+
+  function makeKidsBed(){
+    return [
+      cyl(-0.92,0,-1.08,0.06,0.56,'#cfb28c'),cyl(0.92,0,-1.08,0.06,0.56,'#cfb28c'),
+      cyl(-0.92,0,1.08,0.06,0.46,'#cfb28c'),cyl(0.92,0,1.08,0.06,0.46,'#cfb28c'),
+      box(0,0.16,0,2.02,0.20,2.38,'#d0b58d'),
+      box(0,0.42,0,1.88,0.28,2.14,'#f7efe4'),
+      box(0,0.58,0.10,1.82,0.18,1.74,'#9bb8b9'),
+      ellipsoid(0,0.75,-0.70,1.04,0.16,0.42,'#a3c3c2'),
+      ellipsoid(0,0.88,-0.98,0.72,0.17,0.27,'#fffaf2'),
+      box(0,0.82,-1.16,2.06,1.06,0.08,'#cfae86'),
+      box(0,0.62,1.16,2.00,0.46,0.08,'#cfae86')
+    ];
+  }
+
+  function makeKidsDesk(){
+    return [
+      cyl(-0.58,0,-0.34,0.05,0.74,'#b99370'),cyl(0.58,0,-0.34,0.05,0.74,'#b99370'),
+      cyl(-0.58,0,0.34,0.05,0.74,'#b99370'),cyl(0.58,0,0.34,0.05,0.74,'#b99370'),
+      box(0,0.78,0,1.46,0.10,0.82,'#d5bb97'),
+      box(0,1.06,-0.28,1.32,0.08,0.18,'#d5bb97'),
+      box(-0.42,0.45,0.30,0.24,0.48,0.12,'#e0c7a9'), box(0.42,0.45,0.30,0.24,0.48,0.12,'#e0c7a9'),
+      box(-0.42,0.30,0.37,0.18,0.16,0.03,'#8ab3af'), box(0.42,0.30,0.37,0.18,0.16,0.03,'#f0c486')
+    ];
+  }
+
+  function makeBookcase(){
+    return [
+      box(0,1.36,0,1.22,2.72,0.48,'#a78a72'),
+      box(0,2.35,0.02,1.00,0.06,0.34,'#c5a488'), box(0,1.70,0.02,1.00,0.06,0.34,'#c5a488'), box(0,1.05,0.02,1.00,0.06,0.34,'#c5a488'), box(0,0.42,0.02,1.00,0.06,0.34,'#c5a488'),
+      box(-0.26,2.11,0.08,0.18,0.36,0.18,'#8fb2b0'), box(-0.05,2.11,0.08,0.18,0.36,0.18,'#d99592'), box(0.17,2.11,0.08,0.18,0.36,0.18,'#e2b969'),
+      box(-0.18,1.46,0.08,0.18,0.30,0.18,'#d0b3dd'), box(0.03,1.46,0.08,0.18,0.30,0.18,'#9bbfd0'), box(0.24,1.46,0.08,0.18,0.30,0.18,'#e0c790'),
+      ellipsoid(-0.22,0.78,0.02,0.18,0.14,0.13,'#8eb1b2'), ellipsoid(0.00,0.80,0.02,0.22,0.18,0.16,'#9ec0bf'), ellipsoid(0.22,0.78,0.02,0.18,0.14,0.13,'#8eb1b2'),
+      ellipsoid(-0.02,0.63,0.22,0.10,0.09,0.05,'#334744')
+    ];
+  }
+
+  function makeSkyRug(){
+    const parts=[ellipsoid(0,0.04,0,1.62,0.04,1.62,'#a8c4cf')];
+    const stars=[[0.0,0.0],[0.55,-0.28],[-0.62,0.34],[0.18,0.74],[-0.22,-0.72]];
+    stars.forEach(([x,z])=>parts.push(ellipsoid(x,0.052,z,0.12,0.02,0.12,'#f4ead2')));
+    return parts;
+  }
+
+  function makeBunting(){
+    const parts=[box(0,0.26,0,1.58,0.03,0.03,'#aa8c74')];
+    const cols=['#d99b8f','#e5c16f','#7fa59a','#8bb0c6'];
+    [-0.55,-0.20,0.15,0.50].forEach((x,i)=>{parts.push(box(x,0,0.03,0.18,0.26,0.02,cols[i],{rotZ:0.785}));});
+    return parts;
+  }
+
+  // Kitchen pieces use the room's metre-like scale rather than the older
+  // undersized prototype proportions. With MODEL_SCALE=0.62 these recipes
+  // land at roughly 0.90 m worktop height, 1.8 m fridge height and 0.60 m
+  // wall-cabinet height, matching the reference image much more closely.
   function makeKitchenCabinet(){
     return [
-      box(0,0.40,0,1.36,0.80,0.70,'#bcc8af'),
-      box(0,0.84,0,1.46,0.08,0.76,'#dec8ad'),
-      box(-0.31,0.41,0.36,0.52,0.60,0.05,'#d3b89b'),box(0.31,0.41,0.36,0.52,0.60,0.05,'#d3b89b'),
-      ellipsoid(-0.14,0.41,0.40,0.04,0.04,0.03,'#7d9b8d'),ellipsoid(0.14,0.41,0.40,0.04,0.04,0.03,'#7d9b8d')
+      box(0,0.68,0,1.46,1.36,0.86,'#aab79b'),
+      box(0,1.44,0,1.56,0.10,0.92,'#d8b996'),
+      box(-0.34,0.70,0.45,0.58,1.08,0.055,'#bdc8ae'),box(0.34,0.70,0.45,0.58,1.08,0.055,'#bdc8ae'),
+      box(-0.08,0.70,0.49,0.035,0.28,0.025,'#a97f55'),box(0.08,0.70,0.49,0.035,0.28,0.025,'#a97f55')
     ];
   }
 
   function makeSinkCabinet(){
     return [
-      box(0,0.40,0,1.56,0.80,0.74,'#b8c3aa'),
-      box(0,0.84,0,1.66,0.08,0.80,'#dec8ad'),
-      box(-0.38,0.41,0.38,0.58,0.60,0.05,'#d3b89b'),box(0.38,0.41,0.38,0.58,0.60,0.05,'#d3b89b'),
-      box(0,0.88,0.02,0.72,0.05,0.34,'#f6f3ef'),box(0,0.83,0.02,0.54,0.10,0.24,'#ece8e1'),
-      cyl(0,0.88,0.20,0.02,0.18,'#7a6b60',{rotX:Math.PI/2}),box(0.10,1.00,0.20,0.16,0.03,0.03,'#7a6b60')
+      box(0,0.68,0,1.70,1.36,0.88,'#aab79b'),
+      box(0,1.44,0,1.80,0.10,0.94,'#d8b996'),
+      box(-0.39,0.70,0.46,0.64,1.08,0.055,'#bdc8ae'),box(0.39,0.70,0.46,0.64,1.08,0.055,'#bdc8ae'),
+      box(0,1.47,0.05,0.88,0.055,0.48,'#f4f1eb'),box(0,1.41,0.05,0.70,0.12,0.34,'#e8e4dc'),
+      cyl(0,1.55,0.24,0.025,0.30,'#75675e',{rotX:Math.PI/2}),box(0.15,1.74,0.24,0.30,0.035,0.035,'#75675e')
+    ];
+  }
+
+  function makeOvenCabinet(){
+    return [
+      box(0,0.68,0,1.46,1.36,0.86,'#aab79b'),box(0,1.44,0,1.56,0.10,0.92,'#d8b996'),
+      box(0,0.67,0.46,1.02,0.96,0.06,'#50585a'),box(0,0.76,0.50,0.84,0.60,0.035,'#24292b'),
+      box(0,1.18,0.50,0.84,0.10,0.035,'#777f80'),
+      cyl(-0.30,1.19,0.54,0.045,0.04,'#d8d4ca',{rotX:Math.PI/2}),cyl(-0.10,1.19,0.54,0.045,0.04,'#d8d4ca',{rotX:Math.PI/2}),cyl(0.10,1.19,0.54,0.045,0.04,'#d8d4ca',{rotX:Math.PI/2}),cyl(0.30,1.19,0.54,0.045,0.04,'#d8d4ca',{rotX:Math.PI/2}),
+      cyl(-0.32,1.51,-0.20,0.14,0.025,'#343b3c'),cyl(0.32,1.51,-0.20,0.14,0.025,'#343b3c'),cyl(-0.32,1.51,0.20,0.14,0.025,'#343b3c'),cyl(0.32,1.51,0.20,0.14,0.025,'#343b3c')
     ];
   }
 
   function makeWallCabinet(){
     return [
-      box(0,0,0,1.28,0.74,0.34,'#a8b499'),
-      box(-0.30,0,0.18,0.52,0.58,0.04,'#ced7c3'),box(0.30,0,0.18,0.52,0.58,0.04,'#ced7c3'),
-      ellipsoid(-0.14,0,0.21,0.04,0.04,0.03,'#dfc178'),ellipsoid(0.14,0,0.21,0.04,0.04,0.03,'#dfc178')
+      box(0,0,0,1.48,0.98,0.46,'#9daa8f'),
+      box(-0.35,0,0.25,0.62,0.80,0.045,'#b9c5aa'),box(0.35,0,0.25,0.62,0.80,0.045,'#b9c5aa'),
+      box(-0.08,0,0.28,0.035,0.28,0.025,'#a97f55'),box(0.08,0,0.28,0.035,0.28,0.025,'#a97f55')
+    ];
+  }
+
+  function makeKitchenShelf(){
+    return [
+      box(0,0,0,1.52,0.10,0.42,'#c49d78'),
+      box(-0.56,-0.18,-0.04,0.08,0.36,0.12,'#9a7a61'),box(0.56,-0.18,-0.04,0.08,0.36,0.12,'#9a7a61'),
+      cyl(-0.42,0.18,0.08,0.12,0.28,'#e8d9bd',{taper:0.82}),cyl(-0.08,0.16,0.08,0.10,0.24,'#d9b990',{taper:0.82}),
+      cyl(0.28,0.17,0.08,0.11,0.26,'#b8c6ae',{taper:0.82})
     ];
   }
 
   function makeFridge(){
     return [
-      box(0,1.00,0,1.10,2.00,0.98,'#c5d2d7'),
-      box(0,1.00,0.50,0.98,1.88,0.04,'#d7e1e4'),
-      box(0,1.56,0.53,0.98,0.04,0.03,'#abb8bd'),
-      box(-0.36,1.28,0.54,0.05,0.42,0.03,'#8b9aa0'),box(-0.36,0.56,0.54,0.05,0.42,0.03,'#8b9aa0')
+      box(0,1.45,0,1.22,2.90,1.02,'#bfcdd1'),
+      box(0,1.45,0.53,1.10,2.76,0.045,'#d6e0e2'),
+      box(0,2.04,0.56,1.10,0.045,0.03,'#a7b5ba'),
+      box(-0.40,1.62,0.57,0.055,0.62,0.035,'#849399'),box(-0.40,0.72,0.57,0.055,0.54,0.035,'#849399'),
+      box(0.20,1.76,0.58,0.16,0.13,0.02,'#e6b66d',{rotZ:0.08}),box(-0.12,1.18,0.58,0.18,0.14,0.02,'#d38f78',{rotZ:-0.05})
+    ];
+  }
+
+  function makeDiningTable(){
+    return [
+      cyl(0,1.18,0,1.12,0.13,'#c99f77',{taper:0.96}),
+      cyl(0,0.10,0,0.15,1.12,'#a98061',{taper:0.82}),
+      cyl(0,0.05,0,0.66,0.10,'#a98061',{taper:0.82})
+    ];
+  }
+
+  function makeDiningChair(){
+    return [
+      cyl(-0.42,0,-0.34,0.055,0.78,'#94775f'),cyl(0.42,0,-0.34,0.055,0.78,'#94775f'),cyl(-0.42,0,0.34,0.055,0.78,'#94775f'),cyl(0.42,0,0.34,0.055,0.78,'#94775f'),
+      box(0,0.78,0,0.96,0.14,0.86,'#9eaf91'),
+      box(0,1.36,-0.36,0.96,1.04,0.12,'#9eaf91'),
+      ellipsoid(0,1.38,-0.28,0.36,0.34,0.08,'#b7c3aa')
+    ];
+  }
+
+  function makeMicrowave(){
+    return [
+      box(0,0.34,0,1.02,0.68,0.62,'#ece9df'),box(-0.13,0.35,0.33,0.62,0.46,0.035,'#495355'),
+      box(0.37,0.35,0.33,0.18,0.46,0.035,'#d5d1c7'),cyl(0.37,0.47,0.36,0.045,0.035,'#7b746e',{rotX:Math.PI/2}),cyl(0.37,0.28,0.36,0.045,0.035,'#7b746e',{rotX:Math.PI/2})
+    ];
+  }
+
+  function makeKitchenClock(){
+    const parts=[cyl(0,0,0,0.46,0.08,'#9a806b',{rotX:Math.PI/2}),cyl(0,0,0.06,0.39,0.04,'#f6f0e4',{rotX:Math.PI/2})];
+    for(let i=0;i<12;i++){const a=TAU*i/12;parts.push(ellipsoid(Math.sin(a)*0.30,Math.cos(a)*0.30,0.11,0.018,0.018,0.012,'#655a52'));}
+    parts.push(box(0,0.08,0.12,0.035,0.22,0.018,'#655a52',{rotZ:-0.18}),box(0.08,-0.02,0.13,0.20,0.03,0.018,'#655a52',{rotZ:0.20}));
+    return parts;
+  }
+
+  function makeKitchenJars(){
+    return [
+      cyl(-0.28,0,0,0.13,0.38,'#e8ddc8',{taper:0.90}),cyl(-0.28,0.39,0,0.14,0.06,'#b99572'),
+      cyl(0.02,0,0,0.15,0.46,'#d5dfcf',{taper:0.90}),cyl(0.02,0.47,0,0.16,0.06,'#b99572'),
+      cyl(0.34,0,0,0.12,0.32,'#ead1b5',{taper:0.90}),cyl(0.34,0.33,0,0.13,0.06,'#b99572')
     ];
   }
 
@@ -308,33 +463,47 @@
   }
 
   const templates = [
-    { id:'bed', name:'Pillow arch bed', glyph:'☁', colour:'#d89a94', footprint:[2.95,3.32], maker:makeCloudBed, advancedModel:'bed-v1' },
-    { id:'sofa', name:'Scallop sofa', glyph:'⌒', colour:'#7e9fa6', footprint:[3.5,1.65], maker:makeScallopSofa },
-    { id:'chair', name:'Petal chair', glyph:'◡', colour:'#d48e87', footprint:[1.8,1.6], maker:makePetalChair },
-    { id:'coffee', name:'Pebble table', glyph:'●', colour:'#caa27e', footprint:[2.75,1.65], supportHeight:1.03, supportSize:[2.28,1.18], maker:makePebbleCoffeeTable },
-    { id:'lamp', name:'Glow lamp', glyph:'◉', colour:'#e8bd76', footprint:[1.3,1.3], maker:makeGlowLamp, lightHeight:1.75 },
-    { id:'rug', name:'Sunburst rug', glyph:'✺', colour:'#d8b384', footprint:[4.2,3.0], maker:makeSunburstRug },
-    { id:'drawers', name:'Bubble drawers', glyph:'•••', colour:'#c8a17d', footprint:[2.3,1.0], supportHeight:1.66, supportSize:[1.95,0.72], maker:makeBubbleDrawers },
-    { id:'wardrobe', name:'Tall wardrobe', glyph:'∩', colour:'#9d826e', footprint:[2.2,1.1], maker:makeArchedWardrobe },
-    { id:'toybox', name:'Bunny box', glyph:'⌣', colour:'#8eb1b2', footprint:[1.9,1.2], maker:makeBunnyBox },
-    { id:'plant', name:'Sprout plant', glyph:'✦', colour:'#77a27c', footprint:[1.2,1.2], maker:makeSproutPlant },
-    { id:'beanbag', name:'Beanbag', glyph:'◒', colour:'#d08d82', footprint:[1.9,1.9], maker:makeBeanbag },
-    { id:'books', name:'Book stack', glyph:'≡', colour:'#7896a2', footprint:[0.78,0.54], place:'surface', maker:makeBookStack },
-    { id:'mug', name:'Little mug', glyph:'◔', colour:'#e9d7b7', footprint:[0.52,0.46], place:'surface', maker:makeMug },
-    { id:'vase', name:'Flower vase', glyph:'✿', colour:'#d78d82', footprint:[0.58,0.58], place:'surface', maker:makeVase },
-    { id:'candle', name:'Candle', glyph:'◦', colour:'#f0dfbf', footprint:[0.42,0.42], place:'surface', maker:makeCandle },
-    { id:'fruit', name:'Fruit bowl', glyph:'●', colour:'#df9b59', footprint:[1.0,0.8], place:'surface', maker:makeFruitBowl },
-    { id:'tinyplant', name:'Tiny plant', glyph:'❧', colour:'#789b79', footprint:[0.62,0.62], place:'surface', maker:makeTinyPlant },
-    { id:'bedside', name:'Bedside table', glyph:'▣', colour:'#c59d79', footprint:[0.96,0.82], supportHeight:1.15, supportSize:[0.86,0.64], maker:makeBedsideTable },
-    { id:'bedlamp', name:'Bedside lamp', glyph:'◉', colour:'#efc983', footprint:[0.72,0.72], place:'surface', maker:makeBedsideLamp, lightHeight:0.84, lightScale:0.56, lightDistance:2.8 },
-    { id:'clock', name:'Alarm clock', glyph:'◷', colour:'#7896a2', footprint:[0.78,0.52], place:'surface', maker:makeAlarmClock },
-    { id:'cabinet', name:'Base cabinet', glyph:'▥', colour:'#b8c3aa', footprint:[1.46,0.82], supportHeight:0.88, supportSize:[1.30,0.62], maker:makeKitchenCabinet },
-    { id:'sinkcab', name:'Sink cabinet', glyph:'▤', colour:'#bcc7ad', footprint:[1.66,0.86], supportHeight:0.88, supportSize:[1.42,0.68], maker:makeSinkCabinet },
-    { id:'fridge', name:'Fridge', glyph:'▯', colour:'#c5d2d7', footprint:[1.14,1.02], maker:makeFridge },
-    { id:'wallcab', name:'Wall cabinet', glyph:'☰', colour:'#a8b499', footprint:[1.28,0.20], wallSize:[1.28,0.74], place:'wall', canRotate:false, maker:makeWallCabinet },
-    { id:'sunprint', name:'Sun picture', glyph:'☼', colour:'#e5b962', footprint:[1.12,0.14], wallSize:[1.12,0.88], place:'wall', canRotate:false, maker:makeSunPrint },
-    { id:'archprint', name:'Arch picture', glyph:'∩', colour:'#d7a28e', footprint:[0.86,0.14], wallSize:[0.86,1.10], place:'wall', canRotate:false, maker:makeArchPrint },
-    { id:'leafprint', name:'Leaf picture', glyph:'❧', colour:'#76977a', footprint:[1.00,0.14], wallSize:[1.00,0.78], place:'wall', canRotate:false, maker:makeLeafPrint }
+    { id:'bed', name:'Pillow arch bed', glyph:'☁', colour:'#d89a94', footprint:[2.95,3.32], maker:makeCloudBed, advancedModel:'bed-v1', category:'furniture', rooms:['bedroom'] },
+    { id:'kidsbed', name:'Kids bed', glyph:'☾', colour:'#9bb8b9', footprint:[2.10,2.52], maker:makeKidsBed, category:'furniture', rooms:['kids'] },
+    { id:'desk', name:'Play desk', glyph:'⌸', colour:'#d5bb97', footprint:[1.56,0.92], supportHeight:0.88, supportSize:[1.26,0.58], maker:makeKidsDesk, category:'furniture', rooms:['kids'] },
+    { id:'sofa', name:'Scallop sofa', glyph:'⌒', colour:'#7e9fa6', footprint:[3.5,1.65], maker:makeScallopSofa, category:'furniture', rooms:['living'] },
+    { id:'chair', name:'Petal chair', glyph:'◡', colour:'#d48e87', footprint:[1.8,1.6], maker:makePetalChair, category:'furniture', rooms:['living','kids','bedroom','hall','landing'] },
+    { id:'coffee', name:'Pebble table', glyph:'●', colour:'#caa27e', footprint:[2.75,1.65], supportHeight:1.03, supportSize:[2.28,1.18], maker:makePebbleCoffeeTable, category:'furniture', rooms:['living'] },
+    { id:'bedside', name:'Bedside table', glyph:'▣', colour:'#c59d79', footprint:[0.96,0.82], supportHeight:1.15, supportSize:[0.86,0.64], maker:makeBedsideTable, category:'furniture', rooms:['bedroom','kids','hall','landing'] },
+    { id:'drawers', name:'Bubble drawers', glyph:'•••', colour:'#c8a17d', footprint:[2.3,1.0], supportHeight:1.66, supportSize:[1.95,0.72], maker:makeBubbleDrawers, category:'storage', rooms:['bedroom','kids','living'] },
+    { id:'wardrobe', name:'Tall wardrobe', glyph:'∩', colour:'#9d826e', footprint:[2.2,1.1], maker:makeArchedWardrobe, category:'storage', rooms:['bedroom','kids'] },
+    { id:'bookcase', name:'Bookcase', glyph:'☷', colour:'#a78a72', footprint:[1.28,0.56], maker:makeBookcase, category:'storage', rooms:['kids','living','landing'] },
+    { id:'toybox', name:'Bunny box', glyph:'⌣', colour:'#8eb1b2', footprint:[1.9,1.2], maker:makeBunnyBox, category:'play', rooms:['kids'] },
+    { id:'rug', name:'Sunburst rug', glyph:'✺', colour:'#d8b384', footprint:[4.2,3.0], maker:makeSunburstRug, category:'soft', rooms:['living','bedroom'] },
+    { id:'kidsrug', name:'Sky rug', glyph:'✦', colour:'#a8c4cf', footprint:[3.26,3.26], maker:makeSkyRug, category:'soft', rooms:['kids'] },
+    { id:'beanbag', name:'Beanbag', glyph:'◒', colour:'#d08d82', footprint:[1.9,1.9], maker:makeBeanbag, category:'soft', rooms:['kids','living','bedroom'] },
+    { id:'books', name:'Book stack', glyph:'≡', colour:'#7896a2', footprint:[0.78,0.54], place:'surface', maker:makeBookStack, category:'decor', rooms:['all'] },
+    { id:'mug', name:'Little mug', glyph:'◔', colour:'#e9d7b7', footprint:[0.52,0.46], place:'surface', maker:makeMug, category:'decor', rooms:['living','kitchen','hall','landing'] },
+    { id:'vase', name:'Flower vase', glyph:'✿', colour:'#d78d82', footprint:[0.58,0.58], place:'surface', maker:makeVase, category:'decor', rooms:['living','kitchen','bedroom','hall','landing','kids'] },
+    { id:'candle', name:'Candle', glyph:'◦', colour:'#f0dfbf', footprint:[0.42,0.42], place:'surface', maker:makeCandle, category:'decor', rooms:['living','bedroom','hall','landing'] },
+    { id:'fruit', name:'Fruit bowl', glyph:'●', colour:'#df9b59', footprint:[1.0,0.8], place:'surface', maker:makeFruitBowl, category:'decor', rooms:['kitchen','living'] },
+    { id:'tinyplant', name:'Tiny plant', glyph:'❧', colour:'#789b79', footprint:[0.62,0.62], place:'surface', maker:makeTinyPlant, category:'decor', rooms:['all'] },
+    { id:'plant', name:'Sprout plant', glyph:'✦', colour:'#77a27c', footprint:[1.2,1.2], maker:makeSproutPlant, category:'decor', rooms:['all'] },
+    { id:'lamp', name:'Glow lamp', glyph:'◉', colour:'#e8bd76', footprint:[1.3,1.3], maker:makeGlowLamp, lightHeight:1.75, category:'lighting', rooms:['living','kitchen'] },
+    { id:'bedlamp', name:'Bedside lamp', glyph:'◉', colour:'#efc983', footprint:[0.72,0.72], place:'surface', maker:makeBedsideLamp, lightHeight:0.84, lightScale:0.56, lightDistance:2.8, category:'lighting', rooms:['bedroom','kids','hall','landing','kitchen'] },
+    { id:'ceiling', name:'Ceiling pendant', glyph:'⬤', colour:'#efd6a4', footprint:[1.10,1.10], place:'ceiling', canRotate:false, maker:makeCeilingPendant, lightHeight:-0.44, lightScale:0.95, lightDistance:4.2, category:'lighting', rooms:['living','kitchen','hall','landing','bedroom'] },
+    { id:'cloudceiling', name:'Cloud ceiling light', glyph:'☁', colour:'#f4f0e2', footprint:[1.10,1.10], place:'ceiling', canRotate:false, maker:makeCloudCeilingLight, lightHeight:-0.30, lightScale:0.82, lightDistance:4.0, category:'lighting', rooms:['kids'] },
+    { id:'clock', name:'Alarm clock', glyph:'◷', colour:'#7896a2', footprint:[0.78,0.52], place:'surface', maker:makeAlarmClock, category:'decor', rooms:['bedroom','kids','hall','landing'] },
+    { id:'cabinet', name:'Base cabinet', glyph:'▥', colour:'#aab79b', footprint:[1.56,0.92], supportHeight:1.49, supportSize:[1.42,0.76], maker:makeKitchenCabinet, category:'kitchen', rooms:['kitchen'] },
+    { id:'sinkcab', name:'Farmhouse sink', glyph:'▤', colour:'#aab79b', footprint:[1.80,0.94], supportHeight:1.49, supportSize:[1.62,0.78], maker:makeSinkCabinet, category:'kitchen', rooms:['kitchen'] },
+    { id:'ovencab', name:'Oven + hob', glyph:'▦', colour:'#7e8c80', footprint:[1.56,0.92], supportHeight:1.49, supportSize:[1.42,0.76], maker:makeOvenCabinet, category:'kitchen', rooms:['kitchen'] },
+    { id:'fridge', name:'Fridge', glyph:'▯', colour:'#bfcdd1', footprint:[1.22,1.02], maker:makeFridge, category:'kitchen', rooms:['kitchen'] },
+    { id:'wallcab', name:'Wall cabinet', glyph:'☰', colour:'#9daa8f', footprint:[1.48,0.24], wallSize:[1.48,0.98], place:'wall', canRotate:false, maker:makeWallCabinet, category:'kitchen', rooms:['kitchen'] },
+    { id:'shelf', name:'Open shelf', glyph:'═', colour:'#c49d78', footprint:[1.52,0.22], wallSize:[1.52,0.62], place:'wall', canRotate:false, maker:makeKitchenShelf, category:'kitchen', rooms:['kitchen'] },
+    { id:'diningtable', name:'Dining table', glyph:'◯', colour:'#c99f77', footprint:[2.36,2.36], supportHeight:1.25, supportSize:[1.72,1.72], maker:makeDiningTable, category:'kitchen', rooms:['kitchen'] },
+    { id:'diningchair', name:'Dining chair', glyph:'⌑', colour:'#9eaf91', footprint:[1.04,0.94], maker:makeDiningChair, category:'kitchen', rooms:['kitchen'] },
+    { id:'microwave', name:'Microwave', glyph:'▣', colour:'#ece9df', footprint:[1.08,0.68], place:'surface', maker:makeMicrowave, category:'kitchen', rooms:['kitchen'] },
+    { id:'kitchenjars', name:'Storage jars', glyph:'•••', colour:'#d5dfcf', footprint:[0.92,0.48], place:'surface', maker:makeKitchenJars, category:'kitchen', rooms:['kitchen'] },
+    { id:'kitchenclock', name:'Wall clock', glyph:'◷', colour:'#9a806b', footprint:[0.92,0.12], wallSize:[0.92,0.92], place:'wall', canRotate:false, maker:makeKitchenClock, category:'kitchen', rooms:['kitchen'] },
+    { id:'sunprint', name:'Sun picture', glyph:'☼', colour:'#e5b962', footprint:[1.12,0.14], wallSize:[1.12,0.88], place:'wall', canRotate:false, maker:makeSunPrint, category:'wall', rooms:['bedroom','living','kids','kitchen'] },
+    { id:'archprint', name:'Arch picture', glyph:'∩', colour:'#d7a28e', footprint:[0.86,0.14], wallSize:[0.86,1.10], place:'wall', canRotate:false, maker:makeArchPrint, category:'wall', rooms:['bedroom','living','kitchen'] },
+    { id:'leafprint', name:'Leaf picture', glyph:'❧', colour:'#76977a', footprint:[1.00,0.14], wallSize:[1.00,0.78], place:'wall', canRotate:false, maker:makeLeafPrint, category:'wall', rooms:['living','kitchen','bedroom'] },
+    { id:'bunting', name:'Bunting', glyph:'⚑', colour:'#d99b8f', footprint:[1.58,0.12], wallSize:[1.58,0.52], place:'wall', canRotate:false, maker:makeBunting, category:'wall', rooms:['kids'] }
   ];
 
   const defaultItems = [
@@ -347,11 +516,16 @@
     { id:'seed-books-bed', type:'books', room:'bedroom', x:0.16, z:0.03, rot:-0.05, supportId:'seed-bedside-l' },
 
     { id:'seed-landing-plant', type:'plant', room:'landing', x:0.58, z:1.42, rot:0 },
+    { id:'seed-landing-ceiling', type:'ceiling', room:'landing', x:0.00, y:CEILING_MOUNT_Y, z:1.12, rot:0, lightLevel:0.18, shadowEnabled:true },
 
-    { id:'seed-kids-chair', type:'chair', room:'kids', x:3.55, z:0.08, rot:0 },
-    { id:'seed-kids-box', type:'toybox', room:'kids', x:4.62, z:0.88, rot:0 },
-    { id:'seed-kids-drawers', type:'drawers', room:'kids', x:2.30, z:0.90, rot:0 },
-    { id:'seed-kids-plant', type:'plant', room:'kids', x:4.72, z:-0.92, rot:0 },
+    { id:'seed-kids-bed', type:'kidsbed', room:'kids', x:4.28, z:0.72, rot:0 },
+    { id:'seed-kids-rug', type:'kidsrug', room:'kids', x:3.62, z:0.56, rot:0 },
+    { id:'seed-kids-desk', type:'desk', room:'kids', x:3.18, z:-0.76, rot:0 },
+    { id:'seed-kids-chair', type:'chair', room:'kids', x:3.18, z:-0.02, rot:Math.PI },
+    { id:'seed-kids-bookcase', type:'bookcase', room:'kids', x:2.44, z:-1.02, rot:0 },
+    { id:'seed-kids-box', type:'toybox', room:'kids', x:4.78, z:0.10, rot:0 },
+    { id:'seed-kids-plant', type:'plant', room:'kids', x:4.86, z:-1.04, rot:0 },
+    { id:'seed-kids-ceiling', type:'cloudceiling', room:'kids', x:3.52, y:CEILING_MOUNT_Y, z:-0.12, rot:0, lightLevel:0.17, shadowEnabled:true },
 
     { id:'seed-rug-living', type:'rug', room:'living', x:-3.55, z:0.44, rot:0 },
     { id:'seed-sofa', type:'sofa', room:'living', x:-3.58, z:-0.76, rot:0 },
@@ -361,20 +535,31 @@
     { id:'seed-books', type:'books', room:'living', x:-0.32, z:0.02, rot:0.08, supportId:'seed-coffee' },
     { id:'seed-mug', type:'mug', room:'living', x:0.31, z:0.04, rot:0, supportId:'seed-coffee' },
     { id:'seed-vase', type:'vase', room:'living', x:0.03, z:-0.16, rot:0, supportId:'seed-coffee' },
+    { id:'seed-living-ceiling', type:'ceiling', room:'living', x:-3.55, y:CEILING_MOUNT_Y, z:-0.06, rot:0, lightLevel:0.20, shadowEnabled:true },
 
     { id:'seed-hall-bedside', type:'bedside', room:'hall', x:-0.52, z:1.38, rot:0 },
     { id:'seed-hall-lamp', type:'bedlamp', room:'hall', x:0.00, z:0.00, rot:0, supportId:'seed-hall-bedside', lightLevel:0.20, shadowEnabled:true },
+    { id:'seed-hall-ceiling', type:'ceiling', room:'hall', x:0.00, y:CEILING_MOUNT_Y, z:1.12, rot:0, lightLevel:0.20, shadowEnabled:true },
 
-    { id:'seed-kitchen-fridge', type:'fridge', room:'kitchen', x:2.05, z:-1.22, rot:0 },
-    { id:'seed-kitchen-cab1', type:'cabinet', room:'kitchen', x:3.20, z:-1.46, rot:0 },
-    { id:'seed-kitchen-sink', type:'sinkcab', room:'kitchen', x:4.42, z:-1.46, rot:0 },
-    { id:'seed-kitchen-cab2', type:'cabinet', room:'kitchen', x:4.75, z:0.64, rot:-Math.PI/2 },
-    { id:'seed-kitchen-wall1', type:'wallcab', room:'kitchen', x:2.85, y:1.56, z:0, rot:0 },
-    { id:'seed-kitchen-wall2', type:'wallcab', room:'kitchen', x:4.18, y:1.56, z:0, rot:0 },
-    { id:'seed-kitchen-lamp', type:'lamp', room:'kitchen', x:4.72, z:0.72, rot:0, lightLevel:0.20, shadowEnabled:true },
-    { id:'seed-kitchen-plant', type:'plant', room:'kitchen', x:4.58, z:-0.62, rot:0 },
-    { id:'seed-kitchen-fruit', type:'fruit', room:'kitchen', x:0.00, z:0.00, rot:0, supportId:'seed-kitchen-cab1' },
-    { id:'seed-kitchen-vase', type:'vase', room:'kitchen', x:-0.22, z:-0.08, rot:0, supportId:'seed-kitchen-sink' }
+    { id:'seed-kitchen-fridge', type:'fridge', room:'kitchen', x:1.72, z:-1.45, rot:0 },
+    { id:'seed-kitchen-cab1', type:'cabinet', room:'kitchen', x:2.72, z:-1.48, rot:0 },
+    { id:'seed-kitchen-sink', type:'sinkcab', room:'kitchen', x:3.78, z:-1.48, rot:0 },
+    { id:'seed-kitchen-oven', type:'ovencab', room:'kitchen', x:4.88, z:-1.48, rot:0 },
+    { id:'seed-kitchen-cab2', type:'cabinet', room:'kitchen', x:5.02, z:-0.20, rot:-Math.PI/2 },
+    { id:'seed-kitchen-cab3', type:'cabinet', room:'kitchen', x:5.02, z:0.78, rot:-Math.PI/2 },
+    { id:'seed-kitchen-wall1', type:'wallcab', room:'kitchen', x:2.64, y:1.78, z:0, rot:0 },
+    { id:'seed-kitchen-wall2', type:'wallcab', room:'kitchen', x:4.70, y:1.78, z:0, rot:0 },
+    { id:'seed-kitchen-shelf', type:'shelf', room:'kitchen', x:4.00, y:1.92, z:0, rot:0 },
+    { id:'seed-kitchen-clock', type:'kitchenclock', room:'kitchen', x:5.08, y:1.82, z:0, rot:0 },
+    { id:'seed-kitchen-table', type:'diningtable', room:'kitchen', x:3.62, z:0.62, rot:0 },
+    { id:'seed-kitchen-chair1', type:'diningchair', room:'kitchen', x:2.72, z:0.62, rot:Math.PI/2 },
+    { id:'seed-kitchen-chair2', type:'diningchair', room:'kitchen', x:4.52, z:0.62, rot:-Math.PI/2 },
+    { id:'seed-kitchen-microwave', type:'microwave', room:'kitchen', x:0.00, z:0.00, rot:0, supportId:'seed-kitchen-cab2' },
+    { id:'seed-kitchen-jars', type:'kitchenjars', room:'kitchen', x:-0.10, z:0.00, rot:0, supportId:'seed-kitchen-cab1' },
+    { id:'seed-kitchen-ceiling', type:'ceiling', room:'kitchen', x:3.62, y:CEILING_MOUNT_Y, z:0.48, rot:0, lightLevel:0.18, shadowEnabled:true },
+    { id:'seed-kitchen-plant', type:'plant', room:'kitchen', x:4.84, z:1.34, rot:0 },
+    { id:'seed-kitchen-fruit', type:'fruit', room:'kitchen', x:0.00, z:0.00, rot:0, supportId:'seed-kitchen-table' },
+    { id:'seed-kitchen-vase', type:'vase', room:'kitchen', x:-0.30, z:-0.08, rot:0, supportId:'seed-kitchen-sink' }
   ];
 
 
@@ -387,6 +572,7 @@
 
   let selectedId = null;
   let activeRoomId = 'living';
+  let activeInventoryCategory = 'furniture';
   let idCounter = 1;
   let gesture = null;
   let resizeRaf = 0;
@@ -469,6 +655,24 @@
   function itemById(id){ return state.items.find(i => i.id === id); }
 
   function roomLayerIndex(roomId){ return ROOM_LAYERS[roomId] || 0; }
+
+  function roomSetName(roomId){
+    return roomById(roomId).name;
+  }
+
+  function templateAllowedInRoom(t, roomId){
+    const allowed=t.rooms||['all'];
+    return allowed.includes('all')||allowed.includes(roomId);
+  }
+
+  function filteredTemplates(roomId=activeRoomId, category=activeInventoryCategory){
+    return templates.filter(t=>templateAllowedInRoom(t,roomId) && (!category || t.category===category));
+  }
+
+  function availableCategories(roomId=activeRoomId){
+    const ordered=ROOM_CATEGORY_ORDER[roomId]||Object.keys(INVENTORY_CATEGORIES);
+    return ordered.filter(cat=>templates.some(t=>t.category===cat && templateAllowedInRoom(t,roomId)));
+  }
 
   function enableRoomLayers(object, roomIds){
     if(!object)return object;
@@ -1048,7 +1252,10 @@
     invalidateShadows();
   }
 
-  function floorYForItem(item){ return roomById(item.room).floorY; }
+  function floorYForItem(item){
+    const room=roomById(item.room),t=templateById(item.type);
+    return t?.place==='ceiling' ? room.floorY + (Number(item.y)||CEILING_MOUNT_Y) : room.floorY;
+  }
 
   function createItemGroup(item){
     const t=templateById(item.type);
@@ -1152,6 +1359,13 @@
       clampWallItem(item);
       group.position.set(item.x,room.floorY+item.y,room.wallPlaneZ);
       group.rotation.set(0,0,0);
+    }else if(t?.place==='ceiling'){
+      item.supportId=null;
+      if(group.parent!==itemRoot)itemRoot.attach(group);
+      if(!Number.isFinite(Number(item.y)))item.y=CEILING_MOUNT_Y;
+      clampCeilingItem(item);
+      group.position.set(item.x,room.floorY+item.y,item.z);
+      group.rotation.set(0,0,0);
     }else if(item.supportId && supportAnchors.has(item.supportId)){
       const anchor=supportAnchors.get(item.supportId);
       if(group.parent!==anchor) anchor.attach(group);
@@ -1169,7 +1383,7 @@
     const group=itemGroups.get(item.id);
     if(group)return group.getWorldPosition(new THREE.Vector3());
     const room=roomById(item.room),t=templateById(item.type);
-    return t?.place==='wall'?new THREE.Vector3(item.x,room.floorY+(item.y||1.45),room.wallPlaneZ):new THREE.Vector3(item.x,floorYForItem(item),item.z);
+    return t?.place==='wall' ? new THREE.Vector3(item.x,room.floorY+(item.y||1.45),room.wallPlaneZ) : t?.place==='ceiling' ? new THREE.Vector3(item.x,room.floorY+(item.y||CEILING_MOUNT_Y),item.z) : new THREE.Vector3(item.x,floorYForItem(item),item.z);
   }
 
   function worldYaw(group){
@@ -1215,9 +1429,21 @@
     item.y=clamp(Number(item.y)||1.45,halfH+0.30,ROOM_H-halfH-0.18);
   }
 
+  function clampCeilingItem(item){
+    const room=roomById(item.room),t=templateById(item.type);
+    const fw=scaled(t.footprint[0]),fd=scaled(t.footprint[1]);
+    item.x=clamp(item.x,room.minX+fw/2+0.10,room.maxX-fw/2-0.10);
+    const minZ=(room.placeMinZ??BACK_Z)+fd/2+0.10;
+    const maxZ=(room.placeMaxZ??FRONT_Z)-fd/2-0.10;
+    item.z=clamp(item.z,Math.min(minZ,maxZ),maxZ);
+    item.y=CEILING_MOUNT_Y;
+  }
+
   function clampFloorItem(item){
     if(item.supportId)return;
-    const room=roomById(item.room),t=templateById(item.type);
+    const t=templateById(item.type);
+    if(t?.place==='ceiling'){ clampCeilingItem(item); return; }
+    const room=roomById(item.room);
     const fw=scaled(t.footprint[0]),fd=scaled(t.footprint[1]);
     const a=item.rot||0;
     const halfX=(Math.abs(Math.cos(a))*fw+Math.abs(Math.sin(a))*fd)/2;
@@ -1269,6 +1495,8 @@
     buildSwatches(floorSwatches,floorPalette,'floor');
     buildWallpaperSwatches();
     buildFloorTextureSwatches();
+    buildInventoryCategories();
+    buildCarousel();
     updateLocalLightShadows();
   }
 
@@ -1442,7 +1670,7 @@
       }else{
         const hit=intersectHorizontal(p,wp.y)||picked.point;
         gesture={mode:'item',pointerId:ev.pointerId,id:item.id,dx:wp.x-hit.x,dz:wp.z-hit.z,moved:false,armed:false,startX:p.x,startY:p.y};
-        hint.textContent=t.place==='surface'?'Drag the selected detail onto a surface':'Drag the selected item into place';
+        hint.textContent=t.place==='surface' ? 'Drag the selected detail onto a surface' : t.place==='ceiling' ? 'Drag the selected ceiling light across the room' : 'Drag the selected item into place';
       }
       return;
     }
@@ -1527,13 +1755,14 @@
           group.position.set(item.x,0.012,item.z);
         }
       }else{
-        const floorY=floorYForItem(item);
-        const hit=intersectHorizontal(p,floorY);
+        const planeY=floorYForItem(item);
+        const hit=intersectHorizontal(p,planeY);
         if(hit){
           if(item.supportId)detachFromSupportToFloor(item,hit);
           item.x=hit.x+gesture.dx; item.z=hit.z+gesture.dz;
-          clampFloorItem(item);
-          group.position.set(item.x,floorY,item.z);
+          if(t.place==='ceiling') clampCeilingItem(item);
+          else clampFloorItem(item);
+          group.position.set(item.x,planeY,item.z);
         }
       }
       gesture.moved=true;
@@ -1651,24 +1880,58 @@
     if(t.place==='wall'){
       item.x=room.cx;item.y=1.48;item.z=0;
       clampWallItem(item);
+    }else if(t.place==='ceiling'){
+      item.x=room.cx; item.y=CEILING_MOUNT_Y; item.z=zMid;
+      clampCeilingItem(item);
     }else if(t.place==='surface'){
       const support=state.items.find(s=>s.room===room.id&&templateById(s.type)?.supportHeight);
       if(support){item.supportId=support.id;item.x=0;item.z=0;}
     }
-    if(t.place!=='wall'&&!item.supportId)clampFloorItem(item);
+    if(t.place!=='wall'&&t.place!=='ceiling'&&!item.supportId)clampFloorItem(item);
     state.items.push(item);
     const group=createItemGroup(item);itemRoot.add(group);placeItemGroup(item);invalidateShadows(room.id);updateLighting();
     selectItem(item.id);save();
-    hint.textContent=t.place==='wall'?`Hang the ${t.name.toLowerCase()} where you like`:t.place==='surface'?(item.supportId?'Added to a surface · drag to fine tune':'Drag onto a table or drawers'):`Drag the ${t.name.toLowerCase()} into place`;
+    hint.textContent=t.place==='wall' ? `Hang the ${t.name.toLowerCase()} where you like` : t.place==='ceiling' ? `Slide the ${t.name.toLowerCase()} across the ceiling` : t.place==='surface' ? (item.supportId?'Added to a surface · drag to fine tune':'Drag onto a table or drawers') : `Drag the ${t.name.toLowerCase()} into place`;
+  }
+
+  function buildInventoryCategories(){
+    if(!categoryRow)return;
+    const roomName=roomSetName(activeRoomId);
+    if(inventoryTitle)inventoryTitle.textContent=`${roomName.toUpperCase()} SET`;
+    if(inventorySubtitle)inventorySubtitle.textContent='Choose a category';
+    const categories=availableCategories(activeRoomId);
+    if(!categories.includes(activeInventoryCategory))activeInventoryCategory=categories[0]||null;
+    categoryRow.innerHTML='';
+    categories.forEach(cat=>{
+      const btn=document.createElement('button');
+      btn.type='button';
+      btn.className='room-category-chip';
+      btn.textContent=INVENTORY_CATEGORIES[cat]||cat;
+      btn.setAttribute('aria-pressed',String(activeInventoryCategory===cat));
+      if(activeInventoryCategory===cat)btn.classList.add('active');
+      btn.addEventListener('click',()=>{
+        activeInventoryCategory=cat;
+        buildInventoryCategories();
+        buildCarousel();
+      });
+      categoryRow.appendChild(btn);
+    });
   }
 
   function buildCarousel(){
     carousel.innerHTML='';
-    templates.forEach(t=>{
+    const visible=filteredTemplates(activeRoomId,activeInventoryCategory);
+    visible.forEach(t=>{
       const b=document.createElement('button');b.type='button';b.className='room-item-card';
-      b.innerHTML=`<span class="room-item-glyph" style="--room-item-colour:${t.colour}">${t.glyph}</span><strong>${t.name}</strong><small>${t.place==='wall'?'Hang':(t.place==='surface'?'Place':'Add')}</small>`;
+      b.innerHTML=`<span class="room-item-glyph" style="--room-item-colour:${t.colour}">${t.glyph}</span><strong>${t.name}</strong><small>${t.place==='wall'?'Hang':(t.place==='surface'?'Place':(t.place==='ceiling'?'Ceiling':'Add'))}</small>`;
       b.addEventListener('click',()=>addItem(t.id));carousel.appendChild(b);
     });
+    if(!visible.length){
+      const empty=document.createElement('div');
+      empty.className='room-carousel-empty';
+      empty.textContent='Nothing in this category yet';
+      carousel.appendChild(empty);
+    }
   }
 
   function buildSwatches(holder,palette,key){
@@ -1743,7 +2006,7 @@
   function updateSelection(){
     const item=itemById(selectedId),t=item&&templateById(item.type),support=item&&item.supportId&&itemById(item.supportId);
     selectedName.textContent=t?`${t.name}${support?` · on ${templateById(support.type).name}`:''}`:'Nothing selected';
-    rotateBtn.disabled=!item||t?.canRotate===false||t?.place==='wall';removeBtn.disabled=!item;
+    rotateBtn.disabled=!item||t?.canRotate===false||t?.place==='wall'||t?.place==='ceiling';removeBtn.disabled=!item;
     const isLamp=!!(item&&t?.lightHeight);
     if(lightControl)lightControl.hidden=!isLamp;
     if(isLamp&&lightLevel&&lightValue){
@@ -1798,6 +2061,7 @@
           if(typeof i.shadowEnabled!=='boolean')i.shadowEnabled=true;
         }
         if(t?.place==='wall')clampWallItem(i);
+        else if(t?.place==='ceiling')clampCeilingItem(i);
         else if(!i.supportId)clampFloorItem(i);
       });
     }catch{}
@@ -1807,7 +2071,7 @@
     const r=canvas.getBoundingClientRect();if(!r.width)return;
     const cssW=r.width;
     const viewportH=Math.max(640,window.innerHeight||800);
-    const cssH=Math.max(270,Math.min(500,cssW*0.88,viewportH*0.38));
+    const cssH=Math.max(248,Math.min(468,cssW*0.80,viewportH*0.34));
     canvas.style.height=`${cssH}px`;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.6));
     renderer.setSize(cssW,cssH,false);
@@ -1826,6 +2090,7 @@
       if(typeof i.shadowEnabled!=='boolean')i.shadowEnabled=true;
     }
     if(t?.place==='wall')clampWallItem(i);
+    else if(t?.place==='ceiling')clampCeilingItem(i);
     else if(!i.supportId)clampFloorItem(i);
   });
   buildArchitecture();

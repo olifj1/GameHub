@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.8.23">
+  <link rel="stylesheet" href="style.css?v=1.8.25">
   <title>My House</title>
 </head>
 <body class="modular-game" data-game-id="game-15">
@@ -19,7 +19,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="game-15-info-title">Make the house your own</h2>
-      <p>Choose furniture, wall art and little details from the carousel. Tap an item and release to select it, then drag that selected item to move it. Dragging anywhere except the currently selected item — including directly over other furniture — slides the view, so you never need to hunt for an empty patch of floor. Pinch to zoom. Small objects can sit on tables and drawers and travel with the furniture underneath them. Select a lamp to adjust its brightness and switch that lamp’s shadows on or off; lamp shadow maps are limited to the lamp’s own room to keep the test lighter on the phone. Rotate or put away selected items, change each room’s walls, wallpaper and floor, and switch between day and evening lighting. Your house saves automatically on this device.</p>
+      <p>Choose furniture, wall art and little details from the room set carousel. Each room now has its own filtered dressing set, plus categories like big pieces, soft furnishings, ornaments, lighting and wall art. Tap an item and release to select it, then drag that selected item to move it. Dragging anywhere except the currently selected item — including directly over other furniture — slides the view, so you never need to hunt for an empty patch of floor. Pinch to zoom. Small objects can sit on tables and drawers and travel with the furniture underneath them. Select a lamp or ceiling light to adjust its brightness and switch that light’s shadows on or off; lamp shadow maps are limited to the light’s own room to keep the test lighter on the phone. Rotate or put away selected items, change each room’s walls, wallpaper and floor, and switch between day and evening lighting. Your house saves automatically on this device.</p>
     </div>
   </div>
 
@@ -58,9 +58,10 @@
 
         <section class="room-inventory-panel" aria-label="Furniture inventory">
           <div class="room-panel-heading">
-            <div><span>FURNITURE + DETAILS</span><small>Adds to this room</small></div>
+            <div><span id="room-inventory-title">ROOM SET</span><small id="room-inventory-subtitle">Choose a category</small></div>
             <button id="room-clear" type="button">Clear room</button>
           </div>
+          <div class="room-category-row" id="room-category-row" aria-label="Inventory categories"></div>
           <div class="room-carousel-shell">
             <button class="room-carousel-arrow" id="room-carousel-prev" type="button" aria-label="Previous furniture">‹</button>
             <div class="room-carousel" id="room-carousel" tabindex="0"></div>
@@ -90,9 +91,9 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.8.23"></script>
-  <script src="core.js?v=1.8.23"></script>
+  <script src="site-config.js?v=1.8.25"></script>
+  <script src="core.js?v=1.8.25"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.1/three.min.js"></script>
-  <script src="game-15.js?v=1.8.23"></script>
+  <script src="game-15.js?v=1.8.25"></script>
 </body>
 </html>
