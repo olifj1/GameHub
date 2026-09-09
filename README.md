@@ -1,13 +1,20 @@
-# GameHub v1.8.28
+# GameHub v1.8.29
 
-This release adds an experimental indirect bounce-lighting pass to My House, plus a new scene-lighting control for it.
+This release replaces the first My House GI experiment with a ray-hit virtual-light bounce system.
 
 ## Updated in this version
-- Added a new **INDIRECT** slider to the My House scene-lighting panel for each **Day** and **Evening** preset.
-- Indirect light is now estimated per room from the active direct lighting and the room’s colours/furniture, so you can try a darker scene with direct light doing the main work and indirect bounce softly filling the room.
-- The render badge now shows the current **GI** percentage to help when comparing lighting setups.
-- The in-game instructions now mention the new lighting workflow.
-- The service-worker cache version is bumped for a clean PWA update.
+- Removed the fixed three-bounce-light-per-room setup from v1.8.28.
+- Ceiling spotlights now cast a small configurable set of CPU ray samples through their cone.
+- The directional key light also contributes a lightweight per-room bounce sample when it is enabled, so direct-only daytime lighting can produce some indirect response.
+- Point lamps use an importance-biased set of directions, starting downward and spreading outward as more samples are enabled.
+- A successful ray hit creates a broad, non-shadow-casting virtual spotlight at the hit surface, aimed along that surface normal and tinted by the source light and material colour.
+- Bounce strength accounts for source intensity, source-to-hit distance and incidence angle.
+- Added **RAYS / LIGHT** control from 0 to 4. The default is 1 for a mobile-friendly starting point.
+- Virtual bounce lights are globally capped at 12 and ranked by estimated contribution to stop high lamp counts from exploding the GPU cost.
+- Bounce lights are recalculated after furniture/light movement rather than continuously during a drag.
+- Performance badge now reports the active VPL count.
+- Existing My House saves remain compatible.
+- Service-worker cache bumped for a clean PWA update.
 
 ## Files
 Upload the contents of this ZIP to the root of the `GameHub` repository, replacing the existing files.

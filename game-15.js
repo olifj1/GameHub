@@ -37,6 +37,8 @@
   const ambientValue = document.getElementById('room-ambient-value');
   const indirectLevel = document.getElementById('room-indirect-level');
   const indirectValue = document.getElementById('room-indirect-value');
+  const bounceRaysLevel = document.getElementById('room-bounce-rays');
+  const bounceRaysValue = document.getElementById('room-bounce-rays-value');
   const globalLightReset = document.getElementById('room-global-light-reset');
 
   if (!canvas) return;
@@ -77,16 +79,18 @@
   const LAMP_MAX_INTENSITY = 6.2;
   const LIGHT_LEVEL_MAX = 1.50;
   const INDIRECT_LEVEL_MAX = 1.50;
+  const BOUNCE_RAYS_MAX = 4;
+  const BOUNCE_VPL_LIMIT = 12;
+  const BOUNCE_DISTANCE = 4.6;
+  const BOUNCE_GAIN = 2.35;
   const SPOT_CONE_MIN_DEG = 50;
   const SPOT_CONE_MAX_DEG = 170;
   const SPOT_CONE_DEFAULT_DEG = 130;
   const CEILING_MOUNT_Y = ROOM_H - 0.04;
   const LIGHTING_PRESETS = {
-    day:{direct:1.00,ambient:1.00,indirect:0.18},
-    evening:{direct:0.00,ambient:0.28,indirect:0.38}
+    day:{direct:1.00,ambient:1.00,indirect:0.18,bounceRays:1},
+    evening:{direct:0.00,ambient:0.28,indirect:0.38,bounceRays:1}
   };
-  const ROOM_DAYLIGHT_FACTORS = { bedroom:0.84, kids:0.88, living:0.96, kitchen:1.00, hall:0.52, landing:0.58 };
-  const ROOM_WINDOW_SIDES = { bedroom:'left', living:'left', kids:'right', kitchen:'right', hall:'centre', landing:'centre' };
 
   // Compact dog-leg / return stair kept in the rear half of the central core,
   // leaving a real hall and upper landing at the open front of the dollhouse.
@@ -673,7 +677,8 @@
   const supportPlanes = [];
   const selectableMeshes = [];
   const localLights = [];
-  const indirectLightRigs = new Map();
+  const bounceLights = [];
+  const bounceTargets = [];
   const emissiveMeshes = [];
   let selectionHelper = null;
   let renderAverageMs = 0;
@@ -739,101 +744,157 @@
     });
   }
 
-  function roomInteriorCenterZ(room){
-    if(room.core){
-      const minZ=Number(room.placeMinZ ?? CORE_DRESS_MIN_Z);
-      const maxZ=Number(room.placeMaxZ ?? (FRONT_Z-0.10));
-      return clamp((minZ+maxZ)/2, minZ+0.18, maxZ-0.18);
+  function clearBounceLights(){
+    bounceLights.forEach(light=>{
+      scene.remove(light);
+      light.dispose?.();
+    });
+    bounceTargets.forEach(target=>scene.remove(target));
+    bounceLights.length=0;
+    bounceTargets.length=0;
+  }
+
+  function materialBaseColor(object){
+    const mat=Array.isArray(object?.material)?object.material[0]:object?.material;
+    if(mat?.color)return mat.color.clone();
+    return new THREE.Color(0xd8d3cc);
+  }
+
+  function firstBounceHit(origin,direction,roomId,sourceItemId=null,maxDistance=BOUNCE_DISTANCE){
+    const dir=direction.clone().normalize();
+    raycaster.set(origin,dir);
+    raycaster.near=0.035;
+    raycaster.far=maxDistance;
+    const layer=roomLayerIndex(roomId);
+    const hits=raycaster.intersectObjects([houseGroup,itemRoot,decorGroup],true);
+    raycaster.near=0;
+    raycaster.far=Infinity;
+    for(const hit of hits){
+      const object=hit.object;
+      if(!object?.isMesh||object.userData?.hitProxy)continue;
+      if(sourceItemId&&object.userData?.itemId===sourceItemId)continue;
+      if(layer&&!(object.layers.mask&(1<<layer)))continue;
+      const mat=Array.isArray(object.material)?object.material[0]:object.material;
+      if(mat?.visible===false||mat?.colorWrite===false||Number(mat?.opacity)===0)continue;
+      if(!hit.face)continue;
+      const normal=hit.face.normal.clone().transformDirection(object.matrixWorld).normalize();
+      const incidence=Math.max(0,normal.dot(dir.clone().multiplyScalar(-1)));
+      if(incidence<0.035)continue;
+      return {point:hit.point.clone(),normal,distance:hit.distance,color:materialBaseColor(object),incidence};
     }
-    return 0.08;
+    return null;
   }
 
-  function ensureIndirectRig(room){
-    let rig=indirectLightRigs.get(room.id);
-    if(rig)return rig;
-    const layer=roomLayerIndex(room.id) || 0;
-    const side=ROOM_WINDOW_SIDES[room.id]||'centre';
-    const centreZ=roomInteriorCenterZ(room);
-    const sideX=side==='left' ? room.minX + 0.36 : side==='right' ? room.maxX - 0.36 : room.cx;
-
-    const floorLight=new THREE.PointLight(0xffffff,0,5.2,2);
-    floorLight.position.set(room.cx,room.floorY+0.56,centreZ+0.05);
-    floorLight.layers.set(layer);
-    floorLight.castShadow=false;
-
-    const wallLight=new THREE.PointLight(0xffffff,0,4.9,2);
-    wallLight.position.set(sideX,room.floorY+1.42,centreZ-0.22);
-    wallLight.layers.set(layer);
-    wallLight.castShadow=false;
-
-    const backLight=new THREE.PointLight(0xffffff,0,4.1,2);
-    backLight.position.set(room.cx,room.floorY+1.18,BACK_Z+0.56);
-    backLight.layers.set(layer);
-    backLight.castShadow=false;
-
-    rig={floorLight,wallLight,backLight};
-    indirectLightRigs.set(room.id,rig);
-    scene.add(floorLight);
-    scene.add(wallLight);
-    scene.add(backLight);
-    return rig;
+  function spotSampleDirections(light,count){
+    const origin=light.getWorldPosition(new THREE.Vector3());
+    const target=light.target?.getWorldPosition?.(new THREE.Vector3())||origin.clone().add(new THREE.Vector3(0,-1,0));
+    const centre=target.sub(origin).normalize();
+    if(count<=1)return [centre];
+    const helper=Math.abs(centre.y)<0.92?new THREE.Vector3(0,1,0):new THREE.Vector3(1,0,0);
+    const u=new THREE.Vector3().crossVectors(centre,helper).normalize();
+    const v=new THREE.Vector3().crossVectors(u,centre).normalize();
+    const dirs=[centre.clone()];
+    const spread=Math.tan(Math.min(light.angle*0.58,THREE.MathUtils.degToRad(47)));
+    for(let i=1;i<count;i++){
+      const a=TAU*(i-1)/Math.max(1,count-1);
+      dirs.push(centre.clone()
+        .addScaledVector(u,Math.cos(a)*spread)
+        .addScaledVector(v,Math.sin(a)*spread)
+        .normalize());
+    }
+    return dirs;
   }
 
-  function roomFeatureColor(roomId){
-    let r=0,g=0,b=0,w=0;
-    state.items.forEach(item=>{
-      if(item.room!==roomId)return;
-      const t=templateById(item.type);
-      if(!t||!t.colour)return;
-      const weightMap={ furniture:4.4, kitchen:4.2, storage:3.1, soft:2.6, play:2.4, lighting:1.4, wall:1.2, decor:1.0 };
-      let weight=weightMap[t.category]||1.0;
-      if(item.supportId)weight*=0.72;
-      const c=new THREE.Color(t.colour);
-      r+=c.r*weight; g+=c.g*weight; b+=c.b*weight; w+=weight;
-    });
-    return w>0 ? new THREE.Color(r/w,g/w,b/w) : new THREE.Color(state.rooms[roomId]?.wall || '#ddd5cc');
+  function pointSampleDirections(count){
+    const dirs=[
+      new THREE.Vector3(0,-1,0),
+      new THREE.Vector3(0.62,-0.76,-0.18),
+      new THREE.Vector3(-0.62,-0.76,-0.18),
+      new THREE.Vector3(0,-0.66,0.75)
+    ];
+    return dirs.slice(0,Math.max(0,Math.min(count,dirs.length))).map(d=>d.normalize());
   }
 
-  function roomLampEnergy(roomId){
-    let total=0;
+  function bounceCandidateForRay(light,direction,roomId,sourceItemId,sampleCount){
+    const origin=light.getWorldPosition(new THREE.Vector3());
+    const hit=firstBounceHit(origin,direction,roomId,sourceItemId,Number(light.distance)||BOUNCE_DISTANCE);
+    if(!hit)return null;
+    const d=Math.max(0.22,hit.distance);
+    const distanceFalloff=1/(0.65+d*d*0.72);
+    const sampleWeight=1/Math.max(1,sampleCount);
+    const sourceEnergy=Math.max(0,Number(light.intensity)||0);
+    const energy=sourceEnergy*distanceFalloff*hit.incidence*sampleWeight;
+    if(energy<0.012)return null;
+    const sourceColor=light.color?.clone?.()||new THREE.Color(0xffffff);
+    const bouncedColor=sourceColor.multiply(hit.color);
+    return {roomId,point:hit.point,normal:hit.normal,color:bouncedColor,energy};
+  }
+
+  function sunBounceCandidate(room){
+    if((Number(sun.intensity)||0)<=0.02)return null;
+    const sunPos=sun.getWorldPosition(new THREE.Vector3());
+    const sunTarget=sun.target.getWorldPosition(new THREE.Vector3());
+    const direction=sunTarget.sub(sunPos).normalize();
+    // Start just outside the open dollhouse front so the sample follows the
+    // same broad front/top direction as the directional key without being
+    // immediately swallowed by the roof slab.
+    const origin=new THREE.Vector3(
+      room.cx-direction.x*0.42,
+      room.floorY+ROOM_H*0.82,
+      FRONT_Z+0.46
+    );
+    const hit=firstBounceHit(origin,direction,room.id,null,6.2);
+    if(!hit)return null;
+    const sourceColor=sun.color.clone();
+    const bouncedColor=sourceColor.multiply(hit.color);
+    const energy=Math.max(0,Number(sun.intensity)||0)*hit.incidence*0.17;
+    if(energy<0.012)return null;
+    return {roomId:room.id,point:hit.point,normal:hit.normal,color:bouncedColor,energy};
+  }
+
+  function rebuildBounceLights(levels=currentLightingLevels(),evening=state.lighting==='evening'){
+    clearBounceLights();
+    const indirect=clamp(Number(levels.indirect??0),0,INDIRECT_LEVEL_MAX);
+    const rayCount=clamp(Math.round(Number(levels.bounceRays??1)),0,BOUNCE_RAYS_MAX);
+    if(indirect<=0.001||rayCount<=0)return;
+
+    const candidates=[];
+    if((Number(sun.intensity)||0)>0.02){
+      rooms.forEach(room=>{
+        const candidate=sunBounceCandidate(room);
+        if(candidate)candidates.push(candidate);
+      });
+    }
     localLights.forEach(light=>{
-      if(light.userData.room!==roomId)return;
-      total+=Math.max(0,Number(light.intensity)||0);
+      if((Number(light.intensity)||0)<=0.025)return;
+      const roomId=light.userData.room;
+      const sourceItemId=light.userData.itemId;
+      const dirs=light.isSpotLight?spotSampleDirections(light,rayCount):pointSampleDirections(rayCount);
+      dirs.forEach(dir=>{
+        const candidate=bounceCandidateForRay(light,dir,roomId,sourceItemId,dirs.length);
+        if(candidate)candidates.push(candidate);
+      });
     });
-    return clamp(total/6.6,0,2.2);
-  }
 
-  function updateIndirectLighting(levels, evening){
-    const indirectLevel=clamp(Number(levels.indirect ?? 0),0,INDIRECT_LEVEL_MAX);
-    const daylightColor=new THREE.Color(evening?0xaab7d4:0xfff0d7);
-    const lampColor=new THREE.Color(0xffc878);
-
-    rooms.forEach(room=>{
-      const rig=ensureIndirectRig(room);
-      const style=state.rooms[room.id]||room;
-      const wallColor=new THREE.Color(style.wall || room.wall);
-      const floorColor=new THREE.Color(style.floor || room.floor);
-      const featureColor=roomFeatureColor(room.id);
-      const daylight=(evening?0.28:1.0)*levels.direct*(ROOM_DAYLIGHT_FACTORS[room.id]||0.72);
-      const lamp=roomLampEnergy(room.id);
-      const sourceEnergy=(daylight*1.18)+(lamp*1.42);
-      const sourceMix=Math.max(0.0001,(daylight*1.05)+(lamp*0.95));
-      const sourceColor=new THREE.Color(0,0,0)
-        .add(daylightColor.clone().multiplyScalar(daylight*1.05))
-        .add(lampColor.clone().multiplyScalar(lamp*0.95))
-        .multiplyScalar(1/sourceMix);
-      const base=indirectLevel*sourceEnergy;
-      const floorIntensity=clamp(base*1.08,0,2.8);
-      const wallIntensity=clamp(base*0.76,0,2.2);
-      const backIntensity=clamp(base*0.54,0,1.6);
-
-      rig.floorLight.color.copy(sourceColor).lerp(floorColor,0.58).lerp(featureColor,0.12);
-      rig.wallLight.color.copy(sourceColor).lerp(wallColor,0.56).lerp(featureColor,0.14);
-      rig.backLight.color.copy(sourceColor).lerp(wallColor,0.38).lerp(featureColor,0.22);
-
-      rig.floorLight.intensity=indirectLevel>0.001?floorIntensity:0;
-      rig.wallLight.intensity=indirectLevel>0.001?wallIntensity:0;
-      rig.backLight.intensity=indirectLevel>0.001?backIntensity:0;
+    candidates.sort((a,b)=>b.energy-a.energy);
+    candidates.slice(0,BOUNCE_VPL_LIMIT).forEach(candidate=>{
+      const intensity=clamp(candidate.energy*BOUNCE_GAIN*indirect,0,3.2);
+      if(intensity<0.018)return;
+      const position=candidate.point.clone().addScaledVector(candidate.normal,0.055);
+      const target=new THREE.Object3D();
+      target.position.copy(position).addScaledVector(candidate.normal,1.2);
+      scene.add(target);
+      const vpl=new THREE.SpotLight(candidate.color,intensity,3.9,THREE.MathUtils.degToRad(82),0.78,2);
+      vpl.position.copy(position);
+      vpl.target=target;
+      vpl.castShadow=false;
+      vpl.userData.virtualBounce=true;
+      vpl.userData.room=candidate.roomId;
+      const layer=roomLayerIndex(candidate.roomId);
+      if(layer)vpl.layers.set(layer);
+      scene.add(vpl);
+      bounceTargets.push(target);
+      bounceLights.push(vpl);
     });
   }
 
@@ -1657,7 +1718,7 @@
     if(perfBadge){
       const approxFps=Math.min(999,Math.round(1000/Math.max(0.5,elapsed)));
       const levels=currentLightingLevels();
-      perfBadge.textContent=`${shadowRefresh?'Shadow':'Frame'} ${elapsed.toFixed(1)}ms · ~${approxFps}fps · ${activeShadowCount} local sh. · GI ${Math.round((levels.indirect||0)*100)}%`;
+      perfBadge.textContent=`${shadowRefresh?'Shadow':'Frame'} ${elapsed.toFixed(1)}ms · ~${approxFps}fps · ${activeShadowCount} sh. · ${bounceLights.length} VPL`;
     }
   }
 
@@ -1683,6 +1744,7 @@
     levels.direct=clamp(Number(levels.direct ?? LIGHTING_PRESETS[mode].direct),0,1);
     levels.ambient=clamp(Number(levels.ambient ?? LIGHTING_PRESETS[mode].ambient),0,1);
     levels.indirect=clamp(Number(levels.indirect ?? LIGHTING_PRESETS[mode].indirect),0,INDIRECT_LEVEL_MAX);
+    levels.bounceRays=clamp(Math.round(Number(levels.bounceRays ?? LIGHTING_PRESETS[mode].bounceRays)),0,BOUNCE_RAYS_MAX);
     return levels;
   }
 
@@ -1696,6 +1758,8 @@
     if(ambientValue)ambientValue.textContent=`${Math.round(levels.ambient*100)}%`;
     if(indirectLevel)indirectLevel.value=String(Math.round(levels.indirect*100));
     if(indirectValue)indirectValue.textContent=`${Math.round(levels.indirect*100)}%`;
+    if(bounceRaysLevel)bounceRaysLevel.value=String(levels.bounceRays);
+    if(bounceRaysValue)bounceRaysValue.textContent=String(levels.bounceRays);
   }
 
   function updateLocalLightShadows(){
@@ -1736,7 +1800,7 @@
       const t=item&&templateById(item.type);
       light.intensity=evening?LAMP_MAX_INTENSITY*(t?.lightScale||1)*lampLevelFor(item):0;
     });
-    updateIndirectLighting(levels, evening);
+    rebuildBounceLights(levels, evening);
     updateLocalLightShadows();
     emissiveMeshes.forEach(mesh=>{
       if(!mesh.material||!('emissiveIntensity' in mesh.material))return;
@@ -1975,6 +2039,7 @@
         selectItem(gesture.candidateId||null);
       }else if(gesture?.mode==='item'&&gesture.moved){
         save();
+        updateLighting();
       }
       gesture=null;
       hint.textContent='Tap selects · selected item moves · other drags explore';
@@ -1990,7 +2055,7 @@
     item.rot=(item.rot||0)+Math.PI/2;
     const group=itemGroups.get(item.id); if(group)group.rotation.y=item.rot;
     if(item.supportId)clampSupportedItem(item); else clampFloorItem(item);
-    placeItemGroup(item); save(); invalidateShadows(item.room); updateSelectionHelper(); render();
+    placeItemGroup(item); save(); invalidateShadows(item.room); updateSelectionHelper(); updateLighting();
   });
 
   function dropDependentsToFloor(supportId){
@@ -2064,6 +2129,14 @@
   });
   indirectLevel?.addEventListener('change',save);
 
+  bounceRaysLevel?.addEventListener('input',()=>{
+    const levels=currentLightingLevels();
+    levels.bounceRays=clamp(Math.round(Number(bounceRaysLevel.value)),0,BOUNCE_RAYS_MAX);
+    if(bounceRaysValue)bounceRaysValue.textContent=String(levels.bounceRays);
+    updateLighting();
+  });
+  bounceRaysLevel?.addEventListener('change',save);
+
   globalLightReset?.addEventListener('click',()=>{
     const mode=state.lighting==='evening'?'evening':'day';
     state.lightingLevels[mode]={...LIGHTING_PRESETS[mode]};
@@ -2092,6 +2165,7 @@
       light.shadow.needsUpdate=true;
       renderer.shadowMap.needsUpdate=true;
     }
+    rebuildBounceLights(currentLightingLevels(),state.lighting==='evening');
     render();
   });
   spotAngleLevel?.addEventListener('change',save);
@@ -2195,7 +2269,7 @@
         if(key==='wall')applyRoomWallFinish(activeRoomId);
         else if(key==='floor')applyRoomFloorFinish(activeRoomId);
         else if(mat)mat.color.set(col);
-        [...holder.children].forEach(x=>x.classList.toggle('active',x===b));save();render();
+        [...holder.children].forEach(x=>x.classList.toggle('active',x===b));save();rebuildBounceLights(currentLightingLevels(),state.lighting==='evening');render();
       });
       holder.appendChild(b);
     });
@@ -2305,12 +2379,14 @@
         day:{
           direct:clamp(Number(parsedLevels.day?.direct ?? LIGHTING_PRESETS.day.direct),0,1),
           ambient:clamp(Number(parsedLevels.day?.ambient ?? LIGHTING_PRESETS.day.ambient),0,1),
-          indirect:clamp(Number(parsedLevels.day?.indirect ?? LIGHTING_PRESETS.day.indirect),0,INDIRECT_LEVEL_MAX)
+          indirect:clamp(Number(parsedLevels.day?.indirect ?? LIGHTING_PRESETS.day.indirect),0,INDIRECT_LEVEL_MAX),
+          bounceRays:clamp(Math.round(Number(parsedLevels.day?.bounceRays ?? LIGHTING_PRESETS.day.bounceRays)),0,BOUNCE_RAYS_MAX)
         },
         evening:{
           direct:clamp(Number(parsedLevels.evening?.direct ?? LIGHTING_PRESETS.evening.direct),0,1),
           ambient:clamp(Number(parsedLevels.evening?.ambient ?? LIGHTING_PRESETS.evening.ambient),0,1),
-          indirect:clamp(Number(parsedLevels.evening?.indirect ?? LIGHTING_PRESETS.evening.indirect),0,INDIRECT_LEVEL_MAX)
+          indirect:clamp(Number(parsedLevels.evening?.indirect ?? LIGHTING_PRESETS.evening.indirect),0,INDIRECT_LEVEL_MAX),
+          bounceRays:clamp(Math.round(Number(parsedLevels.evening?.bounceRays ?? LIGHTING_PRESETS.evening.bounceRays)),0,BOUNCE_RAYS_MAX)
         }
       };
       state={
