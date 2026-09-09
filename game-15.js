@@ -18,6 +18,9 @@
   const lightLevel = document.getElementById('room-light-level');
   const lightValue = document.getElementById('room-light-value');
   const lightShadowBtn = document.getElementById('room-light-shadow');
+  const spotAngleControl = document.getElementById('room-spot-angle-control');
+  const spotAngleLevel = document.getElementById('room-spot-angle');
+  const spotAngleValue = document.getElementById('room-spot-angle-value');
   const wallpaperSwatches = document.getElementById('room-wallpaper-swatches');
   const floorTextureSwatches = document.getElementById('room-floor-texture-swatches');
   const perfBadge = document.getElementById('room-perf-badge');
@@ -32,6 +35,8 @@
   const directValue = document.getElementById('room-direct-value');
   const ambientLevel = document.getElementById('room-ambient-level');
   const ambientValue = document.getElementById('room-ambient-value');
+  const indirectLevel = document.getElementById('room-indirect-level');
+  const indirectValue = document.getElementById('room-indirect-value');
   const globalLightReset = document.getElementById('room-global-light-reset');
 
   if (!canvas) return;
@@ -70,11 +75,18 @@
   const DOOR_OPEN_H = 2.04;
   const LAMP_DEFAULT_LEVEL = 0.28;
   const LAMP_MAX_INTENSITY = 6.2;
+  const LIGHT_LEVEL_MAX = 1.50;
+  const INDIRECT_LEVEL_MAX = 1.50;
+  const SPOT_CONE_MIN_DEG = 50;
+  const SPOT_CONE_MAX_DEG = 170;
+  const SPOT_CONE_DEFAULT_DEG = 130;
   const CEILING_MOUNT_Y = ROOM_H - 0.04;
   const LIGHTING_PRESETS = {
-    day:{direct:1.00,ambient:1.00},
-    evening:{direct:0.00,ambient:0.28}
+    day:{direct:1.00,ambient:1.00,indirect:0.18},
+    evening:{direct:0.00,ambient:0.28,indirect:0.38}
   };
+  const ROOM_DAYLIGHT_FACTORS = { bedroom:0.84, kids:0.88, living:0.96, kitchen:1.00, hall:0.52, landing:0.58 };
+  const ROOM_WINDOW_SIDES = { bedroom:'left', living:'left', kids:'right', kitchen:'right', hall:'centre', landing:'centre' };
 
   // Compact dog-leg / return stair kept in the rear half of the central core,
   // leaving a real hall and upper landing at the open front of the dollhouse.
@@ -661,6 +673,7 @@
   const supportPlanes = [];
   const selectableMeshes = [];
   const localLights = [];
+  const indirectLightRigs = new Map();
   const emissiveMeshes = [];
   let selectionHelper = null;
   let renderAverageMs = 0;
@@ -723,6 +736,104 @@
     if(includeSun&&sun?.shadow)sun.shadow.needsUpdate=true;
     localLights.forEach(light=>{
       if(!roomId||light.userData.room===roomId)light.shadow.needsUpdate=true;
+    });
+  }
+
+  function roomInteriorCenterZ(room){
+    if(room.core){
+      const minZ=Number(room.placeMinZ ?? CORE_DRESS_MIN_Z);
+      const maxZ=Number(room.placeMaxZ ?? (FRONT_Z-0.10));
+      return clamp((minZ+maxZ)/2, minZ+0.18, maxZ-0.18);
+    }
+    return 0.08;
+  }
+
+  function ensureIndirectRig(room){
+    let rig=indirectLightRigs.get(room.id);
+    if(rig)return rig;
+    const layer=roomLayerIndex(room.id) || 0;
+    const side=ROOM_WINDOW_SIDES[room.id]||'centre';
+    const centreZ=roomInteriorCenterZ(room);
+    const sideX=side==='left' ? room.minX + 0.36 : side==='right' ? room.maxX - 0.36 : room.cx;
+
+    const floorLight=new THREE.PointLight(0xffffff,0,5.2,2);
+    floorLight.position.set(room.cx,room.floorY+0.56,centreZ+0.05);
+    floorLight.layers.set(layer);
+    floorLight.castShadow=false;
+
+    const wallLight=new THREE.PointLight(0xffffff,0,4.9,2);
+    wallLight.position.set(sideX,room.floorY+1.42,centreZ-0.22);
+    wallLight.layers.set(layer);
+    wallLight.castShadow=false;
+
+    const backLight=new THREE.PointLight(0xffffff,0,4.1,2);
+    backLight.position.set(room.cx,room.floorY+1.18,BACK_Z+0.56);
+    backLight.layers.set(layer);
+    backLight.castShadow=false;
+
+    rig={floorLight,wallLight,backLight};
+    indirectLightRigs.set(room.id,rig);
+    scene.add(floorLight);
+    scene.add(wallLight);
+    scene.add(backLight);
+    return rig;
+  }
+
+  function roomFeatureColor(roomId){
+    let r=0,g=0,b=0,w=0;
+    state.items.forEach(item=>{
+      if(item.room!==roomId)return;
+      const t=templateById(item.type);
+      if(!t||!t.colour)return;
+      const weightMap={ furniture:4.4, kitchen:4.2, storage:3.1, soft:2.6, play:2.4, lighting:1.4, wall:1.2, decor:1.0 };
+      let weight=weightMap[t.category]||1.0;
+      if(item.supportId)weight*=0.72;
+      const c=new THREE.Color(t.colour);
+      r+=c.r*weight; g+=c.g*weight; b+=c.b*weight; w+=weight;
+    });
+    return w>0 ? new THREE.Color(r/w,g/w,b/w) : new THREE.Color(state.rooms[roomId]?.wall || '#ddd5cc');
+  }
+
+  function roomLampEnergy(roomId){
+    let total=0;
+    localLights.forEach(light=>{
+      if(light.userData.room!==roomId)return;
+      total+=Math.max(0,Number(light.intensity)||0);
+    });
+    return clamp(total/6.6,0,2.2);
+  }
+
+  function updateIndirectLighting(levels, evening){
+    const indirectLevel=clamp(Number(levels.indirect ?? 0),0,INDIRECT_LEVEL_MAX);
+    const daylightColor=new THREE.Color(evening?0xaab7d4:0xfff0d7);
+    const lampColor=new THREE.Color(0xffc878);
+
+    rooms.forEach(room=>{
+      const rig=ensureIndirectRig(room);
+      const style=state.rooms[room.id]||room;
+      const wallColor=new THREE.Color(style.wall || room.wall);
+      const floorColor=new THREE.Color(style.floor || room.floor);
+      const featureColor=roomFeatureColor(room.id);
+      const daylight=(evening?0.28:1.0)*levels.direct*(ROOM_DAYLIGHT_FACTORS[room.id]||0.72);
+      const lamp=roomLampEnergy(room.id);
+      const sourceEnergy=(daylight*1.18)+(lamp*1.42);
+      const sourceMix=Math.max(0.0001,(daylight*1.05)+(lamp*0.95));
+      const sourceColor=new THREE.Color(0,0,0)
+        .add(daylightColor.clone().multiplyScalar(daylight*1.05))
+        .add(lampColor.clone().multiplyScalar(lamp*0.95))
+        .multiplyScalar(1/sourceMix);
+      const base=indirectLevel*sourceEnergy;
+      const floorIntensity=clamp(base*1.08,0,2.8);
+      const wallIntensity=clamp(base*0.76,0,2.2);
+      const backIntensity=clamp(base*0.54,0,1.6);
+
+      rig.floorLight.color.copy(sourceColor).lerp(floorColor,0.58).lerp(featureColor,0.12);
+      rig.wallLight.color.copy(sourceColor).lerp(wallColor,0.56).lerp(featureColor,0.14);
+      rig.backLight.color.copy(sourceColor).lerp(wallColor,0.38).lerp(featureColor,0.22);
+
+      rig.floorLight.intensity=indirectLevel>0.001?floorIntensity:0;
+      rig.wallLight.intensity=indirectLevel>0.001?wallIntensity:0;
+      rig.backLight.intensity=indirectLevel>0.001?backIntensity:0;
     });
   }
 
@@ -1318,12 +1429,16 @@
 
     if(t.lightHeight){
       if(!Number.isFinite(Number(item.lightLevel))) item.lightLevel=LAMP_DEFAULT_LEVEL;
-      item.lightLevel=clamp(Number(item.lightLevel),0,1);
+      item.lightLevel=clamp(Number(item.lightLevel),0,LIGHT_LEVEL_MAX);
       if(typeof item.shadowEnabled!=='boolean')item.shadowEnabled=true;
       const distance=Number(t.lightDistance)||3.9;
       const isCeiling=t.place==='ceiling';
+      if(isCeiling){
+        const templateCone=Number(t.spotConeDeg)||(Number(t.spotAngle)?Number(t.spotAngle)*360:SPOT_CONE_DEFAULT_DEG);
+        item.spotConeDeg=clamp(Number(item.spotConeDeg??templateCone),SPOT_CONE_MIN_DEG,SPOT_CONE_MAX_DEG);
+      }
       const light=isCeiling
-        ? new THREE.SpotLight(0xffc878,0,distance,Math.PI*(Number(t.spotAngle)||0.36),Number(t.spotPenumbra)||0.58,2)
+        ? new THREE.SpotLight(0xffc878,0,distance,THREE.MathUtils.degToRad(item.spotConeDeg/2),Number(t.spotPenumbra)||0.58,2)
         : new THREE.PointLight(0xffc878,0,distance,2);
       light.position.set(0,scaled(t.lightHeight),0);
       light.userData.itemId=item.id;
@@ -1541,12 +1656,23 @@
     renderAverageMs=renderSamples===1?elapsed:(renderAverageMs*0.82+elapsed*0.18);
     if(perfBadge){
       const approxFps=Math.min(999,Math.round(1000/Math.max(0.5,elapsed)));
-      perfBadge.textContent=`${shadowRefresh?'Shadow':'Frame'} ${elapsed.toFixed(1)}ms · ~${approxFps}fps · ${activeShadowCount} local sh.`;
+      const levels=currentLightingLevels();
+      perfBadge.textContent=`${shadowRefresh?'Shadow':'Frame'} ${elapsed.toFixed(1)}ms · ~${approxFps}fps · ${activeShadowCount} local sh. · GI ${Math.round((levels.indirect||0)*100)}%`;
     }
   }
 
   function lampLevelFor(item){
-    return clamp(Number(item?.lightLevel ?? LAMP_DEFAULT_LEVEL),0,1);
+    return clamp(Number(item?.lightLevel ?? LAMP_DEFAULT_LEVEL),0,LIGHT_LEVEL_MAX);
+  }
+
+  function spotConeDegreesFor(item,t=templateById(item?.type)){
+    if(!item||t?.place!=='ceiling')return SPOT_CONE_DEFAULT_DEG;
+    const templateCone=Number(t.spotConeDeg)||(Number(t.spotAngle)?Number(t.spotAngle)*360:SPOT_CONE_DEFAULT_DEG);
+    return clamp(Number(item.spotConeDeg??templateCone),SPOT_CONE_MIN_DEG,SPOT_CONE_MAX_DEG);
+  }
+
+  function localLightForItem(itemId){
+    return localLights.find(light=>light.userData.itemId===itemId)||null;
   }
 
   function currentLightingLevels(){
@@ -1556,6 +1682,7 @@
     const levels=state.lightingLevels[mode];
     levels.direct=clamp(Number(levels.direct ?? LIGHTING_PRESETS[mode].direct),0,1);
     levels.ambient=clamp(Number(levels.ambient ?? LIGHTING_PRESETS[mode].ambient),0,1);
+    levels.indirect=clamp(Number(levels.indirect ?? LIGHTING_PRESETS[mode].indirect),0,INDIRECT_LEVEL_MAX);
     return levels;
   }
 
@@ -1567,6 +1694,8 @@
     if(directValue)directValue.textContent=`${Math.round(levels.direct*100)}%`;
     if(ambientLevel)ambientLevel.value=String(Math.round(levels.ambient*100));
     if(ambientValue)ambientValue.textContent=`${Math.round(levels.ambient*100)}%`;
+    if(indirectLevel)indirectLevel.value=String(Math.round(levels.indirect*100));
+    if(indirectValue)indirectValue.textContent=`${Math.round(levels.indirect*100)}%`;
   }
 
   function updateLocalLightShadows(){
@@ -1607,6 +1736,7 @@
       const t=item&&templateById(item.type);
       light.intensity=evening?LAMP_MAX_INTENSITY*(t?.lightScale||1)*lampLevelFor(item):0;
     });
+    updateIndirectLighting(levels, evening);
     updateLocalLightShadows();
     emissiveMeshes.forEach(mesh=>{
       if(!mesh.material||!('emissiveIntensity' in mesh.material))return;
@@ -1926,6 +2056,14 @@
   });
   ambientLevel?.addEventListener('change',save);
 
+  indirectLevel?.addEventListener('input',()=>{
+    const levels=currentLightingLevels();
+    levels.indirect=clamp(Number(indirectLevel.value)/100,0,INDIRECT_LEVEL_MAX);
+    if(indirectValue)indirectValue.textContent=`${Math.round(levels.indirect*100)}%`;
+    updateLighting();
+  });
+  indirectLevel?.addEventListener('change',save);
+
   globalLightReset?.addEventListener('click',()=>{
     const mode=state.lighting==='evening'?'evening':'day';
     state.lightingLevels[mode]={...LIGHTING_PRESETS[mode]};
@@ -1937,11 +2075,26 @@
   lightLevel?.addEventListener('input',()=>{
     const item=itemById(selectedId),t=item&&templateById(item.type);
     if(!item||!t?.lightHeight)return;
-    item.lightLevel=clamp(Number(lightLevel.value)/100,0,1);
+    item.lightLevel=clamp(Number(lightLevel.value)/100,0,LIGHT_LEVEL_MAX);
     if(lightValue)lightValue.textContent=`${Math.round(item.lightLevel*100)}%`;
     updateLighting();
   });
   lightLevel?.addEventListener('change',save);
+
+  spotAngleLevel?.addEventListener('input',()=>{
+    const item=itemById(selectedId),t=item&&templateById(item.type);
+    if(!item||t?.place!=='ceiling')return;
+    item.spotConeDeg=clamp(Number(spotAngleLevel.value),SPOT_CONE_MIN_DEG,SPOT_CONE_MAX_DEG);
+    if(spotAngleValue)spotAngleValue.textContent=`${Math.round(item.spotConeDeg)}°`;
+    const light=localLightForItem(item.id);
+    if(light?.isSpotLight){
+      light.angle=THREE.MathUtils.degToRad(item.spotConeDeg/2);
+      light.shadow.needsUpdate=true;
+      renderer.shadowMap.needsUpdate=true;
+    }
+    render();
+  });
+  spotAngleLevel?.addEventListener('change',save);
 
   lightShadowBtn?.addEventListener('click',()=>{
     const item=itemById(selectedId),t=item&&templateById(item.type);
@@ -2105,10 +2258,17 @@
     rotateBtn.disabled=!item||t?.canRotate===false||t?.place==='wall'||t?.place==='ceiling';removeBtn.disabled=!item;
     const isLamp=!!(item&&t?.lightHeight);
     if(lightControl)lightControl.hidden=!isLamp;
+    const isSpot=!!(isLamp&&t?.place==='ceiling');
+    if(spotAngleControl)spotAngleControl.hidden=!isSpot;
     if(isLamp&&lightLevel&&lightValue){
       const pct=Math.round(lampLevelFor(item)*100);
       lightLevel.value=String(pct);
       lightValue.textContent=`${pct}%`;
+      if(isSpot&&spotAngleLevel&&spotAngleValue){
+        const cone=Math.round(spotConeDegreesFor(item,t));
+        spotAngleLevel.value=String(cone);
+        spotAngleValue.textContent=`${cone}°`;
+      }
       if(lightShadowBtn){
         const enabled=item.shadowEnabled!==false;
         lightShadowBtn.textContent=enabled?'SHADOWS ON':'SHADOWS OFF';
@@ -2144,11 +2304,13 @@
       const lightingLevels={
         day:{
           direct:clamp(Number(parsedLevels.day?.direct ?? LIGHTING_PRESETS.day.direct),0,1),
-          ambient:clamp(Number(parsedLevels.day?.ambient ?? LIGHTING_PRESETS.day.ambient),0,1)
+          ambient:clamp(Number(parsedLevels.day?.ambient ?? LIGHTING_PRESETS.day.ambient),0,1),
+          indirect:clamp(Number(parsedLevels.day?.indirect ?? LIGHTING_PRESETS.day.indirect),0,INDIRECT_LEVEL_MAX)
         },
         evening:{
           direct:clamp(Number(parsedLevels.evening?.direct ?? LIGHTING_PRESETS.evening.direct),0,1),
-          ambient:clamp(Number(parsedLevels.evening?.ambient ?? LIGHTING_PRESETS.evening.ambient),0,1)
+          ambient:clamp(Number(parsedLevels.evening?.ambient ?? LIGHTING_PRESETS.evening.ambient),0,1),
+          indirect:clamp(Number(parsedLevels.evening?.indirect ?? LIGHTING_PRESETS.evening.indirect),0,INDIRECT_LEVEL_MAX)
         }
       };
       state={
@@ -2164,8 +2326,9 @@
       state.items.forEach(i=>{
         const t=templateById(i.type);
         if(t?.lightHeight){
-          i.lightLevel=clamp(Number(i.lightLevel??LAMP_DEFAULT_LEVEL),0,1);
+          i.lightLevel=clamp(Number(i.lightLevel??LAMP_DEFAULT_LEVEL),0,LIGHT_LEVEL_MAX);
           if(typeof i.shadowEnabled!=='boolean')i.shadowEnabled=true;
+          if(t?.place==='ceiling')i.spotConeDeg=spotConeDegreesFor(i,t);
         }
         if(t?.place==='wall')clampWallItem(i);
         else if(t?.place==='ceiling')clampCeilingItem(i);
@@ -2193,8 +2356,9 @@
   state.items.forEach(i=>{
     const t=templateById(i.type);
     if(t?.lightHeight){
-      i.lightLevel=clamp(Number(i.lightLevel??LAMP_DEFAULT_LEVEL),0,1);
+      i.lightLevel=clamp(Number(i.lightLevel??LAMP_DEFAULT_LEVEL),0,LIGHT_LEVEL_MAX);
       if(typeof i.shadowEnabled!=='boolean')i.shadowEnabled=true;
+      if(t?.place==='ceiling')i.spotConeDeg=spotConeDegreesFor(i,t);
     }
     if(t?.place==='wall')clampWallItem(i);
     else if(t?.place==='ceiling')clampCeilingItem(i);

@@ -1,18 +1,13 @@
-# GameHub v1.8.26
+# GameHub v1.8.28
 
-This release improves **My House lighting** with directional ceiling lights and scene-level lighting controls.
+This release adds an experimental indirect bounce-lighting pass to My House, plus a new scene-lighting control for it.
 
 ## Updated in this version
-- Ceiling-mounted fittings now use broad **downward SpotLights** instead of PointLights, preventing the kitchen pendant from throwing light into the room above.
-- Table and floor lamps remain PointLights so they still spread light naturally around their room.
-- Spotlight shadows use a single shadow view rather than the six views required by a PointLight, reducing the shadow cost of ceiling fittings.
-- Added a compact **Scene Lighting** panel beside the Day/Evening control.
-- Added independent **Direct** and **Ambient** sliders for both Day and Evening presets.
-- Evening now defaults to **0% direct light**, so artificial room lighting defines the evening scene instead of the sun/directional light remaining active.
-- Evening ambient defaults to a low **28%** so the house remains readable before individual lamps are switched up.
-- Day and Evening lighting adjustments are saved separately and persist with the house.
-- Added a **Reset preset** control to restore the current Day or Evening lighting values.
-- Bumped the service-worker cache to v1.8.26 so the revised files replace older cached versions cleanly.
+- Added a new **INDIRECT** slider to the My House scene-lighting panel for each **Day** and **Evening** preset.
+- Indirect light is now estimated per room from the active direct lighting and the room’s colours/furniture, so you can try a darker scene with direct light doing the main work and indirect bounce softly filling the room.
+- The render badge now shows the current **GI** percentage to help when comparing lighting setups.
+- The in-game instructions now mention the new lighting workflow.
+- The service-worker cache version is bumped for a clean PWA update.
 
 ## Files
 Upload the contents of this ZIP to the root of the `GameHub` repository, replacing the existing files.
