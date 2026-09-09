@@ -10244,3 +10244,28 @@ body[data-game-id="game-14"] .attack-slot-copy small{font-size:6.8px}
   body[data-game-id="game-15"] .room-selection-actions button{min-width:36px;padding:0 7px;}
   body[data-game-id="game-15"] .room-perf-badge{display:none;}
 }
+
+/* My House v1.8.26 — scene lighting panel + ceiling spotlights */
+.room-stage-toolbar-actions{display:flex;align-items:center;gap:6px;pointer-events:auto;}
+.room-stage-toolbar-actions button{pointer-events:auto;}
+.room-stage-toolbar .room-lighting-panel-button{min-width:34px;width:34px;padding:0;font-size:16px;}
+.room-global-light-panel{position:absolute;z-index:6;right:10px;top:51px;width:min(286px,calc(100% - 20px));padding:9px 10px;border:1.5px solid rgba(53,47,43,.25);border-radius:14px;background:rgba(250,247,242,.96);box-shadow:0 6px 18px rgba(43,39,36,.16);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#443d38;touch-action:auto;}
+.room-global-light-panel[hidden]{display:none;}
+.room-global-light-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px;}
+.room-global-light-heading>div{display:flex;align-items:baseline;gap:7px;min-width:0;}
+.room-global-light-heading strong{font-size:10px;font-weight:900;letter-spacing:.08em;}
+.room-global-light-heading small{font-size:9px;color:#7a7069;}
+.room-global-light-heading button{width:28px;height:28px;border:0;border-radius:50%;background:rgba(76,67,61,.08);color:#4f4742;font:inherit;font-size:18px;line-height:1;}
+.room-global-light-row{display:grid;grid-template-columns:56px minmax(0,1fr) 34px;align-items:center;gap:7px;min-height:32px;font-size:9px;font-weight:850;letter-spacing:.06em;}
+.room-global-light-row input[type="range"]{width:100%;min-width:0;height:18px;accent-color:#a67c61;}
+.room-global-light-row strong{text-align:right;font-size:9px;letter-spacing:0;}
+.room-global-light-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:5px;padding-top:6px;border-top:1px solid rgba(53,47,43,.12);}
+.room-global-light-footer small{max-width:150px;font-size:8px;line-height:1.25;color:#756b64;}
+.room-global-light-footer button{min-height:27px;border:1px solid rgba(74,65,59,.28);border-radius:999px;background:#f7f0e7;color:#554c46;padding:0 8px;font:inherit;font-size:8px;font-weight:850;white-space:nowrap;}
+@media(max-width:430px){
+  .room-stage-toolbar-actions{gap:4px;}
+  .room-stage-toolbar .room-lighting-panel-button{min-width:30px;width:30px;font-size:14px;}
+  .room-global-light-panel{right:8px;top:45px;width:min(270px,calc(100% - 16px));padding:8px 9px;border-radius:13px;}
+  .room-global-light-row{grid-template-columns:52px minmax(0,1fr) 32px;gap:6px;min-height:29px;font-size:8px;}
+  .room-global-light-footer small{font-size:7px;max-width:136px;}
+}

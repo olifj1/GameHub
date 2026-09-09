@@ -1,15 +1,18 @@
-# GameHub v1.8.25
+# GameHub v1.8.26
 
-This release rebuilds the **My House kitchen pack** around the proportions in the original pastel dollhouse reference.
+This release improves **My House lighting** with directional ceiling lights and scene-level lighting controls.
 
 ## Updated in this version
-- Re-measured the kitchen against the 2.5 m room height used by the house model.
-- Raised base cabinets/worktops to roughly **0.9 m** in-world instead of the undersized prototype height.
-- Rescaled the fridge to roughly **1.8 m** and enlarged wall cabinets to more believable kitchen proportions.
-- Reworked the sage cabinet, farmhouse sink and wall-cabinet models with chunkier doors, worktops and handles.
-- Added an **oven + hob**, **open shelf**, **round dining table**, **dining chairs**, **microwave**, **storage jars** and **wall clock**.
-- Re-dressed the default kitchen into a fuller reference-like L-shaped arrangement with dining furniture, pendant light and countertop details.
-- Reset the My House local save key so the revised default kitchen is visible immediately.
+- Ceiling-mounted fittings now use broad **downward SpotLights** instead of PointLights, preventing the kitchen pendant from throwing light into the room above.
+- Table and floor lamps remain PointLights so they still spread light naturally around their room.
+- Spotlight shadows use a single shadow view rather than the six views required by a PointLight, reducing the shadow cost of ceiling fittings.
+- Added a compact **Scene Lighting** panel beside the Day/Evening control.
+- Added independent **Direct** and **Ambient** sliders for both Day and Evening presets.
+- Evening now defaults to **0% direct light**, so artificial room lighting defines the evening scene instead of the sun/directional light remaining active.
+- Evening ambient defaults to a low **28%** so the house remains readable before individual lamps are switched up.
+- Day and Evening lighting adjustments are saved separately and persist with the house.
+- Added a **Reset preset** control to restore the current Day or Evening lighting values.
+- Bumped the service-worker cache to v1.8.26 so the revised files replace older cached versions cleanly.
 
 ## Files
 Upload the contents of this ZIP to the root of the `GameHub` repository, replacing the existing files.

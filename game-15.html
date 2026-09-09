@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.8.25">
+  <link rel="stylesheet" href="style.css?v=1.8.26">
   <title>My House</title>
 </head>
 <body class="modular-game" data-game-id="game-15">
@@ -19,7 +19,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="game-15-info-title">Make the house your own</h2>
-      <p>Choose furniture, wall art and little details from the room set carousel. Each room now has its own filtered dressing set, plus categories like big pieces, soft furnishings, ornaments, lighting and wall art. Tap an item and release to select it, then drag that selected item to move it. Dragging anywhere except the currently selected item — including directly over other furniture — slides the view, so you never need to hunt for an empty patch of floor. Pinch to zoom. Small objects can sit on tables and drawers and travel with the furniture underneath them. Select a lamp or ceiling light to adjust its brightness and switch that light’s shadows on or off; lamp shadow maps are limited to the light’s own room to keep the test lighter on the phone. Rotate or put away selected items, change each room’s walls, wallpaper and floor, and switch between day and evening lighting. Your house saves automatically on this device.</p>
+      <p>Choose furniture, wall art and little details from the room set carousel. Each room now has its own filtered dressing set, plus categories like big pieces, soft furnishings, ornaments, lighting and wall art. Tap an item and release to select it, then drag that selected item to move it. Dragging anywhere except the currently selected item — including directly over other furniture — slides the view, so you never need to hunt for an empty patch of floor. Pinch to zoom. Small objects can sit on tables and drawers and travel with the furniture underneath them. Select a lamp or ceiling light to adjust its brightness and switch that light’s shadows on or off. Ceiling fittings use broad downward spotlights, while table and floor lamps still spread light in all directions. Use the scene-lighting control beside Day/Evening to tune direct and ambient light for each preset. Rotate or put away selected items, change each room’s walls, wallpaper and floor, and switch between day and evening lighting. Your house saves automatically on this device.</p>
     </div>
   </div>
 
@@ -35,7 +35,26 @@
           <canvas id="room-canvas" width="720" height="760" aria-label="An open-front four-room three dimensional dollhouse you can furnish"></canvas>
           <div class="room-stage-toolbar" aria-live="polite">
             <span id="room-current-label">Bedroom</span>
-            <button id="room-lighting" type="button" aria-label="Switch to evening lighting">☀ Day</button>
+            <div class="room-stage-toolbar-actions">
+              <button id="room-lighting" type="button" aria-label="Switch to evening lighting">☀ Day</button>
+              <button id="room-lighting-panel-button" class="room-lighting-panel-button" type="button" aria-label="Open scene lighting controls" aria-expanded="false">☼</button>
+            </div>
+          </div>
+          <div class="room-global-light-panel" id="room-global-light-panel" hidden>
+            <div class="room-global-light-heading">
+              <div><strong>SCENE LIGHTING</strong><small id="room-global-light-mode">Day preset</small></div>
+              <button id="room-global-light-close" type="button" aria-label="Close scene lighting controls">×</button>
+            </div>
+            <label class="room-global-light-row" for="room-direct-level">
+              <span>DIRECT</span><input id="room-direct-level" type="range" min="0" max="100" step="5" value="100"><strong id="room-direct-value">100%</strong>
+            </label>
+            <label class="room-global-light-row" for="room-ambient-level">
+              <span>AMBIENT</span><input id="room-ambient-level" type="range" min="0" max="100" step="5" value="100"><strong id="room-ambient-value">100%</strong>
+            </label>
+            <div class="room-global-light-footer">
+              <small>Room lamps and ceiling lights are controlled separately.</small>
+              <button id="room-global-light-reset" type="button">Reset preset</button>
+            </div>
           </div>
           <div class="room-perf-badge" id="room-perf-badge" aria-label="3D render performance">Render —</div>
           <div class="room-stage-hint" id="room-stage-hint">Tap selects · selected item moves · other drags explore</div>
@@ -44,7 +63,7 @@
         <section class="room-selection-bar" id="room-selection-bar" aria-live="polite">
           <div class="room-selection-info">
             <strong id="room-selection-name">Nothing selected</strong>
-            <div class="room-light-control" id="room-light-control" aria-label="Selected lamp controls" hidden>
+            <div class="room-light-control" id="room-light-control" aria-label="Selected light controls" hidden>
               <label for="room-light-level"><span>LIGHT</span><strong id="room-light-value">28%</strong></label>
               <input id="room-light-level" type="range" min="0" max="100" step="5" value="28" aria-label="Lamp brightness">
               <button id="room-light-shadow" class="room-shadow-toggle" type="button" aria-pressed="true">SHADOWS ON</button>
@@ -91,9 +110,9 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.8.25"></script>
-  <script src="core.js?v=1.8.25"></script>
+  <script src="site-config.js?v=1.8.26"></script>
+  <script src="core.js?v=1.8.26"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.1/three.min.js"></script>
-  <script src="game-15.js?v=1.8.25"></script>
+  <script src="game-15.js?v=1.8.26"></script>
 </body>
 </html>
