@@ -39,6 +39,7 @@
   const probeRaysValue = document.getElementById('room-probe-rays-value');
   const probeStatus = document.getElementById('room-probe-status');
   const probeRefreshBtn = document.getElementById('room-probe-refresh');
+  const probeToggleBtn = document.getElementById('room-probe-toggle');
   const placeTabBtn = document.getElementById('room-tab-place');
   const setupTabBtn = document.getElementById('room-tab-setup');
   const placeWorkspace = document.getElementById('room-place-workspace');
@@ -97,8 +98,8 @@
   const SPOT_CONE_DEFAULT_DEG = 130;
   const CEILING_MOUNT_Y = ROOM_H - 0.04;
   const LIGHTING_PRESETS = {
-    day:{direct:1.00,ambient:0.48,indirect:0.42},
-    evening:{direct:0.00,ambient:0.12,indirect:0.68}
+    day:{direct:1.00,ambient:0.42,indirect:0.42},
+    evening:{direct:0.00,ambient:0.10,indirect:0.68}
   };
 
   // Compact dog-leg / return stair kept in the rear half of the central core,
@@ -607,7 +608,8 @@
       day:{...LIGHTING_PRESETS.day},
       evening:{...LIGHTING_PRESETS.evening}
     },
-    probeSettings:{raysPerProbe:PROBE_RAYS_DEFAULT},
+    probeSettings:{raysPerProbe:PROBE_RAYS_DEFAULT,enabled:false},
+    rendererExperimentVersion:4,
     rooms:Object.fromEntries(rooms.map(r => [r.id,{wall:r.wall,floor:r.floor,wallpaper:r.wallpaper,floorTexture:r.floorTexture}])),
     items:defaultItems.map(i => ({...i})),
     camera:{x:-3.30,y:1.18,zoom:1.24}
@@ -647,18 +649,6 @@
   const tempVec = new THREE.Vector3();
   const tempQuat = new THREE.Quaternion();
   const tempEuler = new THREE.Euler();
-
-  // Dynamic room-local irradiance probe sampler. This is CPU work only when
-  // lighting/furniture changes; normal rendering simply interpolates the
-  // resulting low-order SH coefficients in the material vertex shader.
-  const probeRaycaster = new THREE.Raycaster();
-  probeRaycaster.near = 0.025;
-  const probeGrids = new Map();
-  const probeDirtyRooms = new Set(rooms.map(r=>r.id));
-  let probeLastBuildMs = 0;
-  let probeLastBuildRoom = null;
-  let probeWarmupTimer = 0;
-
 
   const houseGroup = new THREE.Group();
   const itemRoot = new THREE.Group();
@@ -701,6 +691,15 @@
   const selectableMeshes = [];
   const localLights = [];
   const emissiveMeshes = [];
+  const probeRaycaster = new THREE.Raycaster();
+  probeRaycaster.near = 0.025;
+  const probeGrids = new Map();
+  const probeDirtyRooms = new Set(rooms.map(r=>r.id));
+  let probeStrengthValue = 0;
+  let probeWarmupTimer = 0;
+  let probeLastBuildRoom = null;
+  let probeLastBuildMs = 0;
+  let roomIrradianceDirty = true;
   let selectionHelper = null;
   let renderAverageMs = 0;
   let renderSamples = 0;
@@ -765,13 +764,53 @@
     });
   }
 
+  function roomFeatureTint(roomId){
+    const style=state.rooms[roomId]||{};
+    const wall=new THREE.Color(style.wall||roomById(roomId).wall||'#ddd5cc');
+    const floor=new THREE.Color(style.floor||roomById(roomId).floor||'#c9b596');
+    let r=0,g=0,b=0,w=0;
+    const weights={furniture:4.0,kitchen:4.0,storage:2.8,soft:2.6,play:2.2,decor:1.0,lighting:0.7,wall:0.8};
+    state.items.forEach(item=>{
+      if(item.room!==roomId)return;
+      const t=templateById(item.type);
+      if(!t?.colour)return;
+      const c=new THREE.Color(t.colour);
+      const weight=weights[t.category]||1.0;
+      r+=c.r*weight;g+=c.g*weight;b+=c.b*weight;w+=weight;
+    });
+    const feature=w>0?new THREE.Color(r/w,g/w,b/w):wall.clone();
+    const tint=wall.clone().multiplyScalar(0.40)
+      .add(floor.clone().multiplyScalar(0.36))
+      .add(feature.multiplyScalar(0.24));
+    // Keep the room colour recognisable without letting strongly coloured
+    // furniture turn the entire room into a saturated glow.
+    tint.lerp(new THREE.Color(1,1,1),0.24);
+    return tint;
+  }
+
+  function roomIdsForMesh(mesh){
+    const itemId=mesh?.userData?.itemId;
+    const item=itemId&&itemById(itemId);
+    if(item)return [item.room];
+    const mask=mesh?.layers?.mask||0;
+    const ids=[];
+    rooms.forEach(room=>{
+      const layer=roomLayerIndex(room.id);
+      if(layer&&(mask&(1<<layer)))ids.push(room.id);
+    });
+    return ids;
+  }
+
   function probeSettings(){
-    state.probeSettings ||= {raysPerProbe:PROBE_RAYS_DEFAULT};
-    state.probeSettings.raysPerProbe=clamp(Math.round(Number(state.probeSettings.raysPerProbe)||PROBE_RAYS_DEFAULT),PROBE_RAYS_MIN,PROBE_RAYS_MAX);
-    // Keep the value aligned to the UI's four-ray increments.
-    state.probeSettings.raysPerProbe=Math.round(state.probeSettings.raysPerProbe/4)*4;
+    state.probeSettings ||= {raysPerProbe:PROBE_RAYS_DEFAULT,enabled:false};
+    let rays=clamp(Math.round(Number(state.probeSettings.raysPerProbe)||PROBE_RAYS_DEFAULT),PROBE_RAYS_MIN,PROBE_RAYS_MAX);
+    rays=Math.round(rays/4)*4;
+    state.probeSettings.raysPerProbe=rays;
+    state.probeSettings.enabled=state.probeSettings.enabled===true;
     return state.probeSettings;
   }
+
+  function probeEnabled(){ return probeSettings().enabled===true; }
 
   function probeBoundsForRoom(room){
     const xMargin=Math.min(0.42,room.width*0.16);
@@ -793,15 +832,8 @@
       roomId,
       boundsMin:bounds.min,
       boundsMax:bounds.max,
-      sh0:makeCoeffs(),
-      shX:makeCoeffs(),
-      shY:makeCoeffs(),
-      shZ:makeCoeffs(),
-      strengthUniform:{value:0},
-      boundsMinUniform:{value:bounds.min},
-      boundsMaxUniform:{value:bounds.max},
-      built:false,
-      lastMs:0
+      sh0:makeCoeffs(), shX:makeCoeffs(), shY:makeCoeffs(), shZ:makeCoeffs(),
+      built:false, version:0, lastMs:0
     };
     probeGrids.set(roomId,grid);
     return grid;
@@ -812,98 +844,11 @@
   }
 
   function probeGridPoint(grid,ix,iy,iz){
-    const fx=ix/(PROBE_GRID_X-1);
-    const fy=iy/(PROBE_GRID_Y-1);
-    const fz=iz/(PROBE_GRID_Z-1);
     return new THREE.Vector3(
-      THREE.MathUtils.lerp(grid.boundsMin.x,grid.boundsMax.x,fx),
-      THREE.MathUtils.lerp(grid.boundsMin.y,grid.boundsMax.y,fy),
-      THREE.MathUtils.lerp(grid.boundsMin.z,grid.boundsMax.z,fz)
+      THREE.MathUtils.lerp(grid.boundsMin.x,grid.boundsMax.x,ix/(PROBE_GRID_X-1)),
+      THREE.MathUtils.lerp(grid.boundsMin.y,grid.boundsMax.y,iy/(PROBE_GRID_Y-1)),
+      THREE.MathUtils.lerp(grid.boundsMin.z,grid.boundsMax.z,iz/(PROBE_GRID_Z-1))
     );
-  }
-
-  function attachProbeMaterial(mat,roomId){
-    if(!mat?.isMeshStandardMaterial||!roomId)return;
-    if(mat.userData.probeRoomId===roomId)return;
-    const grid=probeGridFor(roomId);
-    mat.userData.probeRoomId=roomId;
-    const previous=mat.onBeforeCompile;
-    mat.onBeforeCompile=(shader,rendererRef)=>{
-      if(previous)previous(shader,rendererRef);
-      shader.uniforms.uProbeSH0={value:grid.sh0};
-      shader.uniforms.uProbeSHX={value:grid.shX};
-      shader.uniforms.uProbeSHY={value:grid.shY};
-      shader.uniforms.uProbeSHZ={value:grid.shZ};
-      shader.uniforms.uProbeMin=grid.boundsMinUniform;
-      shader.uniforms.uProbeMax=grid.boundsMaxUniform;
-      shader.uniforms.uProbeStrength=grid.strengthUniform;
-
-      const accum=[];
-      for(let iz=0;iz<PROBE_GRID_Z;iz++){
-        for(let iy=0;iy<PROBE_GRID_Y;iy++){
-          for(let ix=0;ix<PROBE_GRID_X;ix++){
-            const idx=probeIndex(ix,iy,iz);
-            accum.push(`
-              {
-                float pw=max(1.0-abs(pg.x-${ix.toFixed(1)}),0.0)*max(1.0-abs(pg.y-${iy.toFixed(1)}),0.0)*max(1.0-abs(pg.z-${iz.toFixed(1)}),0.0);
-                vec3 pe=uProbeSH0[${idx}]*0.282095
-                  +uProbeSHX[${idx}]*(0.488603*pwn.x)
-                  +uProbeSHY[${idx}]*(0.488603*pwn.y)
-                  +uProbeSHZ[${idx}]*(0.488603*pwn.z);
-                pgi+=max(pe,vec3(0.0))*pw;
-              }`);
-          }
-        }
-      }
-      const vertexHeader=`
-        uniform vec3 uProbeSH0[${PROBES_PER_ROOM}];
-        uniform vec3 uProbeSHX[${PROBES_PER_ROOM}];
-        uniform vec3 uProbeSHY[${PROBES_PER_ROOM}];
-        uniform vec3 uProbeSHZ[${PROBES_PER_ROOM}];
-        uniform vec3 uProbeMin;
-        uniform vec3 uProbeMax;
-        uniform float uProbeStrength;
-        varying vec3 vProbeIrradiance;
-      `;
-      shader.vertexShader=vertexHeader+shader.vertexShader;
-      shader.vertexShader=shader.vertexShader.replace('#include <project_vertex>',`#include <project_vertex>
-        vec3 pwp=(modelMatrix*vec4(transformed,1.0)).xyz;
-        vec3 pwn=normalize(mat3(cameraMatrixWorld)*transformedNormal);
-        vec3 pg=clamp((pwp-uProbeMin)/max(uProbeMax-uProbeMin,vec3(0.001)),vec3(0.0),vec3(1.0))*vec3(2.0,1.0,2.0);
-        vec3 pgi=vec3(0.0);
-        ${accum.join('\n')}
-        vProbeIrradiance=pgi*uProbeStrength;
-      `);
-      shader.fragmentShader='varying vec3 vProbeIrradiance;\n'+shader.fragmentShader;
-      const outgoing='vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;';
-      if(shader.fragmentShader.includes(outgoing)){
-        shader.fragmentShader=shader.fragmentShader.replace(outgoing,
-          'vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance + vProbeIrradiance * diffuseColor.rgb * 0.31831;');
-      }else if(shader.fragmentShader.includes('#include <opaque_fragment>')){
-        shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>',
-          'outgoingLight += vProbeIrradiance * diffuseColor.rgb * 0.31831;\n#include <opaque_fragment>');
-      }
-      mat.userData.probeShader=shader;
-    };
-    mat.customProgramCacheKey=()=>`my-house-sh-grid-v1-${roomId}`;
-    mat.needsUpdate=true;
-  }
-
-  function attachProbeMaterials(object,roomId){
-    if(!object||!roomId)return;
-    object.traverse(obj=>{
-      if(!obj?.isMesh||obj.userData?.hitProxy||obj.userData?.supportFor)return;
-      const mats=Array.isArray(obj.material)?obj.material:[obj.material];
-      mats.forEach(mat=>attachProbeMaterial(mat,roomId));
-    });
-  }
-
-  function markProbeDirty(roomId=null){
-    if(roomId)probeDirtyRooms.add(roomId);
-    else rooms.forEach(room=>probeDirtyRooms.add(room.id));
-    if(probeStatus&&(!roomId||roomId===activeRoomId)){
-      probeStatus.textContent=`${roomById(activeRoomId).name}: probe update pending`;
-    }
   }
 
   function probeRayDirections(count,seed=0){
@@ -954,17 +899,12 @@
 
   function relocateProbePoint(point,room){
     const p=point.clone();
-    // Avoid the most common invalid case: a low probe landing inside a large
-    // piece of furniture. Moving it just above that object's bounds preserves
-    // the grid cell while keeping the ray origin in free space.
     for(const item of state.items){
       if(item.room!==room.id)continue;
       const group=itemGroups.get(item.id);
       if(!group)continue;
-      const box=new THREE.Box3().setFromObject(group);
-      if(box.containsPoint(p)){
-        p.y=Math.min(room.floorY+ROOM_H-0.24,box.max.y+0.16);
-      }
+      const bounds=new THREE.Box3().setFromObject(group);
+      if(bounds.containsPoint(p))p.y=Math.min(room.floorY+ROOM_H-0.24,bounds.max.y+0.16);
     }
     return p;
   }
@@ -974,8 +914,7 @@
     const delta=lightPos.clone().sub(start);
     const distance=delta.length();
     if(distance<0.05)return true;
-    const blocker=probeHit(start,delta.normalize(),roomId,Math.max(0.01,distance-0.06),skipObject,skipItemId);
-    return !blocker;
+    return !probeHit(start,delta.normalize(),roomId,Math.max(0.01,distance-0.06),skipObject,skipItemId);
   }
 
   function sunVisibleFromSurface(surfacePoint,normal,roomId,skipObject,sunDir){
@@ -992,7 +931,7 @@
     if(sun.intensity>0.001){
       const sunDir=sun.position.clone().sub(sun.target.position).normalize();
       const ndl=Math.max(0,normal.dot(sunDir));
-      if(ndl>0.015&&(!sun.castShadow||sunVisibleFromSurface(p,normal,roomId,hit.object,sunDir))){
+      if(ndl>0.015&&sunVisibleFromSurface(p,normal,roomId,hit.object,sunDir)){
         lighting.add(sun.color.clone().multiplyScalar(sun.intensity*ndl*0.52));
       }
     }
@@ -1018,28 +957,18 @@
         cone=inner<=outer?1:clamp((cosTheta-outer)/(inner-outer),0,1);
         cone=cone*cone*(3-2*cone);
       }
-      if(light.castShadow&&!lightVisibleFromSurface(p,normal,lp,roomId,hit.object,light.userData.itemId))continue;
+      if(!lightVisibleFromSurface(p,normal,lp,roomId,hit.object,light.userData.itemId))continue;
       const attenuation=1/(1+0.52*distance*distance);
       lighting.add(light.color.clone().multiplyScalar(light.intensity*ndl*cone*attenuation*0.72));
     }
 
-    const mat=hitMaterial(hit);
-    if(mat?.emissive&&Number(mat.emissiveIntensity)>0.08){
-      lighting.add(mat.emissive.clone().multiplyScalar(Math.min(1.2,Number(mat.emissiveIntensity))*0.20));
-    }
-
     const bounced=lighting.multiply(albedo).multiplyScalar(0.58);
-    bounced.r=Math.min(bounced.r,3.5);
-    bounced.g=Math.min(bounced.g,3.5);
-    bounced.b=Math.min(bounced.b,3.5);
+    bounced.r=Math.min(bounced.r,3.5); bounced.g=Math.min(bounced.g,3.5); bounced.b=Math.min(bounced.b,3.5);
     return new THREE.Vector3(bounced.r,bounced.g,bounced.b);
   }
 
-  function sampleProbe(room,grid,point,probeNumber,raysPerProbe){
-    const sh0=new THREE.Vector3();
-    const shX=new THREE.Vector3();
-    const shY=new THREE.Vector3();
-    const shZ=new THREE.Vector3();
+  function sampleProbe(room,point,probeNumber,raysPerProbe){
+    const sh0=new THREE.Vector3(), shX=new THREE.Vector3(), shY=new THREE.Vector3(), shZ=new THREE.Vector3();
     const dirs=probeRayDirections(raysPerProbe,probeNumber+roomLayerIndex(room.id)*17);
     const scale=(4*Math.PI)/raysPerProbe;
     for(const dir of dirs){
@@ -1052,57 +981,210 @@
       shY.addScaledVector(radiance,0.488603*dir.y*scale);
       shZ.addScaledVector(radiance,0.488603*dir.z*scale);
     }
-    // Diffuse cosine convolution: band 0 = pi, band 1 = 2pi/3.
     sh0.multiplyScalar(Math.PI);
     const band1=2*Math.PI/3;
-    shX.multiplyScalar(band1);
-    shY.multiplyScalar(band1);
-    shZ.multiplyScalar(band1);
+    shX.multiplyScalar(band1); shY.multiplyScalar(band1); shZ.multiplyScalar(band1);
     return {sh0,shX,shY,shZ};
   }
 
-  function rebuildProbeRoom(roomId,renderAfter=true){
-    scene.updateMatrixWorld(true);
-    const room=roomById(roomId);
+  function interpolateProbeCoeffs(roomId,worldPoint,target){
     const grid=probeGridFor(roomId);
-    const rays=probeSettings().raysPerProbe;
+    const out=target||{sh0:new THREE.Vector3(),shX:new THREE.Vector3(),shY:new THREE.Vector3(),shZ:new THREE.Vector3()};
+    out.sh0.set(0,0,0); out.shX.set(0,0,0); out.shY.set(0,0,0); out.shZ.set(0,0,0);
+    if(!grid.built)return out;
+    const spanX=Math.max(0.001,grid.boundsMax.x-grid.boundsMin.x);
+    const spanY=Math.max(0.001,grid.boundsMax.y-grid.boundsMin.y);
+    const spanZ=Math.max(0.001,grid.boundsMax.z-grid.boundsMin.z);
+    const gx=clamp((worldPoint.x-grid.boundsMin.x)/spanX,0,1)*(PROBE_GRID_X-1);
+    const gy=clamp((worldPoint.y-grid.boundsMin.y)/spanY,0,1)*(PROBE_GRID_Y-1);
+    const gz=clamp((worldPoint.z-grid.boundsMin.z)/spanZ,0,1)*(PROBE_GRID_Z-1);
+    const x0=Math.floor(gx), y0=Math.floor(gy), z0=Math.floor(gz);
+    const x1=Math.min(PROBE_GRID_X-1,x0+1), y1=Math.min(PROBE_GRID_Y-1,y0+1), z1=Math.min(PROBE_GRID_Z-1,z0+1);
+    const tx=gx-x0, ty=gy-y0, tz=gz-z0;
+    for(const [ix,wx] of [[x0,1-tx],[x1,tx]]) for(const [iy,wy] of [[y0,1-ty],[y1,ty]]) for(const [iz,wz] of [[z0,1-tz],[z1,tz]]){
+      const w=wx*wy*wz;
+      if(w<=0)continue;
+      const idx=probeIndex(ix,iy,iz);
+      out.sh0.addScaledVector(grid.sh0[idx],w); out.shX.addScaledVector(grid.shX[idx],w);
+      out.shY.addScaledVector(grid.shY[idx],w); out.shZ.addScaledVector(grid.shZ[idx],w);
+    }
+    return out;
+  }
+
+  function probeRoomForMesh(mesh){
+    const itemId=mesh?.userData?.itemId;
+    const item=itemId&&itemById(itemId);
+    if(item)return item.room;
+    const ids=roomIdsForMesh(mesh);
+    if(ids.length===1)return ids[0];
+    const p=mesh.getWorldPosition(new THREE.Vector3());
+    const upstairs=p.y>UPPER_Y-0.12;
+    const positional=(p.x>=CORE_MIN_X&&p.x<=CORE_MAX_X)
+      ? (upstairs?'landing':'hall')
+      : (upstairs?(p.x<CORE_MIN_X?'bedroom':'kids'):(p.x<CORE_MIN_X?'living':'kitchen'));
+    return ids.includes(positional)?positional:(ids[0]||null);
+  }
+
+  function ensureLocalSHMaterial(mat){
+    if(!mat?.isMeshStandardMaterial||mat.userData.localSHPrepared)return;
+    mat.userData.localSHPrepared=true;
+    const previousCompile=mat.onBeforeCompile;
+    const previousKeyFn=mat.customProgramCacheKey;
+    const previousKey=previousKeyFn?.bind(mat);
+    mat.userData.localSHPreviousCompile=previousCompile;
+    mat.userData.localSHPreviousKey=previousKeyFn;
+    mat.onBeforeCompile=(shader,rendererRef)=>{
+      if(previousCompile)previousCompile(shader,rendererRef);
+      shader.uniforms.uLocalSH0={value:new THREE.Vector3()};
+      shader.uniforms.uLocalSHX={value:new THREE.Vector3()};
+      shader.uniforms.uLocalSHY={value:new THREE.Vector3()};
+      shader.uniforms.uLocalSHZ={value:new THREE.Vector3()};
+      shader.uniforms.uLocalSHStrength={value:0};
+      shader.fragmentShader=`uniform vec3 uLocalSH0;\nuniform vec3 uLocalSHX;\nuniform vec3 uLocalSHY;\nuniform vec3 uLocalSHZ;\nuniform float uLocalSHStrength;\n`+shader.fragmentShader;
+      const outgoing='vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;';
+      const shEval=`vec3 shN=normalize(normal);
+vec3 shIrradiance=clamp(uLocalSH0*0.282095+uLocalSHX*(0.488603*shN.x)+uLocalSHY*(0.488603*shN.y)+uLocalSHZ*(0.488603*shN.z),vec3(0.0),vec3(4.0))*uLocalSHStrength;`;
+      const addition=`${shEval}
+vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance + shIrradiance*diffuseColor.rgb*0.31831;`;
+      if(shader.fragmentShader.includes(outgoing))shader.fragmentShader=shader.fragmentShader.replace(outgoing,addition);
+      else if(shader.fragmentShader.includes('#include <opaque_fragment>'))shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>',`${shEval}
+outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
+#include <opaque_fragment>`);
+      mat.userData.localSHShader=shader;
+    };
+    mat.customProgramCacheKey=()=>`${previousKey?previousKey():''}|my-house-local-sh-v1`;
+    mat.needsUpdate=true;
+  }
+
+  function attachLocalSHToMesh(mesh){
+    if(!mesh?.isMesh||mesh.userData?.hitProxy||mesh.userData?.supportFor)return;
+    const roomId=probeRoomForMesh(mesh);
+    if(!roomId)return;
+    mesh.userData.probeRoomId=roomId;
+    mesh.userData.localSH ||= {sh0:new THREE.Vector3(),shX:new THREE.Vector3(),shY:new THREE.Vector3(),shZ:new THREE.Vector3()};
+    const mats=Array.isArray(mesh.material)?mesh.material:[mesh.material];
+    mats.forEach(ensureLocalSHMaterial);
+    const previousRender=mesh.onBeforeRender;
+    if(!mesh.userData.localSHRenderHook){
+      mesh.userData.localSHRenderHook=true;
+      mesh.userData.localSHPreviousRender=previousRender;
+      mesh.onBeforeRender=function(rendererRef,sceneRef,cameraRef,geometry,materialRef,group){
+        if(previousRender)previousRender.call(this,rendererRef,sceneRef,cameraRef,geometry,materialRef,group);
+        const shader=materialRef?.userData?.localSHShader;
+        const coeff=this.userData.localSH;
+        if(!shader||!coeff)return;
+        shader.uniforms.uLocalSH0.value.copy(coeff.sh0);
+        shader.uniforms.uLocalSHX.value.copy(coeff.shX);
+        shader.uniforms.uLocalSHY.value.copy(coeff.shY);
+        shader.uniforms.uLocalSHZ.value.copy(coeff.shZ);
+        shader.uniforms.uLocalSHStrength.value=probeStrengthValue;
+      };
+    }
+  }
+
+  function prepareLocalSHForRoot(root){
+    if(!root||!probeEnabled())return;
+    scene.updateMatrixWorld(true);
+    root.traverse(obj=>attachLocalSHToMesh(obj));
+  }
+
+  function detachLocalSHFromRoot(root,materials){
+    if(!root)return;
+    root.traverse(mesh=>{
+      if(!mesh?.isMesh)return;
+      if(mesh.userData.localSHRenderHook){
+        mesh.onBeforeRender=mesh.userData.localSHPreviousRender||function(){};
+        delete mesh.userData.localSHRenderHook;
+        delete mesh.userData.localSHPreviousRender;
+      }
+      delete mesh.userData.localSH;
+      delete mesh.userData.probeRoomId;
+      const mats=Array.isArray(mesh.material)?mesh.material:[mesh.material];
+      mats.forEach(mat=>{if(mat?.userData?.localSHPrepared)materials.add(mat);});
+    });
+  }
+
+  function disableLocalSH(){
+    if(probeWarmupTimer){clearTimeout(probeWarmupTimer);probeWarmupTimer=0;}
+    const materials=new Set();
+    [houseGroup,decorGroup,itemRoot].forEach(root=>detachLocalSHFromRoot(root,materials));
+    materials.forEach(mat=>{
+      mat.onBeforeCompile=mat.userData.localSHPreviousCompile||function(){};
+      if(mat.userData.localSHPreviousKey)mat.customProgramCacheKey=mat.userData.localSHPreviousKey;
+      else delete mat.customProgramCacheKey;
+      delete mat.userData.localSHPreviousCompile;
+      delete mat.userData.localSHPreviousKey;
+      delete mat.userData.localSHPrepared;
+      delete mat.userData.localSHShader;
+      mat.needsUpdate=true;
+    });
+    probeStrengthValue=0;
+  }
+
+  function enableLocalSH(){
+    [houseGroup,decorGroup,itemRoot].forEach(root=>prepareLocalSHForRoot(root));
+    markProbeDirty();
+    rebuildProbeRoom(activeRoomId,false);
+    warmProbeRooms();
+  }
+
+  function transformSHToView(worldCoeffs,target){
+    const e=camera.matrixWorldInverse.elements;
+    target.sh0.copy(worldCoeffs.sh0);
+    target.shX.set(0,0,0).addScaledVector(worldCoeffs.shX,e[0]).addScaledVector(worldCoeffs.shY,e[4]).addScaledVector(worldCoeffs.shZ,e[8]);
+    target.shY.set(0,0,0).addScaledVector(worldCoeffs.shX,e[1]).addScaledVector(worldCoeffs.shY,e[5]).addScaledVector(worldCoeffs.shZ,e[9]);
+    target.shZ.set(0,0,0).addScaledVector(worldCoeffs.shX,e[2]).addScaledVector(worldCoeffs.shY,e[6]).addScaledVector(worldCoeffs.shZ,e[10]);
+    return target;
+  }
+
+  function updateRoomMeshSH(roomId){
+    updateCamera();
+    camera.updateMatrixWorld(true);
+    scene.updateMatrixWorld(true);
+    const worldCoeffs={sh0:new THREE.Vector3(),shX:new THREE.Vector3(),shY:new THREE.Vector3(),shZ:new THREE.Vector3()};
+    [houseGroup,decorGroup,itemRoot].forEach(root=>root.traverse(mesh=>{
+      if(!mesh?.isMesh||mesh.userData?.probeRoomId!==roomId||!mesh.userData.localSH)return;
+      const p=mesh.getWorldPosition(new THREE.Vector3());
+      interpolateProbeCoeffs(roomId,p,worldCoeffs);
+      transformSHToView(worldCoeffs,mesh.userData.localSH);
+    }));
+  }
+
+  function markProbeDirty(roomId=null){
+    if(roomId)probeDirtyRooms.add(roomId); else rooms.forEach(room=>probeDirtyRooms.add(room.id));
+    if(probeStatus&&(!roomId||roomId===activeRoomId))probeStatus.textContent=`${roomById(activeRoomId).name}: probe update pending`;
+  }
+
+  function rebuildProbeRoom(roomId,renderAfter=true){
+    if(!probeEnabled()){
+      if(probeStatus&&roomId===activeRoomId)probeStatus.textContent='SH is off · direct + ambient baseline';
+      return 0;
+    }
+    scene.updateMatrixWorld(true);
+    const room=roomById(roomId), grid=probeGridFor(roomId), rays=probeSettings().raysPerProbe;
     const start=performance.now();
     let probeNumber=0;
-    for(let iz=0;iz<PROBE_GRID_Z;iz++){
-      for(let iy=0;iy<PROBE_GRID_Y;iy++){
-        for(let ix=0;ix<PROBE_GRID_X;ix++){
-          const index=probeIndex(ix,iy,iz);
-          const nominal=probeGridPoint(grid,ix,iy,iz);
-          const point=relocateProbePoint(nominal,room);
-          const sample=sampleProbe(room,grid,point,probeNumber++,rays);
-          grid.sh0[index].copy(sample.sh0);
-          grid.shX[index].copy(sample.shX);
-          grid.shY[index].copy(sample.shY);
-          grid.shZ[index].copy(sample.shZ);
-        }
-      }
+    for(let iz=0;iz<PROBE_GRID_Z;iz++)for(let iy=0;iy<PROBE_GRID_Y;iy++)for(let ix=0;ix<PROBE_GRID_X;ix++){
+      const idx=probeIndex(ix,iy,iz);
+      const point=relocateProbePoint(probeGridPoint(grid,ix,iy,iz),room);
+      const sample=sampleProbe(room,point,probeNumber++,rays);
+      grid.sh0[idx].copy(sample.sh0); grid.shX[idx].copy(sample.shX); grid.shY[idx].copy(sample.shY); grid.shZ[idx].copy(sample.shZ);
     }
-    grid.built=true;
-    grid.lastMs=performance.now()-start;
-    probeLastBuildMs=grid.lastMs;
-    probeLastBuildRoom=roomId;
-    probeDirtyRooms.delete(roomId);
+    grid.built=true; grid.version++; grid.lastMs=performance.now()-start;
+    probeLastBuildRoom=roomId; probeLastBuildMs=grid.lastMs; probeDirtyRooms.delete(roomId);
+    updateRoomMeshSH(roomId);
     if(probeStatus&&roomId===activeRoomId)probeStatus.textContent=`${room.name}: 18 probes × ${rays} rays · ${grid.lastMs.toFixed(0)}ms`;
     if(renderAfter)render();
     return grid.lastMs;
   }
 
-  function refreshActiveProbe(renderAfter=true){
-    return rebuildProbeRoom(activeRoomId,renderAfter);
-  }
-
   function updateProbeStrength(levels=currentLightingLevels()){
-    const strength=clamp(Number(levels.indirect||0),0,INDIRECT_LEVEL_MAX);
-    rooms.forEach(room=>{ probeGridFor(room.id).strengthUniform.value=strength; });
+    probeStrengthValue=probeEnabled()?clamp(Number(levels.indirect||0),0,INDIRECT_LEVEL_MAX):0;
   }
 
   function warmProbeRooms(){
     if(probeWarmupTimer)clearTimeout(probeWarmupTimer);
+    if(!probeEnabled()){probeWarmupTimer=0;return;}
     const queue=rooms.map(r=>r.id).filter(id=>probeDirtyRooms.has(id));
     const activeIndex=queue.indexOf(activeRoomId);
     if(activeIndex>0)queue.unshift(queue.splice(activeIndex,1)[0]);
@@ -1115,6 +1197,43 @@
       probeWarmupTimer=setTimeout(step,220);
     };
     probeWarmupTimer=setTimeout(step,80);
+  }
+
+  function ensureRoomIrradianceMaterial(mat){
+    if(!mat?.isMeshStandardMaterial||mat.userData.roomIrradiancePrepared)return;
+    mat.userData.roomIrradiancePrepared=true;
+    mat.userData.roomBaseEmissive=mat.emissive.clone();
+    mat.userData.roomBaseEmissiveIntensity=Number(mat.emissiveIntensity)||1;
+  }
+
+  function updateRoomIrradiance(levels=currentLightingLevels()){
+    const evening=state.lighting==='evening';
+    const tints=new Map(rooms.map(room=>[room.id,roomFeatureTint(room.id)]));
+    // Deliberately simple and robust ambient layer: use a small room-coloured
+    // material-emission term. The SH grid is a separate indirect contribution,
+    // so Ambient can be reduced to zero when evaluating the probe lighting.
+    const fillStrength=clamp(Number(levels.ambient||0),0,1)*(evening?0.78:0.62);
+    const emissiveSet=new Set(emissiveMeshes);
+    [houseGroup,decorGroup,itemRoot].forEach(root=>root.traverse(mesh=>{
+      if(!mesh?.isMesh||mesh.userData?.hitProxy)return;
+      const mats=Array.isArray(mesh.material)?mesh.material:[mesh.material];
+      const ids=roomIdsForMesh(mesh);
+      if(!ids.length)return;
+      const tint=new THREE.Color(0,0,0);
+      ids.forEach(id=>tint.add(tints.get(id)||new THREE.Color(1,1,1)));
+      tint.multiplyScalar(1/ids.length);
+      mats.forEach(mat=>{
+        if(!mat?.isMeshStandardMaterial)return;
+        ensureRoomIrradianceMaterial(mat);
+        if(emissiveSet.has(mesh))return;
+        const albedo=mat.color?.clone?.()||new THREE.Color(1,1,1);
+        // Approximate diffuse irradiance: coloured room light multiplied by
+        // the receiving material's albedo, exactly as a diffuse bounce would.
+        mat.emissive.copy(tint).multiply(albedo);
+        mat.emissiveIntensity=fillStrength;
+      });
+    }));
+    roomIrradianceDirty=false;
   }
 
   function wallpaperTexture(patternId){
@@ -1228,7 +1347,7 @@
     mat.color.set(style.wall);
     mat.map=wallpaperTexture(style.wallpaper||'plain');
     mat.needsUpdate=true;
-    markProbeDirty(roomId);
+    roomIrradianceDirty=true;
   }
 
   function applyRoomFloorFinish(roomId){
@@ -1238,7 +1357,7 @@
     mat.color.set(style.floor);
     mat.map=floorTexture(style.floorTexture||'plain');
     mat.needsUpdate=true;
-    markProbeDirty(roomId);
+    roomIrradianceDirty=true;
   }
 
   function material(color, opts={}){
@@ -1432,7 +1551,6 @@
     const mat=material(color,{roughness:0.96});
     if(key==='wall')mat.map=wallpaperTexture(state.rooms[roomId]?.wallpaper||'plain');
     if(key==='floor')mat.map=floorTexture(state.rooms[roomId]?.floorTexture||'plain');
-    attachProbeMaterial(mat,roomId);
     roomMaterials.set(`${roomId}:${key}`,mat);
     return mat;
   }
@@ -1529,8 +1647,8 @@
       addSideWindow(room,'right',{width:1.12,height:1.18,sill:0.84,curtains:false,panes:4,offsetZ:0.12});
     }
 
-    houseGroup.children.slice(houseStart).forEach(obj=>{enableRoomLayers(obj,room.id);attachProbeMaterials(obj,room.id);});
-    decorGroup.children.slice(decorStart).forEach(obj=>{enableRoomLayers(obj,room.id);attachProbeMaterials(obj,room.id);});
+    houseGroup.children.slice(houseStart).forEach(obj=>enableRoomLayers(obj,room.id));
+    decorGroup.children.slice(decorStart).forEach(obj=>enableRoomLayers(obj,room.id));
   }
 
   function addArchitectureMaterialBox(x0,x1,y0,y1,z0,z1,mat,roomIds){
@@ -1660,6 +1778,9 @@
     }
     const landingRail=addHorizontalRail(CORE_MIN_X+0.16,CORE_MAX_X-0.16,UPPER_Y+0.84,CORE_DRESS_MIN_Z-0.06); enableRoomLayers(landingRail,'landing');
 
+    prepareLocalSHForRoot(houseGroup);
+    prepareLocalSHForRoot(decorGroup);
+    markProbeDirty();
     invalidateShadows();
   }
 
@@ -1750,7 +1871,6 @@
       localLights.push(light);
     }
 
-    attachProbeMaterials(group,item.room);
     assignItemRoomLayer(group,item.room);
     itemGroups.set(item.id,group);
     return group;
@@ -1772,6 +1892,7 @@
     });
 
     state.items.forEach(item=>placeItemGroup(item));
+    prepareLocalSHForRoot(itemRoot);
     updateSelectionHelper();
     updateLighting();
   }
@@ -1927,20 +2048,14 @@
     buildInventoryCategories();
     buildCarousel();
     updateLocalLightShadows();
-    const grid=probeGridFor(activeRoomId);
-    const rays=probeSettings().raysPerProbe;
-    if(probeStatus){
-      probeStatus.textContent=probeDirtyRooms.has(activeRoomId)
-        ? `${roomById(activeRoomId).name}: probe update pending · 18 × ${rays}`
-        : `${roomById(activeRoomId).name}: 18 probes × ${rays} rays · ${grid.lastMs.toFixed(0)}ms`;
-    }
+    if(setupWorkspace&&!setupWorkspace.hidden)updateGlobalLightPanel();
+    if(probeDirtyRooms.has(activeRoomId))warmProbeRooms();
   }
 
   function render(){
     updateCamera();
     if(selectionHelper)selectionHelper.update();
-    const levels=currentLightingLevels();
-    updateProbeStrength(levels);
+    if(roomIrradianceDirty)updateRoomIrradiance(currentLightingLevels());
     const shadowRefresh=renderer.shadowMap.needsUpdate===true;
     const start=performance.now();
     renderer.setRenderTarget(null);
@@ -1949,10 +2064,11 @@
     renderSamples++;
     renderAverageMs=renderSamples===1?elapsed:(renderAverageMs*0.82+elapsed*0.18);
     if(perfBadge){
-      const rays=probeSettings().raysPerProbe;
+      const ps=probeSettings();
+      const rays=ps.raysPerProbe;
       const grid=probeGridFor(activeRoomId);
-      const probeLabel=grid.built?`SH ${PROBES_PER_ROOM}×${rays}`:'SH warming';
-      perfBadge.textContent=`CPU ${elapsed.toFixed(1)}ms · ${activeShadowCount} sh. · ${probeLabel}${shadowRefresh?' · shadow':''}`;
+      const label=!ps.enabled?'SH off':(grid.built?`SH ${PROBES_PER_ROOM}×${rays}`:'SH warming');
+      perfBadge.textContent=`CPU ${elapsed.toFixed(1)}ms · ${activeShadowCount} sh. · ${label}${shadowRefresh?' · shadow':''}`;
     }
   }
 
@@ -1992,8 +2108,19 @@
     if(indirectLevel)indirectLevel.value=String(Math.round(levels.indirect*100));
     if(indirectValue)indirectValue.textContent=`${Math.round(levels.indirect*100)}%`;
     const ps=probeSettings();
-    if(probeRaysLevel)probeRaysLevel.value=String(ps.raysPerProbe);
+    if(probeRaysLevel){probeRaysLevel.value=String(ps.raysPerProbe);probeRaysLevel.disabled=!ps.enabled;}
     if(probeRaysValue)probeRaysValue.textContent=String(ps.raysPerProbe);
+    if(indirectLevel)indirectLevel.disabled=!ps.enabled;
+    if(probeRefreshBtn)probeRefreshBtn.disabled=!ps.enabled;
+    if(probeToggleBtn){probeToggleBtn.textContent=ps.enabled?'SH ON':'SH OFF';probeToggleBtn.setAttribute('aria-pressed',String(ps.enabled));}
+    const grid=probeGridFor(activeRoomId);
+    if(probeStatus){
+      probeStatus.textContent=!ps.enabled
+        ? 'SH is off · direct + ambient baseline'
+        : probeDirtyRooms.has(activeRoomId)
+          ? `${roomById(activeRoomId).name}: probe update pending · 18 × ${ps.raysPerProbe}`
+          : `${roomById(activeRoomId).name}: 18 probes × ${ps.raysPerProbe} rays · ${grid.lastMs.toFixed(0)}ms`;
+    }
   }
 
   function updateLocalLightShadows(){
@@ -2022,11 +2149,11 @@
     sun.color.set(evening?0xaab7d4:0xfff0d7);
     sun.castShadow=levels.direct>0.01;
 
-    // Ambient is deliberately a cheap, low-level sky term. The spatial
-    // coloured fill comes from the ray-sampled SH probe volume instead.
-    hemi.intensity=(evening?0.42:0.72)*levels.ambient;
-    hemi.color.set(evening?0xc7ccd8:0xfff4e4);
-    hemi.groundColor.set(evening?0x55545a:0x7b756c);
+    // Keep only a very small global sky term. Most of the fill now comes
+    // from a per-room irradiance tint injected into standard materials.
+    hemi.intensity=(evening?0.07:0.11)*levels.ambient;
+    hemi.color.set(evening?0xd5d7df:0xfff6e9);
+    hemi.groundColor.set(evening?0x6c6b70:0x8e887f);
     eveningFill.intensity=0.0;
 
     localLights.forEach(light=>{
@@ -2034,6 +2161,8 @@
       const t=item&&templateById(item.type);
       light.intensity=evening?LAMP_MAX_INTENSITY*(t?.lightScale||1)*lampLevelFor(item):0;
     });
+    roomIrradianceDirty=true;
+    updateRoomIrradiance(levels);
     updateProbeStrength(levels);
     updateLocalLightShadows();
     emissiveMeshes.forEach(mesh=>{
@@ -2278,13 +2407,13 @@
           markProbeDirty(pendingShadowRoom);
         }
         save();
+        updateLighting();
       }
       const roomToRefresh=pendingShadowRoom;
       pendingShadowRoom=null;
       gesture=null;
       hint.textContent='Tap selects · selected item moves · other drags explore';
       if(roomToRefresh&&probeDirtyRooms.has(roomToRefresh))rebuildProbeRoom(roomToRefresh,false);
-      else if(probeDirtyRooms.has(activeRoomId))rebuildProbeRoom(activeRoomId,false);
       if(settleFrame)requestAnimationFrame(render);
     }
   }
@@ -2298,7 +2427,7 @@
     item.rot=(item.rot||0)+Math.PI/2;
     const group=itemGroups.get(item.id); if(group)group.rotation.y=item.rot;
     if(item.supportId)clampSupportedItem(item); else clampFloorItem(item);
-    placeItemGroup(item); save(); invalidateShadows(item.room); markProbeDirty(item.room); updateSelectionHelper(); rebuildProbeRoom(item.room,false); render();
+    placeItemGroup(item); save(); invalidateShadows(item.room); markProbeDirty(item.room); updateSelectionHelper(); updateLighting(); rebuildProbeRoom(item.room,false); render();
   });
 
   function dropDependentsToFloor(supportId){
@@ -2321,7 +2450,7 @@
     state.items=state.items.filter(i=>i.id!==item.id);
     const changedRoom=item.room;
     selectedId=null;
-    rebuildItems(); markProbeDirty(changedRoom); rebuildProbeRoom(changedRoom,false); updateSelection(); save(); render();
+    rebuildItems(); prepareLocalSHForRoot(itemRoot); markProbeDirty(changedRoom); rebuildProbeRoom(changedRoom,false); updateSelection(); save(); render();
   });
 
   clearBtn.addEventListener('click',()=>{
@@ -2329,7 +2458,7 @@
     state.items=state.items.filter(i=>i.room!==activeRoomId);
     state.items.forEach(i=>{if(removed.has(i.supportId))i.supportId=null;});
     const changedRoom=activeRoomId;
-    selectedId=null; rebuildItems(); markProbeDirty(changedRoom); rebuildProbeRoom(changedRoom,false); updateSelection(); save(); render();
+    selectedId=null; rebuildItems(); prepareLocalSHForRoot(itemRoot); markProbeDirty(changedRoom); rebuildProbeRoom(changedRoom,false); updateSelection(); save(); render();
     hint.textContent=`${roomById(activeRoomId).name} cleared`;
   });
 
@@ -2348,23 +2477,30 @@
     state.lighting=state.lighting==='day'?'evening':'day';
     markProbeDirty();
     updateLighting();
-    refreshActiveProbe(true);
-    setTimeout(warmProbeRooms,20);
-    save();
+    rebuildProbeRoom(activeRoomId,false);
+    warmProbeRooms();
+    save(); render();
   });
 
   directLevel?.addEventListener('input',()=>{
     const levels=currentLightingLevels();
     levels.direct=clamp(Number(directLevel.value)/100,0,1);
     if(directValue)directValue.textContent=`${Math.round(levels.direct*100)}%`;
+    invalidateShadows(null,true);
+    markProbeDirty();
     updateLighting();
   });
-  directLevel?.addEventListener('change',()=>{ markProbeDirty(); refreshActiveProbe(true); setTimeout(warmProbeRooms,20); save(); });
+  directLevel?.addEventListener('change',()=>{
+    rebuildProbeRoom(activeRoomId,false);
+    warmProbeRooms();
+    save(); render();
+  });
 
   ambientLevel?.addEventListener('input',()=>{
     const levels=currentLightingLevels();
     levels.ambient=clamp(Number(ambientLevel.value)/100,0,1);
     if(ambientValue)ambientValue.textContent=`${Math.round(levels.ambient*100)}%`;
+    roomIrradianceDirty=true;
     updateLighting();
   });
   ambientLevel?.addEventListener('change',save);
@@ -2383,31 +2519,43 @@
     if(probeRaysValue)probeRaysValue.textContent=String(rays);
   });
   probeRaysLevel?.addEventListener('change',()=>{
-    const s=probeSettings();
-    s.raysPerProbe=clamp(Math.round(Number(probeRaysLevel.value)||PROBE_RAYS_DEFAULT),PROBE_RAYS_MIN,PROBE_RAYS_MAX);
-    s.raysPerProbe=Math.round(s.raysPerProbe/4)*4;
-    if(probeRaysValue)probeRaysValue.textContent=String(s.raysPerProbe);
+    const ps=probeSettings();
+    ps.raysPerProbe=clamp(Math.round(Number(probeRaysLevel.value)||PROBE_RAYS_DEFAULT),PROBE_RAYS_MIN,PROBE_RAYS_MAX);
+    ps.raysPerProbe=Math.round(ps.raysPerProbe/4)*4;
+    if(probeRaysValue)probeRaysValue.textContent=String(ps.raysPerProbe);
     markProbeDirty();
-    refreshActiveProbe(true);
-    setTimeout(warmProbeRooms,20);
-    save();
+    rebuildProbeRoom(activeRoomId,false);
+    warmProbeRooms();
+    save(); render();
+  });
+
+  probeToggleBtn?.addEventListener('click',()=>{
+    const ps=probeSettings();
+    ps.enabled=!ps.enabled;
+    if(ps.enabled)enableLocalSH();
+    else disableLocalSH();
+    updateProbeStrength(currentLightingLevels());
+    updateGlobalLightPanel();
+    save(); render();
   });
 
   probeRefreshBtn?.addEventListener('click',()=>{
     markProbeDirty(activeRoomId);
-    refreshActiveProbe(true);
+    rebuildProbeRoom(activeRoomId,true);
+    save();
   });
 
   globalLightReset?.addEventListener('click',()=>{
     const mode=state.lighting==='evening'?'evening':'day';
+    if(probeEnabled())disableLocalSH();
     state.lightingLevels[mode]={...LIGHTING_PRESETS[mode]};
-    state.probeSettings={raysPerProbe:PROBE_RAYS_DEFAULT};
-    markProbeDirty();
+    state.probeSettings={raysPerProbe:PROBE_RAYS_DEFAULT,enabled:false};
     invalidateShadows(null,true);
+    markProbeDirty();
     updateLighting();
-    refreshActiveProbe(true);
-    setTimeout(warmProbeRooms,20);
-    save();
+    rebuildProbeRoom(activeRoomId,false);
+    warmProbeRooms();
+    save(); render();
   });
 
   lightLevel?.addEventListener('input',()=>{
@@ -2415,9 +2563,14 @@
     if(!item||!t?.lightHeight)return;
     item.lightLevel=clamp(Number(lightLevel.value)/100,0,LIGHT_LEVEL_MAX);
     if(lightValue)lightValue.textContent=`${Math.round(item.lightLevel*100)}%`;
+    markProbeDirty(item.room);
     updateLighting();
   });
-  lightLevel?.addEventListener('change',()=>{ const item=itemById(selectedId); if(item){markProbeDirty(item.room);rebuildProbeRoom(item.room,false);render();} save(); });
+  lightLevel?.addEventListener('change',()=>{
+    const item=itemById(selectedId);
+    if(item)rebuildProbeRoom(item.room,false);
+    save(); render();
+  });
 
   spotAngleLevel?.addEventListener('input',()=>{
     const item=itemById(selectedId),t=item&&templateById(item.type);
@@ -2430,9 +2583,14 @@
       light.shadow.needsUpdate=true;
       renderer.shadowMap.needsUpdate=true;
     }
+    markProbeDirty(item.room);
     render();
   });
-  spotAngleLevel?.addEventListener('change',()=>{ const item=itemById(selectedId); if(item){markProbeDirty(item.room);rebuildProbeRoom(item.room,false);render();} save(); });
+  spotAngleLevel?.addEventListener('change',()=>{
+    const item=itemById(selectedId);
+    if(item)rebuildProbeRoom(item.room,false);
+    save(); render();
+  });
 
   lightShadowBtn?.addEventListener('click',()=>{
     const item=itemById(selectedId),t=item&&templateById(item.type);
@@ -2440,8 +2598,6 @@
     item.shadowEnabled=item.shadowEnabled===false;
     updateSelection();
     updateLocalLightShadows();
-    markProbeDirty(item.room);
-    rebuildProbeRoom(item.room,false);
     save();render();
   });
 
@@ -2478,7 +2634,7 @@
     }
     if(t.place!=='wall'&&t.place!=='ceiling'&&!item.supportId)clampFloorItem(item);
     state.items.push(item);
-    const group=createItemGroup(item);itemRoot.add(group);placeItemGroup(item);invalidateShadows(room.id);markProbeDirty(room.id);updateLighting();rebuildProbeRoom(room.id,false);render();
+    const group=createItemGroup(item);itemRoot.add(group);placeItemGroup(item);prepareLocalSHForRoot(group);invalidateShadows(room.id);markProbeDirty(room.id);updateLighting();rebuildProbeRoom(room.id,false);render();
     selectItem(item.id);save();
     hint.textContent=t.place==='wall' ? `Hang the ${t.name.toLowerCase()} where you like` : t.place==='ceiling' ? `Slide the ${t.name.toLowerCase()} across the ceiling` : t.place==='surface' ? (item.supportId?'Added to a surface · drag to fine tune':'Drag onto a table or drawers') : `Drag the ${t.name.toLowerCase()} into place`;
   }
@@ -2535,6 +2691,7 @@
         if(key==='wall')applyRoomWallFinish(activeRoomId);
         else if(key==='floor')applyRoomFloorFinish(activeRoomId);
         else if(mat)mat.color.set(col);
+        roomIrradianceDirty=true;
         markProbeDirty(activeRoomId); rebuildProbeRoom(activeRoomId,false);
         [...holder.children].forEach(x=>x.classList.toggle('active',x===b));save();render();
       });
@@ -2560,7 +2717,8 @@
       if((style.wallpaper||'plain')===pattern.id)b.classList.add('active');
       b.addEventListener('click',()=>{
         style.wallpaper=pattern.id;
-        applyRoomWallFinish(activeRoomId); rebuildProbeRoom(activeRoomId,false);
+        applyRoomWallFinish(activeRoomId);
+        markProbeDirty(activeRoomId); rebuildProbeRoom(activeRoomId,false);
         [...wallpaperSwatches.children].forEach(x=>x.classList.toggle('active',x===b));
         save();render();
       });
@@ -2585,7 +2743,8 @@
       if((style.floorTexture||'plain')===pattern.id)b.classList.add('active');
       b.addEventListener('click',()=>{
         style.floorTexture=pattern.id;
-        applyRoomFloorFinish(activeRoomId); rebuildProbeRoom(activeRoomId,false);
+        applyRoomFloorFinish(activeRoomId);
+        markProbeDirty(activeRoomId); rebuildProbeRoom(activeRoomId,false);
         [...floorTextureSwatches.children].forEach(x=>x.classList.toggle('active',x===b));
         save();render();
       });
@@ -2659,11 +2818,12 @@
       };
       const parsedProbe=parsed.probeSettings||{};
       const probeSettingsLoaded={
-        raysPerProbe:clamp(Math.round(Number(parsedProbe.raysPerProbe)||PROBE_RAYS_DEFAULT),PROBE_RAYS_MIN,PROBE_RAYS_MAX)
+        raysPerProbe:clamp(Math.round(Number(parsedProbe.raysPerProbe)||PROBE_RAYS_DEFAULT),PROBE_RAYS_MIN,PROBE_RAYS_MAX),
+        enabled:parsed.rendererExperimentVersion===4&&parsedProbe.enabled===true
       };
       probeSettingsLoaded.raysPerProbe=Math.round(probeSettingsLoaded.raysPerProbe/4)*4;
       state={
-        lighting:parsed.lighting==='evening'?'evening':'day', lightingLevels, probeSettings:probeSettingsLoaded, rooms:roomState,
+        lighting:parsed.lighting==='evening'?'evening':'day', lightingLevels, probeSettings:probeSettingsLoaded, rendererExperimentVersion:4, rooms:roomState,
         items:parsed.items.filter(i=>templateById(i.type)&&rooms.some(r=>r.id===i.room)).slice(0,120),
         camera:{
           x:clamp(Number(parsed.camera?.x)||-3.30,HOUSE_MIN_X+0.65,HOUSE_MAX_X-0.65),
@@ -2719,10 +2879,14 @@
   updateActiveRoom(true);
   updateSelection();
   updateLighting();
+  if(probeEnabled()){
+    [houseGroup,decorGroup,itemRoot].forEach(root=>prepareLocalSHForRoot(root));
+    rebuildProbeRoom(activeRoomId,false);
+    warmProbeRooms();
+  }
   setWorkspaceTab('place');
   hint.textContent='Tap selects · selected item moves · other drags explore';
   window.addEventListener('resize',queueResize,{passive:true});
   if('ResizeObserver' in window)new ResizeObserver(queueResize).observe(canvas.parentElement);
   queueResize();
-  setTimeout(warmProbeRooms,80);
 })();

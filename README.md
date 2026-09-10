@@ -1,18 +1,21 @@
-# GameHub v1.8.33
+# GameHub v1.8.35
 
-This release replaces the My House SSAO experiment with a dynamic room-local SH irradiance probe grid.
+This release retries the My House SH-probe experiment with a much safer mobile WebGL path.
 
 ## Updated in this version
-- Removed the screen-space AO pass and its tuning controls.
-- Every room now uses a **3 × 3 × 2 grid (18 probes)** so there are midpoint samples as well as corners.
-- Each probe fires scene rays and records the colour/energy of directly illuminated surfaces into **first-order spherical-harmonic irradiance**.
-- Probe lighting is spatially interpolated across the room and evaluated against surface normals in the standard-material shader.
-- The default is **16 rays per probe**, adjustable from 8 to 32 in SETUP.
-- **INDIRECT** controls the SH bounce strength independently from Direct and Ambient.
-- Probe volumes are rebuilt when lighting/furniture/room finishes change, then reused while the camera moves. Other dirty rooms can warm in idle time.
-- Added a **Refresh room** button and probe-build timing readout for testing on device.
-- Existing furnishing saves remain compatible.
-- Service-worker cache bumped for the new release.
+- Keeps the **3 × 3 × 2 = 18 probe** grid in every room.
+- Each probe ray-samples actual room geometry and direct lighting to build first-order SH irradiance.
+- The 18-probe grid is now **interpolated on the CPU per rendered object/mesh** after a probe refresh.
+- Each MeshStandardMaterial receives only **four vec3 SH coefficients plus one strength value** instead of the previous 18-probe uniform arrays.
+- Removed the SSAO render pass entirely.
+- SETUP now exposes **Direct**, **Ambient**, **Indirect**, **Rays / Probe**, **SH ON/OFF**, and **Refresh room**.
+- The SH experiment now starts **OFF** for a safe direct + ambient baseline; switch **SH ON** in SETUP to compile/test it, and switch it OFF again to restore the standard materials.
+- Probe updates happen after lighting/furniture changes and other rooms warm progressively while idle.
+- Existing house/furniture save data is preserved.
+- Service-worker cache version bumped for a clean PWA update.
+
+## Experimental note
+This is deliberately a renderer test. The previous v1.8.33 SH build failed on iOS because the per-material shader carried the complete probe grid. This version keeps that grid on the CPU and sends only the locally interpolated coefficients to the shader.
 
 ## Files
 Upload the contents of this ZIP to the root of the `GameHub` repository, replacing the existing files.
