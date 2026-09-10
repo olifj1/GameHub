@@ -10280,3 +10280,60 @@ body[data-game-id="game-14"] .attack-slot-copy small{font-size:6.8px}
   .room-spot-angle-control label{min-width:54px;font-size:8px;}
   .room-spot-angle-control input[type="range"]{width:72px;min-width:54px;}
 }
+
+/* My House v1.8.32 — Place / Setup workspace tabs + exposed AO tuning */
+.room-workspace-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;padding:4px;border:1.5px solid rgba(43,39,36,.24);border-radius:14px;background:rgba(255,255,255,.34);}
+.room-workspace-tabs button{min-height:34px;border:1.5px solid transparent;border-radius:10px;background:transparent;color:#746a63;font:inherit;font-size:10px;font-weight:900;letter-spacing:.10em;}
+.room-workspace-tabs button.active{border-color:rgba(43,39,36,.44);background:#f8f3ed;color:#3f3935;box-shadow:0 1px 0 rgba(43,39,36,.08);}
+.room-workspace[hidden]{display:none!important;}
+.room-workspace{min-width:0;}
+.room-workspace .room-selection-bar{margin-top:6px;}
+
+.room-setup-card{margin-top:6px;padding:10px 11px;border:1.5px solid rgba(43,39,36,.24);border-radius:16px;background:rgba(255,255,255,.43);color:#443d38;}
+.room-setup-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+.room-setup-heading>div{display:flex;align-items:baseline;gap:8px;min-width:0;}
+.room-setup-heading span,.room-ao-title strong{font-size:10px;font-weight:900;letter-spacing:.09em;color:#534b45;}
+.room-setup-heading small,.room-ao-title small{font-size:9px;color:#756b64;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.room-day-evening-button{flex:0 0 auto;min-height:32px;border:1.5px solid rgba(53,47,43,.30);border-radius:999px;background:#f8f3ed;color:#443d38;padding:0 12px;font:inherit;font-size:10px;font-weight:850;}
+.room-setup-sliders{display:grid;gap:3px;}
+.room-setup-slider{display:grid;grid-template-columns:72px minmax(0,1fr) 48px;align-items:center;gap:8px;min-height:32px;color:#5b534e;font-size:9px;font-weight:850;letter-spacing:.06em;}
+.room-setup-slider input[type="range"]{width:100%;min-width:0;height:20px;accent-color:#a67c61;}
+.room-setup-slider strong{text-align:right;color:#443d38;font-size:9px;letter-spacing:0;font-variant-numeric:tabular-nums;}
+.room-ao-tuning{margin-top:8px;padding:8px 9px;border:1px solid rgba(53,47,43,.14);border-radius:12px;background:rgba(248,243,237,.58);}
+.room-ao-title{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:3px;}
+.room-ao-slider{grid-template-columns:72px minmax(0,1fr) 48px;min-height:29px;}
+.room-setup-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(53,47,43,.12);}
+.room-setup-footer small{max-width:68%;font-size:8px;line-height:1.3;color:#756b64;}
+.room-setup-footer button{min-height:29px;border:1px solid rgba(74,65,59,.28);border-radius:999px;background:#f7f0e7;color:#554c46;padding:0 10px;font:inherit;font-size:8px;font-weight:850;white-space:nowrap;}
+.room-selected-light-card{margin-bottom:8px;}
+.room-setup-empty{padding:10px;border:1px dashed rgba(53,47,43,.18);border-radius:11px;background:rgba(255,255,255,.26);color:#786e67;font-size:9px;line-height:1.35;}
+.room-setup-empty[hidden]{display:none;}
+.room-light-control-setup{display:grid;grid-template-columns:92px minmax(0,1fr);gap:7px 10px;margin:0;padding:0;border:0;background:transparent;align-items:center;}
+.room-light-control-setup[hidden]{display:none;}
+.room-light-control-setup>label{display:flex;align-items:center;justify-content:space-between;gap:5px;font-size:9px;font-weight:850;letter-spacing:.06em;color:#5b534e;}
+.room-light-control-setup>input[type="range"]{width:100%;min-width:0;height:20px;accent-color:#a67c61;}
+.room-light-control-setup .room-spot-angle-control{grid-column:1/-1;display:grid;grid-template-columns:92px minmax(0,1fr);align-items:center;gap:10px;}
+.room-light-control-setup .room-spot-angle-control[hidden]{display:none;}
+.room-light-control-setup .room-spot-angle-control label{min-width:0;justify-content:space-between;font-size:9px;}
+.room-light-control-setup .room-spot-angle-control input[type="range"]{width:100%;min-width:0;height:20px;}
+.room-light-control-setup .room-shadow-toggle{grid-column:1/-1;justify-self:start;min-height:29px;font-size:8px;padding:0 10px;}
+
+/* The viewport now carries only scene information, not lighting controls. */
+.room-stage-toolbar{right:auto;}
+
+@media(max-width:430px){
+  .room-workspace-tabs{margin-top:6px;padding:3px;gap:4px;border-radius:13px;}
+  .room-workspace-tabs button{min-height:31px;border-radius:9px;font-size:9px;}
+  .room-setup-card{margin-top:5px;padding:8px 9px;border-radius:14px;}
+  .room-setup-heading{margin-bottom:6px;}
+  .room-setup-heading span,.room-ao-title strong{font-size:9px;}
+  .room-setup-heading small,.room-ao-title small{font-size:8px;}
+  .room-day-evening-button{min-height:30px;padding:0 10px;font-size:9px;}
+  .room-setup-slider,.room-ao-slider{grid-template-columns:62px minmax(0,1fr) 42px;gap:6px;min-height:28px;font-size:8px;}
+  .room-setup-slider strong{font-size:8px;}
+  .room-ao-tuning{margin-top:6px;padding:7px 8px;border-radius:11px;}
+  .room-setup-footer{margin-top:6px;padding-top:6px;gap:7px;}
+  .room-setup-footer small{font-size:7px;max-width:66%;}
+  .room-light-control-setup{grid-template-columns:80px minmax(0,1fr);gap:6px 8px;}
+  .room-light-control-setup .room-spot-angle-control{grid-template-columns:80px minmax(0,1fr);gap:8px;}
+}

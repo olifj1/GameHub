@@ -37,6 +37,22 @@
   const ambientValue = document.getElementById('room-ambient-value');
   const aoLevel = document.getElementById('room-ao-level');
   const aoValue = document.getElementById('room-ao-value');
+  const aoRadiusLevel = document.getElementById('room-ao-radius');
+  const aoRadiusValue = document.getElementById('room-ao-radius-value');
+  const aoRangeLevel = document.getElementById('room-ao-range');
+  const aoRangeValue = document.getElementById('room-ao-range-value');
+  const aoContrastLevel = document.getElementById('room-ao-contrast');
+  const aoContrastValue = document.getElementById('room-ao-contrast-value');
+  const aoMaxDarkLevel = document.getElementById('room-ao-max-dark');
+  const aoMaxDarkValue = document.getElementById('room-ao-max-dark-value');
+  const aoQualityLevel = document.getElementById('room-ao-quality');
+  const aoQualityValue = document.getElementById('room-ao-quality-value');
+  const placeTabBtn = document.getElementById('room-tab-place');
+  const setupTabBtn = document.getElementById('room-tab-setup');
+  const placeWorkspace = document.getElementById('room-place-workspace');
+  const setupWorkspace = document.getElementById('room-setup-workspace');
+  const setupSelectedLightName = document.getElementById('room-setup-selected-light-name');
+  const lightSetupEmpty = document.getElementById('room-light-setup-empty');
   const globalLightReset = document.getElementById('room-global-light-reset');
 
   if (!canvas) return;
@@ -77,7 +93,7 @@
   const LAMP_MAX_INTENSITY = 6.2;
   const LIGHT_LEVEL_MAX = 1.50;
   const AO_LEVEL_MAX = 1.00;
-  const AO_RENDER_SCALE = 0.40;
+  const AO_SETTINGS_DEFAULT = {radius:2.15,range:0.58,contrast:0.92,maxDark:0.30,quality:0.40};
   const SPOT_CONE_MIN_DEG = 50;
   const SPOT_CONE_MAX_DEG = 170;
   const SPOT_CONE_DEFAULT_DEG = 130;
@@ -593,6 +609,7 @@
       day:{...LIGHTING_PRESETS.day},
       evening:{...LIGHTING_PRESETS.evening}
     },
+    aoSettings:{...AO_SETTINGS_DEFAULT},
     rooms:Object.fromEntries(rooms.map(r => [r.id,{wall:r.wall,floor:r.floor,wallpaper:r.wallpaper,floorTexture:r.floorTexture}])),
     items:defaultItems.map(i => ({...i})),
     camera:{x:-3.30,y:1.18,zoom:1.24}
@@ -653,7 +670,10 @@
       cameraNear:{value:camera.near},
       cameraFar:{value:camera.far},
       aoStrength:{value:0.0},
-      aoRadius:{value:2.15}
+      aoRadius:{value:AO_SETTINGS_DEFAULT.radius},
+      aoRange:{value:AO_SETTINGS_DEFAULT.range},
+      aoContrast:{value:AO_SETTINGS_DEFAULT.contrast},
+      aoMaxDark:{value:AO_SETTINGS_DEFAULT.maxDark}
     },
     vertexShader:`
       varying vec2 vUv;
@@ -671,6 +691,9 @@
       uniform float cameraFar;
       uniform float aoStrength;
       uniform float aoRadius;
+      uniform float aoRange;
+      uniform float aoContrast;
+      uniform float aoMaxDark;
 
       float viewDistance(float packedDepth){
         float viewZ=(cameraNear*cameraFar)/((cameraFar-cameraNear)*packedDepth-cameraFar);
@@ -684,7 +707,7 @@
         float sampleDistance=viewDistance(raw);
         float delta=centerDistance-sampleDistance;
         float nearer=smoothstep(0.010,0.16,delta);
-        float localRange=1.0-smoothstep(0.10,0.58,abs(delta));
+        float localRange=1.0-smoothstep(0.08,max(0.09,aoRange),abs(delta));
         return nearer*localRange;
       }
 
@@ -705,7 +728,7 @@
         ao+=tapAO(normalize(vec2( 1.0,-1.0)),0.72,centerDistance);
         ao+=tapAO(normalize(vec2(-1.0,-1.0)),0.72,centerDistance);
         ao/=8.0;
-        float alpha=clamp(pow(ao,0.92)*aoStrength*0.48,0.0,0.30);
+        float alpha=clamp(pow(max(ao,0.0001),aoContrast)*aoStrength*0.62,0.0,aoMaxDark);
         gl_FragColor=vec4(0.0,0.0,0.0,alpha);
       }
     `,
@@ -1709,10 +1732,40 @@
     updateLocalLightShadows();
   }
 
+  function currentAOSettings(){
+    state.aoSettings ||= {...AO_SETTINGS_DEFAULT};
+    const s=state.aoSettings;
+    s.radius=clamp(Number(s.radius ?? AO_SETTINGS_DEFAULT.radius),0.5,6.0);
+    s.range=clamp(Number(s.range ?? AO_SETTINGS_DEFAULT.range),0.15,1.20);
+    s.contrast=clamp(Number(s.contrast ?? AO_SETTINGS_DEFAULT.contrast),0.50,2.00);
+    s.maxDark=clamp(Number(s.maxDark ?? AO_SETTINGS_DEFAULT.maxDark),0.05,0.60);
+    s.quality=clamp(Number(s.quality ?? AO_SETTINGS_DEFAULT.quality),0.25,0.60);
+    return s;
+  }
+
+  function updateAOControls(){
+    const s=currentAOSettings();
+    if(aoRadiusLevel)aoRadiusLevel.value=s.radius.toFixed(2);
+    if(aoRadiusValue)aoRadiusValue.textContent=s.radius.toFixed(2);
+    if(aoRangeLevel)aoRangeLevel.value=s.range.toFixed(2);
+    if(aoRangeValue)aoRangeValue.textContent=s.range.toFixed(2);
+    if(aoContrastLevel)aoContrastLevel.value=s.contrast.toFixed(2);
+    if(aoContrastValue)aoContrastValue.textContent=s.contrast.toFixed(2);
+    if(aoMaxDarkLevel)aoMaxDarkLevel.value=String(Math.round(s.maxDark*100));
+    if(aoMaxDarkValue)aoMaxDarkValue.textContent=`${Math.round(s.maxDark*100)}%`;
+    if(aoQualityLevel)aoQualityLevel.value=String(Math.round(s.quality*100));
+    if(aoQualityValue)aoQualityValue.textContent=`${Math.round(s.quality*100)}%`;
+    aoOverlayMaterial.uniforms.aoRadius.value=s.radius;
+    aoOverlayMaterial.uniforms.aoRange.value=s.range;
+    aoOverlayMaterial.uniforms.aoContrast.value=s.contrast;
+    aoOverlayMaterial.uniforms.aoMaxDark.value=s.maxDark;
+  }
+
   function resizeAOBuffer(){
     const draw=renderer.getDrawingBufferSize(new THREE.Vector2());
-    const w=Math.max(96,Math.floor(draw.x*AO_RENDER_SCALE));
-    const h=Math.max(72,Math.floor(draw.y*AO_RENDER_SCALE));
+    const s=currentAOSettings();
+    const w=Math.max(80,Math.floor(draw.x*s.quality));
+    const h=Math.max(60,Math.floor(draw.y*s.quality));
     if(aoDepthTarget.width!==w||aoDepthTarget.height!==h)aoDepthTarget.setSize(w,h);
     aoOverlayMaterial.uniforms.resolution.value.set(w,h);
   }
@@ -1750,7 +1803,12 @@
     hidden.forEach(obj=>obj.visible=true);
     if(selectionHelper)selectionHelper.visible=helperVisible;
 
+    const aoSettings=currentAOSettings();
     aoOverlayMaterial.uniforms.aoStrength.value=amount;
+    aoOverlayMaterial.uniforms.aoRadius.value=aoSettings.radius;
+    aoOverlayMaterial.uniforms.aoRange.value=aoSettings.range;
+    aoOverlayMaterial.uniforms.aoContrast.value=aoSettings.contrast;
+    aoOverlayMaterial.uniforms.aoMaxDark.value=aoSettings.maxDark;
     renderer.autoClear=false;
     renderer.render(aoOverlayScene,aoOverlayCamera);
     renderer.autoClear=oldAutoClear;
@@ -1771,7 +1829,8 @@
     renderSamples++;
     renderAverageMs=renderSamples===1?elapsed:(renderAverageMs*0.82+elapsed*0.18);
     if(perfBadge){
-      perfBadge.textContent=`CPU ${elapsed.toFixed(1)}ms · ${activeShadowCount} sh. · AO ${Math.round(levels.ao*100)}%`;
+      const ao=currentAOSettings();
+      perfBadge.textContent=`CPU ${elapsed.toFixed(1)}ms · ${activeShadowCount} sh. · AO ${Math.round(levels.ao*100)}% · r${ao.radius.toFixed(2)} · q${Math.round(ao.quality*100)}`;
     }
   }
 
@@ -1810,6 +1869,7 @@
     if(ambientValue)ambientValue.textContent=`${Math.round(levels.ambient*100)}%`;
     if(aoLevel)aoLevel.value=String(Math.round(levels.ao*100));
     if(aoValue)aoValue.textContent=`${Math.round(levels.ao*100)}%`;
+    updateAOControls();
   }
 
   function updateLocalLightShadows(){
@@ -2143,6 +2203,17 @@
     hint.textContent=`${roomById(activeRoomId).name} cleared`;
   });
 
+  function setWorkspaceTab(tab){
+    const setup=tab==='setup';
+    if(placeWorkspace)placeWorkspace.hidden=setup;
+    if(setupWorkspace)setupWorkspace.hidden=!setup;
+    if(placeTabBtn){placeTabBtn.classList.toggle('active',!setup);placeTabBtn.setAttribute('aria-selected',String(!setup));}
+    if(setupTabBtn){setupTabBtn.classList.toggle('active',setup);setupTabBtn.setAttribute('aria-selected',String(setup));}
+    if(setup)updateGlobalLightPanel();
+  }
+  placeTabBtn?.addEventListener('click',()=>setWorkspaceTab('place'));
+  setupTabBtn?.addEventListener('click',()=>setWorkspaceTab('setup'));
+
   lightingBtn.addEventListener('click',()=>{
     state.lighting=state.lighting==='day'?'evening':'day';
     updateLighting(); save();
@@ -2185,9 +2256,41 @@
   });
   aoLevel?.addEventListener('change',save);
 
+  aoRadiusLevel?.addEventListener('input',()=>{
+    const s=currentAOSettings(); s.radius=clamp(Number(aoRadiusLevel.value),0.5,6.0);
+    updateAOControls(); render();
+  });
+  aoRadiusLevel?.addEventListener('change',save);
+
+  aoRangeLevel?.addEventListener('input',()=>{
+    const s=currentAOSettings(); s.range=clamp(Number(aoRangeLevel.value),0.15,1.20);
+    updateAOControls(); render();
+  });
+  aoRangeLevel?.addEventListener('change',save);
+
+  aoContrastLevel?.addEventListener('input',()=>{
+    const s=currentAOSettings(); s.contrast=clamp(Number(aoContrastLevel.value),0.50,2.00);
+    updateAOControls(); render();
+  });
+  aoContrastLevel?.addEventListener('change',save);
+
+  aoMaxDarkLevel?.addEventListener('input',()=>{
+    const s=currentAOSettings(); s.maxDark=clamp(Number(aoMaxDarkLevel.value)/100,0.05,0.60);
+    updateAOControls(); render();
+  });
+  aoMaxDarkLevel?.addEventListener('change',save);
+
+  aoQualityLevel?.addEventListener('input',()=>{
+    const s=currentAOSettings(); s.quality=clamp(Number(aoQualityLevel.value)/100,0.25,0.60);
+    updateAOControls(); resizeAOBuffer(); render();
+  });
+  aoQualityLevel?.addEventListener('change',save);
+
   globalLightReset?.addEventListener('click',()=>{
     const mode=state.lighting==='evening'?'evening':'day';
     state.lightingLevels[mode]={...LIGHTING_PRESETS[mode]};
+    state.aoSettings={...AO_SETTINGS_DEFAULT};
+    resizeAOBuffer();
     invalidateShadows(null,true);
     updateLighting();
     save();
@@ -2379,6 +2482,8 @@
     selectedName.textContent=t?`${t.name}${support?` · on ${templateById(support.type).name}`:''}`:'Nothing selected';
     rotateBtn.disabled=!item||t?.canRotate===false||t?.place==='wall'||t?.place==='ceiling';removeBtn.disabled=!item;
     const isLamp=!!(item&&t?.lightHeight);
+    if(setupSelectedLightName)setupSelectedLightName.textContent=isLamp?t.name:'Select a lamp in Place';
+    if(lightSetupEmpty)lightSetupEmpty.hidden=isLamp;
     if(lightControl)lightControl.hidden=!isLamp;
     const isSpot=!!(isLamp&&t?.place==='ceiling');
     if(spotAngleControl)spotAngleControl.hidden=!isSpot;
@@ -2401,6 +2506,7 @@
   }
 
   function updateLightingButton(){
+    if(!lightingBtn)return;
     lightingBtn.textContent=state.lighting==='day'?'☀ Day':'◐ Evening';
     lightingBtn.setAttribute('aria-label',state.lighting==='day'?'Switch to evening lighting':'Switch to daytime lighting');
   }
@@ -2435,8 +2541,16 @@
           ao:clamp(Number(parsedLevels.evening?.ao ?? LIGHTING_PRESETS.evening.ao),0,AO_LEVEL_MAX)
         }
       };
+      const parsedAO=parsed.aoSettings||{};
+      const aoSettings={
+        radius:clamp(Number(parsedAO.radius ?? AO_SETTINGS_DEFAULT.radius),0.5,6.0),
+        range:clamp(Number(parsedAO.range ?? AO_SETTINGS_DEFAULT.range),0.15,1.20),
+        contrast:clamp(Number(parsedAO.contrast ?? AO_SETTINGS_DEFAULT.contrast),0.50,2.00),
+        maxDark:clamp(Number(parsedAO.maxDark ?? AO_SETTINGS_DEFAULT.maxDark),0.05,0.60),
+        quality:clamp(Number(parsedAO.quality ?? AO_SETTINGS_DEFAULT.quality),0.25,0.60)
+      };
       state={
-        lighting:parsed.lighting==='evening'?'evening':'day', lightingLevels, rooms:roomState,
+        lighting:parsed.lighting==='evening'?'evening':'day', lightingLevels, aoSettings, rooms:roomState,
         items:parsed.items.filter(i=>templateById(i.type)&&rooms.some(r=>r.id===i.room)).slice(0,120),
         camera:{
           x:clamp(Number(parsed.camera?.x)||-3.30,HOUSE_MIN_X+0.65,HOUSE_MAX_X-0.65),
@@ -2493,6 +2607,8 @@
   updateActiveRoom(true);
   updateSelection();
   updateLighting();
+  updateAOControls();
+  setWorkspaceTab('place');
   hint.textContent='Tap selects · selected item moves · other drags explore';
   window.addEventListener('resize',queueResize,{passive:true});
   if('ResizeObserver' in window)new ResizeObserver(queueResize).observe(canvas.parentElement);

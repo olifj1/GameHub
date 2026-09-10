@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.8.31">
+  <link rel="stylesheet" href="style.css?v=1.8.32">
   <title>My House</title>
 </head>
 <body class="modular-game" data-game-id="game-15">
@@ -19,7 +19,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="game-15-info-title">Make the house your own</h2>
-      <p>Choose furniture, wall art and little details from the room set carousel. Each room now has its own filtered dressing set, plus categories like big pieces, soft furnishings, ornaments, lighting and wall art. Tap an item and release to select it, then drag that selected item to move it. Dragging anywhere except the currently selected item — including directly over other furniture — slides the view, so you never need to hunt for an empty patch of floor. Pinch to zoom. Small objects can sit on tables and drawers and travel with the furniture underneath them. Select a lamp or ceiling light to adjust its brightness and switch that light’s shadows on or off. Ceiling fittings use broad downward spotlights, while table and floor lamps still spread light in all directions. Use the scene-lighting control beside Day/Evening to tune direct light, room-tinted ambient fill and a lightweight AO pass for each preset. Ambient now adds a visible room-coloured diffuse fill, while AO adds restrained contact and corner darkening without extra bounce lights. Rotate or put away selected items, change each room’s walls, wallpaper and floor, and switch between day and evening lighting. Your house saves automatically on this device.</p>
+      <p>Choose furniture, wall art and little details from the room set carousel. Each room now has its own filtered dressing set, plus categories like big pieces, soft furnishings, ornaments, lighting and wall art. Tap an item and release to select it, then drag that selected item to move it. Dragging anywhere except the currently selected item — including directly over other furniture — slides the view, so you never need to hunt for an empty patch of floor. Pinch to zoom. Small objects can sit on tables and drawers and travel with the furniture underneath them. Select a lamp or ceiling light to adjust its brightness and switch that light’s shadows on or off. Ceiling fittings use broad downward spotlights, while table and floor lamps still spread light in all directions. Use the PLACE and SETUP tabs below the house to switch between furnishing controls and lighting setup. SETUP contains Day/Evening, direct light, room-tinted ambient fill, selected-light controls and a tunable lightweight AO pass. AO strength, radius, depth range, contrast, maximum darkness and render quality are exposed so the effect can be tuned on-device. Rotate or put away selected items, change each room’s walls, wallpaper and floor, and switch between day and evening lighting. Your house saves automatically on this device.</p>
     </div>
   </div>
 
@@ -35,39 +35,111 @@
           <canvas id="room-canvas" width="720" height="760" aria-label="An open-front four-room three dimensional dollhouse you can furnish"></canvas>
           <div class="room-stage-toolbar" aria-live="polite">
             <span id="room-current-label">Bedroom</span>
-            <div class="room-stage-toolbar-actions">
-              <button id="room-lighting" type="button" aria-label="Switch to evening lighting">☀ Day</button>
-              <button id="room-lighting-panel-button" class="room-lighting-panel-button" type="button" aria-label="Open scene lighting controls" aria-expanded="false">☼</button>
-            </div>
-          </div>
-          <div class="room-global-light-panel" id="room-global-light-panel" hidden>
-            <div class="room-global-light-heading">
-              <div><strong>SCENE LIGHTING</strong><small id="room-global-light-mode">Day preset</small></div>
-              <button id="room-global-light-close" type="button" aria-label="Close scene lighting controls">×</button>
-            </div>
-            <label class="room-global-light-row" for="room-direct-level">
-              <span>DIRECT</span><input id="room-direct-level" type="range" min="0" max="100" step="5" value="100"><strong id="room-direct-value">100%</strong>
-            </label>
-            <label class="room-global-light-row" for="room-ambient-level">
-              <span>AMBIENT</span><input id="room-ambient-level" type="range" min="0" max="100" step="5" value="100"><strong id="room-ambient-value">100%</strong>
-            </label>
-            <label class="room-global-light-row" for="room-ao-level">
-              <span>AO</span><input id="room-ao-level" type="range" min="0" max="100" step="5" value="35"><strong id="room-ao-value">35%</strong>
-            </label>
-            <div class="room-global-light-footer">
-              <small>Ambient is a room-coloured diffuse fill. AO is a tighter low-resolution contact-darkening pass.</small>
-              <button id="room-global-light-reset" type="button">Reset preset</button>
-            </div>
           </div>
           <div class="room-perf-badge" id="room-perf-badge" aria-label="3D render performance">Render —</div>
           <div class="room-stage-hint" id="room-stage-hint">Tap selects · selected item moves · other drags explore</div>
         </section>
 
-        <section class="room-selection-bar" id="room-selection-bar" aria-live="polite">
-          <div class="room-selection-info">
-            <strong id="room-selection-name">Nothing selected</strong>
-            <div class="room-light-control" id="room-light-control" aria-label="Selected light controls" hidden>
-              <label for="room-light-level"><span>LIGHT</span><strong id="room-light-value">28%</strong></label>
+        <nav class="room-workspace-tabs" aria-label="My House controls">
+          <button id="room-tab-place" class="active" type="button" aria-selected="true">PLACE</button>
+          <button id="room-tab-setup" type="button" aria-selected="false">SETUP</button>
+        </nav>
+
+        <div class="room-workspace" id="room-place-workspace">
+          <section class="room-selection-bar" id="room-selection-bar" aria-live="polite">
+            <div class="room-selection-info">
+              <strong id="room-selection-name">Nothing selected</strong>
+            </div>
+            <div class="room-selection-actions">
+              <button id="room-rotate" type="button" disabled aria-label="Rotate selected furniture">↻ <span>Rotate</span></button>
+              <button id="room-remove" type="button" disabled aria-label="Put selected furniture away">⌂ <span>Put away</span></button>
+            </div>
+          </section>
+
+          <section class="room-inventory-panel" aria-label="Furniture inventory">
+            <div class="room-panel-heading">
+              <div><span id="room-inventory-title">ROOM SET</span><small id="room-inventory-subtitle">Choose a category</small></div>
+              <button id="room-clear" type="button">Clear room</button>
+            </div>
+            <div class="room-category-row" id="room-category-row" aria-label="Inventory categories"></div>
+            <div class="room-carousel-shell">
+              <button class="room-carousel-arrow" id="room-carousel-prev" type="button" aria-label="Previous furniture">‹</button>
+              <div class="room-carousel" id="room-carousel" tabindex="0"></div>
+              <button class="room-carousel-arrow" id="room-carousel-next" type="button" aria-label="Next furniture">›</button>
+            </div>
+          </section>
+
+          <section class="room-decor-panel" aria-label="Room colours">
+            <div class="room-swatch-row">
+              <span>WALLS</span>
+              <div id="room-wall-swatches" class="room-swatches" role="group" aria-label="Wall colours"></div>
+            </div>
+            <div class="room-swatch-row">
+              <span>FLOOR</span>
+              <div id="room-floor-swatches" class="room-swatches" role="group" aria-label="Floor colours"></div>
+            </div>
+            <div class="room-swatch-row room-wallpaper-row">
+              <span>WALL TEXTURE</span>
+              <div id="room-wallpaper-swatches" class="room-swatches room-pattern-swatches" role="group" aria-label="Wall texture patterns"></div>
+            </div>
+            <div class="room-swatch-row room-wallpaper-row">
+              <span>FLOOR TEXTURE</span>
+              <div id="room-floor-texture-swatches" class="room-swatches room-pattern-swatches" role="group" aria-label="Floor texture patterns"></div>
+            </div>
+          </section>
+        </div>
+
+        <div class="room-workspace" id="room-setup-workspace" hidden>
+          <section class="room-setup-card" id="room-global-light-panel" aria-label="Scene lighting setup">
+            <div class="room-setup-heading">
+              <div><span>SCENE LIGHTING</span><small id="room-global-light-mode">Day preset</small></div>
+              <button id="room-lighting" class="room-day-evening-button" type="button" aria-label="Switch to evening lighting">☀ Day</button>
+            </div>
+
+            <div class="room-setup-sliders">
+              <label class="room-setup-slider" for="room-direct-level">
+                <span>DIRECT</span><input id="room-direct-level" type="range" min="0" max="100" step="5" value="100"><strong id="room-direct-value">100%</strong>
+              </label>
+              <label class="room-setup-slider" for="room-ambient-level">
+                <span>AMBIENT</span><input id="room-ambient-level" type="range" min="0" max="100" step="5" value="100"><strong id="room-ambient-value">100%</strong>
+              </label>
+              <label class="room-setup-slider" for="room-ao-level">
+                <span>AO</span><input id="room-ao-level" type="range" min="0" max="100" step="5" value="35"><strong id="room-ao-value">35%</strong>
+              </label>
+            </div>
+
+            <div class="room-ao-tuning">
+              <div class="room-ao-title"><strong>AO TUNING</strong><small>Use these values when feeding results back</small></div>
+              <label class="room-setup-slider room-ao-slider" for="room-ao-radius">
+                <span>RADIUS</span><input id="room-ao-radius" type="range" min="0.5" max="6" step="0.05" value="2.15"><strong id="room-ao-radius-value">2.15</strong>
+              </label>
+              <label class="room-setup-slider room-ao-slider" for="room-ao-range">
+                <span>DEPTH</span><input id="room-ao-range" type="range" min="0.15" max="1.2" step="0.01" value="0.58"><strong id="room-ao-range-value">0.58</strong>
+              </label>
+              <label class="room-setup-slider room-ao-slider" for="room-ao-contrast">
+                <span>CONTRAST</span><input id="room-ao-contrast" type="range" min="0.5" max="2" step="0.01" value="0.92"><strong id="room-ao-contrast-value">0.92</strong>
+              </label>
+              <label class="room-setup-slider room-ao-slider" for="room-ao-max-dark">
+                <span>MAX DARK</span><input id="room-ao-max-dark" type="range" min="5" max="60" step="1" value="30"><strong id="room-ao-max-dark-value">30%</strong>
+              </label>
+              <label class="room-setup-slider room-ao-slider" for="room-ao-quality">
+                <span>QUALITY</span><input id="room-ao-quality" type="range" min="25" max="60" step="5" value="40"><strong id="room-ao-quality-value">40%</strong>
+              </label>
+            </div>
+
+            <div class="room-setup-footer">
+              <small>Ambient is room-coloured diffuse fill. AO darkens nearby contacts using the depth buffer.</small>
+              <button id="room-global-light-reset" type="button">Reset lighting</button>
+            </div>
+          </section>
+
+          <section class="room-setup-card room-selected-light-card" aria-label="Selected light setup">
+            <div class="room-setup-heading">
+              <div><span>SELECTED LIGHT</span><small id="room-setup-selected-light-name">Select a lamp in Place</small></div>
+            </div>
+            <div id="room-light-setup-empty" class="room-setup-empty">Select a lamp or ceiling light in the PLACE tab to edit it here.</div>
+            <div class="room-light-control room-light-control-setup" id="room-light-control" aria-label="Selected light controls" hidden>
+              <label for="room-light-level"><span>BRIGHTNESS</span><strong id="room-light-value">28%</strong></label>
               <input id="room-light-level" type="range" min="0" max="150" step="5" value="28" aria-label="Light brightness">
               <div class="room-spot-angle-control" id="room-spot-angle-control" hidden>
                 <label for="room-spot-angle"><span>CONE</span><strong id="room-spot-angle-value">130°</strong></label>
@@ -75,51 +147,16 @@
               </div>
               <button id="room-light-shadow" class="room-shadow-toggle" type="button" aria-pressed="true">SHADOWS ON</button>
             </div>
-          </div>
-          <div class="room-selection-actions">
-            <button id="room-rotate" type="button" disabled aria-label="Rotate selected furniture">↻ <span>Rotate</span></button>
-            <button id="room-remove" type="button" disabled aria-label="Put selected furniture away">⌂ <span>Put away</span></button>
-          </div>
-        </section>
-
-        <section class="room-inventory-panel" aria-label="Furniture inventory">
-          <div class="room-panel-heading">
-            <div><span id="room-inventory-title">ROOM SET</span><small id="room-inventory-subtitle">Choose a category</small></div>
-            <button id="room-clear" type="button">Clear room</button>
-          </div>
-          <div class="room-category-row" id="room-category-row" aria-label="Inventory categories"></div>
-          <div class="room-carousel-shell">
-            <button class="room-carousel-arrow" id="room-carousel-prev" type="button" aria-label="Previous furniture">‹</button>
-            <div class="room-carousel" id="room-carousel" tabindex="0"></div>
-            <button class="room-carousel-arrow" id="room-carousel-next" type="button" aria-label="Next furniture">›</button>
-          </div>
-        </section>
-
-        <section class="room-decor-panel" aria-label="Room colours">
-          <div class="room-swatch-row">
-            <span>WALLS</span>
-            <div id="room-wall-swatches" class="room-swatches" role="group" aria-label="Wall colours"></div>
-          </div>
-          <div class="room-swatch-row">
-            <span>FLOOR</span>
-            <div id="room-floor-swatches" class="room-swatches" role="group" aria-label="Floor colours"></div>
-          </div>
-          <div class="room-swatch-row room-wallpaper-row">
-            <span>WALL TEXTURE</span>
-            <div id="room-wallpaper-swatches" class="room-swatches room-pattern-swatches" role="group" aria-label="Wall texture patterns"></div>
-          </div>
-          <div class="room-swatch-row room-wallpaper-row">
-            <span>FLOOR TEXTURE</span>
-            <div id="room-floor-texture-swatches" class="room-swatches room-pattern-swatches" role="group" aria-label="Floor texture patterns"></div>
-          </div>
+          </section>
+        </div>
         </section>
       </div>
     </section>
   </main>
 
-  <script src="site-config.js?v=1.8.31"></script>
-  <script src="core.js?v=1.8.31"></script>
+  <script src="site-config.js?v=1.8.32"></script>
+  <script src="core.js?v=1.8.32"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.1/three.min.js"></script>
-  <script src="game-15.js?v=1.8.31"></script>
+  <script src="game-15.js?v=1.8.32"></script>
 </body>
 </html>
