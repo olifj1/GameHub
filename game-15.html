@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.8.35">
+  <link rel="stylesheet" href="style.css?v=1.8.36">
   <title>My House</title>
 </head>
 <body class="modular-game" data-game-id="game-15">
@@ -19,7 +19,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="game-15-info-title">Make the house your own</h2>
-      <p>Choose furniture, wall art and little details from the room set carousel. Each room now has its own filtered dressing set, plus categories like big pieces, soft furnishings, ornaments, lighting and wall art. Tap an item and release to select it, then drag that selected item to move it. Dragging anywhere except the currently selected item — including directly over other furniture — slides the view, so you never need to hunt for an empty patch of floor. Pinch to zoom. Small objects can sit on tables and drawers and travel with the furniture underneath them. Select a lamp or ceiling light to adjust its brightness and switch that light’s shadows on or off. Ceiling fittings use broad downward spotlights, while table and floor lamps still spread light in all directions. Use the PLACE and SETUP tabs below the house to switch between furnishing controls and lighting setup. SETUP contains Day/Evening, direct light, room-tinted ambient fill, selected-light controls and an experimental room-local SH probe grid. Each room uses 18 probes; ray sampling is refreshed after lighting or furniture changes, while each object receives only its locally interpolated SH coefficients at render time. Rotate or put away selected items, change each room’s walls, wallpaper and floor, and switch between day and evening lighting. Your house saves automatically on this device.</p>
+      <p>Choose furniture, wall art and little details from the room set carousel. Each room now has its own filtered dressing set, plus categories like big pieces, soft furnishings, ornaments, lighting and wall art. Tap an item and release to select it. While something is selected, panning is paused and dragging anywhere in the viewport moves that focused item, which makes small or awkwardly placed objects much easier to control. Tap elsewhere without dragging to deselect it and return to house panning. Pinch to zoom. Small objects can sit on tables and drawers and travel with the furniture underneath them. Select a lamp or ceiling light to adjust its brightness and switch that light’s shadows on or off. Ceiling fittings use broad downward spotlights, while table and floor lamps still spread light in all directions. Use the PLACE and SETUP tabs below the house to switch between furnishing controls and lighting setup. SETUP contains Day/Evening, direct light, room-tinted ambient fill, selected-light controls and an experimental room-local SH probe grid. Each room uses 18 probes; ray sampling is refreshed after lighting or furniture changes, while each object receives only its locally interpolated SH coefficients at render time. Rotate or put away selected items, change each room’s walls, wallpaper and floor, and switch between day and evening lighting. Your house saves automatically on this device.</p>
     </div>
   </div>
 
@@ -37,7 +37,7 @@
             <span id="room-current-label">Bedroom</span>
           </div>
           <div class="room-perf-badge" id="room-perf-badge" aria-label="3D render performance">Render —</div>
-          <div class="room-stage-hint" id="room-stage-hint">Tap selects · selected item moves · other drags explore</div>
+          <div class="room-stage-hint" id="room-stage-hint">Tap item to select · drag to explore</div>
         </section>
 
         <nav class="room-workspace-tabs" aria-label="My House controls">
@@ -97,15 +97,18 @@
             </div>
 
             <div class="room-setup-sliders">
-              <label class="room-setup-slider" for="room-direct-level">
-                <span>DIRECT</span><input id="room-direct-level" type="range" min="0" max="100" step="5" value="100"><strong id="room-direct-value">100%</strong>
-              </label>
-              <label class="room-setup-slider" for="room-ambient-level">
-                <span>AMBIENT</span><input id="room-ambient-level" type="range" min="0" max="100" step="5" value="42"><strong id="room-ambient-value">42%</strong>
-              </label>
-              <label class="room-setup-slider" for="room-indirect-level">
-                <span>INDIRECT</span><input id="room-indirect-level" type="range" min="0" max="150" step="5" value="42"><strong id="room-indirect-value">42%</strong>
-              </label>
+              <div class="room-setup-slider room-setup-slider-toggle">
+                <span>DIRECT</span><input id="room-direct-level" type="range" aria-label="Direct light intensity" min="0" max="100" step="5" value="100"><strong id="room-direct-value">100%</strong><button id="room-direct-toggle" class="room-lighting-toggle" type="button" aria-pressed="true">ON</button>
+              </div>
+              <div class="room-sun-colour-row">
+                <span>SUN COLOUR</span><input id="room-sun-colour" type="color" value="#fff0d7" aria-label="Direct light colour"><strong id="room-sun-colour-value">#FFF0D7</strong>
+              </div>
+              <div class="room-setup-slider room-setup-slider-toggle">
+                <span>AMBIENT</span><input id="room-ambient-level" type="range" aria-label="Ambient fill intensity" min="0" max="100" step="5" value="42"><strong id="room-ambient-value">42%</strong><button id="room-ambient-toggle" class="room-lighting-toggle" type="button" aria-pressed="true">ON</button>
+              </div>
+              <div class="room-setup-slider room-setup-slider-toggle">
+                <span>INDIRECT</span><input id="room-indirect-level" type="range" aria-label="Indirect SH intensity" min="0" max="300" step="5" value="42"><strong id="room-indirect-value">42%</strong><button id="room-indirect-toggle" class="room-lighting-toggle" type="button" aria-pressed="true">ON</button>
+              </div>
             </div>
 
             <div class="room-ao-tuning room-probe-tuning">
@@ -115,7 +118,7 @@
               </label>
               <div class="room-probe-status-row">
                 <span id="room-probe-status">SH is off · direct + ambient baseline</span>
-                <div class="room-probe-actions"><button id="room-probe-toggle" type="button" aria-pressed="false">SH OFF</button><button id="room-probe-refresh" type="button">Refresh room</button></div>
+                <div class="room-probe-actions"><button id="room-probe-toggle" type="button" aria-pressed="false">SH OFF</button><button id="room-probe-refresh" type="button">Refresh room</button><button id="room-probe-refresh-all" type="button">Refresh all</button></div>
               </div>
             </div>
 
@@ -137,7 +140,10 @@
                 <label for="room-spot-angle"><span>CONE</span><strong id="room-spot-angle-value">130°</strong></label>
                 <input id="room-spot-angle" type="range" min="50" max="170" step="5" value="130" aria-label="Ceiling light cone angle">
               </div>
-              <button id="room-light-shadow" class="room-shadow-toggle" type="button" aria-pressed="true">SHADOWS ON</button>
+              <div class="room-light-switch-row">
+                <button id="room-light-power" class="room-shadow-toggle room-light-power-toggle" type="button" aria-pressed="true">LIGHT ON</button>
+                <button id="room-light-shadow" class="room-shadow-toggle" type="button" aria-pressed="true">SHADOWS ON</button>
+              </div>
             </div>
           </section>
         </div>
@@ -146,9 +152,9 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.8.35"></script>
-  <script src="core.js?v=1.8.35"></script>
+  <script src="site-config.js?v=1.8.36"></script>
+  <script src="core.js?v=1.8.36"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.1/three.min.js"></script>
-  <script src="game-15.js?v=1.8.35"></script>
+  <script src="game-15.js?v=1.8.36"></script>
 </body>
 </html>

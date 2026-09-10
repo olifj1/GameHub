@@ -17,6 +17,7 @@
   const lightControl = document.getElementById('room-light-control');
   const lightLevel = document.getElementById('room-light-level');
   const lightValue = document.getElementById('room-light-value');
+  const lightPowerBtn = document.getElementById('room-light-power');
   const lightShadowBtn = document.getElementById('room-light-shadow');
   const spotAngleControl = document.getElementById('room-spot-angle-control');
   const spotAngleLevel = document.getElementById('room-spot-angle');
@@ -31,14 +32,20 @@
   const globalLightMode = document.getElementById('room-global-light-mode');
   const directLevel = document.getElementById('room-direct-level');
   const directValue = document.getElementById('room-direct-value');
+  const directToggleBtn = document.getElementById('room-direct-toggle');
+  const sunColourInput = document.getElementById('room-sun-colour');
+  const sunColourValue = document.getElementById('room-sun-colour-value');
   const ambientLevel = document.getElementById('room-ambient-level');
   const ambientValue = document.getElementById('room-ambient-value');
+  const ambientToggleBtn = document.getElementById('room-ambient-toggle');
   const indirectLevel = document.getElementById('room-indirect-level');
   const indirectValue = document.getElementById('room-indirect-value');
+  const indirectToggleBtn = document.getElementById('room-indirect-toggle');
   const probeRaysLevel = document.getElementById('room-probe-rays');
   const probeRaysValue = document.getElementById('room-probe-rays-value');
   const probeStatus = document.getElementById('room-probe-status');
   const probeRefreshBtn = document.getElementById('room-probe-refresh');
+  const probeRefreshAllBtn = document.getElementById('room-probe-refresh-all');
   const probeToggleBtn = document.getElementById('room-probe-toggle');
   const placeTabBtn = document.getElementById('room-tab-place');
   const setupTabBtn = document.getElementById('room-tab-setup');
@@ -85,7 +92,7 @@
   const LAMP_DEFAULT_LEVEL = 0.28;
   const LAMP_MAX_INTENSITY = 6.2;
   const LIGHT_LEVEL_MAX = 1.50;
-  const INDIRECT_LEVEL_MAX = 1.50;
+  const INDIRECT_LEVEL_MAX = 3.00;
   const PROBE_GRID_X = 3;
   const PROBE_GRID_Y = 2;
   const PROBE_GRID_Z = 3;
@@ -98,8 +105,8 @@
   const SPOT_CONE_DEFAULT_DEG = 130;
   const CEILING_MOUNT_Y = ROOM_H - 0.04;
   const LIGHTING_PRESETS = {
-    day:{direct:1.00,ambient:0.42,indirect:0.42},
-    evening:{direct:0.00,ambient:0.10,indirect:0.68}
+    day:{direct:1.00,ambient:0.42,indirect:0.42,directEnabled:true,ambientEnabled:true,indirectEnabled:true,sunColor:'#fff0d7'},
+    evening:{direct:0.35,ambient:0.10,indirect:0.68,directEnabled:false,ambientEnabled:true,indirectEnabled:true,sunColor:'#aab7d4'}
   };
 
   // Compact dog-leg / return stair kept in the rear half of the central core,
@@ -609,7 +616,7 @@
       evening:{...LIGHTING_PRESETS.evening}
     },
     probeSettings:{raysPerProbe:PROBE_RAYS_DEFAULT,enabled:false},
-    rendererExperimentVersion:4,
+    rendererExperimentVersion:5,
     rooms:Object.fromEntries(rooms.map(r => [r.id,{wall:r.wall,floor:r.floor,wallpaper:r.wallpaper,floorTexture:r.floorTexture}])),
     items:defaultItems.map(i => ({...i})),
     camera:{x:-3.30,y:1.18,zoom:1.24}
@@ -1061,7 +1068,11 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     const roomId=probeRoomForMesh(mesh);
     if(!roomId)return;
     mesh.userData.probeRoomId=roomId;
+    // Keep interpolated SH in world space. Only the tiny four-vector basis
+    // transform is updated at draw time, so camera panning never leaves stale
+    // view-space lighting behind.
     mesh.userData.localSH ||= {sh0:new THREE.Vector3(),shX:new THREE.Vector3(),shY:new THREE.Vector3(),shZ:new THREE.Vector3()};
+    mesh.userData.localSHView ||= {sh0:new THREE.Vector3(),shX:new THREE.Vector3(),shY:new THREE.Vector3(),shZ:new THREE.Vector3()};
     const mats=Array.isArray(mesh.material)?mesh.material:[mesh.material];
     mats.forEach(ensureLocalSHMaterial);
     const previousRender=mesh.onBeforeRender;
@@ -1072,11 +1083,13 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
         if(previousRender)previousRender.call(this,rendererRef,sceneRef,cameraRef,geometry,materialRef,group);
         const shader=materialRef?.userData?.localSHShader;
         const coeff=this.userData.localSH;
-        if(!shader||!coeff)return;
-        shader.uniforms.uLocalSH0.value.copy(coeff.sh0);
-        shader.uniforms.uLocalSHX.value.copy(coeff.shX);
-        shader.uniforms.uLocalSHY.value.copy(coeff.shY);
-        shader.uniforms.uLocalSHZ.value.copy(coeff.shZ);
+        const viewCoeff=this.userData.localSHView;
+        if(!shader||!coeff||!viewCoeff)return;
+        transformSHToView(coeff,viewCoeff,cameraRef);
+        shader.uniforms.uLocalSH0.value.copy(viewCoeff.sh0);
+        shader.uniforms.uLocalSHX.value.copy(viewCoeff.shX);
+        shader.uniforms.uLocalSHY.value.copy(viewCoeff.shY);
+        shader.uniforms.uLocalSHZ.value.copy(viewCoeff.shZ);
         shader.uniforms.uLocalSHStrength.value=probeStrengthValue;
       };
     }
@@ -1098,6 +1111,7 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
         delete mesh.userData.localSHPreviousRender;
       }
       delete mesh.userData.localSH;
+      delete mesh.userData.localSHView;
       delete mesh.userData.probeRoomId;
       const mats=Array.isArray(mesh.material)?mesh.material:[mesh.material];
       mats.forEach(mat=>{if(mat?.userData?.localSHPrepared)materials.add(mat);});
@@ -1128,8 +1142,8 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     warmProbeRooms();
   }
 
-  function transformSHToView(worldCoeffs,target){
-    const e=camera.matrixWorldInverse.elements;
+  function transformSHToView(worldCoeffs,target,cameraRef=camera){
+    const e=cameraRef.matrixWorldInverse.elements;
     target.sh0.copy(worldCoeffs.sh0);
     target.shX.set(0,0,0).addScaledVector(worldCoeffs.shX,e[0]).addScaledVector(worldCoeffs.shY,e[4]).addScaledVector(worldCoeffs.shZ,e[8]);
     target.shY.set(0,0,0).addScaledVector(worldCoeffs.shX,e[1]).addScaledVector(worldCoeffs.shY,e[5]).addScaledVector(worldCoeffs.shZ,e[9]);
@@ -1138,15 +1152,16 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
   }
 
   function updateRoomMeshSH(roomId){
-    updateCamera();
-    camera.updateMatrixWorld(true);
     scene.updateMatrixWorld(true);
     const worldCoeffs={sh0:new THREE.Vector3(),shX:new THREE.Vector3(),shY:new THREE.Vector3(),shZ:new THREE.Vector3()};
     [houseGroup,decorGroup,itemRoot].forEach(root=>root.traverse(mesh=>{
       if(!mesh?.isMesh||mesh.userData?.probeRoomId!==roomId||!mesh.userData.localSH)return;
       const p=mesh.getWorldPosition(new THREE.Vector3());
       interpolateProbeCoeffs(roomId,p,worldCoeffs);
-      transformSHToView(worldCoeffs,mesh.userData.localSH);
+      mesh.userData.localSH.sh0.copy(worldCoeffs.sh0);
+      mesh.userData.localSH.shX.copy(worldCoeffs.shX);
+      mesh.userData.localSH.shY.copy(worldCoeffs.shY);
+      mesh.userData.localSH.shZ.copy(worldCoeffs.shZ);
     }));
   }
 
@@ -1179,7 +1194,7 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
   }
 
   function updateProbeStrength(levels=currentLightingLevels()){
-    probeStrengthValue=probeEnabled()?clamp(Number(levels.indirect||0),0,INDIRECT_LEVEL_MAX):0;
+    probeStrengthValue=(probeEnabled()&&levels.indirectEnabled!==false)?clamp(Number(levels.indirect||0),0,INDIRECT_LEVEL_MAX):0;
   }
 
   function warmProbeRooms(){
@@ -1212,7 +1227,7 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     // Deliberately simple and robust ambient layer: use a small room-coloured
     // material-emission term. The SH grid is a separate indirect contribution,
     // so Ambient can be reduced to zero when evaluating the probe lighting.
-    const fillStrength=clamp(Number(levels.ambient||0),0,1)*(evening?0.78:0.62);
+    const fillStrength=(levels.ambientEnabled===false?0:clamp(Number(levels.ambient||0),0,1))*(evening?0.78:0.62);
     const emissiveSet=new Set(emissiveMeshes);
     [houseGroup,decorGroup,itemRoot].forEach(root=>root.traverse(mesh=>{
       if(!mesh?.isMesh||mesh.userData?.hitProxy)return;
@@ -2086,15 +2101,33 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     return localLights.find(light=>light.userData.itemId===itemId)||null;
   }
 
+  function validHexColour(value,fallback){
+    const v=String(value||'').trim();
+    return /^#[0-9a-f]{6}$/i.test(v)?v.toLowerCase():fallback;
+  }
+
   function currentLightingLevels(){
     const mode=state.lighting==='evening'?'evening':'day';
+    const preset=LIGHTING_PRESETS[mode];
     state.lightingLevels ||= {};
-    state.lightingLevels[mode] ||= {...LIGHTING_PRESETS[mode]};
+    state.lightingLevels[mode] ||= {...preset};
     const levels=state.lightingLevels[mode];
-    levels.direct=clamp(Number(levels.direct ?? LIGHTING_PRESETS[mode].direct),0,1);
-    levels.ambient=clamp(Number(levels.ambient ?? LIGHTING_PRESETS[mode].ambient),0,1);
-    levels.indirect=clamp(Number(levels.indirect ?? LIGHTING_PRESETS[mode].indirect),0,INDIRECT_LEVEL_MAX);
+    levels.direct=clamp(Number(levels.direct ?? preset.direct),0,1);
+    levels.ambient=clamp(Number(levels.ambient ?? preset.ambient),0,1);
+    levels.indirect=clamp(Number(levels.indirect ?? preset.indirect),0,INDIRECT_LEVEL_MAX);
+    if(typeof levels.directEnabled!=='boolean')levels.directEnabled=levels.direct>0.001;
+    if(typeof levels.ambientEnabled!=='boolean')levels.ambientEnabled=levels.ambient>0.001;
+    if(typeof levels.indirectEnabled!=='boolean')levels.indirectEnabled=levels.indirect>0.001;
+    levels.sunColor=validHexColour(levels.sunColor,preset.sunColor);
     return levels;
+  }
+
+  function setLightingToggleButton(button,enabled,label=''){
+    if(!button)return;
+    button.textContent=enabled?'ON':'OFF';
+    button.setAttribute('aria-pressed',String(enabled));
+    button.classList.toggle('off',!enabled);
+    if(label)button.setAttribute('aria-label',`${label} ${enabled?'on':'off'}`);
   }
 
   function updateGlobalLightPanel(){
@@ -2107,11 +2140,18 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     if(ambientValue)ambientValue.textContent=`${Math.round(levels.ambient*100)}%`;
     if(indirectLevel)indirectLevel.value=String(Math.round(levels.indirect*100));
     if(indirectValue)indirectValue.textContent=`${Math.round(levels.indirect*100)}%`;
+    if(sunColourInput)sunColourInput.value=levels.sunColor;
+    if(sunColourValue)sunColourValue.textContent=levels.sunColor.toUpperCase();
+    setLightingToggleButton(directToggleBtn,levels.directEnabled,'Direct light');
+    setLightingToggleButton(ambientToggleBtn,levels.ambientEnabled,'Ambient light');
+    setLightingToggleButton(indirectToggleBtn,levels.indirectEnabled,'Indirect light');
     const ps=probeSettings();
     if(probeRaysLevel){probeRaysLevel.value=String(ps.raysPerProbe);probeRaysLevel.disabled=!ps.enabled;}
     if(probeRaysValue)probeRaysValue.textContent=String(ps.raysPerProbe);
     if(indirectLevel)indirectLevel.disabled=!ps.enabled;
+    if(indirectToggleBtn)indirectToggleBtn.disabled=!ps.enabled;
     if(probeRefreshBtn)probeRefreshBtn.disabled=!ps.enabled;
+    if(probeRefreshAllBtn)probeRefreshAllBtn.disabled=!ps.enabled;
     if(probeToggleBtn){probeToggleBtn.textContent=ps.enabled?'SH ON':'SH OFF';probeToggleBtn.setAttribute('aria-pressed',String(ps.enabled));}
     const grid=probeGridFor(activeRoomId);
     if(probeStatus){
@@ -2128,7 +2168,7 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     let count=0;
     localLights.forEach(light=>{
       const item=itemById(light.userData.itemId);
-      const shouldCast=!!(evening&&item&&item.shadowEnabled!==false&&lampLevelFor(item)>0.04);
+      const shouldCast=!!(evening&&item&&item.lightEnabled!==false&&item.shadowEnabled!==false&&lampLevelFor(item)>0.04);
       if(light.castShadow!==shouldCast){
         light.castShadow=shouldCast;
         light.shadow.needsUpdate=true;
@@ -2142,16 +2182,18 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
   function updateLighting(){
     const evening=state.lighting==='evening';
     const levels=currentLightingLevels();
+    const directAmount=levels.directEnabled===false?0:levels.direct;
+    const ambientAmount=levels.ambientEnabled===false?0:levels.ambient;
 
-    // Direct light is the sun/moon-style directional source. Evening now
-    // defaults to 0%, so artificial room lights can define the scene cleanly.
-    sun.intensity=2.35*levels.direct;
-    sun.color.set(evening?0xaab7d4:0xfff0d7);
-    sun.castShadow=levels.direct>0.01;
+    // Direct source keeps its intensity value when toggled off, so switching it
+    // back on never requires finding the old slider position again.
+    sun.intensity=2.35*directAmount;
+    sun.color.set(levels.sunColor);
+    sun.castShadow=directAmount>0.01;
 
-    // Keep only a very small global sky term. Most of the fill now comes
-    // from a per-room irradiance tint injected into standard materials.
-    hemi.intensity=(evening?0.07:0.11)*levels.ambient;
+    // Keep only a very small global sky term. Most of the fill comes from the
+    // per-room ambient tint, which also has a non-destructive ON/OFF switch.
+    hemi.intensity=(evening?0.07:0.11)*ambientAmount;
     hemi.color.set(evening?0xd5d7df:0xfff6e9);
     hemi.groundColor.set(evening?0x6c6b70:0x8e887f);
     eveningFill.intensity=0.0;
@@ -2159,7 +2201,7 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     localLights.forEach(light=>{
       const item=itemById(light.userData.itemId);
       const t=item&&templateById(item.type);
-      light.intensity=evening?LAMP_MAX_INTENSITY*(t?.lightScale||1)*lampLevelFor(item):0;
+      light.intensity=(evening&&item?.lightEnabled!==false)?LAMP_MAX_INTENSITY*(t?.lightScale||1)*lampLevelFor(item):0;
     });
     roomIrradianceDirty=true;
     updateRoomIrradiance(levels);
@@ -2170,7 +2212,8 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
       const item=itemById(mesh.userData.itemId);
       const t=item&&templateById(item.type);
       const level=t?.lightHeight?lampLevelFor(item):0.75;
-      mesh.material.emissiveIntensity=evening?(0.04+0.62*level):0.04;
+      const powered=!t?.lightHeight||item?.lightEnabled!==false;
+      mesh.material.emissiveIntensity=(evening&&powered)?(0.04+0.62*level):0.04;
     });
     renderer.setClearColor(evening?0x777985:0xd9d0c7,1);
     scene.background.set(evening?0x777985:0xd9d0c7);
@@ -2236,11 +2279,18 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     scene.add(selectionHelper);
   }
 
+  function updateInteractionHint(){
+    const item=itemById(selectedId),t=item&&templateById(item.type);
+    if(item&&t)hint.textContent=`${t.name} selected · drag anywhere to move · tap elsewhere to deselect`;
+    else hint.textContent='Tap item to select · drag to explore';
+  }
+
   function selectItem(id){
     selectedId=id;
     updateSelection();
     updateSelectionHelper();
     updateLocalLightShadows();
+    updateInteractionHint();
     render();
   }
 
@@ -2258,6 +2308,20 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     return {x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2,w:pts[0].w,h:pts[0].h};
   }
 
+  function focusedItemGesture(p,pointerId,picked){
+    const item=itemById(selectedId);
+    if(!item)return null;
+    const t=templateById(item.type);
+    const wp=itemWorldPosition(item);
+    const tappedSelected=picked?.id===item.id;
+    if(t.place==='wall'){
+      const hit=intersectRoomWall(p,roomById(item.room))||wp;
+      return {mode:'item',pointerId,id:item.id,dx:wp.x-hit.x,dy:wp.y-hit.y,moved:false,armed:false,startX:p.x,startY:p.y,tappedSelected};
+    }
+    const hit=intersectHorizontal(p,wp.y)||wp;
+    return {mode:'item',pointerId,id:item.id,dx:wp.x-hit.x,dz:wp.z-hit.z,moved:false,armed:false,startX:p.x,startY:p.y,tappedSelected};
+  }
+
   canvas.addEventListener('pointerdown',ev=>{
     const p=pointerCoords(ev);
     pointers.set(ev.pointerId,p);
@@ -2265,30 +2329,22 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
 
     if(pointers.size===2){
       const mid=pointerMidpoint();
-      gesture={mode:'pinch',startDist:pointerDistance(),startZoom:state.camera.zoom,startMid:mid,startCamX:state.camera.x,startCamY:state.camera.y};
-      hint.textContent='Pinch to zoom · drag with two fingers to pan';
+      gesture={mode:'pinch',startDist:pointerDistance(),startZoom:state.camera.zoom,startMid:mid,startCamX:state.camera.x,startCamY:state.camera.y,lockPan:!!selectedId};
+      hint.textContent=selectedId?'Pinch to zoom · selected item stays focused':'Pinch to zoom · drag with two fingers to pan';
       return;
     }
     if(pointers.size>2)return;
 
     const picked=pickItem(p);
 
-    // The only gesture that directly moves furniture is one that starts on the
-    // item that is already selected. Everything else begins as a tap-or-pan:
-    // release without moving to select/deselect, or move to pan the house.
-    if(picked&&picked.id===selectedId){
-      const item=itemById(picked.id);
-      const t=templateById(item.type);
-      const wp=itemWorldPosition(item);
-      if(t.place==='wall'){
-        const hit=intersectRoomWall(p,roomById(item.room))||picked.point;
-        gesture={mode:'item',pointerId:ev.pointerId,id:item.id,dx:wp.x-hit.x,dy:wp.y-hit.y,moved:false,armed:false,startX:p.x,startY:p.y};
-        hint.textContent='Drag the selected picture around the wall';
-      }else{
-        const hit=intersectHorizontal(p,wp.y)||picked.point;
-        gesture={mode:'item',pointerId:ev.pointerId,id:item.id,dx:wp.x-hit.x,dz:wp.z-hit.z,moved:false,armed:false,startX:p.x,startY:p.y};
-        hint.textContent=t.place==='surface' ? 'Drag the selected detail onto a surface' : t.place==='ceiling' ? 'Drag the selected ceiling light across the room' : 'Drag the selected item into place';
-      }
+    // Focus mode: once an item is selected, the house itself no longer pans.
+    // A drag from anywhere in the viewport moves the selected item, making tiny
+    // or partly obscured pieces much easier to control. A tap elsewhere with no
+    // drag simply exits focus mode; normal panning resumes on the next gesture.
+    if(selectedId){
+      gesture=focusedItemGesture(p,ev.pointerId,picked);
+      const item=itemById(selectedId),t=item&&templateById(item.type);
+      hint.textContent=t?`Move ${t.name} · drag anywhere · tap elsewhere to deselect`:'Drag to move selected item';
       return;
     }
 
@@ -2300,7 +2356,7 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
       startCamX:state.camera.x,startCamY:state.camera.y,
       moved:false
     };
-    hint.textContent=picked?'Tap to select · drag to explore':'Drag to explore · tap empty space to deselect';
+    hint.textContent=picked?'Tap to select · drag to explore':'Drag to explore';
   });
 
   canvas.addEventListener('pointermove',ev=>{
@@ -2311,12 +2367,12 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     if(pointers.size>=2){
       if(!gesture||gesture.mode!=='pinch'){
         const mid=pointerMidpoint();
-        gesture={mode:'pinch',startDist:pointerDistance(),startZoom:state.camera.zoom,startMid:mid,startCamX:state.camera.x,startCamY:state.camera.y};
+        gesture={mode:'pinch',startDist:pointerDistance(),startZoom:state.camera.zoom,startMid:mid,startCamX:state.camera.x,startCamY:state.camera.y,lockPan:!!selectedId};
       }
       const d=pointerDistance();
       if(gesture.startDist>4)state.camera.zoom=clamp(gesture.startZoom*(d/gesture.startDist),0.82,3.0);
       const mid=pointerMidpoint();
-      if(mid&&gesture.startMid){
+      if(mid&&gesture.startMid&&!gesture.lockPan){
         const unitsPerPixel=5.4/(mid.h*Math.max(0.75,state.camera.zoom));
         state.camera.x=clamp(gesture.startCamX-(mid.x-gesture.startMid.x)*unitsPerPixel,HOUSE_MIN_X+0.65,HOUSE_MAX_X-0.65);
         state.camera.y=clamp(gesture.startCamY+(mid.y-gesture.startMid.y)*unitsPerPixel,0.85,HOUSE_H-0.35);
@@ -2384,6 +2440,9 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
       }
       gesture.moved=true;
       pendingShadowRoom=item.room;
+      // Keep the existing SH grid frozen while manipulating furniture, but let
+      // real direct/local shadows follow the moving geometry live.
+      invalidateShadows(item.room);
       if(selectionHelper)selectionHelper.update();
       updateSelection();
       render();
@@ -2398,21 +2457,27 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
       if(gesture?.mode==='pan'){
         if(gesture.moved)save();
       }else if(gesture?.mode==='panSelect'){
-        // No meaningful movement: this was a tap, so select the touched item
-        // (or deselect on the background). Selection happens on release.
         selectItem(gesture.candidateId||null);
-      }else if(gesture?.mode==='item'&&gesture.moved){
-        if(pendingShadowRoom){
-          invalidateShadows(pendingShadowRoom);
-          markProbeDirty(pendingShadowRoom);
+      }else if(gesture?.mode==='item'){
+        if(gesture.moved){
+          const changedRoom=pendingShadowRoom||itemById(gesture.id)?.room;
+          if(changedRoom){
+            // The expensive probe sample is deliberately deferred until the
+            // manipulation finishes; live movement only updates real shadows.
+            markProbeDirty(changedRoom);
+          }
+          save();
+          updateLighting();
+        }else if(!gesture.tappedSelected){
+          // Focus mode uses one tap to leave the current item. Do not instantly
+          // select the object underneath; the next tap may choose it normally.
+          selectItem(null);
         }
-        save();
-        updateLighting();
       }
       const roomToRefresh=pendingShadowRoom;
       pendingShadowRoom=null;
       gesture=null;
-      hint.textContent='Tap selects · selected item moves · other drags explore';
+      updateInteractionHint();
       if(roomToRefresh&&probeDirtyRooms.has(roomToRefresh))rebuildProbeRoom(roomToRefresh,false);
       if(settleFrame)requestAnimationFrame(render);
     }
@@ -2482,6 +2547,32 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     save(); render();
   });
 
+  function toggleSceneLightingTerm(term){
+    const levels=currentLightingLevels();
+    const key=`${term}Enabled`;
+    levels[key]=levels[key]===false;
+    const mode=state.lighting==='evening'?'evening':'day';
+    if(levels[key]&&Number(levels[term])<=0.001){
+      const fallback=Number(LIGHTING_PRESETS[mode][term]);
+      levels[term]=fallback>0?fallback:(term==='direct'?0.35:term==='ambient'?0.25:0.65);
+    }
+    if(term==='direct'){
+      invalidateShadows(null,true);
+      markProbeDirty();
+    }
+    roomIrradianceDirty=true;
+    updateLighting();
+    if(term==='direct'){
+      rebuildProbeRoom(activeRoomId,false);
+      warmProbeRooms();
+    }
+    save(); render();
+  }
+
+  directToggleBtn?.addEventListener('click',()=>toggleSceneLightingTerm('direct'));
+  ambientToggleBtn?.addEventListener('click',()=>toggleSceneLightingTerm('ambient'));
+  indirectToggleBtn?.addEventListener('click',()=>toggleSceneLightingTerm('indirect'));
+
   directLevel?.addEventListener('input',()=>{
     const levels=currentLightingLevels();
     levels.direct=clamp(Number(directLevel.value)/100,0,1);
@@ -2491,6 +2582,19 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     updateLighting();
   });
   directLevel?.addEventListener('change',()=>{
+    rebuildProbeRoom(activeRoomId,false);
+    warmProbeRooms();
+    save(); render();
+  });
+
+  sunColourInput?.addEventListener('input',()=>{
+    const levels=currentLightingLevels();
+    levels.sunColor=validHexColour(sunColourInput.value,LIGHTING_PRESETS[state.lighting==='evening'?'evening':'day'].sunColor);
+    if(sunColourValue)sunColourValue.textContent=levels.sunColor.toUpperCase();
+    markProbeDirty();
+    updateLighting();
+  });
+  sunColourInput?.addEventListener('change',()=>{
     rebuildProbeRoom(activeRoomId,false);
     warmProbeRooms();
     save(); render();
@@ -2545,16 +2649,23 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     save();
   });
 
+  probeRefreshAllBtn?.addEventListener('click',()=>{
+    markProbeDirty();
+    rebuildProbeRoom(activeRoomId,false);
+    warmProbeRooms();
+    save(); render();
+  });
+
   globalLightReset?.addEventListener('click',()=>{
     const mode=state.lighting==='evening'?'evening':'day';
-    if(probeEnabled())disableLocalSH();
     state.lightingLevels[mode]={...LIGHTING_PRESETS[mode]};
-    state.probeSettings={raysPerProbe:PROBE_RAYS_DEFAULT,enabled:false};
     invalidateShadows(null,true);
     markProbeDirty();
     updateLighting();
-    rebuildProbeRoom(activeRoomId,false);
-    warmProbeRooms();
+    if(probeEnabled()){
+      rebuildProbeRoom(activeRoomId,false);
+      warmProbeRooms();
+    }
     save(); render();
   });
 
@@ -2592,6 +2703,17 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     save(); render();
   });
 
+  lightPowerBtn?.addEventListener('click',()=>{
+    const item=itemById(selectedId),t=item&&templateById(item.type);
+    if(!item||!t?.lightHeight)return;
+    item.lightEnabled=item.lightEnabled===false;
+    updateSelection();
+    markProbeDirty(item.room);
+    updateLighting();
+    rebuildProbeRoom(item.room,false);
+    save(); render();
+  });
+
   lightShadowBtn?.addEventListener('click',()=>{
     const item=itemById(selectedId),t=item&&templateById(item.type);
     if(!item||!t?.lightHeight)return;
@@ -2621,7 +2743,7 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     const count=state.items.filter(i=>i.room===room.id).length;
     const zMid=((room.placeMinZ??BACK_Z)+(room.placeMaxZ??FRONT_Z))/2;
     const item={id:`item-${Date.now()}-${idCounter++}`,type,room:room.id,x:room.cx+((count%3)-1)*0.20,z:zMid+((count%2)?0.14:-0.10),rot:0};
-    if(t.lightHeight){item.lightLevel=LAMP_DEFAULT_LEVEL;item.shadowEnabled=true;}
+    if(t.lightHeight){item.lightLevel=LAMP_DEFAULT_LEVEL;item.lightEnabled=true;item.shadowEnabled=true;}
     if(t.place==='wall'){
       item.x=room.cx;item.y=1.48;item.z=0;
       clampWallItem(item);
@@ -2771,6 +2893,12 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
         spotAngleLevel.value=String(cone);
         spotAngleValue.textContent=`${cone}°`;
       }
+      if(lightPowerBtn){
+        const powered=item.lightEnabled!==false;
+        lightPowerBtn.textContent=powered?'LIGHT ON':'LIGHT OFF';
+        lightPowerBtn.setAttribute('aria-pressed',String(powered));
+        lightPowerBtn.classList.toggle('off',!powered);
+      }
       if(lightShadowBtn){
         const enabled=item.shadowEnabled!==false;
         lightShadowBtn.textContent=enabled?'SHADOWS ON':'SHADOWS OFF';
@@ -2808,22 +2936,30 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
         day:{
           direct:clamp(Number(parsedLevels.day?.direct ?? LIGHTING_PRESETS.day.direct),0,1),
           ambient:clamp(Number(parsedLevels.day?.ambient ?? LIGHTING_PRESETS.day.ambient),0,1),
-          indirect:clamp(Number(parsedLevels.day?.indirect ?? LIGHTING_PRESETS.day.indirect),0,INDIRECT_LEVEL_MAX)
+          indirect:clamp(Number(parsedLevels.day?.indirect ?? LIGHTING_PRESETS.day.indirect),0,INDIRECT_LEVEL_MAX),
+          directEnabled:typeof parsedLevels.day?.directEnabled==='boolean'?parsedLevels.day.directEnabled:Number(parsedLevels.day?.direct ?? LIGHTING_PRESETS.day.direct)>0.001,
+          ambientEnabled:typeof parsedLevels.day?.ambientEnabled==='boolean'?parsedLevels.day.ambientEnabled:Number(parsedLevels.day?.ambient ?? LIGHTING_PRESETS.day.ambient)>0.001,
+          indirectEnabled:typeof parsedLevels.day?.indirectEnabled==='boolean'?parsedLevels.day.indirectEnabled:Number(parsedLevels.day?.indirect ?? LIGHTING_PRESETS.day.indirect)>0.001,
+          sunColor:validHexColour(parsedLevels.day?.sunColor,LIGHTING_PRESETS.day.sunColor)
         },
         evening:{
           direct:clamp(Number(parsedLevels.evening?.direct ?? LIGHTING_PRESETS.evening.direct),0,1),
           ambient:clamp(Number(parsedLevels.evening?.ambient ?? LIGHTING_PRESETS.evening.ambient),0,1),
-          indirect:clamp(Number(parsedLevels.evening?.indirect ?? LIGHTING_PRESETS.evening.indirect),0,INDIRECT_LEVEL_MAX)
+          indirect:clamp(Number(parsedLevels.evening?.indirect ?? LIGHTING_PRESETS.evening.indirect),0,INDIRECT_LEVEL_MAX),
+          directEnabled:typeof parsedLevels.evening?.directEnabled==='boolean'?parsedLevels.evening.directEnabled:Number(parsedLevels.evening?.direct ?? 0)>0.001,
+          ambientEnabled:typeof parsedLevels.evening?.ambientEnabled==='boolean'?parsedLevels.evening.ambientEnabled:Number(parsedLevels.evening?.ambient ?? LIGHTING_PRESETS.evening.ambient)>0.001,
+          indirectEnabled:typeof parsedLevels.evening?.indirectEnabled==='boolean'?parsedLevels.evening.indirectEnabled:Number(parsedLevels.evening?.indirect ?? LIGHTING_PRESETS.evening.indirect)>0.001,
+          sunColor:validHexColour(parsedLevels.evening?.sunColor,LIGHTING_PRESETS.evening.sunColor)
         }
       };
       const parsedProbe=parsed.probeSettings||{};
       const probeSettingsLoaded={
         raysPerProbe:clamp(Math.round(Number(parsedProbe.raysPerProbe)||PROBE_RAYS_DEFAULT),PROBE_RAYS_MIN,PROBE_RAYS_MAX),
-        enabled:parsed.rendererExperimentVersion===4&&parsedProbe.enabled===true
+        enabled:Number(parsed.rendererExperimentVersion)>=4&&parsedProbe.enabled===true
       };
       probeSettingsLoaded.raysPerProbe=Math.round(probeSettingsLoaded.raysPerProbe/4)*4;
       state={
-        lighting:parsed.lighting==='evening'?'evening':'day', lightingLevels, probeSettings:probeSettingsLoaded, rendererExperimentVersion:4, rooms:roomState,
+        lighting:parsed.lighting==='evening'?'evening':'day', lightingLevels, probeSettings:probeSettingsLoaded, rendererExperimentVersion:5, rooms:roomState,
         items:parsed.items.filter(i=>templateById(i.type)&&rooms.some(r=>r.id===i.room)).slice(0,120),
         camera:{
           x:clamp(Number(parsed.camera?.x)||-3.30,HOUSE_MIN_X+0.65,HOUSE_MAX_X-0.65),
@@ -2836,6 +2972,7 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
         const t=templateById(i.type);
         if(t?.lightHeight){
           i.lightLevel=clamp(Number(i.lightLevel??LAMP_DEFAULT_LEVEL),0,LIGHT_LEVEL_MAX);
+          if(typeof i.lightEnabled!=='boolean')i.lightEnabled=true;
           if(typeof i.shadowEnabled!=='boolean')i.shadowEnabled=true;
           if(t?.place==='ceiling')i.spotConeDeg=spotConeDegreesFor(i,t);
         }
@@ -2866,6 +3003,7 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     const t=templateById(i.type);
     if(t?.lightHeight){
       i.lightLevel=clamp(Number(i.lightLevel??LAMP_DEFAULT_LEVEL),0,LIGHT_LEVEL_MAX);
+      if(typeof i.lightEnabled!=='boolean')i.lightEnabled=true;
       if(typeof i.shadowEnabled!=='boolean')i.shadowEnabled=true;
       if(t?.place==='ceiling')i.spotConeDeg=spotConeDegreesFor(i,t);
     }
@@ -2885,7 +3023,7 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     warmProbeRooms();
   }
   setWorkspaceTab('place');
-  hint.textContent='Tap selects · selected item moves · other drags explore';
+  updateInteractionHint();
   window.addEventListener('resize',queueResize,{passive:true});
   if('ResizeObserver' in window)new ResizeObserver(queueResize).observe(canvas.parentElement);
   queueResize();

@@ -1,21 +1,19 @@
-# GameHub v1.8.35
+# GameHub v1.8.36
 
-This release retries the My House SH-probe experiment with a much safer mobile WebGL path.
+This release refines My House placement and lighting controls around the working CPU-interpolated SH probe renderer.
 
 ## Updated in this version
-- Keeps the **3 × 3 × 2 = 18 probe** grid in every room.
-- Each probe ray-samples actual room geometry and direct lighting to build first-order SH irradiance.
-- The 18-probe grid is now **interpolated on the CPU per rendered object/mesh** after a probe refresh.
-- Each MeshStandardMaterial receives only **four vec3 SH coefficients plus one strength value** instead of the previous 18-probe uniform arrays.
-- Removed the SSAO render pass entirely.
-- SETUP now exposes **Direct**, **Ambient**, **Indirect**, **Rays / Probe**, **SH ON/OFF**, and **Refresh room**.
-- The SH experiment now starts **OFF** for a safe direct + ambient baseline; switch **SH ON** in SETUP to compile/test it, and switch it OFF again to restore the standard materials.
-- Probe updates happen after lighting/furniture changes and other rooms warm progressively while idle.
-- Existing house/furniture save data is preserved.
-- Service-worker cache version bumped for a clean PWA update.
-
-## Experimental note
-This is deliberately a renderer test. The previous v1.8.33 SH build failed on iOS because the per-material shader carried the complete probe grid. This version keeps that grid on the CPU and sends only the locally interpolated coefficients to the shader.
+- **Focused placement mode:** tap an item to select it; while selected, house panning is paused and a one-finger drag anywhere in the viewport moves that selected item. Tap elsewhere without dragging to deselect and return to panning.
+- **Live shadows while moving:** direct/local shadow maps now follow furniture and lights during manipulation. The SH probe grid remains frozen during the drag and refreshes only when the item is released.
+- Added explicit **ON/OFF switches** for Direct, Ambient and Indirect lighting while preserving each slider value.
+- Added a per-selected-light **LIGHT ON/OFF** switch so lamps no longer have to be turned off by dragging brightness to zero.
+- Raised **Indirect** adjustment from 150% to **300%** for stronger SH-only lighting tests with Ambient reduced or disabled.
+- Added a saved **Sun Colour** control for each Day/Evening preset.
+- Added both **Refresh room** and **Refresh all** probe actions.
+- Fixed an SH stability issue where directional coefficients could remain in stale camera/view space after panning. Probe coefficients now stay in world space and are transformed to view space at draw time.
+- **Reset lighting** now resets the current lighting preset without unexpectedly disabling the SH system.
+- Existing house, furniture, lighting and SH settings are preserved.
+- Service-worker cache bumped for a clean PWA update.
 
 ## Files
 Upload the contents of this ZIP to the root of the `GameHub` repository, replacing the existing files.
