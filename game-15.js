@@ -35,10 +35,8 @@
   const directValue = document.getElementById('room-direct-value');
   const ambientLevel = document.getElementById('room-ambient-level');
   const ambientValue = document.getElementById('room-ambient-value');
-  const indirectLevel = document.getElementById('room-indirect-level');
-  const indirectValue = document.getElementById('room-indirect-value');
-  const bounceRaysLevel = document.getElementById('room-bounce-rays');
-  const bounceRaysValue = document.getElementById('room-bounce-rays-value');
+  const aoLevel = document.getElementById('room-ao-level');
+  const aoValue = document.getElementById('room-ao-value');
   const globalLightReset = document.getElementById('room-global-light-reset');
 
   if (!canvas) return;
@@ -78,18 +76,15 @@
   const LAMP_DEFAULT_LEVEL = 0.28;
   const LAMP_MAX_INTENSITY = 6.2;
   const LIGHT_LEVEL_MAX = 1.50;
-  const INDIRECT_LEVEL_MAX = 1.50;
-  const BOUNCE_RAYS_MAX = 4;
-  const BOUNCE_VPL_LIMIT = 12;
-  const BOUNCE_DISTANCE = 4.6;
-  const BOUNCE_GAIN = 2.35;
+  const AO_LEVEL_MAX = 1.00;
+  const AO_RENDER_SCALE = 0.50;
   const SPOT_CONE_MIN_DEG = 50;
   const SPOT_CONE_MAX_DEG = 170;
   const SPOT_CONE_DEFAULT_DEG = 130;
   const CEILING_MOUNT_Y = ROOM_H - 0.04;
   const LIGHTING_PRESETS = {
-    day:{direct:1.00,ambient:1.00,indirect:0.18,bounceRays:1},
-    evening:{direct:0.00,ambient:0.28,indirect:0.38,bounceRays:1}
+    day:{direct:1.00,ambient:1.00,ao:0.32},
+    evening:{direct:0.00,ambient:0.28,ao:0.42}
   };
 
   // Compact dog-leg / return stair kept in the rear half of the central core,
@@ -608,6 +603,7 @@
   let activeInventoryCategory = 'furniture';
   let idCounter = 1;
   let gesture = null;
+  let pendingShadowRoom = null;
   let resizeRaf = 0;
 
   const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false, powerPreference:'high-performance'});
@@ -636,6 +632,91 @@
   const tempVec = new THREE.Vector3();
   const tempQuat = new THREE.Quaternion();
   const tempEuler = new THREE.Euler();
+
+  const aoDepthTarget = new THREE.WebGLRenderTarget(96,96,{
+    minFilter:THREE.LinearFilter,
+    magFilter:THREE.LinearFilter,
+    format:THREE.RGBAFormat,
+    type:THREE.UnsignedByteType,
+    depthBuffer:true,
+    stencilBuffer:false
+  });
+  aoDepthTarget.texture.generateMipmaps=false;
+  const aoDepthMaterial = new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking});
+  aoDepthMaterial.blending=THREE.NoBlending;
+  const aoOverlayScene = new THREE.Scene();
+  const aoOverlayCamera = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+  const aoOverlayMaterial = new THREE.ShaderMaterial({
+    uniforms:{
+      tDepth:{value:aoDepthTarget.texture},
+      resolution:{value:new THREE.Vector2(96,96)},
+      cameraNear:{value:camera.near},
+      cameraFar:{value:camera.far},
+      aoStrength:{value:0.0},
+      aoRadius:{value:4.25}
+    },
+    vertexShader:`
+      varying vec2 vUv;
+      void main(){
+        vUv=uv;
+        gl_Position=vec4(position.xy,0.0,1.0);
+      }
+    `,
+    fragmentShader:`
+      #include <packing>
+      varying vec2 vUv;
+      uniform sampler2D tDepth;
+      uniform vec2 resolution;
+      uniform float cameraNear;
+      uniform float cameraFar;
+      uniform float aoStrength;
+      uniform float aoRadius;
+
+      float viewDistance(float packedDepth){
+        float viewZ=(cameraNear*cameraFar)/((cameraFar-cameraNear)*packedDepth-cameraFar);
+        return -viewZ;
+      }
+
+      float tapAO(vec2 direction,float radiusScale,float centerDistance){
+        vec2 uv=clamp(vUv+direction*(aoRadius*radiusScale)/resolution,vec2(0.001),vec2(0.999));
+        float raw=unpackRGBAToDepth(texture2D(tDepth,uv));
+        if(raw>=0.99998)return 0.0;
+        float sampleDistance=viewDistance(raw);
+        float delta=centerDistance-sampleDistance;
+        float nearer=smoothstep(0.012,0.24,delta);
+        float localRange=1.0-smoothstep(0.18,1.25,abs(delta));
+        return nearer*localRange;
+      }
+
+      void main(){
+        float raw=unpackRGBAToDepth(texture2D(tDepth,vUv));
+        if(raw>=0.99998||aoStrength<=0.001){
+          gl_FragColor=vec4(0.0);
+          return;
+        }
+        float centerDistance=viewDistance(raw);
+        float ao=0.0;
+        ao+=tapAO(vec2( 1.0, 0.0),1.00,centerDistance);
+        ao+=tapAO(vec2(-1.0, 0.0),1.00,centerDistance);
+        ao+=tapAO(vec2( 0.0, 1.0),1.00,centerDistance);
+        ao+=tapAO(vec2( 0.0,-1.0),1.00,centerDistance);
+        ao+=tapAO(normalize(vec2( 1.0, 1.0)),0.72,centerDistance);
+        ao+=tapAO(normalize(vec2(-1.0, 1.0)),0.72,centerDistance);
+        ao+=tapAO(normalize(vec2( 1.0,-1.0)),0.72,centerDistance);
+        ao+=tapAO(normalize(vec2(-1.0,-1.0)),0.72,centerDistance);
+        ao/=8.0;
+        float alpha=clamp(pow(ao,0.78)*aoStrength*0.82,0.0,0.56);
+        gl_FragColor=vec4(0.0,0.0,0.0,alpha);
+      }
+    `,
+    transparent:true,
+    depthTest:false,
+    depthWrite:false,
+    blending:THREE.NormalBlending,
+    toneMapped:false
+  });
+  const aoOverlayQuad = new THREE.Mesh(new THREE.PlaneGeometry(2,2),aoOverlayMaterial);
+  aoOverlayScene.add(aoOverlayQuad);
 
   const houseGroup = new THREE.Group();
   const itemRoot = new THREE.Group();
@@ -677,9 +758,8 @@
   const supportPlanes = [];
   const selectableMeshes = [];
   const localLights = [];
-  const bounceLights = [];
-  const bounceTargets = [];
   const emissiveMeshes = [];
+  let roomIrradianceDirty = true;
   let selectionHelper = null;
   let renderAverageMs = 0;
   let renderSamples = 0;
@@ -744,158 +824,93 @@
     });
   }
 
-  function clearBounceLights(){
-    bounceLights.forEach(light=>{
-      scene.remove(light);
-      light.dispose?.();
+  function roomFeatureTint(roomId){
+    const style=state.rooms[roomId]||{};
+    const wall=new THREE.Color(style.wall||roomById(roomId).wall||'#ddd5cc');
+    const floor=new THREE.Color(style.floor||roomById(roomId).floor||'#c9b596');
+    let r=0,g=0,b=0,w=0;
+    const weights={furniture:4.0,kitchen:4.0,storage:2.8,soft:2.6,play:2.2,decor:1.0,lighting:0.7,wall:0.8};
+    state.items.forEach(item=>{
+      if(item.room!==roomId)return;
+      const t=templateById(item.type);
+      if(!t?.colour)return;
+      const c=new THREE.Color(t.colour);
+      const weight=weights[t.category]||1.0;
+      r+=c.r*weight;g+=c.g*weight;b+=c.b*weight;w+=weight;
     });
-    bounceTargets.forEach(target=>scene.remove(target));
-    bounceLights.length=0;
-    bounceTargets.length=0;
+    const feature=w>0?new THREE.Color(r/w,g/w,b/w):wall.clone();
+    const tint=wall.clone().multiplyScalar(0.40)
+      .add(floor.clone().multiplyScalar(0.36))
+      .add(feature.multiplyScalar(0.24));
+    // Keep the room colour recognisable without letting strongly coloured
+    // furniture turn the entire room into a saturated glow.
+    tint.lerp(new THREE.Color(1,1,1),0.24);
+    return tint;
   }
 
-  function materialBaseColor(object){
-    const mat=Array.isArray(object?.material)?object.material[0]:object?.material;
-    if(mat?.color)return mat.color.clone();
-    return new THREE.Color(0xd8d3cc);
+  function roomIdsForMesh(mesh){
+    const itemId=mesh?.userData?.itemId;
+    const item=itemId&&itemById(itemId);
+    if(item)return [item.room];
+    const mask=mesh?.layers?.mask||0;
+    const ids=[];
+    rooms.forEach(room=>{
+      const layer=roomLayerIndex(room.id);
+      if(layer&&(mask&(1<<layer)))ids.push(room.id);
+    });
+    return ids;
   }
 
-  function firstBounceHit(origin,direction,roomId,sourceItemId=null,maxDistance=BOUNCE_DISTANCE){
-    const dir=direction.clone().normalize();
-    raycaster.set(origin,dir);
-    raycaster.near=0.035;
-    raycaster.far=maxDistance;
-    const layer=roomLayerIndex(roomId);
-    const hits=raycaster.intersectObjects([houseGroup,itemRoot,decorGroup],true);
-    raycaster.near=0;
-    raycaster.far=Infinity;
-    for(const hit of hits){
-      const object=hit.object;
-      if(!object?.isMesh||object.userData?.hitProxy)continue;
-      if(sourceItemId&&object.userData?.itemId===sourceItemId)continue;
-      if(layer&&!(object.layers.mask&(1<<layer)))continue;
-      const mat=Array.isArray(object.material)?object.material[0]:object.material;
-      if(mat?.visible===false||mat?.colorWrite===false||Number(mat?.opacity)===0)continue;
-      if(!hit.face)continue;
-      const normal=hit.face.normal.clone().transformDirection(object.matrixWorld).normalize();
-      const incidence=Math.max(0,normal.dot(dir.clone().multiplyScalar(-1)));
-      if(incidence<0.035)continue;
-      return {point:hit.point.clone(),normal,distance:hit.distance,color:materialBaseColor(object),incidence};
-    }
-    return null;
+  function ensureRoomIrradianceMaterial(mat){
+    if(!mat?.isMeshStandardMaterial||mat.userData.roomIrradiancePatched)return;
+    mat.userData.roomIrradiancePatched=true;
+    mat.userData.roomIrradianceColor=new THREE.Color(1,1,1);
+    mat.userData.roomIrradianceStrength=0;
+    const previous=mat.onBeforeCompile;
+    mat.onBeforeCompile=(shader,webglRenderer)=>{
+      if(previous)previous(shader,webglRenderer);
+      shader.uniforms.roomIrradianceColor={value:mat.userData.roomIrradianceColor};
+      shader.uniforms.roomIrradianceStrength={value:mat.userData.roomIrradianceStrength};
+      shader.fragmentShader=shader.fragmentShader.replace(
+        '#include <lights_fragment_end>',
+        `#include <lights_fragment_end>\n`+
+        `float roomFloorFacing = max( 0.0, -geometryNormal.y );\n`+
+        `float roomWallFacing = 1.0 - abs( geometryNormal.y );\n`+
+        `float roomProbeShape = 0.64 + roomFloorFacing * 0.24 + roomWallFacing * 0.12;\n`+
+        `reflectedLight.indirectDiffuse += diffuseColor.rgb * roomIrradianceColor * roomIrradianceStrength * roomProbeShape;`
+      );
+      mat.userData.roomIrradianceUniforms=shader.uniforms;
+    };
+    mat.customProgramCacheKey=()=> 'my-house-room-irradiance-v1';
+    mat.needsUpdate=true;
   }
 
-  function spotSampleDirections(light,count){
-    const origin=light.getWorldPosition(new THREE.Vector3());
-    const target=light.target?.getWorldPosition?.(new THREE.Vector3())||origin.clone().add(new THREE.Vector3(0,-1,0));
-    const centre=target.sub(origin).normalize();
-    if(count<=1)return [centre];
-    const helper=Math.abs(centre.y)<0.92?new THREE.Vector3(0,1,0):new THREE.Vector3(1,0,0);
-    const u=new THREE.Vector3().crossVectors(centre,helper).normalize();
-    const v=new THREE.Vector3().crossVectors(u,centre).normalize();
-    const dirs=[centre.clone()];
-    const spread=Math.tan(Math.min(light.angle*0.58,THREE.MathUtils.degToRad(47)));
-    for(let i=1;i<count;i++){
-      const a=TAU*(i-1)/Math.max(1,count-1);
-      dirs.push(centre.clone()
-        .addScaledVector(u,Math.cos(a)*spread)
-        .addScaledVector(v,Math.sin(a)*spread)
-        .normalize());
-    }
-    return dirs;
-  }
-
-  function pointSampleDirections(count){
-    const dirs=[
-      new THREE.Vector3(0,-1,0),
-      new THREE.Vector3(0.62,-0.76,-0.18),
-      new THREE.Vector3(-0.62,-0.76,-0.18),
-      new THREE.Vector3(0,-0.66,0.75)
-    ];
-    return dirs.slice(0,Math.max(0,Math.min(count,dirs.length))).map(d=>d.normalize());
-  }
-
-  function bounceCandidateForRay(light,direction,roomId,sourceItemId,sampleCount){
-    const origin=light.getWorldPosition(new THREE.Vector3());
-    const hit=firstBounceHit(origin,direction,roomId,sourceItemId,Number(light.distance)||BOUNCE_DISTANCE);
-    if(!hit)return null;
-    const d=Math.max(0.22,hit.distance);
-    const distanceFalloff=1/(0.65+d*d*0.72);
-    const sampleWeight=1/Math.max(1,sampleCount);
-    const sourceEnergy=Math.max(0,Number(light.intensity)||0);
-    const energy=sourceEnergy*distanceFalloff*hit.incidence*sampleWeight;
-    if(energy<0.012)return null;
-    const sourceColor=light.color?.clone?.()||new THREE.Color(0xffffff);
-    const bouncedColor=sourceColor.multiply(hit.color);
-    return {roomId,point:hit.point,normal:hit.normal,color:bouncedColor,energy};
-  }
-
-  function sunBounceCandidate(room){
-    if((Number(sun.intensity)||0)<=0.02)return null;
-    const sunPos=sun.getWorldPosition(new THREE.Vector3());
-    const sunTarget=sun.target.getWorldPosition(new THREE.Vector3());
-    const direction=sunTarget.sub(sunPos).normalize();
-    // Start just outside the open dollhouse front so the sample follows the
-    // same broad front/top direction as the directional key without being
-    // immediately swallowed by the roof slab.
-    const origin=new THREE.Vector3(
-      room.cx-direction.x*0.42,
-      room.floorY+ROOM_H*0.82,
-      FRONT_Z+0.46
-    );
-    const hit=firstBounceHit(origin,direction,room.id,null,6.2);
-    if(!hit)return null;
-    const sourceColor=sun.color.clone();
-    const bouncedColor=sourceColor.multiply(hit.color);
-    const energy=Math.max(0,Number(sun.intensity)||0)*hit.incidence*0.17;
-    if(energy<0.012)return null;
-    return {roomId:room.id,point:hit.point,normal:hit.normal,color:bouncedColor,energy};
-  }
-
-  function rebuildBounceLights(levels=currentLightingLevels(),evening=state.lighting==='evening'){
-    clearBounceLights();
-    const indirect=clamp(Number(levels.indirect??0),0,INDIRECT_LEVEL_MAX);
-    const rayCount=clamp(Math.round(Number(levels.bounceRays??1)),0,BOUNCE_RAYS_MAX);
-    if(indirect<=0.001||rayCount<=0)return;
-
-    const candidates=[];
-    if((Number(sun.intensity)||0)>0.02){
-      rooms.forEach(room=>{
-        const candidate=sunBounceCandidate(room);
-        if(candidate)candidates.push(candidate);
+  function updateRoomIrradiance(levels=currentLightingLevels()){
+    if(!roomIrradianceDirty&&levels===undefined)return;
+    const evening=state.lighting==='evening';
+    const tints=new Map(rooms.map(room=>[room.id,roomFeatureTint(room.id)]));
+    const fillStrength=clamp(Number(levels.ambient||0),0,1)*(evening?0.24:0.20);
+    const emissiveSet=new Set(emissiveMeshes);
+    [houseGroup,decorGroup,itemRoot].forEach(root=>root.traverse(mesh=>{
+      if(!mesh?.isMesh||emissiveSet.has(mesh)||mesh.userData?.hitProxy)return;
+      const mats=Array.isArray(mesh.material)?mesh.material:[mesh.material];
+      const ids=roomIdsForMesh(mesh);
+      if(!ids.length)return;
+      const tint=new THREE.Color(0,0,0);
+      ids.forEach(id=>tint.add(tints.get(id)||new THREE.Color(1,1,1)));
+      tint.multiplyScalar(1/ids.length);
+      mats.forEach(mat=>{
+        if(!mat?.isMeshStandardMaterial)return;
+        ensureRoomIrradianceMaterial(mat);
+        mat.userData.roomIrradianceColor.copy(tint);
+        mat.userData.roomIrradianceStrength=fillStrength;
+        if(mat.userData.roomIrradianceUniforms){
+          mat.userData.roomIrradianceUniforms.roomIrradianceColor.value.copy(tint);
+          mat.userData.roomIrradianceUniforms.roomIrradianceStrength.value=fillStrength;
+        }
       });
-    }
-    localLights.forEach(light=>{
-      if((Number(light.intensity)||0)<=0.025)return;
-      const roomId=light.userData.room;
-      const sourceItemId=light.userData.itemId;
-      const dirs=light.isSpotLight?spotSampleDirections(light,rayCount):pointSampleDirections(rayCount);
-      dirs.forEach(dir=>{
-        const candidate=bounceCandidateForRay(light,dir,roomId,sourceItemId,dirs.length);
-        if(candidate)candidates.push(candidate);
-      });
-    });
-
-    candidates.sort((a,b)=>b.energy-a.energy);
-    candidates.slice(0,BOUNCE_VPL_LIMIT).forEach(candidate=>{
-      const intensity=clamp(candidate.energy*BOUNCE_GAIN*indirect,0,3.2);
-      if(intensity<0.018)return;
-      const position=candidate.point.clone().addScaledVector(candidate.normal,0.055);
-      const target=new THREE.Object3D();
-      target.position.copy(position).addScaledVector(candidate.normal,1.2);
-      scene.add(target);
-      const vpl=new THREE.SpotLight(candidate.color,intensity,3.9,THREE.MathUtils.degToRad(82),0.78,2);
-      vpl.position.copy(position);
-      vpl.target=target;
-      vpl.castShadow=false;
-      vpl.userData.virtualBounce=true;
-      vpl.userData.room=candidate.roomId;
-      const layer=roomLayerIndex(candidate.roomId);
-      if(layer)vpl.layers.set(layer);
-      scene.add(vpl);
-      bounceTargets.push(target);
-      bounceLights.push(vpl);
-    });
+    }));
+    roomIrradianceDirty=false;
   }
 
   function wallpaperTexture(patternId){
@@ -1009,6 +1024,7 @@
     mat.color.set(style.wall);
     mat.map=wallpaperTexture(style.wallpaper||'plain');
     mat.needsUpdate=true;
+    roomIrradianceDirty=true;
   }
 
   function applyRoomFloorFinish(roomId){
@@ -1018,6 +1034,7 @@
     mat.color.set(style.floor);
     mat.map=floorTexture(style.floorTexture||'plain');
     mat.needsUpdate=true;
+    roomIrradianceDirty=true;
   }
 
   function material(color, opts={}){
@@ -1706,19 +1723,69 @@
     updateLocalLightShadows();
   }
 
+  function resizeAOBuffer(){
+    const draw=renderer.getDrawingBufferSize(new THREE.Vector2());
+    const w=Math.max(96,Math.floor(draw.x*AO_RENDER_SCALE));
+    const h=Math.max(72,Math.floor(draw.y*AO_RENDER_SCALE));
+    if(aoDepthTarget.width!==w||aoDepthTarget.height!==h)aoDepthTarget.setSize(w,h);
+    aoOverlayMaterial.uniforms.resolution.value.set(w,h);
+  }
+
+  function renderAOOverlay(strength){
+    const amount=clamp(Number(strength)||0,0,AO_LEVEL_MAX);
+    if(amount<=0.001)return;
+    const oldOverride=scene.overrideMaterial;
+    const oldBackground=scene.background;
+    const oldShadowEnabled=renderer.shadowMap.enabled;
+    const oldAutoClear=renderer.autoClear;
+    const oldClearColor=renderer.getClearColor(new THREE.Color());
+    const oldClearAlpha=renderer.getClearAlpha();
+    const hidden=[];
+    itemRoot.traverse(obj=>{
+      if(obj.userData?.hitProxy&&obj.visible){hidden.push(obj);obj.visible=false;}
+    });
+    const helperVisible=selectionHelper?.visible;
+    if(selectionHelper)selectionHelper.visible=false;
+
+    scene.overrideMaterial=aoDepthMaterial;
+    scene.background=null;
+    renderer.shadowMap.enabled=false;
+    renderer.setRenderTarget(aoDepthTarget);
+    renderer.setClearColor(0xffffff,1);
+    renderer.autoClear=true;
+    renderer.clear(true,true,true);
+    renderer.render(scene,camera);
+
+    renderer.setRenderTarget(null);
+    scene.overrideMaterial=oldOverride;
+    scene.background=oldBackground;
+    renderer.shadowMap.enabled=oldShadowEnabled;
+    renderer.setClearColor(oldClearColor,oldClearAlpha);
+    hidden.forEach(obj=>obj.visible=true);
+    if(selectionHelper)selectionHelper.visible=helperVisible;
+
+    aoOverlayMaterial.uniforms.aoStrength.value=amount;
+    renderer.autoClear=false;
+    renderer.render(aoOverlayScene,aoOverlayCamera);
+    renderer.autoClear=oldAutoClear;
+  }
+
   function render(){
     updateCamera();
     if(selectionHelper)selectionHelper.update();
+    if(roomIrradianceDirty)updateRoomIrradiance(currentLightingLevels());
+    const levels=currentLightingLevels();
     const shadowRefresh=renderer.shadowMap.needsUpdate===true;
     const start=performance.now();
+    renderer.setRenderTarget(null);
     renderer.render(scene,camera);
+    const moving=!!(gesture&&gesture.moved&&(gesture.mode==='pan'||gesture.mode==='item'||gesture.mode==='pinch'));
+    if(!moving)renderAOOverlay(levels.ao);
     const elapsed=performance.now()-start;
     renderSamples++;
     renderAverageMs=renderSamples===1?elapsed:(renderAverageMs*0.82+elapsed*0.18);
     if(perfBadge){
-      const approxFps=Math.min(999,Math.round(1000/Math.max(0.5,elapsed)));
-      const levels=currentLightingLevels();
-      perfBadge.textContent=`${shadowRefresh?'Shadow':'Frame'} ${elapsed.toFixed(1)}ms · ~${approxFps}fps · ${activeShadowCount} sh. · ${bounceLights.length} VPL`;
+      perfBadge.textContent=`Submit ${elapsed.toFixed(1)}ms · ${activeShadowCount} sh. · AO ${Math.round(levels.ao*100)}%`;
     }
   }
 
@@ -1743,8 +1810,7 @@
     const levels=state.lightingLevels[mode];
     levels.direct=clamp(Number(levels.direct ?? LIGHTING_PRESETS[mode].direct),0,1);
     levels.ambient=clamp(Number(levels.ambient ?? LIGHTING_PRESETS[mode].ambient),0,1);
-    levels.indirect=clamp(Number(levels.indirect ?? LIGHTING_PRESETS[mode].indirect),0,INDIRECT_LEVEL_MAX);
-    levels.bounceRays=clamp(Math.round(Number(levels.bounceRays ?? LIGHTING_PRESETS[mode].bounceRays)),0,BOUNCE_RAYS_MAX);
+    levels.ao=clamp(Number(levels.ao ?? LIGHTING_PRESETS[mode].ao),0,AO_LEVEL_MAX);
     return levels;
   }
 
@@ -1756,10 +1822,8 @@
     if(directValue)directValue.textContent=`${Math.round(levels.direct*100)}%`;
     if(ambientLevel)ambientLevel.value=String(Math.round(levels.ambient*100));
     if(ambientValue)ambientValue.textContent=`${Math.round(levels.ambient*100)}%`;
-    if(indirectLevel)indirectLevel.value=String(Math.round(levels.indirect*100));
-    if(indirectValue)indirectValue.textContent=`${Math.round(levels.indirect*100)}%`;
-    if(bounceRaysLevel)bounceRaysLevel.value=String(levels.bounceRays);
-    if(bounceRaysValue)bounceRaysValue.textContent=String(levels.bounceRays);
+    if(aoLevel)aoLevel.value=String(Math.round(levels.ao*100));
+    if(aoValue)aoValue.textContent=`${Math.round(levels.ao*100)}%`;
   }
 
   function updateLocalLightShadows(){
@@ -1788,19 +1852,20 @@
     sun.color.set(evening?0xaab7d4:0xfff0d7);
     sun.castShadow=levels.direct>0.01;
 
-    // Ambient control scales the non-directional sky/fill rig while preserving
-    // warmer daytime and cooler evening colour character.
-    hemi.intensity=(evening?1.22:1.55)*levels.ambient;
-    hemi.color.set(evening?0xcbd3e5:0xfff7eb);
-    hemi.groundColor.set(evening?0x575968:0x7f858d);
-    eveningFill.intensity=evening?0.55*levels.ambient:0.0;
+    // Keep only a very small global sky term. Most of the fill now comes
+    // from a per-room irradiance tint injected into standard materials.
+    hemi.intensity=(evening?0.10:0.16)*levels.ambient;
+    hemi.color.set(evening?0xd5d7df:0xfff6e9);
+    hemi.groundColor.set(evening?0x6c6b70:0x8e887f);
+    eveningFill.intensity=0.0;
 
     localLights.forEach(light=>{
       const item=itemById(light.userData.itemId);
       const t=item&&templateById(item.type);
       light.intensity=evening?LAMP_MAX_INTENSITY*(t?.lightScale||1)*lampLevelFor(item):0;
     });
-    rebuildBounceLights(levels, evening);
+    roomIrradianceDirty=true;
+    updateRoomIrradiance(levels);
     updateLocalLightShadows();
     emissiveMeshes.forEach(mesh=>{
       if(!mesh.material||!('emissiveIntensity' in mesh.material))return;
@@ -2020,7 +2085,7 @@
         }
       }
       gesture.moved=true;
-      invalidateShadows(item.room);
+      pendingShadowRoom=item.room;
       if(selectionHelper)selectionHelper.update();
       updateSelection();
       render();
@@ -2031,6 +2096,7 @@
     pointers.delete(ev.pointerId);
     if(gesture&&gesture.mode==='pinch'&&pointers.size===1){ gesture=null; }
     else if(pointers.size===0){
+      const settleFrame=!!(gesture?.moved||gesture?.mode==='pinch');
       if(gesture?.mode==='pan'){
         if(gesture.moved)save();
       }else if(gesture?.mode==='panSelect'){
@@ -2038,11 +2104,14 @@
         // (or deselect on the background). Selection happens on release.
         selectItem(gesture.candidateId||null);
       }else if(gesture?.mode==='item'&&gesture.moved){
+        if(pendingShadowRoom)invalidateShadows(pendingShadowRoom);
         save();
         updateLighting();
       }
+      pendingShadowRoom=null;
       gesture=null;
       hint.textContent='Tap selects · selected item moves · other drags explore';
+      if(settleFrame)requestAnimationFrame(render);
     }
   }
   canvas.addEventListener('pointerup',finishPointer);
@@ -2117,25 +2186,18 @@
     const levels=currentLightingLevels();
     levels.ambient=clamp(Number(ambientLevel.value)/100,0,1);
     if(ambientValue)ambientValue.textContent=`${Math.round(levels.ambient*100)}%`;
+    roomIrradianceDirty=true;
     updateLighting();
   });
   ambientLevel?.addEventListener('change',save);
 
-  indirectLevel?.addEventListener('input',()=>{
+  aoLevel?.addEventListener('input',()=>{
     const levels=currentLightingLevels();
-    levels.indirect=clamp(Number(indirectLevel.value)/100,0,INDIRECT_LEVEL_MAX);
-    if(indirectValue)indirectValue.textContent=`${Math.round(levels.indirect*100)}%`;
-    updateLighting();
+    levels.ao=clamp(Number(aoLevel.value)/100,0,AO_LEVEL_MAX);
+    if(aoValue)aoValue.textContent=`${Math.round(levels.ao*100)}%`;
+    render();
   });
-  indirectLevel?.addEventListener('change',save);
-
-  bounceRaysLevel?.addEventListener('input',()=>{
-    const levels=currentLightingLevels();
-    levels.bounceRays=clamp(Math.round(Number(bounceRaysLevel.value)),0,BOUNCE_RAYS_MAX);
-    if(bounceRaysValue)bounceRaysValue.textContent=String(levels.bounceRays);
-    updateLighting();
-  });
-  bounceRaysLevel?.addEventListener('change',save);
+  aoLevel?.addEventListener('change',save);
 
   globalLightReset?.addEventListener('click',()=>{
     const mode=state.lighting==='evening'?'evening':'day';
@@ -2165,7 +2227,6 @@
       light.shadow.needsUpdate=true;
       renderer.shadowMap.needsUpdate=true;
     }
-    rebuildBounceLights(currentLightingLevels(),state.lighting==='evening');
     render();
   });
   spotAngleLevel?.addEventListener('change',save);
@@ -2269,7 +2330,8 @@
         if(key==='wall')applyRoomWallFinish(activeRoomId);
         else if(key==='floor')applyRoomFloorFinish(activeRoomId);
         else if(mat)mat.color.set(col);
-        [...holder.children].forEach(x=>x.classList.toggle('active',x===b));save();rebuildBounceLights(currentLightingLevels(),state.lighting==='evening');render();
+        roomIrradianceDirty=true;
+        [...holder.children].forEach(x=>x.classList.toggle('active',x===b));save();render();
       });
       holder.appendChild(b);
     });
@@ -2379,14 +2441,12 @@
         day:{
           direct:clamp(Number(parsedLevels.day?.direct ?? LIGHTING_PRESETS.day.direct),0,1),
           ambient:clamp(Number(parsedLevels.day?.ambient ?? LIGHTING_PRESETS.day.ambient),0,1),
-          indirect:clamp(Number(parsedLevels.day?.indirect ?? LIGHTING_PRESETS.day.indirect),0,INDIRECT_LEVEL_MAX),
-          bounceRays:clamp(Math.round(Number(parsedLevels.day?.bounceRays ?? LIGHTING_PRESETS.day.bounceRays)),0,BOUNCE_RAYS_MAX)
+          ao:clamp(Number(parsedLevels.day?.ao ?? LIGHTING_PRESETS.day.ao),0,AO_LEVEL_MAX)
         },
         evening:{
           direct:clamp(Number(parsedLevels.evening?.direct ?? LIGHTING_PRESETS.evening.direct),0,1),
           ambient:clamp(Number(parsedLevels.evening?.ambient ?? LIGHTING_PRESETS.evening.ambient),0,1),
-          indirect:clamp(Number(parsedLevels.evening?.indirect ?? LIGHTING_PRESETS.evening.indirect),0,INDIRECT_LEVEL_MAX),
-          bounceRays:clamp(Math.round(Number(parsedLevels.evening?.bounceRays ?? LIGHTING_PRESETS.evening.bounceRays)),0,BOUNCE_RAYS_MAX)
+          ao:clamp(Number(parsedLevels.evening?.ao ?? LIGHTING_PRESETS.evening.ao),0,AO_LEVEL_MAX)
         }
       };
       state={
@@ -2421,6 +2481,7 @@
     canvas.style.height=`${cssH}px`;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.6));
     renderer.setSize(cssW,cssH,false);
+    resizeAOBuffer();
     camera.aspect=cssW/cssH;
     camera.updateProjectionMatrix();
     render();

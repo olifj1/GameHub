@@ -10270,7 +10270,7 @@ body[data-game-id="game-14"] .attack-slot-copy small{font-size:6.8px}
   .room-global-light-footer small{font-size:7px;max-width:136px;}
 }
 
-/* My House v1.8.29 — ray-hit virtual bounce lighting */
+/* My House v1.8.30 — room irradiance + SSAO-lite */
 .room-spot-angle-control{display:flex;align-items:center;gap:6px;min-width:0;}
 .room-spot-angle-control[hidden]{display:none;}
 .room-spot-angle-control label{display:flex;align-items:center;gap:4px;min-width:62px;}
