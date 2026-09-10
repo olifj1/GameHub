@@ -10281,7 +10281,7 @@ body[data-game-id="game-14"] .attack-slot-copy small{font-size:6.8px}
   .room-spot-angle-control input[type="range"]{width:72px;min-width:54px;}
 }
 
-/* My House v1.8.36 — focused placement + explicit lighting switches */
+/* My House v1.8.37 — stable scene-driven SH probe updates */
 .room-workspace-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;padding:4px;border:1.5px solid rgba(43,39,36,.24);border-radius:14px;background:rgba(255,255,255,.34);}
 .room-workspace-tabs button{min-height:34px;border:1.5px solid transparent;border-radius:10px;background:transparent;color:#746a63;font:inherit;font-size:10px;font-weight:900;letter-spacing:.10em;}
 .room-workspace-tabs button.active{border-color:rgba(43,39,36,.44);background:#f8f3ed;color:#3f3935;box-shadow:0 1px 0 rgba(43,39,36,.08);}

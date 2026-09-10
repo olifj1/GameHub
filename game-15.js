@@ -1138,7 +1138,6 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
   function enableLocalSH(){
     [houseGroup,decorGroup,itemRoot].forEach(root=>prepareLocalSHForRoot(root));
     markProbeDirty();
-    rebuildProbeRoom(activeRoomId,false);
     warmProbeRooms();
   }
 
@@ -1198,20 +1197,20 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
   }
 
   function warmProbeRooms(){
-    if(probeWarmupTimer)clearTimeout(probeWarmupTimer);
-    if(!probeEnabled()){probeWarmupTimer=0;return;}
-    const queue=rooms.map(r=>r.id).filter(id=>probeDirtyRooms.has(id));
-    const activeIndex=queue.indexOf(activeRoomId);
-    if(activeIndex>0)queue.unshift(queue.splice(activeIndex,1)[0]);
-    const step=()=>{
-      if(!queue.length){probeWarmupTimer=0;return;}
-      if(gesture){probeWarmupTimer=setTimeout(step,260);return;}
-      const id=queue.shift();
-      if(probeDirtyRooms.has(id))rebuildProbeRoom(id,false);
-      render();
-      probeWarmupTimer=setTimeout(step,220);
-    };
-    probeWarmupTimer=setTimeout(step,80);
+    // Rebuild dirty probe volumes atomically. The previous implementation
+    // staggered room updates and rendered after each one, which meant camera
+    // navigation could expose a succession of partially-updated SH states.
+    // Camera/active-room changes must never trigger GI work; this function is
+    // called only after an actual lighting/scene change or an explicit refresh.
+    if(probeWarmupTimer){clearTimeout(probeWarmupTimer);probeWarmupTimer=0;}
+    if(!probeEnabled())return 0;
+    const dirty=rooms.map(r=>r.id).filter(id=>probeDirtyRooms.has(id));
+    if(!dirty.length)return 0;
+    const start=performance.now();
+    dirty.forEach(id=>rebuildProbeRoom(id,false));
+    probeLastBuildMs=performance.now()-start;
+    render();
+    return probeLastBuildMs;
   }
 
   function ensureRoomIrradianceMaterial(mat){
@@ -2064,7 +2063,6 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     buildCarousel();
     updateLocalLightShadows();
     if(setupWorkspace&&!setupWorkspace.hidden)updateGlobalLightPanel();
-    if(probeDirtyRooms.has(activeRoomId))warmProbeRooms();
   }
 
   function render(){
@@ -2542,7 +2540,6 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     state.lighting=state.lighting==='day'?'evening':'day';
     markProbeDirty();
     updateLighting();
-    rebuildProbeRoom(activeRoomId,false);
     warmProbeRooms();
     save(); render();
   });
@@ -2563,7 +2560,6 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     roomIrradianceDirty=true;
     updateLighting();
     if(term==='direct'){
-      rebuildProbeRoom(activeRoomId,false);
       warmProbeRooms();
     }
     save(); render();
@@ -2582,7 +2578,6 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     updateLighting();
   });
   directLevel?.addEventListener('change',()=>{
-    rebuildProbeRoom(activeRoomId,false);
     warmProbeRooms();
     save(); render();
   });
@@ -2595,7 +2590,6 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     updateLighting();
   });
   sunColourInput?.addEventListener('change',()=>{
-    rebuildProbeRoom(activeRoomId,false);
     warmProbeRooms();
     save(); render();
   });
@@ -2628,7 +2622,6 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     ps.raysPerProbe=Math.round(ps.raysPerProbe/4)*4;
     if(probeRaysValue)probeRaysValue.textContent=String(ps.raysPerProbe);
     markProbeDirty();
-    rebuildProbeRoom(activeRoomId,false);
     warmProbeRooms();
     save(); render();
   });
@@ -2651,7 +2644,6 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
 
   probeRefreshAllBtn?.addEventListener('click',()=>{
     markProbeDirty();
-    rebuildProbeRoom(activeRoomId,false);
     warmProbeRooms();
     save(); render();
   });
@@ -2663,7 +2655,6 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     markProbeDirty();
     updateLighting();
     if(probeEnabled()){
-      rebuildProbeRoom(activeRoomId,false);
       warmProbeRooms();
     }
     save(); render();
@@ -3019,7 +3010,7 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
   updateLighting();
   if(probeEnabled()){
     [houseGroup,decorGroup,itemRoot].forEach(root=>prepareLocalSHForRoot(root));
-    rebuildProbeRoom(activeRoomId,false);
+    markProbeDirty();
     warmProbeRooms();
   }
   setWorkspaceTab('place');
