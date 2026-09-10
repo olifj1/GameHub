@@ -1,26 +1,18 @@
-# GameHub v1.8.32
+# GameHub v1.8.33
 
-This release reorganises My House controls and exposes the SSAO-lite tuning parameters for on-device testing.
+This release replaces the My House SSAO experiment with a dynamic room-local SH irradiance probe grid.
 
 ## Updated in this version
-- Added **PLACE / SETUP** tabs below the 3D house.
-- PLACE contains furniture selection, inventory, wall colours, wallpaper and floor controls.
-- SETUP contains all lighting controls; the viewport itself is now cleaner.
-- Day/Evening, Direct, Ambient and AO strength are now in SETUP.
-- Selected lamp controls — brightness, ceiling-light cone angle and shadows — also live in SETUP.
-- Exposed AO tuning controls for **Radius**, **Depth range**, **Contrast**, **Maximum darkness** and **Quality/render scale**, with exact values shown beside each slider.
-- AO tuning values save with the My House state so useful settings can be reported back exactly.
-- Reset Lighting resets the active Day/Evening preset and the AO tuning parameters to the v1.8.31 baseline.
-- The performance badge now includes AO radius and quality values for easier comparison.
-- Service-worker cache bumped for a clean PWA update.
-
-## AO baseline values
-- Strength: Day 32%, Evening 42%
-- Radius: 2.15
-- Depth: 0.58
-- Contrast: 0.92
-- Max dark: 30%
-- Quality: 40%
+- Removed the screen-space AO pass and its tuning controls.
+- Every room now uses a **3 × 3 × 2 grid (18 probes)** so there are midpoint samples as well as corners.
+- Each probe fires scene rays and records the colour/energy of directly illuminated surfaces into **first-order spherical-harmonic irradiance**.
+- Probe lighting is spatially interpolated across the room and evaluated against surface normals in the standard-material shader.
+- The default is **16 rays per probe**, adjustable from 8 to 32 in SETUP.
+- **INDIRECT** controls the SH bounce strength independently from Direct and Ambient.
+- Probe volumes are rebuilt when lighting/furniture/room finishes change, then reused while the camera moves. Other dirty rooms can warm in idle time.
+- Added a **Refresh room** button and probe-build timing readout for testing on device.
+- Existing furnishing saves remain compatible.
+- Service-worker cache bumped for the new release.
 
 ## Files
 Upload the contents of this ZIP to the root of the `GameHub` repository, replacing the existing files.

@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.8.32">
+  <link rel="stylesheet" href="style.css?v=1.8.33">
   <title>My House</title>
 </head>
 <body class="modular-game" data-game-id="game-15">
@@ -19,7 +19,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">HOW TO PLAY</p>
       <h2 id="game-15-info-title">Make the house your own</h2>
-      <p>Choose furniture, wall art and little details from the room set carousel. Each room now has its own filtered dressing set, plus categories like big pieces, soft furnishings, ornaments, lighting and wall art. Tap an item and release to select it, then drag that selected item to move it. Dragging anywhere except the currently selected item — including directly over other furniture — slides the view, so you never need to hunt for an empty patch of floor. Pinch to zoom. Small objects can sit on tables and drawers and travel with the furniture underneath them. Select a lamp or ceiling light to adjust its brightness and switch that light’s shadows on or off. Ceiling fittings use broad downward spotlights, while table and floor lamps still spread light in all directions. Use the PLACE and SETUP tabs below the house to switch between furnishing controls and lighting setup. SETUP contains Day/Evening, direct light, room-tinted ambient fill, selected-light controls and a tunable lightweight AO pass. AO strength, radius, depth range, contrast, maximum darkness and render quality are exposed so the effect can be tuned on-device. Rotate or put away selected items, change each room’s walls, wallpaper and floor, and switch between day and evening lighting. Your house saves automatically on this device.</p>
+      <p>Choose furniture, wall art and little details from the room set carousel. Each room now has its own filtered dressing set, plus categories like big pieces, soft furnishings, ornaments, lighting and wall art. Tap an item and release to select it, then drag that selected item to move it. Dragging anywhere except the currently selected item — including directly over other furniture — slides the view, so you never need to hunt for an empty patch of floor. Pinch to zoom. Small objects can sit on tables and drawers and travel with the furniture underneath them. Select a lamp or ceiling light to adjust its brightness and switch that light’s shadows on or off. Ceiling fittings use broad downward spotlights, while table and floor lamps still spread light in all directions. Use the PLACE and SETUP tabs below the house to switch between furnishing controls and lighting setup. SETUP contains Day/Evening, direct light, ambient fill, selected-light controls and an experimental dynamic SH probe grid. Each room uses a 3 × 3 × 2 grid of 18 probes; the probes ray-sample directly lit surfaces when the room or lighting changes, then interpolate coloured indirect light while you move around. You can tune indirect strength and rays per probe on-device. Rotate or put away selected items, change each room’s walls, wallpaper and floor, and switch between day and evening lighting. Your house saves automatically on this device.</p>
     </div>
   </div>
 
@@ -103,32 +103,24 @@
               <label class="room-setup-slider" for="room-ambient-level">
                 <span>AMBIENT</span><input id="room-ambient-level" type="range" min="0" max="100" step="5" value="100"><strong id="room-ambient-value">100%</strong>
               </label>
-              <label class="room-setup-slider" for="room-ao-level">
-                <span>AO</span><input id="room-ao-level" type="range" min="0" max="100" step="5" value="35"><strong id="room-ao-value">35%</strong>
+              <label class="room-setup-slider" for="room-indirect-level">
+                <span>INDIRECT</span><input id="room-indirect-level" type="range" min="0" max="150" step="5" value="55"><strong id="room-indirect-value">55%</strong>
               </label>
             </div>
 
-            <div class="room-ao-tuning">
-              <div class="room-ao-title"><strong>AO TUNING</strong><small>Use these values when feeding results back</small></div>
-              <label class="room-setup-slider room-ao-slider" for="room-ao-radius">
-                <span>RADIUS</span><input id="room-ao-radius" type="range" min="0.5" max="6" step="0.05" value="2.15"><strong id="room-ao-radius-value">2.15</strong>
+            <div class="room-ao-tuning room-probe-tuning">
+              <div class="room-ao-title"><strong>SH PROBE GRID</strong><small>3 × 3 × 2 · 18 probes per room</small></div>
+              <label class="room-setup-slider room-ao-slider" for="room-probe-rays">
+                <span>RAYS / PROBE</span><input id="room-probe-rays" type="range" min="8" max="32" step="4" value="16"><strong id="room-probe-rays-value">16</strong>
               </label>
-              <label class="room-setup-slider room-ao-slider" for="room-ao-range">
-                <span>DEPTH</span><input id="room-ao-range" type="range" min="0.15" max="1.2" step="0.01" value="0.58"><strong id="room-ao-range-value">0.58</strong>
-              </label>
-              <label class="room-setup-slider room-ao-slider" for="room-ao-contrast">
-                <span>CONTRAST</span><input id="room-ao-contrast" type="range" min="0.5" max="2" step="0.01" value="0.92"><strong id="room-ao-contrast-value">0.92</strong>
-              </label>
-              <label class="room-setup-slider room-ao-slider" for="room-ao-max-dark">
-                <span>MAX DARK</span><input id="room-ao-max-dark" type="range" min="5" max="60" step="1" value="30"><strong id="room-ao-max-dark-value">30%</strong>
-              </label>
-              <label class="room-setup-slider room-ao-slider" for="room-ao-quality">
-                <span>QUALITY</span><input id="room-ao-quality" type="range" min="25" max="60" step="5" value="40"><strong id="room-ao-quality-value">40%</strong>
-              </label>
+              <div class="room-probe-status-row">
+                <span id="room-probe-status">Probes update after lighting or furniture changes.</span>
+                <button id="room-probe-refresh" type="button">Refresh room</button>
+              </div>
             </div>
 
             <div class="room-setup-footer">
-              <small>Ambient is room-coloured diffuse fill. AO darkens nearby contacts using the depth buffer.</small>
+              <small>Ambient is a cheap global sky fill. Indirect is spatial, ray-sampled first-order SH irradiance interpolated through each room.</small>
               <button id="room-global-light-reset" type="button">Reset lighting</button>
             </div>
           </section>
@@ -154,9 +146,9 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.8.32"></script>
-  <script src="core.js?v=1.8.32"></script>
+  <script src="site-config.js?v=1.8.33"></script>
+  <script src="core.js?v=1.8.33"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.1/three.min.js"></script>
-  <script src="game-15.js?v=1.8.32"></script>
+  <script src="game-15.js?v=1.8.33"></script>
 </body>
 </html>
