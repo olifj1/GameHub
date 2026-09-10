@@ -1,17 +1,15 @@
-# GameHub v1.8.30
+# GameHub v1.8.31
 
-This release replaces the expensive virtual-bounce-light experiment in My House with a cheaper room-coloured irradiance fill and a lightweight screen-space AO pass.
+This release corrects the first room-irradiance + AO experiment in My House.
 
 ## Updated in this version
-- Removed the ray-hit VPL / virtual bounce lights from v1.8.29.
-- **Ambient** is now primarily a room-specific irradiance tint derived from that room’s walls, floor and furniture colours, with only a very small global sky fill remaining.
-- Added an adjustable **AO** control to the Scene Lighting panel.
-- AO uses a half-resolution depth pass with eight nearby screen-space samples to add contact/corner darkening.
-- AO is skipped while actively dragging/panning, then restored on release.
-- Furniture shadow maps are also frozen while dragging and refreshed once on release.
-- The performance badge now reports CPU submission time rather than presenting it as a reliable FPS estimate.
-- Existing My House furnishing saves are preserved.
-- Service-worker cache bumped for a clean PWA update.
+- Reworked **room ambient/irradiance** so it is now a clearly visible, very cheap per-material diffuse fill tinted from each room’s walls, floor and larger furnishings.
+- The room fill is multiplied by each receiving surface colour, so it behaves more like diffuse irradiance than a flat grey ambient term.
+- Tightened the **SSAO-lite** radius and reduced its maximum opacity to favour contact/corner shading rather than dark silhouette outlines.
+- Reduced the AO buffer from 50% to **40% render resolution** for a small performance saving.
+- Kept **Direct / Ambient / AO** independently adjustable for Day and Evening.
+- Performance badge now labels its timing as **CPU** rather than implying a true GPU/FPS measurement.
+- Service-worker cache version bumped for a clean PWA refresh.
 
 ## Files
 Upload the contents of this ZIP to the root of the `GameHub` repository, replacing the existing files.

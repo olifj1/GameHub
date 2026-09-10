@@ -77,7 +77,7 @@
   const LAMP_MAX_INTENSITY = 6.2;
   const LIGHT_LEVEL_MAX = 1.50;
   const AO_LEVEL_MAX = 1.00;
-  const AO_RENDER_SCALE = 0.50;
+  const AO_RENDER_SCALE = 0.40;
   const SPOT_CONE_MIN_DEG = 50;
   const SPOT_CONE_MAX_DEG = 170;
   const SPOT_CONE_DEFAULT_DEG = 130;
@@ -653,7 +653,7 @@
       cameraNear:{value:camera.near},
       cameraFar:{value:camera.far},
       aoStrength:{value:0.0},
-      aoRadius:{value:4.25}
+      aoRadius:{value:2.15}
     },
     vertexShader:`
       varying vec2 vUv;
@@ -683,8 +683,8 @@
         if(raw>=0.99998)return 0.0;
         float sampleDistance=viewDistance(raw);
         float delta=centerDistance-sampleDistance;
-        float nearer=smoothstep(0.012,0.24,delta);
-        float localRange=1.0-smoothstep(0.18,1.25,abs(delta));
+        float nearer=smoothstep(0.010,0.16,delta);
+        float localRange=1.0-smoothstep(0.10,0.58,abs(delta));
         return nearer*localRange;
       }
 
@@ -705,7 +705,7 @@
         ao+=tapAO(normalize(vec2( 1.0,-1.0)),0.72,centerDistance);
         ao+=tapAO(normalize(vec2(-1.0,-1.0)),0.72,centerDistance);
         ao/=8.0;
-        float alpha=clamp(pow(ao,0.78)*aoStrength*0.82,0.0,0.56);
+        float alpha=clamp(pow(ao,0.92)*aoStrength*0.48,0.0,0.30);
         gl_FragColor=vec4(0.0,0.0,0.0,alpha);
       }
     `,
@@ -862,37 +862,23 @@
   }
 
   function ensureRoomIrradianceMaterial(mat){
-    if(!mat?.isMeshStandardMaterial||mat.userData.roomIrradiancePatched)return;
-    mat.userData.roomIrradiancePatched=true;
-    mat.userData.roomIrradianceColor=new THREE.Color(1,1,1);
-    mat.userData.roomIrradianceStrength=0;
-    const previous=mat.onBeforeCompile;
-    mat.onBeforeCompile=(shader,webglRenderer)=>{
-      if(previous)previous(shader,webglRenderer);
-      shader.uniforms.roomIrradianceColor={value:mat.userData.roomIrradianceColor};
-      shader.uniforms.roomIrradianceStrength={value:mat.userData.roomIrradianceStrength};
-      shader.fragmentShader=shader.fragmentShader.replace(
-        '#include <lights_fragment_end>',
-        `#include <lights_fragment_end>\n`+
-        `float roomFloorFacing = max( 0.0, -geometryNormal.y );\n`+
-        `float roomWallFacing = 1.0 - abs( geometryNormal.y );\n`+
-        `float roomProbeShape = 0.64 + roomFloorFacing * 0.24 + roomWallFacing * 0.12;\n`+
-        `reflectedLight.indirectDiffuse += diffuseColor.rgb * roomIrradianceColor * roomIrradianceStrength * roomProbeShape;`
-      );
-      mat.userData.roomIrradianceUniforms=shader.uniforms;
-    };
-    mat.customProgramCacheKey=()=> 'my-house-room-irradiance-v1';
-    mat.needsUpdate=true;
+    if(!mat?.isMeshStandardMaterial||mat.userData.roomIrradiancePrepared)return;
+    mat.userData.roomIrradiancePrepared=true;
+    mat.userData.roomBaseEmissive=mat.emissive.clone();
+    mat.userData.roomBaseEmissiveIntensity=Number(mat.emissiveIntensity)||1;
   }
 
   function updateRoomIrradiance(levels=currentLightingLevels()){
-    if(!roomIrradianceDirty&&levels===undefined)return;
     const evening=state.lighting==='evening';
     const tints=new Map(rooms.map(room=>[room.id,roomFeatureTint(room.id)]));
-    const fillStrength=clamp(Number(levels.ambient||0),0,1)*(evening?0.24:0.20);
+    // Deliberately simple and robust: use a small material-emission term as a
+    // diffuse room probe, then let the screen-space AO pass remove energy in
+    // contacts/corners. This is dramatically cheaper than extra real lights
+    // and, unlike the previous shader hook, is reliable on mobile WebGL.
+    const fillStrength=clamp(Number(levels.ambient||0),0,1)*(evening?0.78:0.62);
     const emissiveSet=new Set(emissiveMeshes);
     [houseGroup,decorGroup,itemRoot].forEach(root=>root.traverse(mesh=>{
-      if(!mesh?.isMesh||emissiveSet.has(mesh)||mesh.userData?.hitProxy)return;
+      if(!mesh?.isMesh||mesh.userData?.hitProxy)return;
       const mats=Array.isArray(mesh.material)?mesh.material:[mesh.material];
       const ids=roomIdsForMesh(mesh);
       if(!ids.length)return;
@@ -902,12 +888,12 @@
       mats.forEach(mat=>{
         if(!mat?.isMeshStandardMaterial)return;
         ensureRoomIrradianceMaterial(mat);
-        mat.userData.roomIrradianceColor.copy(tint);
-        mat.userData.roomIrradianceStrength=fillStrength;
-        if(mat.userData.roomIrradianceUniforms){
-          mat.userData.roomIrradianceUniforms.roomIrradianceColor.value.copy(tint);
-          mat.userData.roomIrradianceUniforms.roomIrradianceStrength.value=fillStrength;
-        }
+        if(emissiveSet.has(mesh))return;
+        const albedo=mat.color?.clone?.()||new THREE.Color(1,1,1);
+        // Approximate diffuse irradiance: coloured room light multiplied by
+        // the receiving material's albedo, exactly as a diffuse bounce would.
+        mat.emissive.copy(tint).multiply(albedo);
+        mat.emissiveIntensity=fillStrength;
       });
     }));
     roomIrradianceDirty=false;
@@ -1785,7 +1771,7 @@
     renderSamples++;
     renderAverageMs=renderSamples===1?elapsed:(renderAverageMs*0.82+elapsed*0.18);
     if(perfBadge){
-      perfBadge.textContent=`Submit ${elapsed.toFixed(1)}ms · ${activeShadowCount} sh. · AO ${Math.round(levels.ao*100)}%`;
+      perfBadge.textContent=`CPU ${elapsed.toFixed(1)}ms · ${activeShadowCount} sh. · AO ${Math.round(levels.ao*100)}%`;
     }
   }
 
@@ -1854,7 +1840,7 @@
 
     // Keep only a very small global sky term. Most of the fill now comes
     // from a per-room irradiance tint injected into standard materials.
-    hemi.intensity=(evening?0.10:0.16)*levels.ambient;
+    hemi.intensity=(evening?0.07:0.11)*levels.ambient;
     hemi.color.set(evening?0xd5d7df:0xfff6e9);
     hemi.groundColor.set(evening?0x6c6b70:0x8e887f);
     eveningFill.intensity=0.0;
