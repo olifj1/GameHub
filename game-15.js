@@ -131,6 +131,9 @@
   const CORE_DRESS_MIN_Z = 0.68;
 
   const ROOM_LAYERS = { bedroom:1, landing:2, kids:3, living:4, hall:5, kitchen:6 };
+  // Dedicated shadow-only layer used to seal each room for local lamps.
+  // The main camera never renders it; local-light shadow cameras always do.
+  const LIGHT_CONTAINMENT_LAYER = 30;
   const INVENTORY_CATEGORIES = {
     furniture:'Big pieces',
     storage:'Storage',
@@ -648,6 +651,7 @@
 
   const camera = new THREE.PerspectiveCamera(31, 1, 0.1, 60);
   camera.layers.enableAll();
+  camera.layers.disable(LIGHT_CONTAINMENT_LAYER);
   const cameraOffset = new THREE.Vector3(0, 0.68, 12.20);
   const raycaster = new THREE.Raycaster();
   const pointerNdc = new THREE.Vector2();
@@ -660,7 +664,8 @@
   const houseGroup = new THREE.Group();
   const itemRoot = new THREE.Group();
   const decorGroup = new THREE.Group();
-  scene.add(houseGroup, decorGroup, itemRoot);
+  const lightContainmentGroup = new THREE.Group();
+  scene.add(houseGroup, decorGroup, itemRoot, lightContainmentGroup);
 
   const hemi = new THREE.HemisphereLight(0xfff7eb, 0x7f858d, 1.55);
   hemi.layers.enableAll();
@@ -750,9 +755,16 @@
     if(!layer)return;
     group.traverse(obj=>{
       if(obj.isPointLight||obj.isSpotLight){
-        // Local lights illuminate and shadow only their own room layer.
+        // Three.js standard lights are global once submitted to the renderer,
+        // so object layers alone do not provide selective per-room lighting.
+        // Keep the room tag for probe evaluation, and make every local-light
+        // shadow camera see the dedicated containment shell. Optional visible
+        // object shadows are added by updateLocalLightShadows().
         obj.layers.set(layer);
-        if(obj.shadow?.camera)obj.shadow.camera.layers.set(layer);
+        if(obj.shadow?.camera){
+          obj.shadow.camera.layers.set(LIGHT_CONTAINMENT_LAYER);
+          obj.shadow.camera.layers.enable(layer);
+        }
       }else{
         // Keep layer 0 for camera/raycast compatibility and add the room layer
         // used by room-local point lights and their shadow cameras.
@@ -871,20 +883,34 @@
     return dirs;
   }
 
-  function probeHit(origin,direction,roomId,maxDistance=8,skipObject=null,skipItemId=null){
+  function firstProbeHit(objects,origin,direction,roomId,maxDistance=8,skipObject=null,skipItemId=null){
     probeRaycaster.layers.set(roomLayerIndex(roomId));
     probeRaycaster.near=0.025;
     probeRaycaster.far=maxDistance;
     probeRaycaster.set(origin,direction);
-    const hits=probeRaycaster.intersectObjects([houseGroup,decorGroup,itemRoot],true);
+    const hits=probeRaycaster.intersectObjects(objects,true);
     for(const hit of hits){
       const obj=hit.object;
-      if(!obj?.isMesh||obj===skipObject||obj.userData?.hitProxy||obj.userData?.supportFor)continue;
+      if(!obj?.isMesh||obj===skipObject||obj.userData?.hitProxy||obj.userData?.supportFor||obj.userData?.lightContainment)continue;
       if(skipItemId&&obj.userData?.itemId===skipItemId)continue;
       if(!obj.visible)continue;
       return hit;
     }
     return null;
+  }
+
+  // Primary SH rays deliberately see only the stable architectural shell.
+  // Furniture can no longer terminate a probe ray or poison a nearby probe
+  // with a black sample simply because the probe happens to sit beside it.
+  function probeShellHit(origin,direction,roomId,maxDistance=8){
+    return firstProbeHit([houseGroup],origin,direction,roomId,maxDistance);
+  }
+
+  // Visibility rays still see furniture/decor as well as architecture. This
+  // means moved furniture can change the direct shadow falling onto a wall or
+  // floor (and therefore the room bounce) without becoming the bounced source.
+  function probeOccluderHit(origin,direction,roomId,maxDistance=8,skipObject=null,skipItemId=null){
+    return firstProbeHit([houseGroup,decorGroup,itemRoot],origin,direction,roomId,maxDistance,skipObject,skipItemId);
   }
 
   function hitWorldNormal(hit){
@@ -905,15 +931,9 @@
   }
 
   function relocateProbePoint(point,room){
-    const p=point.clone();
-    for(const item of state.items){
-      if(item.room!==room.id)continue;
-      const group=itemGroups.get(item.id);
-      if(!group)continue;
-      const bounds=new THREE.Box3().setFromObject(group);
-      if(bounds.containsPoint(p))p.y=Math.min(room.floorY+ROOM_H-0.24,bounds.max.y+0.16);
-    }
-    return p;
+    // Probe locations belong to the room volume, not to movable furniture.
+    // Keeping them fixed is important for temporal/spatial stability.
+    return point.clone();
   }
 
   function lightVisibleFromSurface(surfacePoint,normal,lightPos,roomId,skipObject,skipItemId){
@@ -921,12 +941,12 @@
     const delta=lightPos.clone().sub(start);
     const distance=delta.length();
     if(distance<0.05)return true;
-    return !probeHit(start,delta.normalize(),roomId,Math.max(0.01,distance-0.06),skipObject,skipItemId);
+    return !probeOccluderHit(start,delta.normalize(),roomId,Math.max(0.01,distance-0.06),skipObject,skipItemId);
   }
 
   function sunVisibleFromSurface(surfacePoint,normal,roomId,skipObject,sunDir){
     const start=surfacePoint.clone().addScaledVector(normal,0.025);
-    return !probeHit(start,sunDir,roomId,18,skipObject);
+    return !probeOccluderHit(start,sunDir,roomId,18,skipObject);
   }
 
   function directRadianceAtHit(hit,roomId){
@@ -979,7 +999,7 @@
     const dirs=probeRayDirections(raysPerProbe,probeNumber+roomLayerIndex(room.id)*17);
     const scale=(4*Math.PI)/raysPerProbe;
     for(const dir of dirs){
-      const hit=probeHit(point,dir,room.id,7.5);
+      const hit=probeShellHit(point,dir,room.id,7.5);
       if(!hit)continue;
       const radiance=directRadianceAtHit(hit,room.id);
       if(radiance.lengthSq()<1e-8)continue;
@@ -1710,9 +1730,44 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     return rail;
   }
 
+  function addLightContainmentBox(x,y,z,w,h,d){
+    const mat=new THREE.MeshBasicMaterial({color:0x000000});
+    const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+    mesh.position.set(x,y,z);
+    mesh.layers.set(LIGHT_CONTAINMENT_LAYER);
+    mesh.castShadow=true;
+    mesh.receiveShadow=false;
+    mesh.frustumCulled=false;
+    mesh.userData.lightContainment=true;
+    lightContainmentGroup.add(mesh);
+    return mesh;
+  }
+
+  function buildRoomLightContainment(){
+    lightContainmentGroup.clear();
+    const t=0.045;
+    const pad=0.055;
+    for(const room of rooms){
+      const x0=room.minX, x1=room.maxX;
+      const y0=room.floorY, y1=room.floorY+ROOM_H;
+      const z0=BACK_Z, z1=FRONT_Z;
+      const cx=(x0+x1)/2, cy=(y0+y1)/2, cz=(z0+z1)/2;
+      // Place the blockers just outside the usable room volume. They are
+      // invisible to the main camera but present in every local-light shadow
+      // map, so a lamp cannot illuminate geometry in the neighbouring room.
+      addLightContainmentBox(x0-pad,cy,cz,t,ROOM_H+0.18,ROOM_D+0.18);
+      addLightContainmentBox(x1+pad,cy,cz,t,ROOM_H+0.18,ROOM_D+0.18);
+      addLightContainmentBox(cx,y0-pad,cz,room.width+0.18,t,ROOM_D+0.18);
+      addLightContainmentBox(cx,y1+pad,cz,room.width+0.18,t,ROOM_D+0.18);
+      addLightContainmentBox(cx,cy,z0-pad,room.width+0.18,ROOM_H+0.18,t);
+      addLightContainmentBox(cx,cy,z1+pad,room.width+0.18,ROOM_H+0.18,t);
+    }
+  }
+
   function buildArchitecture(){
     houseGroup.clear();
     decorGroup.clear();
+    lightContainmentGroup.clear();
     roomMaterials.clear();
 
     rooms.filter(room=>!room.core).forEach(buildRoom);
@@ -1723,6 +1778,12 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     enableRoomLayers(addArchitectureBox(HOUSE_MAX_X,HOUSE_MAX_X+WALL_T,-0.16,HOUSE_H+0.18,BACK_Z-WALL_T,FRONT_Z+0.02,shell),['kids','kitchen']);
     enableRoomLayers(addArchitectureBox(HOUSE_MIN_X-WALL_T,HOUSE_MAX_X+WALL_T,-0.18,0,BACK_Z-WALL_T,FRONT_Z+0.02,cut),Object.keys(ROOM_LAYERS));
     enableRoomLayers(addArchitectureBox(HOUSE_MIN_X-WALL_T,HOUSE_MAX_X+WALL_T,HOUSE_H,HOUSE_H+0.20,BACK_Z-WALL_T,FRONT_Z+0.02,cut),Object.keys(ROOM_LAYERS));
+
+    // Full 200 mm inter-floor slab through both side wings. Previously the
+    // upstairs floor skin was only ~55 mm thick here, leaving a visible gap to
+    // the exterior between ROOM_H and UPPER_Y. The core keeps its stair void.
+    enableRoomLayers(addArchitectureBox(HOUSE_MIN_X,CORE_MIN_X,ROOM_H,UPPER_Y,BACK_Z-WALL_T,FRONT_Z+0.02,cut),['living','bedroom']);
+    enableRoomLayers(addArchitectureBox(CORE_MAX_X,HOUSE_MAX_X,ROOM_H,UPPER_Y,BACK_Z-WALL_T,FRONT_Z+0.02,cut),['kitchen','kids']);
 
     // Hall and landing are now true rooms with independent materials / save state.
     const hallStyle=state.rooms.hall, landingStyle=state.rooms.landing;
@@ -1792,6 +1853,7 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     }
     const landingRail=addHorizontalRail(CORE_MIN_X+0.16,CORE_MAX_X-0.16,UPPER_Y+0.84,CORE_DRESS_MIN_Z-0.06); enableRoomLayers(landingRail,'landing');
 
+    buildRoomLightContainment();
     prepareLocalSHForRoot(houseGroup);
     prepareLocalSHForRoot(decorGroup);
     markProbeDirty();
@@ -2166,13 +2228,24 @@ outgoingLight += shIrradiance*diffuseColor.rgb*0.31831;
     let count=0;
     localLights.forEach(light=>{
       const item=itemById(light.userData.itemId);
-      const shouldCast=!!(evening&&item&&item.lightEnabled!==false&&item.shadowEnabled!==false&&lampLevelFor(item)>0.04);
-      if(light.castShadow!==shouldCast){
-        light.castShadow=shouldCast;
+      const active=!!(evening&&item&&item.lightEnabled!==false&&lampLevelFor(item)>0.04);
+      const roomLayer=roomLayerIndex(light.userData.room);
+      const includeObjectShadows=item?.shadowEnabled!==false;
+      const desiredMask=(1<<LIGHT_CONTAINMENT_LAYER) | (includeObjectShadows&&roomLayer ? (1<<roomLayer) : 0);
+      if(light.shadow?.camera && light.shadow.camera.layers.mask!==desiredMask){
+        light.shadow.camera.layers.mask=desiredMask;
         light.shadow.needsUpdate=true;
         renderer.shadowMap.needsUpdate=true;
       }
-      if(shouldCast)count++;
+      // Even with the user's visible-shadow switch OFF, an active local lamp
+      // keeps a containment-only shadow map so it cannot bleed into another
+      // room. When shadows are ON, the room layer is added to the same map.
+      if(light.castShadow!==active){
+        light.castShadow=active;
+        light.shadow.needsUpdate=true;
+        renderer.shadowMap.needsUpdate=true;
+      }
+      if(active)count++;
     });
     activeShadowCount=count;
   }

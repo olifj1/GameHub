@@ -1,16 +1,9 @@
-# GameHub v1.8.37
+# GameHub v1.8.38
 
-This release stabilises the My House SH probe renderer while navigating between rooms.
+My House lighting-containment pass.
 
-## Updated in this version
-- Camera panning and crossing room boundaries no longer trigger any SH probe work.
-- Removed the staggered background room-by-room probe warm-up that could expose partially updated lighting states.
-- Multi-room SH refreshes are now atomic: all dirty room grids are calculated first, then the completed lighting state is shown in one render.
-- Furniture keeps the existing SH solution while moving; only the affected room is rebuilt when the move finishes.
-- Lamp changes refresh only that lamp's room when the control is released.
-- Global direct-light, sun-colour and probe-quality changes refresh all affected rooms as one stable update.
-- Manual **Refresh room** and **Refresh all** controls remain available in SETUP.
-- Existing house data and lighting settings are preserved.
-
-## Files
-Upload the contents of this ZIP to the root of the `GameHub` repository, replacing the existing files.
+- SH probes still use the 3 × 3 × 2 / 18-probe room grid, but primary probe rays now sample only stable architectural geometry (walls, floors, slabs and stairs), never movable furniture.
+- Furniture still participates in visibility/shadow checks, so moving it can change the direct shadow falling onto a sampled room surface without turning a nearby probe black.
+- Local lamps now use invisible per-room shadow-containment shells. This prevents point/spot light energy bleeding into neighbouring rooms; the normal Shadows switch controls object shadows while containment remains active.
+- Added the missing full 200 mm inter-floor slabs through the left and right room wings, sealing the exterior gap between storeys while preserving the central stair opening.
+- Existing house layout, saved furnishings and lighting settings are preserved.
