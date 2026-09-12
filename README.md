@@ -1,9 +1,11 @@
-# GameHub v1.8.38
+# GameHub v1.8.39
 
-My House lighting-containment pass.
+SideScroll first prototype.
 
-- SH probes still use the 3 × 3 × 2 / 18-probe room grid, but primary probe rays now sample only stable architectural geometry (walls, floors, slabs and stairs), never movable furniture.
-- Furniture still participates in visibility/shadow checks, so moving it can change the direct shadow falling onto a sampled room surface without turning a nearby probe black.
-- Local lamps now use invisible per-room shadow-containment shells. This prevents point/spot light energy bleeding into neighbouring rooms; the normal Shadows switch controls object shadows while containment remains active.
-- Added the missing full 200 mm inter-floor slabs through the left and right room wings, sealing the exterior gap between storeys while preserving the central stair opening.
-- Existing house layout, saved furnishings and lighting settings are preserved.
+- Added **SideScroll** as a new GameHub game.
+- Built the forest from real WebGL planes placed at different world-space depths.
+- Perspective camera movement creates the parallax naturally from physical distance.
+- Depth-based fog blends distant trees, rocks and undergrowth into a bright misty background.
+- Drag the forest or hold the left/right controls to move the camera.
+- Added a temporary **Depth view** diagnostic so the near, middle and far depth bands can be checked easily.
+- Forest assets are procedural placeholders for now; the structure is ready for transparent image assets and a sprite-sheet character later.

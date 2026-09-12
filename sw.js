@@ -1,4 +1,4 @@
-const CACHE = "gamehub-v1.8.38";
+const CACHE = "gamehub-v1.8.39";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -41,6 +41,8 @@ const APP_SHELL = [
   "./game-14.js",
   "./game-15.html",
   "./game-15.js",
+  "./game-16.html",
+  "./game-16.js",
   "./tower-assets.js",
   "./tower-vehicles.png",
   "./tower-defences.png",
