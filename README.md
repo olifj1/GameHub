@@ -1,11 +1,10 @@
-# GameHub v1.8.40
+# GameHub v1.8.41
 
-SideScroll cohesion pass.
+SideScroll realism pass.
 
-- Refined **SideScroll** based on your feedback.
-- Made the fog feel more cohesive by brightening the scene itself, not just the distant trees.
-- Added soft ground-level mist planes at different depths so the spaces between trees carry atmospheric depth.
-- Lowered the camera and adjusted the scene proportions so plane bases stay on a more consistent level through depth.
-- Reduced the strong upward lift in distant planes by using a lower eye level and a slightly longer-lens perspective.
-- Toned and simplified the foreground silhouettes so grass, rocks and trunks frame the scene without overpowering it.
-- Kept the diagnostic **Depth view** so the real 3D spacing can still be checked easily.
+- Reworked **SideScroll** to follow the simpler real-world model you described.
+- The forest is now scattered across real world-space X/Z positions, as if viewed from above and then seen through a side camera.
+- Added a proper receding **ground plane** so the floor itself darkens near the camera and fades towards the fog in the distance.
+- Removed the fake mist-card approach and the over-bright staged fog treatment.
+- The empty space now reads as the fog colour, while trees, rocks and grass are dark silhouettes that lighten only through true depth fog.
+- Kept the lower camera viewpoint and depth diagnostic view so the real 3D spacing is still easy to judge.
