@@ -10367,7 +10367,7 @@ body[data-game-id="game-14"] .attack-slot-copy small{font-size:6.8px}
 }
 
 /* ============================================================
-   GameHub v1.8.44 — SideScroll visible sprite-sheet fix
+   GameHub v1.8.45 — SideScroll walk-cycle scale and pose pass
    ============================================================ */
 body[data-game-id="game-16"], .game-card[data-game-id="game-16"] { --gh-accent:#5f7f7b; }
 

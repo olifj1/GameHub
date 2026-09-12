@@ -401,7 +401,7 @@
   // Real external 8-frame animation page. This is deliberately an ordinary PNG
   // so it can later be replaced with a generated/painted character sheet without
   // changing the renderer or animation code.
-  textures.characterAtlas = createImageTexture('sidescroll-character-sheet.png?v=1.8.44');
+  textures.characterAtlas = createImageTexture('sidescroll-character-walk.png?v=1.8.45');
 
   function mulberry32(seed) {
     return function() {
@@ -557,15 +557,15 @@
     x: 0,
     y: groundY,
     z: pathZ,
-    sx: 3.55,
-    sy: 6.15,
+    sx: 0.90,
+    sy: 1.55,
     sz: 1,
     flip: false,
     layer: 'character',
     tint: [1, 1, 1],
     opacity: 0.98,
     noFog: false,
-    screenOffsetX: -0.9,
+    screenOffsetX: -0.35,
     distanceTravelled: 0,
     lastFacing: 1,
     wrap: false
@@ -650,13 +650,20 @@
   }
 
   function currentCharacterFrame(isWalking) {
-    if (!isWalking) {
-      const t = performance.now() * 0.001;
-      return Math.floor(t * 1.5) % 2 === 0 ? 0 : 1;
-    }
-    const stride = 2.8;
+    if (!isWalking) return 0;
+
+    // The reference walk has two leg-swing phases where the body barely travels,
+    // followed by stronger planted-foot/body-travel phases around poses 4 and 8.
+    // Advance frames by distance, not time, and give the planted poses more travel.
+    const stride = 1.10;
     const normalized = (character.distanceTravelled % stride) / stride;
-    return Math.floor(normalized * 8) % 8;
+    const frameTravel = [0.07, 0.09, 0.10, 0.24, 0.07, 0.09, 0.10, 0.24];
+    let accumulated = 0;
+    for (let i = 0; i < frameTravel.length; i++) {
+      accumulated += frameTravel[i];
+      if (normalized < accumulated) return i;
+    }
+    return 7;
   }
 
   function render(now) {

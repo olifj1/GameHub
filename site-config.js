@@ -186,7 +186,7 @@ window.APP_CONFIG = {
       "description": "Explore a layered 3D forest path with depth fog, consistent density and a flip-book walking sprite test.",
       "icon": "♠",
       "enabled": true,
-      "path": "game-16.html?v=1.8.44"
+      "path": "game-16.html?v=1.8.45"
     }
   ]
 };
