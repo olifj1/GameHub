@@ -31,11 +31,13 @@
     uniform mat4 uModel;
     uniform mat4 uView;
     uniform mat4 uProjection;
+    uniform vec2 uUvScale;
+    uniform vec2 uUvOffset;
     varying vec2 vUV;
     varying float vDepth;
     void main() {
       vec4 viewPos = uView * uModel * vec4(aPosition, 1.0);
-      vUV = aUV;
+      vUV = aUV * uUvScale + uUvOffset;
       vDepth = max(0.0, -viewPos.z);
       gl_Position = uProjection * viewPos;
     }
@@ -55,7 +57,7 @@
     void main() {
       vec4 tex = texture2D(uTexture, vUV);
       float alpha = tex.a * uOpacity;
-      if (alpha < 0.05) discard;
+      if (alpha < 0.045) discard;
       float fog = smoothstep(uFogNear, uFogFar, vDepth) * uFogAmount;
       vec3 base = tex.rgb * uTint;
       vec3 rgb = mix(base, uFogColor, fog);
@@ -73,20 +75,20 @@
     return shader;
   }
 
-  function makeProgram() {
+  function createProgram() {
     const program = gl.createProgram();
     gl.attachShader(program, compile(gl.VERTEX_SHADER, VERT));
     gl.attachShader(program, compile(gl.FRAGMENT_SHADER, FRAG));
     gl.linkProgram(program);
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      throw new Error(gl.getProgramInfoLog(program) || 'Shader link failed');
+      throw new Error(gl.getProgramInfoLog(program) || 'Program link failed');
     }
     return program;
   }
 
   let program;
   try {
-    program = makeProgram();
+    program = createProgram();
   } catch (err) {
     errorBox.hidden = false;
     errorBox.textContent = `WebGL setup failed: ${err.message}`;
@@ -105,7 +107,9 @@
     fogNear: gl.getUniformLocation(program, 'uFogNear'),
     fogFar: gl.getUniformLocation(program, 'uFogFar'),
     fogAmount: gl.getUniformLocation(program, 'uFogAmount'),
-    opacity: gl.getUniformLocation(program, 'uOpacity')
+    opacity: gl.getUniformLocation(program, 'uOpacity'),
+    uvScale: gl.getUniformLocation(program, 'uUvScale'),
+    uvOffset: gl.getUniformLocation(program, 'uUvOffset')
   };
 
   function createMesh(vertices, indices) {
@@ -125,7 +129,7 @@
       -0.5, 1.0, 0.0,  0.0, 1.0,
        0.5, 1.0, 0.0,  1.0, 1.0
     ]),
-    new Uint16Array([0, 1, 2, 2, 1, 3])
+    new Uint16Array([0,1,2,2,1,3])
   );
 
   const groundMesh = createMesh(
@@ -135,7 +139,7 @@
       -0.5, 0.0, -1.0, 0.0, 1.0,
        0.5, 0.0, -1.0, 1.0, 1.0
     ]),
-    new Uint16Array([0, 1, 2, 2, 1, 3])
+    new Uint16Array([0,1,2,2,1,3])
   );
 
   function bindMesh(mesh) {
@@ -210,9 +214,9 @@
       x[0], y[0], z[0], 0,
       x[1], y[1], z[1], 0,
       x[2], y[2], z[2], 0,
-      -(x[0] * eye[0] + x[1] * eye[1] + x[2] * eye[2]),
-      -(y[0] * eye[0] + y[1] * eye[1] + y[2] * eye[2]),
-      -(z[0] * eye[0] + z[1] * eye[1] + z[2] * eye[2]),
+      -(x[0]*eye[0] + x[1]*eye[1] + x[2]*eye[2]),
+      -(y[0]*eye[0] + y[1]*eye[1] + y[2]*eye[2]),
+      -(z[0]*eye[0] + z[1]*eye[1] + z[2]*eye[2]),
       1
     ]);
   }
@@ -223,10 +227,6 @@
     c.height = h;
     const ctx = c.getContext('2d');
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#ffffff';
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
     draw(ctx, w, h);
 
     const tex = gl.createTexture();
@@ -249,100 +249,108 @@
 
   function branch(ctx, x1, y1, x2, y2, width) {
     ctx.lineWidth = width;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.stroke();
   }
 
+  function withMonoShape(ctx, fn) {
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#ffffff';
+    fn();
+  }
+
   const textures = {};
 
-  textures.treeA = createTexture((ctx, w, h) => {
+  textures.treeA = createTexture((ctx, w, h) => withMonoShape(ctx, () => {
     ctx.beginPath();
-    ctx.moveTo(w * 0.43, h);
-    ctx.lineTo(w * 0.47, h * 0.20);
-    ctx.lineTo(w * 0.53, h * 0.08);
-    ctx.lineTo(w * 0.58, h);
+    ctx.moveTo(w*0.43, h);
+    ctx.lineTo(w*0.47, h*0.20);
+    ctx.lineTo(w*0.53, h*0.08);
+    ctx.lineTo(w*0.58, h);
     ctx.closePath();
     ctx.fill();
-    branch(ctx, w * 0.50, h * 0.42, w * 0.20, h * 0.27, w * 0.055);
-    branch(ctx, w * 0.52, h * 0.34, w * 0.78, h * 0.18, w * 0.045);
-    branch(ctx, w * 0.49, h * 0.56, w * 0.16, h * 0.47, w * 0.04);
-    branch(ctx, w * 0.54, h * 0.60, w * 0.84, h * 0.49, w * 0.035);
-    ellipse(ctx, w * 0.19, h * 0.25, w * 0.18, h * 0.08, -0.3);
-    ellipse(ctx, w * 0.80, h * 0.17, w * 0.18, h * 0.075, 0.28);
-    ellipse(ctx, w * 0.16, h * 0.46, w * 0.16, h * 0.07, 0.15);
-    ellipse(ctx, w * 0.83, h * 0.48, w * 0.15, h * 0.065, -0.2);
-  });
+    branch(ctx, w*0.50, h*0.42, w*0.20, h*0.27, w*0.055);
+    branch(ctx, w*0.52, h*0.34, w*0.78, h*0.18, w*0.045);
+    branch(ctx, w*0.49, h*0.56, w*0.16, h*0.47, w*0.04);
+    branch(ctx, w*0.54, h*0.60, w*0.84, h*0.49, w*0.035);
+    ellipse(ctx, w*0.19, h*0.25, w*0.18, h*0.08, -0.3);
+    ellipse(ctx, w*0.80, h*0.17, w*0.18, h*0.075, 0.28);
+    ellipse(ctx, w*0.16, h*0.46, w*0.16, h*0.07, 0.15);
+    ellipse(ctx, w*0.83, h*0.48, w*0.15, h*0.065, -0.2);
+  }));
 
-  textures.treeB = createTexture((ctx, w, h) => {
+  textures.treeB = createTexture((ctx, w, h) => withMonoShape(ctx, () => {
     ctx.beginPath();
-    ctx.moveTo(w * 0.39, h);
-    ctx.lineTo(w * 0.47, h * 0.28);
-    ctx.lineTo(w * 0.41, h * 0.06);
-    ctx.lineTo(w * 0.52, h * 0.23);
-    ctx.lineTo(w * 0.61, h);
+    ctx.moveTo(w*0.39, h);
+    ctx.lineTo(w*0.47, h*0.28);
+    ctx.lineTo(w*0.41, h*0.06);
+    ctx.lineTo(w*0.52, h*0.23);
+    ctx.lineTo(w*0.61, h);
     ctx.closePath();
     ctx.fill();
-    branch(ctx, w * 0.49, h * 0.40, w * 0.18, h * 0.21, w * 0.05);
-    branch(ctx, w * 0.53, h * 0.51, w * 0.88, h * 0.31, w * 0.045);
-    branch(ctx, w * 0.46, h * 0.31, w * 0.24, h * 0.11, w * 0.035);
-    branch(ctx, w * 0.55, h * 0.24, w * 0.72, h * 0.07, w * 0.03);
-    ellipse(ctx, w * 0.18, h * 0.19, w * 0.15, h * 0.06, -0.25);
-    ellipse(ctx, w * 0.88, h * 0.30, w * 0.12, h * 0.055, 0.15);
-    ellipse(ctx, w * 0.73, h * 0.07, w * 0.12, h * 0.045, -0.1);
-  });
+    branch(ctx, w*0.49, h*0.40, w*0.18, h*0.21, w*0.05);
+    branch(ctx, w*0.53, h*0.51, w*0.88, h*0.31, w*0.045);
+    branch(ctx, w*0.46, h*0.31, w*0.24, h*0.11, w*0.035);
+    branch(ctx, w*0.55, h*0.24, w*0.72, h*0.07, w*0.03);
+    ellipse(ctx, w*0.18, h*0.19, w*0.15, h*0.06, -0.25);
+    ellipse(ctx, w*0.88, h*0.30, w*0.12, h*0.055, 0.15);
+    ellipse(ctx, w*0.73, h*0.07, w*0.12, h*0.045, -0.1);
+  }));
 
-  textures.treeC = createTexture((ctx, w, h) => {
+  textures.treeC = createTexture((ctx, w, h) => withMonoShape(ctx, () => {
     ctx.beginPath();
-    ctx.moveTo(w * 0.43, h);
-    ctx.lineTo(w * 0.46, h * 0.13);
-    ctx.lineTo(w * 0.50, h * 0.03);
-    ctx.lineTo(w * 0.55, h * 0.13);
-    ctx.lineTo(w * 0.60, h);
+    ctx.moveTo(w*0.43, h);
+    ctx.lineTo(w*0.46, h*0.13);
+    ctx.lineTo(w*0.50, h*0.03);
+    ctx.lineTo(w*0.55, h*0.13);
+    ctx.lineTo(w*0.60, h);
     ctx.closePath();
     ctx.fill();
     for (let i = 0; i < 8; i++) {
       const y = h * (0.14 + i * 0.10);
       const span = w * (0.18 + i * 0.015);
-      branch(ctx, w * 0.50, y, w * 0.50 - span, y + h * 0.055, w * 0.022 + i * 0.8);
-      branch(ctx, w * 0.52, y + h * 0.018, w * 0.52 + span, y + h * 0.072, w * 0.020 + i * 0.7);
+      branch(ctx, w*0.50, y, w*0.50 - span, y + h*0.055, w*0.022 + i*0.8);
+      branch(ctx, w*0.52, y + h*0.018, w*0.52 + span, y + h*0.072, w*0.020 + i*0.7);
     }
-  });
+  }));
 
-  textures.snag = createTexture((ctx, w, h) => {
+  textures.snag = createTexture((ctx, w, h) => withMonoShape(ctx, () => {
     ctx.beginPath();
-    ctx.moveTo(w * 0.39, h);
-    ctx.lineTo(w * 0.45, h * 0.27);
-    ctx.lineTo(w * 0.51, h * 0.12);
-    ctx.lineTo(w * 0.58, h);
+    ctx.moveTo(w*0.39, h);
+    ctx.lineTo(w*0.45, h*0.27);
+    ctx.lineTo(w*0.51, h*0.12);
+    ctx.lineTo(w*0.58, h);
     ctx.closePath();
     ctx.fill();
-    branch(ctx, w * 0.49, h * 0.35, w * 0.16, h * 0.18, w * 0.045);
-    branch(ctx, w * 0.52, h * 0.46, w * 0.84, h * 0.25, w * 0.04);
-    branch(ctx, w * 0.48, h * 0.22, w * 0.31, h * 0.07, w * 0.03);
-  });
+    branch(ctx, w*0.49, h*0.35, w*0.16, h*0.18, w*0.045);
+    branch(ctx, w*0.52, h*0.46, w*0.84, h*0.25, w*0.04);
+    branch(ctx, w*0.48, h*0.22, w*0.31, h*0.07, w*0.03);
+  }));
 
-  textures.bush = createTexture((ctx, w, h) => {
-    ellipse(ctx, w * 0.22, h * 0.77, w * 0.22, h * 0.17, -0.15);
-    ellipse(ctx, w * 0.48, h * 0.64, w * 0.28, h * 0.24, 0.05);
-    ellipse(ctx, w * 0.76, h * 0.77, w * 0.22, h * 0.17, 0.15);
-    ctx.fillRect(w * 0.47, h * 0.66, w * 0.06, h * 0.34);
-  }, 256, 256);
+  textures.bush = createTexture((ctx, w, h) => withMonoShape(ctx, () => {
+    ellipse(ctx, w*0.22, h*0.77, w*0.22, h*0.17, -0.15);
+    ellipse(ctx, w*0.48, h*0.64, w*0.28, h*0.24, 0.05);
+    ellipse(ctx, w*0.76, h*0.77, w*0.22, h*0.17, 0.15);
+    ctx.fillRect(w*0.47, h*0.66, w*0.06, h*0.34);
+  }), 256, 256);
 
-  textures.rock = createTexture((ctx, w, h) => {
+  textures.rock = createTexture((ctx, w, h) => withMonoShape(ctx, () => {
     ctx.beginPath();
-    ctx.moveTo(w * 0.08, h * 0.92);
-    ctx.lineTo(w * 0.18, h * 0.58);
-    ctx.lineTo(w * 0.40, h * 0.36);
-    ctx.lineTo(w * 0.72, h * 0.40);
-    ctx.lineTo(w * 0.90, h * 0.72);
-    ctx.lineTo(w * 0.86, h * 0.92);
+    ctx.moveTo(w*0.08, h*0.92);
+    ctx.lineTo(w*0.18, h*0.58);
+    ctx.lineTo(w*0.40, h*0.36);
+    ctx.lineTo(w*0.72, h*0.40);
+    ctx.lineTo(w*0.90, h*0.72);
+    ctx.lineTo(w*0.86, h*0.92);
     ctx.closePath();
     ctx.fill();
-  }, 256, 256);
+  }), 256, 256);
 
-  textures.grass = createTexture((ctx, w, h) => {
+  textures.grass = createTexture((ctx, w, h) => withMonoShape(ctx, () => {
     ctx.lineWidth = 8;
     for (let i = 0; i < 12; i++) {
       const startX = w * (0.10 + i * 0.065);
@@ -354,105 +362,168 @@
       ctx.quadraticCurveTo(midX, h * 0.68, tipX, tipY);
       ctx.stroke();
     }
-    ctx.fillRect(w * 0.08, h * 0.93, w * 0.84, h * 0.07);
-  }, 256, 256);
+    ctx.fillRect(w*0.08, h*0.93, w*0.84, h*0.07);
+  }), 256, 256);
 
   textures.white = createTexture((ctx, w, h) => {
+    ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, w, h);
   }, 4, 4);
 
-  function makeCharacterFrame({ bodyLean = 0, frontLeg = 0, backLeg = 0, frontArm = 0, backArm = 0, bob = 0, scarf = 0 }) {
-    return createTexture((ctx, w, h) => {
-      const cx = w * 0.48 + bodyLean;
-      const footY = h * 0.95;
-      const hipY = h * 0.63 - bob;
-      const shoulderY = h * 0.39 - bob;
-      const headY = h * 0.19 - bob;
-
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.lineWidth = 22;
-
-      ctx.beginPath();
-      ctx.moveTo(cx, shoulderY);
-      ctx.lineTo(cx + bodyLean * 0.35, hipY);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(cx + 8, shoulderY + 12);
-      ctx.lineTo(cx + 32, shoulderY + 54 + backArm * 0.45);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(cx - 2, shoulderY + 16);
-      ctx.lineTo(cx - 26, shoulderY + 56 + frontArm * 0.45);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(cx + 6, hipY);
-      ctx.lineTo(cx + 18, footY - 74);
-      ctx.lineTo(cx + 26, footY + frontLeg);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(cx - 4, hipY);
-      ctx.lineTo(cx - 18, footY - 70);
-      ctx.lineTo(cx - 22, footY + backLeg);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(cx - 16, shoulderY + 4);
-      ctx.lineTo(cx + 16, shoulderY + 1);
-      ctx.lineTo(cx + 24, hipY - 18);
-      ctx.lineTo(cx - 2, hipY + 14);
-      ctx.lineTo(cx - 24, hipY - 6);
-      ctx.closePath();
-      ctx.fill();
-
-      if (scarf) {
-        ctx.lineWidth = 11;
-        ctx.beginPath();
-        ctx.moveTo(cx + 2, shoulderY + 10);
-        ctx.lineTo(cx + 22, shoulderY + 18);
-        ctx.lineTo(cx + 44, shoulderY + 26 + scarf);
-        ctx.stroke();
-      }
-
-      ctx.beginPath();
-      ctx.arc(cx, headY, 30, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo(cx - 12, headY + 16);
-      ctx.quadraticCurveTo(cx + 12, headY + 26, cx + 20, headY + 54);
-      ctx.lineTo(cx + 2, headY + 58);
-      ctx.quadraticCurveTo(cx - 30, headY + 42, cx - 24, headY + 8);
-      ctx.closePath();
-      ctx.fill();
-    }, 256, 512);
+  function drawRoundedRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
   }
 
-  const characterFrames = {
-    idle: [
-      makeCharacterFrame({ bob: 0, bodyLean: 0, frontLeg: 0, backLeg: 0, frontArm: 0, backArm: 0, scarf: 4 }),
-      makeCharacterFrame({ bob: 3, bodyLean: 1, frontLeg: 0, backLeg: 0, frontArm: -2, backArm: 2, scarf: 8 }),
-      makeCharacterFrame({ bob: 1, bodyLean: 0, frontLeg: 0, backLeg: 0, frontArm: 2, backArm: -2, scarf: 5 }),
-      makeCharacterFrame({ bob: 2, bodyLean: -1, frontLeg: 0, backLeg: 0, frontArm: 1, backArm: 0, scarf: 7 })
-    ],
-    walk: [
-      makeCharacterFrame({ bodyLean: 3, frontLeg: 10, backLeg: -6, frontArm: -16, backArm: 18, bob: 2, scarf: 8 }),
-      makeCharacterFrame({ bodyLean: 4, frontLeg: 4, backLeg: -2, frontArm: -8, backArm: 10, bob: 4, scarf: 10 }),
-      makeCharacterFrame({ bodyLean: 1, frontLeg: -2, backLeg: 3, frontArm: 2, backArm: -2, bob: 1, scarf: 6 }),
-      makeCharacterFrame({ bodyLean: -2, frontLeg: -8, backLeg: 8, frontArm: 12, backArm: -14, bob: 3, scarf: 3 }),
-      makeCharacterFrame({ bodyLean: -3, frontLeg: -4, backLeg: 4, frontArm: 8, backArm: -10, bob: 4, scarf: 1 }),
-      makeCharacterFrame({ bodyLean: 0, frontLeg: 3, backLeg: -1, frontArm: -1, backArm: 3, bob: 1, scarf: 4 }),
-      makeCharacterFrame({ bodyLean: 2, frontLeg: 8, backLeg: -8, frontArm: -14, backArm: 14, bob: 3, scarf: 7 }),
-      makeCharacterFrame({ bodyLean: 4, frontLeg: 12, backLeg: -10, frontArm: -18, backArm: 18, bob: 2, scarf: 9 })
-    ]
-  };
+  function createCharacterAtlas() {
+    const frameW = 128;
+    const frameH = 256;
+    const frames = [
+      {dx:0,  bob:3, armA:-12, armB:10, legA:9,  legB:-10, scarf:12, head:0},
+      {dx:1,  bob:1, armA:-7,  armB:6,  legA:3,  legB:-4,  scarf:10, head:1},
+      {dx:2,  bob:0, armA:0,   armB:-2, legA:-2, legB:2,   scarf:7,  head:1},
+      {dx:3,  bob:2, armA:10,  armB:-12,legA:-8, legB:10,  scarf:4,  head:0},
+      {dx:4,  bob:3, armA:12,  armB:-10,legA:-10,legB:8,   scarf:3,  head:-1},
+      {dx:3,  bob:1, armA:7,   armB:-6, legA:-4, legB:3,   scarf:5,  head:-1},
+      {dx:1,  bob:0, armA:0,   armB:1,  legA:2,  legB:-3,  scarf:8,  head:0},
+      {dx:0,  bob:2, armA:-10, armB:12, legA:10, legB:-11, scarf:11, head:0}
+    ];
+
+    return createTexture((ctx, w, h) => {
+      ctx.clearRect(0, 0, w, h);
+      frames.forEach((f, i) => {
+        const ox = i * frameW;
+        const cx = ox + 60 + f.dx;
+        const footY = 232;
+        const hipY = 158 - f.bob;
+        const shoulderY = 110 - f.bob;
+        const headY = 58 - f.bob + f.head;
+
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        ctx.strokeStyle = 'rgba(230, 230, 222, 0.95)';
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(cx + 8, shoulderY + 8);
+        ctx.quadraticCurveTo(cx + 30, shoulderY + 4, cx + 46, shoulderY + 22 + f.scarf);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(70, 60, 56, 0.95)';
+        ctx.lineWidth = 10;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, hipY + 2);
+        ctx.lineTo(cx - 15, footY - 70);
+        ctx.lineTo(cx - 18, footY + f.legB);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx + 4, shoulderY + 22);
+        ctx.lineTo(cx + 20, shoulderY + 54 + f.armB);
+        ctx.stroke();
+
+        ctx.fillStyle = '#8f9384';
+        ctx.strokeStyle = 'rgba(72, 64, 58, 0.85)';
+        ctx.lineWidth = 2.2;
+        drawRoundedRect(ctx, cx - 19, shoulderY + 4, 38, 94, 16);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#b9784d';
+        ctx.beginPath();
+        ctx.moveTo(cx - 14, shoulderY + 10);
+        ctx.lineTo(cx + 12, shoulderY + 10);
+        ctx.lineTo(cx + 2, hipY - 4);
+        ctx.lineTo(cx - 20, hipY - 7);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = '#6d5648';
+        ctx.lineWidth = 9;
+        ctx.beginPath();
+        ctx.moveTo(cx - 6, shoulderY + 22);
+        ctx.lineTo(cx - 24, shoulderY + 55 + f.armA);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#4b433f';
+        ctx.lineWidth = 11;
+        ctx.beginPath();
+        ctx.moveTo(cx + 4, hipY + 1);
+        ctx.lineTo(cx + 18, footY - 76);
+        ctx.lineTo(cx + 28, footY + f.legA);
+        ctx.stroke();
+
+        ctx.fillStyle = '#f0e9dd';
+        ctx.strokeStyle = 'rgba(120, 112, 104, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx - 22, headY - 6);
+        ctx.quadraticCurveTo(cx - 12, headY - 30, cx + 8, headY - 28);
+        ctx.quadraticCurveTo(cx + 30, headY - 22, cx + 26, headY + 6);
+        ctx.quadraticCurveTo(cx + 20, headY + 26, cx + 4, headY + 28);
+        ctx.quadraticCurveTo(cx - 8, headY + 26, cx - 18, headY + 10);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#f2ece3';
+        ctx.beginPath();
+        ctx.ellipse(cx - 6, headY + 18, 9, 33, 0.65, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(cx + 8, headY + 12, 8, 30, 0.9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#ebcc9d';
+        ctx.beginPath();
+        ctx.arc(cx + 5, headY + 2, 20, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#5a3a27';
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, headY - 14);
+        ctx.quadraticCurveTo(cx + 14, headY - 10, cx + 16, headY + 5);
+        ctx.lineTo(cx + 4, headY - 2);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#2f2823';
+        ctx.beginPath();
+        ctx.arc(cx + 12, headY + 2, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(232, 147, 123, 0.95)';
+        ctx.beginPath();
+        ctx.arc(cx + 10, headY + 12, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#4c3d35';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 24, footY + f.legB + 2);
+        ctx.lineTo(cx - 12, footY + f.legB + 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx + 20, footY + f.legA + 3);
+        ctx.lineTo(cx + 34, footY + f.legA + 3);
+        ctx.stroke();
+      });
+    }, frameW * 8, frameH);
+  }
+
+  textures.characterAtlas = createCharacterAtlas();
 
   function mulberry32(seed) {
-    return function () {
+    return function() {
       let t = (seed += 0x6D2B79F5);
       t = Math.imul(t ^ (t >>> 15), t | 1);
       t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
@@ -460,11 +531,13 @@
     };
   }
 
-  const rand = mulberry32(520913);
-  const WORLD = { minX: -92, maxX: 92, nearZ: 6.5, farZ: -42 };
+  const rand = mulberry32(924315);
+  const TILE = { minX: -62, maxX: 62 };
+  const TILE_WIDTH = TILE.maxX - TILE.minX;
+  const WORLD = { nearZ: 6.5, farZ: -42 };
   const fogColor = [0.93, 0.95, 0.95];
   const groundY = -4.25;
-  const pathZ = 0.25;
+  const pathZ = 0.55;
 
   const ground = {
     mesh: groundMesh,
@@ -476,23 +549,24 @@
     sy: 1,
     sz: WORLD.nearZ - WORLD.farZ,
     layer: 'ground',
-    tint: [0.055, 0.060, 0.064],
-    shade: 1,
+    tint: [0.060, 0.066, 0.070],
     opacity: 1,
-    noFog: false
+    noFog: false,
+    wrap: false
   };
 
-  const objects = [];
+  const backdrop = [];
+  const foreground = [];
 
   function classifyLayer(z) {
-    if (z > 2.0) return 'foreground';
+    if (z > 1.2) return 'foreground';
     if (z > -9) return 'near';
-    if (z > -23) return 'mid';
+    if (z > -24) return 'mid';
     return 'far';
   }
 
-  function addBillboard(type, x, z, width, height, opts = {}) {
-    objects.push({
+  function addObject(collection, type, x, z, width, height, opts = {}) {
+    collection.push({
       mesh: billboardMesh,
       texture: textures[type],
       x,
@@ -506,125 +580,119 @@
       opacity: opts.opacity ?? 1,
       noFog: !!opts.noFog,
       tint: opts.tint || null,
-      layer: opts.layer || classifyLayer(z)
+      layer: opts.layer || classifyLayer(z),
+      wrap: opts.wrap !== false
     });
-  }
-
-  function scatterBand(minX, maxX, step, jitter, cb) {
-    for (let x = minX; x <= maxX; x += step) {
-      cb(x + (rand() - 0.5) * jitter);
-    }
   }
 
   function scatterForest() {
-    const backTreeTypes = ['treeA', 'treeB', 'treeC', 'treeC', 'snag'];
+    const treeTypes = ['treeA', 'treeB', 'treeC', 'treeC', 'snag'];
 
-    // Dense treeline behind the path: highest density close behind the character, then falling off into depth.
-    for (let i = 0; i < 136; i++) {
-      const depthMix = Math.pow(rand(), 1.65);
-      const z = -4.5 - depthMix * 32.0;
-      const x = WORLD.minX + rand() * (WORLD.maxX - WORLD.minX);
-      const height = 9 + rand() * (18 - depthMix * 4);
+    for (let i = 0; i < 156; i++) {
+      const x = TILE.minX + rand() * TILE_WIDTH;
+      const depthMix = Math.pow(rand(), 1.55);
+      const z = -4.0 - depthMix * 33.5;
+      const height = 9 + rand() * (17.5 - depthMix * 4.0);
       const width = height * (0.18 + rand() * 0.14);
-      addBillboard(backTreeTypes[Math.floor(rand() * backTreeTypes.length)], x, z, width, height, {
-        shade: 0.92 + rand() * 0.18
+      addObject(backdrop, treeTypes[Math.floor(rand() * treeTypes.length)], x, z, width, height, {
+        shade: 0.94 + rand() * 0.18
       });
     }
 
-    // Additional slimmer far trunks to keep the distant forest full without overpowering it.
-    for (let i = 0; i < 34; i++) {
-      const z = -24 - rand() * 16;
-      const x = WORLD.minX + rand() * (WORLD.maxX - WORLD.minX);
-      const height = 12 + rand() * 10;
-      addBillboard('snag', x, z, height * 0.16, height, { shade: 1.02 + rand() * 0.12, opacity: 0.92 });
+    for (let i = 0; i < 44; i++) {
+      const x = TILE.minX + rand() * TILE_WIDTH;
+      const z = -24 - rand() * 15.5;
+      const height = 13 + rand() * 9;
+      addObject(backdrop, 'snag', x, z, height * 0.16, height, {
+        shade: 1.00 + rand() * 0.10,
+        opacity: 0.92
+      });
     }
 
-    // Back-side rocks and bushes around the base of the denser forest.
-    for (let i = 0; i < 54; i++) {
-      const depthMix = Math.pow(rand(), 1.35);
-      const z = -3.5 - depthMix * 24;
-      const x = WORLD.minX + rand() * (WORLD.maxX - WORLD.minX);
-      if (rand() < 0.60) {
-        const h = 1.5 + rand() * 2.6;
-        addBillboard('bush', x, z, h * 1.45, h, { shade: 0.94 + rand() * 0.14, opacity: 0.90 });
+    for (let i = 0; i < 64; i++) {
+      const x = TILE.minX + rand() * TILE_WIDTH;
+      const depthMix = Math.pow(rand(), 1.3);
+      const z = -2.5 - depthMix * 22;
+      if (rand() < 0.62) {
+        const h = 1.4 + rand() * 2.6;
+        addObject(backdrop, 'bush', x, z, h * 1.45, h, { shade: 0.96 + rand() * 0.10, opacity: 0.92 });
       } else {
-        const h = 1.0 + rand() * 1.7;
-        addBillboard('rock', x, z, h * 1.55, h, { shade: 0.88 + rand() * 0.12, opacity: 0.94 });
+        const h = 1.0 + rand() * 1.8;
+        addObject(backdrop, 'rock', x, z, h * 1.55, h, { shade: 0.90 + rand() * 0.10, opacity: 0.95 });
       }
     }
 
-    // Near side of the path: sparse trees only.
-    for (let i = 0; i < 10; i++) {
-      const x = WORLD.minX + rand() * (WORLD.maxX - WORLD.minX);
-      const z = 2.2 + rand() * 2.6;
+    for (let i = 0; i < 74; i++) {
+      const x = TILE.minX + rand() * TILE_WIDTH;
+      const z = -0.8 - rand() * 4.8;
+      const h = 0.9 + rand() * 1.1;
+      addObject(backdrop, 'grass', x, z, h * 0.95, h, {
+        shade: 0.90 + rand() * 0.08,
+        opacity: 0.82
+      });
+    }
+
+    for (let i = 0; i < 12; i++) {
+      const x = TILE.minX + rand() * TILE_WIDTH;
+      const z = 2.0 + rand() * 2.9;
       const height = 7 + rand() * 6;
-      addBillboard(rand() < 0.65 ? 'treeA' : 'snag', x, z, height * 0.18, height, {
-        shade: 0.78 + rand() * 0.10,
+      addObject(foreground, rand() < 0.7 ? 'treeA' : 'snag', x, z, height * 0.18, height, {
+        shade: 0.88 + rand() * 0.08,
         layer: 'foreground'
       });
     }
 
-    // Near-side path props: more small rocks and bushes around the character lane.
-    for (let i = 0; i < 60; i++) {
-      const x = WORLD.minX + rand() * (WORLD.maxX - WORLD.minX);
-      const z = 0.8 + rand() * 3.2;
-      if (rand() < 0.52) {
-        const h = 1.0 + rand() * 1.4;
-        addBillboard('rock', x, z, h * 1.5, h, { shade: 0.78 + rand() * 0.08, layer: 'foreground' });
+    for (let i = 0; i < 76; i++) {
+      const x = TILE.minX + rand() * TILE_WIDTH;
+      const z = 0.9 + rand() * 3.5;
+      if (rand() < 0.48) {
+        const h = 0.95 + rand() * 1.3;
+        addObject(foreground, 'rock', x, z, h * 1.5, h, { shade: 0.86 + rand() * 0.08, layer: 'foreground' });
       } else {
-        const h = 1.0 + rand() * 1.8;
-        addBillboard('bush', x, z, h * 1.45, h, { shade: 0.84 + rand() * 0.10, layer: 'foreground', opacity: 0.92 });
+        const h = 1.0 + rand() * 1.6;
+        addObject(foreground, 'bush', x, z, h * 1.45, h, { shade: 0.88 + rand() * 0.10, layer: 'foreground', opacity: 0.93 });
       }
     }
 
-    // Low grass belt along the near side, giving the ankle-height occlusion.
-    scatterBand(WORLD.minX - 2, WORLD.maxX + 2, 2.1, 1.0, x => {
-      const z = 1.3 + rand() * 1.4;
-      const h = 1.0 + rand() * 1.0;
-      addBillboard('grass', x, z, h * 0.95, h, {
-        shade: 0.78 + rand() * 0.08,
+    for (let x = TILE.minX; x <= TILE.maxX; x += 1.55) {
+      const z = 1.15 + rand() * 1.10;
+      const h = 0.95 + rand() * 0.95;
+      addObject(foreground, 'grass', x + (rand() - 0.5) * 0.55, z, h * 0.96, h, {
+        shade: 0.86 + rand() * 0.08,
         opacity: 0.95,
         layer: 'foreground'
       });
-    });
-
-    // Extra scattered grass just behind the path to soften the base of the back treeline.
-    for (let i = 0; i < 62; i++) {
-      const x = WORLD.minX + rand() * (WORLD.maxX - WORLD.minX);
-      const z = -1.0 - rand() * 4.0;
-      const h = 0.9 + rand() * 1.1;
-      addBillboard('grass', x, z, h * 0.95, h, {
-        shade: 0.88 + rand() * 0.10,
-        opacity: 0.86
-      });
     }
 
-    objects.sort((a, b) => a.z - b.z);
+    backdrop.sort((a, b) => a.z - b.z);
+    foreground.sort((a, b) => a.z - b.z);
   }
 
   scatterForest();
 
   const character = {
     mesh: billboardMesh,
-    x: -6.0,
+    texture: textures.characterAtlas,
+    x: 0,
     y: groundY,
     z: pathZ,
-    sx: 2.25,
-    sy: 4.8,
+    sx: 3.2,
+    sy: 5.6,
     sz: 1,
     flip: false,
     layer: 'character',
-    tint: [0.18, 0.17, 0.17],
-    opacity: 0.96,
+    tint: [1, 1, 1],
+    opacity: 0.98,
     noFog: false,
-    screenOffsetX: -6.0,
-    walkPhase: 0,
-    lastFacing: 1
+    screenOffsetX: -4.8,
+    distanceTravelled: 0,
+    lastFacing: 1,
+    wrap: false
   };
 
   const debugTints = {
     ground: [0.50, 0.46, 0.75],
-    character: [0.82, 0.58, 0.32],
+    character: [0.86, 0.58, 0.32],
     foreground: [0.70, 0.32, 0.28],
     near: [0.67, 0.43, 0.31],
     mid: [0.42, 0.59, 0.55],
@@ -633,12 +701,10 @@
 
   const camera = {
     x: 0,
-    y: -1.55,
-    z: 14.2,
-    targetY: groundY + 1.15,
-    targetZ: -14,
-    minX: -52,
-    maxX: 52
+    y: -1.62,
+    z: 14.0,
+    targetY: groundY + 1.10,
+    targetZ: -13.5
   };
 
   let projection = mat4Identity();
@@ -650,7 +716,6 @@
   let dragStartCameraX = 0;
   let lastTime = performance.now();
   let previousCameraX = camera.x;
-  let recentMotion = 0;
   let hintTimer = window.setTimeout(() => hintEl.classList.add('hidden'), 4200);
 
   function hideHint() {
@@ -673,18 +738,24 @@
     }
   }
 
+  function wrapX(x, aroundX) {
+    return x + Math.round((aroundX - x) / TILE_WIDTH) * TILE_WIDTH;
+  }
+
   function tintFor(obj) {
     if (debugDepth) return debugTints[obj.layer] || [1, 1, 1];
     if (obj.tint) return obj.tint;
-    const base = [0.105, 0.112, 0.118];
+    const base = [0.155, 0.165, 0.172];
     return [base[0] * obj.shade, base[1] * obj.shade, base[2] * obj.shade];
   }
 
-  function drawObject(obj, view, textureOverride = null) {
+  function drawObject(obj, view, extra = null) {
     bindMesh(obj.mesh);
-    gl.bindTexture(gl.TEXTURE_2D, textureOverride || obj.texture);
-    gl.uniformMatrix4fv(loc.model, false, mat4Model(obj.x, obj.y, obj.z, obj.sx, obj.sy, obj.sz, obj.flip));
+    gl.bindTexture(gl.TEXTURE_2D, extra?.texture || obj.texture);
+    const drawX = extra?.x ?? (obj.wrap ? wrapX(obj.x, camera.x) : obj.x);
+    gl.uniformMatrix4fv(loc.model, false, mat4Model(drawX, obj.y, obj.z, obj.sx, obj.sy, obj.sz, obj.flip));
     gl.uniformMatrix4fv(loc.view, false, view);
+    gl.uniformMatrix4fv(loc.projection, false, projection);
     const tint = tintFor(obj);
     gl.uniform3f(loc.tint, tint[0], tint[1], tint[2]);
     gl.uniform3f(loc.fogColor, fogColor[0], fogColor[1], fogColor[2]);
@@ -692,17 +763,19 @@
     gl.uniform1f(loc.fogFar, 46.0);
     gl.uniform1f(loc.fogAmount, obj.noFog ? 0 : (debugDepth ? 0.22 : 1.0));
     gl.uniform1f(loc.opacity, obj.opacity);
+    gl.uniform2f(loc.uvScale, extra?.uvScale?.[0] ?? 1, extra?.uvScale?.[1] ?? 1);
+    gl.uniform2f(loc.uvOffset, extra?.uvOffset?.[0] ?? 0, extra?.uvOffset?.[1] ?? 0);
     gl.drawElements(gl.TRIANGLES, obj.mesh.count, gl.UNSIGNED_SHORT, 0);
   }
 
-  function currentCharacterTexture(now, isWalking) {
+  function currentCharacterFrame(isWalking) {
     if (!isWalking) {
-      const frame = Math.floor(now * 0.0035) % characterFrames.idle.length;
-      return characterFrames.idle[frame];
+      const t = performance.now() * 0.001;
+      return Math.floor(t * 1.5) % 2 === 0 ? 0 : 1;
     }
-    const fps = 10;
-    const frame = Math.floor(character.walkPhase * fps) % characterFrames.walk.length;
-    return characterFrames.walk[frame];
+    const stride = 2.8;
+    const normalized = (character.distanceTravelled % stride) / stride;
+    return Math.floor(normalized * 8) % 8;
   }
 
   function render(now) {
@@ -710,49 +783,47 @@
     const dt = Math.min(0.05, (now - lastTime) / 1000);
     lastTime = now;
 
-    const dir = (moveRight ? 1 : 0) - (moveLeft ? 1 : 0);
-    if (dir) {
-      camera.x += dir * 7.0 * dt;
-      camera.x = Math.max(camera.minX, Math.min(camera.maxX, camera.x));
+    const moveDir = (moveRight ? 1 : 0) - (moveLeft ? 1 : 0);
+    const speed = 2.85;
+    if (moveDir) {
+      camera.x += moveDir * speed * dt;
       hideHint();
     }
 
-    recentMotion = (camera.x - previousCameraX) / Math.max(dt, 0.0001);
+    const cameraDelta = camera.x - previousCameraX;
+    const isWalking = Math.abs(cameraDelta) > 0.0001 || moveDir !== 0;
+    if (Math.abs(cameraDelta) > 0.0001) {
+      character.distanceTravelled += Math.abs(cameraDelta);
+      character.lastFacing = cameraDelta >= 0 ? 1 : -1;
+    }
     previousCameraX = camera.x;
 
-    const isWalking = Math.abs(recentMotion) > 0.2;
-    if (isWalking) {
-      character.lastFacing = recentMotion >= 0 ? 1 : -1;
-      character.walkPhase += dt;
-    }
     character.flip = character.lastFacing < 0;
     character.x = camera.x + character.screenOffsetX;
 
     gl.clearColor(fogColor[0], fogColor[1], fogColor[2], 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.useProgram(program);
-    gl.uniformMatrix4fv(loc.projection, false, projection);
 
     const eye = [camera.x, camera.y, camera.z];
     const target = [camera.x, camera.targetY, camera.targetZ];
     const view = mat4LookAt(eye, target, [0, 1, 0]);
 
-    drawObject(ground, view);
+    drawObject({ ...ground, x: camera.x }, view);
+    for (const obj of backdrop) drawObject(obj, view);
 
-    const charTexture = currentCharacterTexture(now, isWalking);
-    let drawnCharacter = false;
-    for (const obj of objects) {
-      if (!drawnCharacter && obj.z >= character.z) {
-        drawObject(character, view, charTexture);
-        drawnCharacter = true;
-      }
-      drawObject(obj, view);
-    }
-    if (!drawnCharacter) drawObject(character, view, charTexture);
+    const frameIndex = currentCharacterFrame(isWalking);
+    drawObject(character, view, {
+      texture: character.texture,
+      x: character.x,
+      uvScale: [1 / 8, 1],
+      uvOffset: [frameIndex / 8, 0]
+    });
+
+    for (const obj of foreground) drawObject(obj, view);
 
     statusEl.textContent = debugDepth
-      ? `Depth view · camera X ${camera.x.toFixed(1)} · path + character`
-      : `3D forest · camera X ${camera.x.toFixed(1)} · depth fog`;
+      ? `Depth view · camera X ${camera.x.toFixed(1)} · consistent scatter`
+      : `3D forest · camera X ${camera.x.toFixed(1)} · sprite walk test`;
 
     requestAnimationFrame(render);
   }
@@ -804,7 +875,7 @@
   canvas.addEventListener('pointermove', e => {
     if (e.pointerId !== activePointer) return;
     const dx = e.clientX - dragStartX;
-    camera.x = Math.max(camera.minX, Math.min(camera.maxX, dragStartCameraX - dx * 0.032));
+    camera.x = dragStartCameraX - dx * 0.018;
   });
 
   const endDrag = e => {

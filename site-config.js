@@ -183,10 +183,10 @@ window.APP_CONFIG = {
     {
       "id": "game-16",
       "displayName": "SideScroll",
-      "description": "Explore a layered 3D forest path with depth fog, dense treelines and a placeholder walking character.",
+      "description": "Explore a layered 3D forest path with depth fog, consistent density and a flip-book walking sprite test.",
       "icon": "♠",
       "enabled": true,
-      "path": "game-16.html?v=1.8.42"
+      "path": "game-16.html?v=1.8.43"
     }
   ]
 };

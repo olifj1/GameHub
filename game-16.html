@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.8.42">
+  <link rel="stylesheet" href="style.css?v=1.8.43">
   <title>SideScroll</title>
 </head>
 <body class="modular-game" data-game-id="game-16">
@@ -19,7 +19,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">PROTOTYPE</p>
       <h2 id="game-16-info-title">SideScroll</h2>
-      <p>This first test uses real 3D planes placed at different distances from a perspective camera. Drag the forest sideways, or hold the left and right controls. The parallax comes from the actual depth of the planes, with a denser forest behind the path and lighter depth falloff into the distance. A placeholder character plane now walks with the scene so we can start planning sprite animation and placement. Use Depth view to see the different depth bands.</p>
+      <p>This test still uses real 3D planes and depth fog, but now the forest density stays consistent as you move, and the character uses a proper flip-book style sprite atlas. Drag the scene or hold the controls to walk along the path. The walk cycle is now tied to travel distance so we can start judging timing and feel.</p>
     </div>
   </div>
 
@@ -35,7 +35,7 @@
           <canvas id="sidescroll-canvas" aria-label="Layered 3D forest depth prototype"></canvas>
 
           <div class="sidescroll-stage-hud">
-            <div class="sidescroll-status" id="sidescroll-status">3D forest · path · placeholder character</div>
+            <div class="sidescroll-status" id="sidescroll-status">3D forest · sprite atlas · walk test</div>
             <button id="sidescroll-depth" class="sidescroll-depth-button" type="button" aria-pressed="false">Depth view</button>
           </div>
 
@@ -45,7 +45,7 @@
             <span><i class="far"></i>Far</span>
           </div>
 
-          <div class="sidescroll-hint" id="sidescroll-hint">Drag the scene, or hold ◀ / ▶ to walk along the path</div>
+          <div class="sidescroll-hint" id="sidescroll-hint">Drag the scene, or hold ◀ / ▶ to walk the character along the path</div>
           <div class="sidescroll-error" id="sidescroll-error" hidden></div>
         </div>
 
@@ -64,8 +64,8 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.8.42"></script>
-  <script src="core.js?v=1.8.42"></script>
-  <script src="game-16.js?v=1.8.42"></script>
+  <script src="site-config.js?v=1.8.43"></script>
+  <script src="core.js?v=1.8.43"></script>
+  <script src="game-16.js?v=1.8.43"></script>
 </body>
 </html>
