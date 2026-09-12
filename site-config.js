@@ -183,10 +183,10 @@ window.APP_CONFIG = {
     {
       "id": "game-16",
       "displayName": "SideScroll",
-      "description": "Explore a layered 3D forest and test real depth, fog and natural parallax.",
+      "description": "Explore a layered 3D forest path with depth fog, dense treelines and a placeholder walking character.",
       "icon": "♠",
       "enabled": true,
-      "path": "game-16.html?v=1.8.41"
+      "path": "game-16.html?v=1.8.42"
     }
   ]
 };

@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.8.41">
+  <link rel="stylesheet" href="style.css?v=1.8.42">
   <title>SideScroll</title>
 </head>
 <body class="modular-game" data-game-id="game-16">
@@ -19,7 +19,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">PROTOTYPE</p>
       <h2 id="game-16-info-title">SideScroll</h2>
-      <p>This first test uses real 3D planes placed at different distances from a perspective camera. Drag the forest sideways, or hold the left and right controls. The parallax comes from the actual depth of the planes and distant objects fade through real depth-based fog. Use Depth view to see the different depth bands.</p>
+      <p>This first test uses real 3D planes placed at different distances from a perspective camera. Drag the forest sideways, or hold the left and right controls. The parallax comes from the actual depth of the planes, with a denser forest behind the path and lighter depth falloff into the distance. A placeholder character plane now walks with the scene so we can start planning sprite animation and placement. Use Depth view to see the different depth bands.</p>
     </div>
   </div>
 
@@ -35,7 +35,7 @@
           <canvas id="sidescroll-canvas" aria-label="Layered 3D forest depth prototype"></canvas>
 
           <div class="sidescroll-stage-hud">
-            <div class="sidescroll-status" id="sidescroll-status">3D planes · perspective · depth fog</div>
+            <div class="sidescroll-status" id="sidescroll-status">3D forest · path · placeholder character</div>
             <button id="sidescroll-depth" class="sidescroll-depth-button" type="button" aria-pressed="false">Depth view</button>
           </div>
 
@@ -45,18 +45,18 @@
             <span><i class="far"></i>Far</span>
           </div>
 
-          <div class="sidescroll-hint" id="sidescroll-hint">Drag the forest, or hold ◀ / ▶</div>
+          <div class="sidescroll-hint" id="sidescroll-hint">Drag the scene, or hold ◀ / ▶ to walk along the path</div>
           <div class="sidescroll-error" id="sidescroll-error" hidden></div>
         </div>
 
-        <div class="sidescroll-controls" aria-label="Camera controls">
-          <button class="sidescroll-control" id="sidescroll-left" type="button" aria-label="Move camera left">
+        <div class="sidescroll-controls" aria-label="Path controls">
+          <button class="sidescroll-control" id="sidescroll-left" type="button" aria-label="Walk left">
             <span aria-hidden="true">←</span><small>LEFT</small>
           </button>
           <button class="sidescroll-control sidescroll-centre" id="sidescroll-centre" type="button">
             <span aria-hidden="true">•</span><small>CENTRE</small>
           </button>
-          <button class="sidescroll-control" id="sidescroll-right" type="button" aria-label="Move camera right">
+          <button class="sidescroll-control" id="sidescroll-right" type="button" aria-label="Walk right">
             <span aria-hidden="true">→</span><small>RIGHT</small>
           </button>
         </div>
@@ -64,8 +64,8 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.8.41"></script>
-  <script src="core.js?v=1.8.41"></script>
-  <script src="game-16.js?v=1.8.41"></script>
+  <script src="site-config.js?v=1.8.42"></script>
+  <script src="core.js?v=1.8.42"></script>
+  <script src="game-16.js?v=1.8.42"></script>
 </body>
 </html>

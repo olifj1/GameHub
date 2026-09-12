@@ -55,7 +55,7 @@
     void main() {
       vec4 tex = texture2D(uTexture, vUV);
       float alpha = tex.a * uOpacity;
-      if (alpha < 0.04) discard;
+      if (alpha < 0.05) discard;
       float fog = smoothstep(uFogNear, uFogFar, vDepth) * uFogAmount;
       vec3 base = tex.rgb * uTint;
       vec3 rgb = mix(base, uFogColor, fog);
@@ -149,7 +149,6 @@
   gl.enableVertexAttribArray(loc.pos);
   gl.enableVertexAttribArray(loc.uv);
   gl.uniform1i(loc.texture, 0);
-
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);
   gl.enable(gl.BLEND);
@@ -349,10 +348,10 @@
       const startX = w * (0.10 + i * 0.065);
       const midX = startX + (((i % 5) - 2) * w * 0.03);
       const tipX = startX + (((i % 7) - 3) * w * 0.018);
-      const tipY = h * (0.18 + (i % 4) * 0.08);
+      const tipY = h * (0.24 + (i % 4) * 0.07);
       ctx.beginPath();
       ctx.moveTo(startX, h);
-      ctx.quadraticCurveTo(midX, h * 0.62, tipX, tipY);
+      ctx.quadraticCurveTo(midX, h * 0.68, tipX, tipY);
       ctx.stroke();
     }
     ctx.fillRect(w * 0.08, h * 0.93, w * 0.84, h * 0.07);
@@ -361,6 +360,96 @@
   textures.white = createTexture((ctx, w, h) => {
     ctx.fillRect(0, 0, w, h);
   }, 4, 4);
+
+  function makeCharacterFrame({ bodyLean = 0, frontLeg = 0, backLeg = 0, frontArm = 0, backArm = 0, bob = 0, scarf = 0 }) {
+    return createTexture((ctx, w, h) => {
+      const cx = w * 0.48 + bodyLean;
+      const footY = h * 0.95;
+      const hipY = h * 0.63 - bob;
+      const shoulderY = h * 0.39 - bob;
+      const headY = h * 0.19 - bob;
+
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = 22;
+
+      ctx.beginPath();
+      ctx.moveTo(cx, shoulderY);
+      ctx.lineTo(cx + bodyLean * 0.35, hipY);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(cx + 8, shoulderY + 12);
+      ctx.lineTo(cx + 32, shoulderY + 54 + backArm * 0.45);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(cx - 2, shoulderY + 16);
+      ctx.lineTo(cx - 26, shoulderY + 56 + frontArm * 0.45);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(cx + 6, hipY);
+      ctx.lineTo(cx + 18, footY - 74);
+      ctx.lineTo(cx + 26, footY + frontLeg);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(cx - 4, hipY);
+      ctx.lineTo(cx - 18, footY - 70);
+      ctx.lineTo(cx - 22, footY + backLeg);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(cx - 16, shoulderY + 4);
+      ctx.lineTo(cx + 16, shoulderY + 1);
+      ctx.lineTo(cx + 24, hipY - 18);
+      ctx.lineTo(cx - 2, hipY + 14);
+      ctx.lineTo(cx - 24, hipY - 6);
+      ctx.closePath();
+      ctx.fill();
+
+      if (scarf) {
+        ctx.lineWidth = 11;
+        ctx.beginPath();
+        ctx.moveTo(cx + 2, shoulderY + 10);
+        ctx.lineTo(cx + 22, shoulderY + 18);
+        ctx.lineTo(cx + 44, shoulderY + 26 + scarf);
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      ctx.arc(cx, headY, 30, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(cx - 12, headY + 16);
+      ctx.quadraticCurveTo(cx + 12, headY + 26, cx + 20, headY + 54);
+      ctx.lineTo(cx + 2, headY + 58);
+      ctx.quadraticCurveTo(cx - 30, headY + 42, cx - 24, headY + 8);
+      ctx.closePath();
+      ctx.fill();
+    }, 256, 512);
+  }
+
+  const characterFrames = {
+    idle: [
+      makeCharacterFrame({ bob: 0, bodyLean: 0, frontLeg: 0, backLeg: 0, frontArm: 0, backArm: 0, scarf: 4 }),
+      makeCharacterFrame({ bob: 3, bodyLean: 1, frontLeg: 0, backLeg: 0, frontArm: -2, backArm: 2, scarf: 8 }),
+      makeCharacterFrame({ bob: 1, bodyLean: 0, frontLeg: 0, backLeg: 0, frontArm: 2, backArm: -2, scarf: 5 }),
+      makeCharacterFrame({ bob: 2, bodyLean: -1, frontLeg: 0, backLeg: 0, frontArm: 1, backArm: 0, scarf: 7 })
+    ],
+    walk: [
+      makeCharacterFrame({ bodyLean: 3, frontLeg: 10, backLeg: -6, frontArm: -16, backArm: 18, bob: 2, scarf: 8 }),
+      makeCharacterFrame({ bodyLean: 4, frontLeg: 4, backLeg: -2, frontArm: -8, backArm: 10, bob: 4, scarf: 10 }),
+      makeCharacterFrame({ bodyLean: 1, frontLeg: -2, backLeg: 3, frontArm: 2, backArm: -2, bob: 1, scarf: 6 }),
+      makeCharacterFrame({ bodyLean: -2, frontLeg: -8, backLeg: 8, frontArm: 12, backArm: -14, bob: 3, scarf: 3 }),
+      makeCharacterFrame({ bodyLean: -3, frontLeg: -4, backLeg: 4, frontArm: 8, backArm: -10, bob: 4, scarf: 1 }),
+      makeCharacterFrame({ bodyLean: 0, frontLeg: 3, backLeg: -1, frontArm: -1, backArm: 3, bob: 1, scarf: 4 }),
+      makeCharacterFrame({ bodyLean: 2, frontLeg: 8, backLeg: -8, frontArm: -14, backArm: 14, bob: 3, scarf: 7 }),
+      makeCharacterFrame({ bodyLean: 4, frontLeg: 12, backLeg: -10, frontArm: -18, backArm: 18, bob: 2, scarf: 9 })
+    ]
+  };
 
   function mulberry32(seed) {
     return function () {
@@ -371,10 +460,11 @@
     };
   }
 
-  const rand = mulberry32(834921);
-  const WORLD = { minX: -72, maxX: 72, nearZ: 6, farZ: -42 };
+  const rand = mulberry32(520913);
+  const WORLD = { minX: -92, maxX: 92, nearZ: 6.5, farZ: -42 };
   const fogColor = [0.93, 0.95, 0.95];
-  const groundY = -4.4;
+  const groundY = -4.25;
+  const pathZ = 0.25;
 
   const ground = {
     mesh: groundMesh,
@@ -382,11 +472,11 @@
     x: 0,
     y: groundY,
     z: WORLD.nearZ,
-    sx: 180,
+    sx: 210,
     sy: 1,
     sz: WORLD.nearZ - WORLD.farZ,
     layer: 'ground',
-    tint: [0.018, 0.024, 0.03],
+    tint: [0.055, 0.060, 0.064],
     shade: 1,
     opacity: 1,
     noFog: false
@@ -395,9 +485,9 @@
   const objects = [];
 
   function classifyLayer(z) {
-    if (z > 2) return 'foreground';
-    if (z > -13) return 'near';
-    if (z > -26) return 'mid';
+    if (z > 2.0) return 'foreground';
+    if (z > -9) return 'near';
+    if (z > -23) return 'mid';
     return 'far';
   }
 
@@ -415,66 +505,98 @@
       shade: opts.shade ?? 1,
       opacity: opts.opacity ?? 1,
       noFog: !!opts.noFog,
+      tint: opts.tint || null,
       layer: opts.layer || classifyLayer(z)
     });
   }
 
-  function scatterForest() {
-    const treeTypes = ['treeA', 'treeB', 'treeC', 'snag'];
-    const treeCount = 96;
-    const shrubCount = 54;
-    const grassCount = 46;
-    const foregroundCount = 16;
+  function scatterBand(minX, maxX, step, jitter, cb) {
+    for (let x = minX; x <= maxX; x += step) {
+      cb(x + (rand() - 0.5) * jitter);
+    }
+  }
 
-    for (let i = 0; i < treeCount; i++) {
-      const zMix = Math.pow(rand(), 1.12);
-      const z = WORLD.nearZ - 8 - zMix * 36;
+  function scatterForest() {
+    const backTreeTypes = ['treeA', 'treeB', 'treeC', 'treeC', 'snag'];
+
+    // Dense treeline behind the path: highest density close behind the character, then falling off into depth.
+    for (let i = 0; i < 136; i++) {
+      const depthMix = Math.pow(rand(), 1.65);
+      const z = -4.5 - depthMix * 32.0;
       const x = WORLD.minX + rand() * (WORLD.maxX - WORLD.minX);
-      const height = 8 + rand() * 18;
-      const width = height * (0.18 + rand() * 0.13);
-      const type = treeTypes[Math.floor(rand() * treeTypes.length)];
-      addBillboard(type, x, z, width, height, {
-        shade: 0.76 + rand() * 0.18
+      const height = 9 + rand() * (18 - depthMix * 4);
+      const width = height * (0.18 + rand() * 0.14);
+      addBillboard(backTreeTypes[Math.floor(rand() * backTreeTypes.length)], x, z, width, height, {
+        shade: 0.92 + rand() * 0.18
       });
     }
 
-    for (let i = 0; i < shrubCount; i++) {
-      const zMix = Math.pow(rand(), 1.15);
-      const z = WORLD.nearZ - 7 - zMix * 35;
+    // Additional slimmer far trunks to keep the distant forest full without overpowering it.
+    for (let i = 0; i < 34; i++) {
+      const z = -24 - rand() * 16;
       const x = WORLD.minX + rand() * (WORLD.maxX - WORLD.minX);
-      if (rand() < 0.58) {
-        const h = 1.8 + rand() * 2.8;
-        addBillboard('bush', x, z, h * 1.5, h, { shade: 0.84 + rand() * 0.12 });
+      const height = 12 + rand() * 10;
+      addBillboard('snag', x, z, height * 0.16, height, { shade: 1.02 + rand() * 0.12, opacity: 0.92 });
+    }
+
+    // Back-side rocks and bushes around the base of the denser forest.
+    for (let i = 0; i < 54; i++) {
+      const depthMix = Math.pow(rand(), 1.35);
+      const z = -3.5 - depthMix * 24;
+      const x = WORLD.minX + rand() * (WORLD.maxX - WORLD.minX);
+      if (rand() < 0.60) {
+        const h = 1.5 + rand() * 2.6;
+        addBillboard('bush', x, z, h * 1.45, h, { shade: 0.94 + rand() * 0.14, opacity: 0.90 });
+      } else {
+        const h = 1.0 + rand() * 1.7;
+        addBillboard('rock', x, z, h * 1.55, h, { shade: 0.88 + rand() * 0.12, opacity: 0.94 });
+      }
+    }
+
+    // Near side of the path: sparse trees only.
+    for (let i = 0; i < 10; i++) {
+      const x = WORLD.minX + rand() * (WORLD.maxX - WORLD.minX);
+      const z = 2.2 + rand() * 2.6;
+      const height = 7 + rand() * 6;
+      addBillboard(rand() < 0.65 ? 'treeA' : 'snag', x, z, height * 0.18, height, {
+        shade: 0.78 + rand() * 0.10,
+        layer: 'foreground'
+      });
+    }
+
+    // Near-side path props: more small rocks and bushes around the character lane.
+    for (let i = 0; i < 60; i++) {
+      const x = WORLD.minX + rand() * (WORLD.maxX - WORLD.minX);
+      const z = 0.8 + rand() * 3.2;
+      if (rand() < 0.52) {
+        const h = 1.0 + rand() * 1.4;
+        addBillboard('rock', x, z, h * 1.5, h, { shade: 0.78 + rand() * 0.08, layer: 'foreground' });
       } else {
         const h = 1.0 + rand() * 1.8;
-        addBillboard('rock', x, z, h * 1.55, h, { shade: 0.74 + rand() * 0.10 });
+        addBillboard('bush', x, z, h * 1.45, h, { shade: 0.84 + rand() * 0.10, layer: 'foreground', opacity: 0.92 });
       }
     }
 
-    for (let i = 0; i < grassCount; i++) {
-      const zMix = Math.pow(rand(), 1.06);
-      const z = WORLD.nearZ - 6 - zMix * 28;
-      const x = WORLD.minX + rand() * (WORLD.maxX - WORLD.minX);
-      const h = 1.1 + rand() * 1.7;
-      addBillboard('grass', x, z, h * 0.95, h, { shade: 0.72 + rand() * 0.08, opacity: 0.95 });
-    }
+    // Low grass belt along the near side, giving the ankle-height occlusion.
+    scatterBand(WORLD.minX - 2, WORLD.maxX + 2, 2.1, 1.0, x => {
+      const z = 1.3 + rand() * 1.4;
+      const h = 1.0 + rand() * 1.0;
+      addBillboard('grass', x, z, h * 0.95, h, {
+        shade: 0.78 + rand() * 0.08,
+        opacity: 0.95,
+        layer: 'foreground'
+      });
+    });
 
-    for (let i = 0; i < foregroundCount; i++) {
+    // Extra scattered grass just behind the path to soften the base of the back treeline.
+    for (let i = 0; i < 62; i++) {
       const x = WORLD.minX + rand() * (WORLD.maxX - WORLD.minX);
-      const z = 2.2 + rand() * 3.8;
-      if (rand() < 0.75) {
-        const h = 2.0 + rand() * 3.0;
-        addBillboard('grass', x, z, h * 0.95, h, {
-          shade: 0.30 + rand() * 0.06,
-          layer: 'foreground'
-        });
-      } else {
-        const h = 5.5 + rand() * 5.5;
-        addBillboard(rand() > 0.5 ? 'treeA' : 'snag', x, z, h * 0.22, h, {
-          shade: 0.28 + rand() * 0.06,
-          layer: 'foreground'
-        });
-      }
+      const z = -1.0 - rand() * 4.0;
+      const h = 0.9 + rand() * 1.1;
+      addBillboard('grass', x, z, h * 0.95, h, {
+        shade: 0.88 + rand() * 0.10,
+        opacity: 0.86
+      });
     }
 
     objects.sort((a, b) => a.z - b.z);
@@ -482,8 +604,27 @@
 
   scatterForest();
 
+  const character = {
+    mesh: billboardMesh,
+    x: -6.0,
+    y: groundY,
+    z: pathZ,
+    sx: 2.25,
+    sy: 4.8,
+    sz: 1,
+    flip: false,
+    layer: 'character',
+    tint: [0.18, 0.17, 0.17],
+    opacity: 0.96,
+    noFog: false,
+    screenOffsetX: -6.0,
+    walkPhase: 0,
+    lastFacing: 1
+  };
+
   const debugTints = {
     ground: [0.50, 0.46, 0.75],
+    character: [0.82, 0.58, 0.32],
     foreground: [0.70, 0.32, 0.28],
     near: [0.67, 0.43, 0.31],
     mid: [0.42, 0.59, 0.55],
@@ -492,12 +633,12 @@
 
   const camera = {
     x: 0,
-    y: -1.85,
-    z: 13.8,
-    targetY: groundY + 0.95,
-    targetZ: -18,
-    minX: -42,
-    maxX: 42
+    y: -1.55,
+    z: 14.2,
+    targetY: groundY + 1.15,
+    targetZ: -14,
+    minX: -52,
+    maxX: 52
   };
 
   let projection = mat4Identity();
@@ -508,6 +649,8 @@
   let dragStartX = 0;
   let dragStartCameraX = 0;
   let lastTime = performance.now();
+  let previousCameraX = camera.x;
+  let recentMotion = 0;
   let hintTimer = window.setTimeout(() => hintEl.classList.add('hidden'), 4200);
 
   function hideHint() {
@@ -526,30 +669,40 @@
       canvas.width = w;
       canvas.height = h;
       gl.viewport(0, 0, w, h);
-      projection = mat4Perspective((32 * Math.PI) / 180, w / h, 0.1, 160);
+      projection = mat4Perspective((31 * Math.PI) / 180, w / h, 0.1, 180);
     }
   }
 
   function tintFor(obj) {
     if (debugDepth) return debugTints[obj.layer] || [1, 1, 1];
     if (obj.tint) return obj.tint;
-    const base = [0.03, 0.04, 0.048];
+    const base = [0.105, 0.112, 0.118];
     return [base[0] * obj.shade, base[1] * obj.shade, base[2] * obj.shade];
   }
 
-  function drawObject(obj, view) {
+  function drawObject(obj, view, textureOverride = null) {
     bindMesh(obj.mesh);
-    gl.bindTexture(gl.TEXTURE_2D, obj.texture);
+    gl.bindTexture(gl.TEXTURE_2D, textureOverride || obj.texture);
     gl.uniformMatrix4fv(loc.model, false, mat4Model(obj.x, obj.y, obj.z, obj.sx, obj.sy, obj.sz, obj.flip));
     gl.uniformMatrix4fv(loc.view, false, view);
     const tint = tintFor(obj);
     gl.uniform3f(loc.tint, tint[0], tint[1], tint[2]);
     gl.uniform3f(loc.fogColor, fogColor[0], fogColor[1], fogColor[2]);
-    gl.uniform1f(loc.fogNear, 8.0);
-    gl.uniform1f(loc.fogFar, 50.0);
+    gl.uniform1f(loc.fogNear, 7.0);
+    gl.uniform1f(loc.fogFar, 46.0);
     gl.uniform1f(loc.fogAmount, obj.noFog ? 0 : (debugDepth ? 0.22 : 1.0));
     gl.uniform1f(loc.opacity, obj.opacity);
     gl.drawElements(gl.TRIANGLES, obj.mesh.count, gl.UNSIGNED_SHORT, 0);
+  }
+
+  function currentCharacterTexture(now, isWalking) {
+    if (!isWalking) {
+      const frame = Math.floor(now * 0.0035) % characterFrames.idle.length;
+      return characterFrames.idle[frame];
+    }
+    const fps = 10;
+    const frame = Math.floor(character.walkPhase * fps) % characterFrames.walk.length;
+    return characterFrames.walk[frame];
   }
 
   function render(now) {
@@ -559,10 +712,21 @@
 
     const dir = (moveRight ? 1 : 0) - (moveLeft ? 1 : 0);
     if (dir) {
-      camera.x += dir * 7.2 * dt;
+      camera.x += dir * 7.0 * dt;
       camera.x = Math.max(camera.minX, Math.min(camera.maxX, camera.x));
       hideHint();
     }
+
+    recentMotion = (camera.x - previousCameraX) / Math.max(dt, 0.0001);
+    previousCameraX = camera.x;
+
+    const isWalking = Math.abs(recentMotion) > 0.2;
+    if (isWalking) {
+      character.lastFacing = recentMotion >= 0 ? 1 : -1;
+      character.walkPhase += dt;
+    }
+    character.flip = character.lastFacing < 0;
+    character.x = camera.x + character.screenOffsetX;
 
     gl.clearColor(fogColor[0], fogColor[1], fogColor[2], 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -574,11 +738,21 @@
     const view = mat4LookAt(eye, target, [0, 1, 0]);
 
     drawObject(ground, view);
-    for (const obj of objects) drawObject(obj, view);
+
+    const charTexture = currentCharacterTexture(now, isWalking);
+    let drawnCharacter = false;
+    for (const obj of objects) {
+      if (!drawnCharacter && obj.z >= character.z) {
+        drawObject(character, view, charTexture);
+        drawnCharacter = true;
+      }
+      drawObject(obj, view);
+    }
+    if (!drawnCharacter) drawObject(character, view, charTexture);
 
     statusEl.textContent = debugDepth
-      ? `Depth view · camera X ${camera.x.toFixed(1)} · real 3D scatter`
-      : `3D scatter · camera X ${camera.x.toFixed(1)} · depth fog`;
+      ? `Depth view · camera X ${camera.x.toFixed(1)} · path + character`
+      : `3D forest · camera X ${camera.x.toFixed(1)} · depth fog`;
 
     requestAnimationFrame(render);
   }
@@ -663,6 +837,7 @@
     moveLeft = false;
     moveRight = false;
     lastTime = performance.now();
+    previousCameraX = camera.x;
   });
 
   resize();
