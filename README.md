@@ -1,11 +1,11 @@
-# GameHub v1.8.39
+# GameHub v1.8.40
 
-SideScroll first prototype.
+SideScroll cohesion pass.
 
-- Added **SideScroll** as a new GameHub game.
-- Built the forest from real WebGL planes placed at different world-space depths.
-- Perspective camera movement creates the parallax naturally from physical distance.
-- Depth-based fog blends distant trees, rocks and undergrowth into a bright misty background.
-- Drag the forest or hold the left/right controls to move the camera.
-- Added a temporary **Depth view** diagnostic so the near, middle and far depth bands can be checked easily.
-- Forest assets are procedural placeholders for now; the structure is ready for transparent image assets and a sprite-sheet character later.
+- Refined **SideScroll** based on your feedback.
+- Made the fog feel more cohesive by brightening the scene itself, not just the distant trees.
+- Added soft ground-level mist planes at different depths so the spaces between trees carry atmospheric depth.
+- Lowered the camera and adjusted the scene proportions so plane bases stay on a more consistent level through depth.
+- Reduced the strong upward lift in distant planes by using a lower eye level and a slightly longer-lens perspective.
+- Toned and simplified the foreground silhouettes so grass, rocks and trunks frame the scene without overpowering it.
+- Kept the diagnostic **Depth view** so the real 3D spacing can still be checked easily.

@@ -275,15 +275,17 @@
 
   textures.grass = createTexture((ctx,w,h) => {
     ctx.lineWidth = 7;
-    for (let i=0;i<15;i++) {
-      const x = w*(.08 + i*.06);
-      const lean = ((i%5)-2)*w*.035;
+    for (let i=0;i<16;i++) {
+      const startX = w*(.10 + i*.05) + ((i % 2) ? 5 : -5);
+      const midX = startX + (((i % 5) - 2) * w * .03);
+      const tipX = startX + (((i % 7) - 3) * w * .02);
+      const tipY = h*(.18 + (i % 4)*.08);
       ctx.beginPath();
-      ctx.moveTo(w*.50,h);
-      ctx.quadraticCurveTo(x,h*.63,x+lean,h*.16 + (i%4)*h*.08);
+      ctx.moveTo(startX, h);
+      ctx.quadraticCurveTo(midX, h*.62, tipX, tipY);
       ctx.stroke();
     }
-    ctx.fillRect(w*.13,h*.91,w*.74,h*.09);
+    ctx.fillRect(w*.10,h*.92,w*.80,h*.08);
   },256,256);
 
   textures.rock = createTexture((ctx,w,h) => {
@@ -311,24 +313,39 @@
 
   textures.background = createTexture((ctx,w,h) => {
     const base = ctx.createLinearGradient(0,0,0,h);
-    base.addColorStop(0,'rgb(36,54,64)');
-    base.addColorStop(.48,'rgb(117,139,142)');
-    base.addColorStop(1,'rgb(23,34,42)');
+    base.addColorStop(0,'rgb(226,232,229)');
+    base.addColorStop(.42,'rgb(212,221,218)');
+    base.addColorStop(.78,'rgb(196,208,208)');
+    base.addColorStop(1,'rgb(183,197,199)');
     ctx.fillStyle = base;
     ctx.fillRect(0,0,w,h);
-    const glow = ctx.createRadialGradient(w*.54,h*.48,2,w*.54,h*.48,w*.48);
-    glow.addColorStop(0,'rgba(224,233,222,.92)');
-    glow.addColorStop(.20,'rgba(190,207,200,.70)');
-    glow.addColorStop(.58,'rgba(93,118,125,.20)');
-    glow.addColorStop(1,'rgba(0,0,0,0)');
+
+    const glow = ctx.createRadialGradient(w*.56,h*.44,8,w*.56,h*.44,w*.54);
+    glow.addColorStop(0,'rgba(255,255,255,.98)');
+    glow.addColorStop(.20,'rgba(247,250,248,.90)');
+    glow.addColorStop(.48,'rgba(229,236,233,.48)');
+    glow.addColorStop(1,'rgba(226,232,229,0)');
     ctx.fillStyle = glow;
     ctx.fillRect(0,0,w,h);
-    const bottom = ctx.createLinearGradient(0,h*.65,0,h);
-    bottom.addColorStop(0,'rgba(8,15,20,0)');
-    bottom.addColorStop(1,'rgba(4,9,13,.76)');
-    ctx.fillStyle = bottom;
-    ctx.fillRect(0,h*.60,w,h*.40);
+
+    const lowMist = ctx.createLinearGradient(0,h*.52,0,h);
+    lowMist.addColorStop(0,'rgba(236,240,238,0)');
+    lowMist.addColorStop(.35,'rgba(231,236,234,.22)');
+    lowMist.addColorStop(.78,'rgba(223,229,228,.45)');
+    lowMist.addColorStop(1,'rgba(214,223,223,.58)');
+    ctx.fillStyle = lowMist;
+    ctx.fillRect(0,h*.50,w,h*.50);
   },512,512);
+
+  textures.mist = createTexture((ctx,w,h) => {
+    const g = ctx.createRadialGradient(w*.50,h*.55,w*.10,w*.50,h*.55,w*.42);
+    g.addColorStop(0,'rgba(255,255,255,.95)');
+    g.addColorStop(.36,'rgba(255,255,255,.60)');
+    g.addColorStop(.72,'rgba(244,247,246,.24)');
+    g.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,w,h);
+  },512,256);
 
   function mulberry32(seed) {
     return function() {
@@ -341,7 +358,7 @@
 
   const rand = mulberry32(172903);
   const objects = [];
-  const groundY = -3.18;
+  const groundY = -4.10;
 
   function addObject(type,x,z,width,height,opts={}) {
     objects.push({
@@ -382,28 +399,49 @@
 
   // These are genuine world-space depth bands. Camera motion is identical for every object;
   // the apparent parallax comes only from perspective projection and physical Z distance.
-  scatterLayer({ layer:'deep', z:-34, zJitter:5, count:28, hMin:25, hMax:34, widthRatioMin:.22, widthRatioMax:.34, shrubScale:4.2, shadeMin:.88, shadeMax:1.02 });
-  scatterLayer({ layer:'far',  z:-24, zJitter:5, count:26, hMin:20, hMax:29, widthRatioMin:.22, widthRatioMax:.35, shrubScale:3.4, shadeMin:.84, shadeMax:.98 });
-  scatterLayer({ layer:'mid',  z:-13, zJitter:5, count:24, hMin:15, hMax:23, widthRatioMin:.20, widthRatioMax:.34, shrubScale:2.6, shadeMin:.80, shadeMax:.94 });
-  scatterLayer({ layer:'near', z:-4,  zJitter:4, count:23, hMin:10, hMax:16, widthRatioMin:.19, widthRatioMax:.32, shrubScale:1.8, shadeMin:.72, shadeMax:.88 });
+  scatterLayer({ layer:'deep', z:-36, zJitter:5, count:24, hMin:26, hMax:34, widthRatioMin:.22, widthRatioMax:.34, shrubScale:4.0, shadeMin:.92, shadeMax:1.04 });
+  scatterLayer({ layer:'far',  z:-26, zJitter:5, count:24, hMin:21, hMax:29, widthRatioMin:.22, widthRatioMax:.35, shrubScale:3.2, shadeMin:.86, shadeMax:.98 });
+  scatterLayer({ layer:'mid',  z:-15, zJitter:4, count:22, hMin:16, hMax:23, widthRatioMin:.20, widthRatioMax:.34, shrubScale:2.5, shadeMin:.74, shadeMax:.88 });
+  scatterLayer({ layer:'near', z:-7,  zJitter:3.5, count:18, hMin:10, hMax:15, widthRatioMin:.19, widthRatioMax:.32, shrubScale:1.7, shadeMin:.58, shadeMax:.74 });
 
   // Sparse foreground silhouettes between the camera and the notional character plane.
-  for (let i=0;i<28;i++) {
+  for (let i=0;i<18;i++) {
     const x = -50 + rand()*100;
-    const z = 4.4 + rand()*2.1;
-    if (rand() < .58) {
-      const h = 2.2 + rand()*3.6;
-      addObject('grass',x,z,h*.85,h,{ layer:'foreground', shade:.48 + rand()*.12 });
+    const z = 3.8 + rand()*1.8;
+    if (rand() < .70) {
+      const h = 1.6 + rand()*2.2;
+      addObject('grass',x,z,h*.95,h,{ layer:'foreground', shade:.34 + rand()*.08 });
     } else {
-      const h = 6.5 + rand()*6;
-      addObject(rand()>.5?'treeA':'snag',x,z,h*.27,h,{ layer:'foreground', shade:.42 + rand()*.1 });
+      const h = 5.2 + rand()*4.2;
+      addObject(rand()>.5?'treeA':'snag',x,z,h*.25,h,{ layer:'foreground', shade:.30 + rand()*.08 });
     }
   }
 
   // A few near rocks give the bottom silhouette some readable motion.
   for (let i=0;i<18;i++) {
-    const h = .65 + rand()*1.1;
-    addObject('rock',-48+rand()*96,2.0+rand()*3.0,h*1.5,h,{layer:'foreground',shade:.46+rand()*.08});
+    const h = .60 + rand()*1.0;
+    addObject('rock',-48+rand()*96,1.8+rand()*2.6,h*1.5,h,{layer:'foreground',shade:.34+rand()*.08});
+  }
+
+  // Ground-level mist cards create the cohesive light fog seen between the trees,
+  // instead of only lightening the trees themselves.
+  for (const band of [
+    { z:-34, count:7, widthMin:20, widthMax:30, heightMin:7, heightMax:10, y:groundY-0.4, opacity:0.34 },
+    { z:-24, count:8, widthMin:14, widthMax:22, heightMin:5, heightMax:8, y:groundY-0.55, opacity:0.24 },
+    { z:-15, count:8, widthMin:11, widthMax:17, heightMin:4, heightMax:6, y:groundY-0.7, opacity:0.15 }
+  ]) {
+    for (let i=0;i<band.count;i++) {
+      const width = band.widthMin + rand()*(band.widthMax-band.widthMin);
+      const height = band.heightMin + rand()*(band.heightMax-band.heightMin);
+      addObject('mist', -56 + rand()*112, band.z + (rand()-.5)*4.0, width, height, {
+        y: band.y + rand()*0.45,
+        layer: 'mist',
+        shade: 1,
+        opacity: band.opacity * (0.85 + rand()*0.3),
+        noFog: true,
+        flip: rand() > .5
+      });
+    }
   }
 
   // Render far-to-near. Depth testing still decides visibility; the order mainly improves soft edges.
@@ -416,17 +454,18 @@
     shade: 1, opacity: 1, noFog: true, layer: 'background'
   };
 
-  const fogColor = [0.70, 0.76, 0.74];
-  const baseTint = [0.055, 0.075, 0.085];
+  const fogColor = [0.92, 0.95, 0.94];
+  const baseTint = [0.038, 0.050, 0.058];
   const debugTints = {
     foreground:[0.68,0.34,0.27],
     near:[0.66,0.42,0.34],
     mid:[0.42,0.58,0.54],
     far:[0.38,0.49,0.67],
-    deep:[0.43,0.49,0.64]
+    deep:[0.43,0.49,0.64],
+    mist:[0.90,0.94,0.97]
   };
 
-  const camera = { x:0, y:.65, z:12.0, minX:-36, maxX:36 };
+  const camera = { x:0, y:-2.35, z:14.5, minX:-36, maxX:36 };
   let projection = mat4Identity();
   let debugDepth = false;
   let moveLeft = false;
@@ -453,7 +492,7 @@
       canvas.width = w;
       canvas.height = h;
       gl.viewport(0,0,w,h);
-      projection = mat4Perspective(36*Math.PI/180, w/h, .1, 120);
+      projection = mat4Perspective(28*Math.PI/180, w/h, .1, 120);
     }
   }
 
@@ -470,9 +509,9 @@
     const tint = tintFor(obj);
     gl.uniform3f(loc.tint,tint[0],tint[1],tint[2]);
     gl.uniform3f(loc.fogColor,fogColor[0],fogColor[1],fogColor[2]);
-    gl.uniform1f(loc.fogNear,12.5);
-    gl.uniform1f(loc.fogFar,58.0);
-    gl.uniform1f(loc.fogAmount,obj.noFog ? 0 : (debugDepth ? .36 : 1.0));
+    gl.uniform1f(loc.fogNear,10.0);
+    gl.uniform1f(loc.fogFar,54.0);
+    gl.uniform1f(loc.fogAmount,obj.noFog ? 0 : (debugDepth ? .30 : 1.0));
     gl.uniform1f(loc.opacity,obj.opacity);
     gl.drawElements(gl.TRIANGLES,6,gl.UNSIGNED_SHORT,0);
   }
@@ -489,7 +528,7 @@
       hideHint();
     }
 
-    gl.clearColor(.025,.045,.055,1);
+    gl.clearColor(0.86,0.90,0.90,1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.useProgram(program);
     gl.uniformMatrix4fv(loc.projection,false,projection);
@@ -501,7 +540,7 @@
 
     statusEl.textContent = debugDepth
       ? `Depth view · camera X ${camera.x.toFixed(1)} · real Z spacing`
-      : `3D planes · camera X ${camera.x.toFixed(1)} · depth fog`;
+      : `3D planes · camera X ${camera.x.toFixed(1)} · cohesive fog`;
 
     requestAnimationFrame(render);
   }

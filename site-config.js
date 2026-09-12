@@ -186,7 +186,7 @@ window.APP_CONFIG = {
       "description": "Explore a layered 3D forest and test real depth, fog and natural parallax.",
       "icon": "♠",
       "enabled": true,
-      "path": "game-16.html?v=1.8.39"
+      "path": "game-16.html?v=1.8.40"
     }
   ]
 };
