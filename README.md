@@ -1,10 +1,11 @@
-# GameHub v1.8.43
+# GameHub v1.8.44
 
-SideScroll density consistency + sprite-sheet pass.
+SideScroll visible sprite-sheet fix.
 
-- Refined **SideScroll** so the forest density stays visually consistent as you move left and right, rather than tapering away at the ends.
-- Switched the scene scatter to a repeating world-space tile, so the treeline and path-side dressing keep a more even feel across the full traversal range.
-- Slowed the SideScroll movement speed so the scene and character are easier to read.
-- Added a visible **character plane** using a proper 8-frame flip-book style sprite atlas.
-- Hooked the sprite animation timing to travel distance, so the walk cycle now advances with movement rather than ticking at a fixed unrelated rate.
-- Kept the denser treeline behind the path, the sparser near side, the low grass occlusion, and the real depth-fog setup.
+- Fixed the missing SideScroll character by switching from the hidden runtime-generated atlas to a real external PNG asset.
+- Added **sidescroll-character-sheet.png** as an 8-frame walk-cycle animation page in the repository root.
+- The character plane now uses that texture page directly, one eighth of the sheet at a time.
+- Moved the character closer to the visual centre and increased its size slightly so the walk test is obvious.
+- Slowed walking/camera movement substantially, including drag movement.
+- Kept the repeating world-space forest scatter so density stays consistent as you travel left/right.
+- Kept the walk cycle tied to travelled world distance rather than an unrelated fixed timer.

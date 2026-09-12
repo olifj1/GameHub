@@ -370,157 +370,38 @@
     ctx.fillRect(0, 0, w, h);
   }, 4, 4);
 
-  function drawRoundedRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
-    ctx.closePath();
+  function createImageTexture(url) {
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(
+      gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0,
+      gl.RGBA, gl.UNSIGNED_BYTE,
+      new Uint8Array([0, 0, 0, 0])
+    );
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    const image = new Image();
+    image.onload = () => {
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    };
+    image.onerror = () => {
+      errorBox.hidden = false;
+      errorBox.textContent = 'Character sprite sheet could not be loaded.';
+    };
+    image.src = url;
+    return tex;
   }
 
-  function createCharacterAtlas() {
-    const frameW = 128;
-    const frameH = 256;
-    const frames = [
-      {dx:0,  bob:3, armA:-12, armB:10, legA:9,  legB:-10, scarf:12, head:0},
-      {dx:1,  bob:1, armA:-7,  armB:6,  legA:3,  legB:-4,  scarf:10, head:1},
-      {dx:2,  bob:0, armA:0,   armB:-2, legA:-2, legB:2,   scarf:7,  head:1},
-      {dx:3,  bob:2, armA:10,  armB:-12,legA:-8, legB:10,  scarf:4,  head:0},
-      {dx:4,  bob:3, armA:12,  armB:-10,legA:-10,legB:8,   scarf:3,  head:-1},
-      {dx:3,  bob:1, armA:7,   armB:-6, legA:-4, legB:3,   scarf:5,  head:-1},
-      {dx:1,  bob:0, armA:0,   armB:1,  legA:2,  legB:-3,  scarf:8,  head:0},
-      {dx:0,  bob:2, armA:-10, armB:12, legA:10, legB:-11, scarf:11, head:0}
-    ];
-
-    return createTexture((ctx, w, h) => {
-      ctx.clearRect(0, 0, w, h);
-      frames.forEach((f, i) => {
-        const ox = i * frameW;
-        const cx = ox + 60 + f.dx;
-        const footY = 232;
-        const hipY = 158 - f.bob;
-        const shoulderY = 110 - f.bob;
-        const headY = 58 - f.bob + f.head;
-
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-
-        ctx.strokeStyle = 'rgba(230, 230, 222, 0.95)';
-        ctx.lineWidth = 7;
-        ctx.beginPath();
-        ctx.moveTo(cx + 8, shoulderY + 8);
-        ctx.quadraticCurveTo(cx + 30, shoulderY + 4, cx + 46, shoulderY + 22 + f.scarf);
-        ctx.stroke();
-
-        ctx.strokeStyle = 'rgba(70, 60, 56, 0.95)';
-        ctx.lineWidth = 10;
-        ctx.beginPath();
-        ctx.moveTo(cx - 3, hipY + 2);
-        ctx.lineTo(cx - 15, footY - 70);
-        ctx.lineTo(cx - 18, footY + f.legB);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(cx + 4, shoulderY + 22);
-        ctx.lineTo(cx + 20, shoulderY + 54 + f.armB);
-        ctx.stroke();
-
-        ctx.fillStyle = '#8f9384';
-        ctx.strokeStyle = 'rgba(72, 64, 58, 0.85)';
-        ctx.lineWidth = 2.2;
-        drawRoundedRect(ctx, cx - 19, shoulderY + 4, 38, 94, 16);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.fillStyle = '#b9784d';
-        ctx.beginPath();
-        ctx.moveTo(cx - 14, shoulderY + 10);
-        ctx.lineTo(cx + 12, shoulderY + 10);
-        ctx.lineTo(cx + 2, hipY - 4);
-        ctx.lineTo(cx - 20, hipY - 7);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.strokeStyle = '#6d5648';
-        ctx.lineWidth = 9;
-        ctx.beginPath();
-        ctx.moveTo(cx - 6, shoulderY + 22);
-        ctx.lineTo(cx - 24, shoulderY + 55 + f.armA);
-        ctx.stroke();
-
-        ctx.strokeStyle = '#4b433f';
-        ctx.lineWidth = 11;
-        ctx.beginPath();
-        ctx.moveTo(cx + 4, hipY + 1);
-        ctx.lineTo(cx + 18, footY - 76);
-        ctx.lineTo(cx + 28, footY + f.legA);
-        ctx.stroke();
-
-        ctx.fillStyle = '#f0e9dd';
-        ctx.strokeStyle = 'rgba(120, 112, 104, 0.8)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(cx - 22, headY - 6);
-        ctx.quadraticCurveTo(cx - 12, headY - 30, cx + 8, headY - 28);
-        ctx.quadraticCurveTo(cx + 30, headY - 22, cx + 26, headY + 6);
-        ctx.quadraticCurveTo(cx + 20, headY + 26, cx + 4, headY + 28);
-        ctx.quadraticCurveTo(cx - 8, headY + 26, cx - 18, headY + 10);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.fillStyle = '#f2ece3';
-        ctx.beginPath();
-        ctx.ellipse(cx - 6, headY + 18, 9, 33, 0.65, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.ellipse(cx + 8, headY + 12, 8, 30, 0.9, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.fillStyle = '#ebcc9d';
-        ctx.beginPath();
-        ctx.arc(cx + 5, headY + 2, 20, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#5a3a27';
-        ctx.beginPath();
-        ctx.moveTo(cx - 3, headY - 14);
-        ctx.quadraticCurveTo(cx + 14, headY - 10, cx + 16, headY + 5);
-        ctx.lineTo(cx + 4, headY - 2);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.fillStyle = '#2f2823';
-        ctx.beginPath();
-        ctx.arc(cx + 12, headY + 2, 1.8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = 'rgba(232, 147, 123, 0.95)';
-        ctx.beginPath();
-        ctx.arc(cx + 10, headY + 12, 4.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.strokeStyle = '#4c3d35';
-        ctx.lineWidth = 5;
-        ctx.beginPath();
-        ctx.moveTo(cx - 24, footY + f.legB + 2);
-        ctx.lineTo(cx - 12, footY + f.legB + 2);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(cx + 20, footY + f.legA + 3);
-        ctx.lineTo(cx + 34, footY + f.legA + 3);
-        ctx.stroke();
-      });
-    }, frameW * 8, frameH);
-  }
-
-  textures.characterAtlas = createCharacterAtlas();
+  // Real external 8-frame animation page. This is deliberately an ordinary PNG
+  // so it can later be replaced with a generated/painted character sheet without
+  // changing the renderer or animation code.
+  textures.characterAtlas = createImageTexture('sidescroll-character-sheet.png?v=1.8.44');
 
   function mulberry32(seed) {
     return function() {
@@ -676,15 +557,15 @@
     x: 0,
     y: groundY,
     z: pathZ,
-    sx: 3.2,
-    sy: 5.6,
+    sx: 3.55,
+    sy: 6.15,
     sz: 1,
     flip: false,
     layer: 'character',
     tint: [1, 1, 1],
     opacity: 0.98,
     noFog: false,
-    screenOffsetX: -4.8,
+    screenOffsetX: -0.9,
     distanceTravelled: 0,
     lastFacing: 1,
     wrap: false
@@ -784,7 +665,7 @@
     lastTime = now;
 
     const moveDir = (moveRight ? 1 : 0) - (moveLeft ? 1 : 0);
-    const speed = 2.85;
+    const speed = 1.35;
     if (moveDir) {
       camera.x += moveDir * speed * dt;
       hideHint();
@@ -875,7 +756,7 @@
   canvas.addEventListener('pointermove', e => {
     if (e.pointerId !== activePointer) return;
     const dx = e.clientX - dragStartX;
-    camera.x = dragStartCameraX - dx * 0.018;
+    camera.x = dragStartCameraX - dx * 0.009;
   });
 
   const endDrag = e => {
