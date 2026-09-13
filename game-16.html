@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.8.50">
+  <link rel="stylesheet" href="style.css?v=1.8.61">
   <title>SideScroll</title>
 </head>
 <body class="modular-game" data-game-id="game-16">
@@ -19,7 +19,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">PROTOTYPE</p>
       <h2 id="game-16-info-title">SideScroll</h2>
-      <p>This test still uses real 3D planes and depth fog, but now the forest density stays consistent as you move, and the character uses a proper flip-book style sprite atlas. Drag the scene or hold the controls to walk along the path. The walk cycle is now tied to travel distance so we can start judging timing and feel.</p>
+      <p>This test still uses real 3D planes and depth fog. The character now uses the new 16-frame minimal-iconic generated walk atlas, mapped as a 4×4 flip-book and advanced by travelled distance. Drag the scene or hold the controls to judge the generated character in the forest.</p>
     </div>
   </div>
 
@@ -35,7 +35,7 @@
           <canvas id="sidescroll-canvas" aria-label="Layered 3D forest depth prototype"></canvas>
 
           <div class="sidescroll-stage-hud">
-            <div class="sidescroll-status" id="sidescroll-status">3D forest · sprite atlas · walk test</div>
+            <div class="sidescroll-status" id="sidescroll-status">3D forest · 16-frame generated walk test</div>
             <button id="sidescroll-depth" class="sidescroll-depth-button" type="button" aria-pressed="false">Depth view</button>
           </div>
 
@@ -64,8 +64,8 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.8.50"></script>
-  <script src="core.js?v=1.8.50"></script>
-  <script src="game-16.js?v=1.8.50"></script>
+  <script src="site-config.js?v=1.8.61"></script>
+  <script src="core.js?v=1.8.61"></script>
+  <script src="game-16.js?v=1.8.61"></script>
 </body>
 </html>

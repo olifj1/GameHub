@@ -19,6 +19,9 @@
   const loadBtn = document.getElementById('walklab-load');
   const exportBtn = document.getElementById('walklab-export');
   const fileInput = document.getElementById('walklab-file');
+  const spriteBtn = document.getElementById('walklab-sprite');
+  const spriteLoadBtn = document.getElementById('walklab-sprite-load');
+  const spriteFileInput = document.getElementById('walklab-sprite-file');
   const fpsSlider = document.getElementById('walklab-fps');
   const fpsOut = document.getElementById('walklab-fps-out');
 
@@ -154,6 +157,82 @@
   // Normalised to the live editor canvas. Width drives height through the
   // fixed 2:3 aspect ratio; centre stays stable across all 16 frames.
   let exportFrame = { cx: 0.50, cy: 0.545, width: 0.44 };
+
+  // Sprite comparison is deliberately tied to the same fixed 4x4 Walk Lab
+  // atlas format as Export PNG. The bundled SideScroll character is loaded by
+  // default; the user can replace it with any other 4x4 image sheet.
+  let spriteOverlay = true;
+  let spriteAtlas = null;
+  let spriteAtlasName = 'SideScroll character';
+  const SPRITE_OPACITY = 0.58;
+
+  function keyBlackBackground(sourceCanvas) {
+    // Image-gen sheets often arrive on solid black. Key only the near-black
+    // pixels so dark leggings/hair remain intact while the page background
+    // becomes transparent for comparison over the stick rig.
+    const c = sourceCanvas.getContext('2d', { willReadFrequently: true });
+    const image = c.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+    const d = image.data;
+    let alreadyTransparent = false;
+    for (let i = 3; i < d.length; i += 4) {
+      if (d[i] < 250) { alreadyTransparent = true; break; }
+    }
+    if (!alreadyTransparent) {
+      for (let i = 0; i < d.length; i += 4) {
+        const m = Math.max(d[i], d[i + 1], d[i + 2]);
+        if (m <= 7) d[i + 3] = 0;
+        else if (m < 20) d[i + 3] = Math.round((m - 7) / 13 * 255);
+      }
+      c.putImageData(image, 0, 0);
+    }
+    return sourceCanvas;
+  }
+
+  function atlasFromImage(img) {
+    const out = document.createElement('canvas');
+    out.width = Math.max(4, img.naturalWidth || img.width || 4);
+    out.height = Math.max(4, img.naturalHeight || img.height || 4);
+    const c = out.getContext('2d', { willReadFrequently: true });
+    c.clearRect(0, 0, out.width, out.height);
+    c.drawImage(img, 0, 0, out.width, out.height);
+    return keyBlackBackground(out);
+  }
+
+  function loadSpriteURL(url, name = 'Sprite') {
+    const img = new Image();
+    img.onload = () => {
+      spriteAtlas = atlasFromImage(img);
+      spriteAtlasName = name;
+      spriteOverlay = true;
+      spriteBtn?.classList.add('active');
+      spriteBtn?.setAttribute('aria-pressed', 'true');
+      draw();
+    };
+    img.onerror = () => {
+      spriteAtlas = null;
+      draw();
+    };
+    img.src = url;
+  }
+
+  function drawSpriteFrame(c, frameIndex, W = canvas.width, H = canvas.height) {
+    if (!spriteOverlay || !spriteAtlas) return;
+    const r = exportRect(W, H);
+    const cellW = spriteAtlas.width / 4;
+    const cellH = spriteAtlas.height / 4;
+    const col = frameIndex % 4;
+    const row = Math.floor(frameIndex / 4);
+    c.save();
+    c.globalAlpha = SPRITE_OPACITY;
+    c.imageSmoothingEnabled = true;
+    c.imageSmoothingQuality = 'high';
+    c.drawImage(
+      spriteAtlas,
+      col * cellW, row * cellH, cellW, cellH,
+      r.x, r.y, r.w, r.h
+    );
+    c.restore();
+  }
 
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -457,6 +536,10 @@
       ctx.beginPath(); ctx.moveTo(x,g.groundY+.03*g.scale); ctx.lineTo(x+spacing*.35,g.groundY+.03*g.scale); ctx.stroke();
     }
 
+    // Generated sprite sits beneath the stick rig so pose mismatches are easy
+    // to spot while the lab plays or scrubs through all 16 frames.
+    drawSpriteFrame(ctx, frame, W, H);
+
     if (onion) {
       const pPrev=frames[(frame+15)%16], pNext=frames[(frame+1)%16];
       drawPoseTo(ctx,pPrev,geometry(pPrev),{ghost:true,alpha:.17});
@@ -466,7 +549,7 @@
     drawExportFrame(ctx,W,H);
 
     const p=frames[frame];
-    readout.textContent=`Frame ${frame+1} / 16 · ${p.name} · ${p.key?'KEY':'IN-BETWEEN'} · ${p.planted==='A'?'LEFT':'RIGHT'} PLANT`;
+    readout.textContent=`Frame ${frame+1} / 16 · ${p.name} · ${p.key?'KEY':'IN-BETWEEN'} · ${p.planted==='A'?'LEFT':'RIGHT'} PLANT${spriteOverlay&&spriteAtlas?' · SPRITE':''}`;
     editHint.textContent=activeExportControl ? `Editing export frame · ${activeExportControl}` : (activeJoint ? `Editing ${activeJoint}` : 'Drag joints · export frame: top handle moves, corners scale');
     scrub.value=String(frame);
   }
@@ -588,7 +671,7 @@
   }
 
   function saveJSON(){
-    const data={type:'GameHubWalkLab',version:8,fps,body:BODY,exportFrame,export:{cellW:EXPORT.cellW,cellH:EXPORT.cellH,cols:EXPORT.cols,rows:EXPORT.rows,aspect:EXPORT.aspect},frames};
+    const data={type:'GameHubWalkLab',version:9,fps,body:BODY,exportFrame,export:{cellW:EXPORT.cellW,cellH:EXPORT.cellH,cols:EXPORT.cols,rows:EXPORT.rows,aspect:EXPORT.aspect},frames};
     downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'walk-lab-animation.json');
   }
 
@@ -659,11 +742,37 @@
   loadBtn.addEventListener('click',()=>fileInput.click());
   fileInput.addEventListener('change',()=>{const f=fileInput.files?.[0];if(f)loadJSON(f);fileInput.value='';});
   exportBtn.addEventListener('click',exportPNG);
+  spriteBtn?.addEventListener('click',()=>{
+    spriteOverlay=!spriteOverlay;
+    spriteBtn.classList.toggle('active',spriteOverlay);
+    spriteBtn.setAttribute('aria-pressed',String(spriteOverlay));
+    draw();
+  });
+  spriteLoadBtn?.addEventListener('click',()=>spriteFileInput?.click());
+  spriteFileInput?.addEventListener('change',()=>{
+    const f=spriteFileInput.files?.[0];
+    if(!f)return;
+    const url=URL.createObjectURL(f);
+    const img=new Image();
+    img.onload=()=>{
+      spriteAtlas=atlasFromImage(img);
+      spriteAtlasName=f.name || 'Loaded sprite';
+      spriteOverlay=true;
+      spriteBtn?.classList.add('active');
+      spriteBtn?.setAttribute('aria-pressed','true');
+      URL.revokeObjectURL(url);
+      draw();
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);alert('Could not load that sprite image.');};
+    img.src=url;
+    spriteFileInput.value='';
+  });
   fpsSlider.addEventListener('input',()=>{fps=Number(fpsSlider.value);fpsOut.value=`${fps} fps`;fpsOut.textContent=`${fps} fps`;lastAdvance=performance.now();});
   window.addEventListener('resize',draw,{passive:true});
 
   playBtn.textContent='Play';
   playBtn.classList.remove('active');
+  loadSpriteURL('sidescroll-character-walk.png?v=1.8.61', 'Minimal iconic girl');
   draw();
   requestAnimationFrame(animate);
 })();

@@ -295,7 +295,7 @@
   treeAssets.forEach(([id, w, h]) => {
     const key = `tree${id}`;
     assetAspect[key] = w / h;
-    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.52`, key);
+    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.61`, key);
   });
 
   const groundAssets = [
@@ -306,11 +306,11 @@
   groundAssets.forEach(([id, w, h]) => {
     const key = `ground${id}`;
     assetAspect[key] = w / h;
-    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.52' : null;
-    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.52`, key, fallback);
+    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.61' : null;
+    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.61`, key, fallback);
   });
 
-  textures.characterAtlas = createImageTexture('sidescroll-character-walk.png?v=1.8.52', 'character walk sprite sheet');
+  textures.characterAtlas = createImageTexture('sidescroll-character-walk.png?v=1.8.61', '16-frame character walk sprite sheet');
 
   function mulberry32(seed) {
     return function() {
@@ -537,7 +537,7 @@
     x: 0,
     y: groundY,
     z: pathZ,
-    sx: 2.20,
+    sx: 2.40,
     sy: 3.60,
     sz: 1,
     flip: false,
@@ -633,13 +633,25 @@
   }
 
   function currentCharacterFrame(isWalking) {
-    if (!isWalking) {
-      const t = performance.now() * 0.001;
-      return Math.floor(t * 1.5) % 2 === 0 ? 0 : 1;
-    }
+    // The generated atlas now follows the Walk Lab format exactly: 16 frames
+    // arranged left-to-right, top-to-bottom in a 4x4 page. Walking advances
+    // by travelled world distance so the extra frames smooth the same stride
+    // rather than changing the character's ground speed.
+    if (!isWalking) return 0;
     const stride = 2.8;
     const normalized = (character.distanceTravelled % stride) / stride;
-    return Math.floor(normalized * 8) % 8;
+    return Math.floor(normalized * 16) % 16;
+  }
+
+  function characterAtlasUV(frameIndex) {
+    const col = frameIndex % 4;
+    const rowFromTop = Math.floor(frameIndex / 4);
+    // Images are uploaded with UNPACK_FLIP_Y_WEBGL=true, so the source image's
+    // top row lives in the upper quarter of texture-V space.
+    return {
+      scale: [1 / 4, 1 / 4],
+      offset: [col / 4, (3 - rowFromTop) / 4]
+    };
   }
 
   function render(now) {
@@ -677,18 +689,19 @@
     for (const obj of midfill) drawObject(obj, view);
 
     const frameIndex = currentCharacterFrame(isWalking);
+    const charUV = characterAtlasUV(frameIndex);
     drawObject(character, view, {
       texture: character.texture,
       x: character.x,
-      uvScale: [1 / 8, 1],
-      uvOffset: [frameIndex / 8, 0]
+      uvScale: charUV.scale,
+      uvOffset: charUV.offset
     });
 
     for (const obj of frontOccluders) drawObject(obj, view);
 
     statusEl.textContent = debugDepth
       ? `Depth view · camera X ${camera.x.toFixed(1)} · grounded layers`
-      : `3D forest · camera X ${camera.x.toFixed(1)} · original girl scale pass`;
+      : `3D forest · camera X ${camera.x.toFixed(1)} · 16-frame generated character pass`;
 
     requestAnimationFrame(render);
   }

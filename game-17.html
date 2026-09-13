@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.8.60">
+  <link rel="stylesheet" href="style.css?v=1.8.61">
   <title>Walk Lab</title>
 </head>
 <body class="modular-game" data-game-id="game-17">
@@ -19,7 +19,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">ANIMATION TOOL</p>
       <h2 id="game-17-info-title">Walk Lab</h2>
-      <p>A fixed-length stick rig for building a clean walk. Drag the pelvis, chest, hands or feet; knees and elbows solve automatically. The teal <strong>export frame</strong> defines the exact crop used for every animation frame: drag its top handle to move it and any corner to scale it. Its aspect is locked to 2:3, and <strong>Export PNG</strong> outputs all 16 frames as 256×384 cells on one transparent 1024×1536 atlas.</p>
+      <p>A fixed-length stick rig for building a clean walk. Drag the pelvis, chest, hands or feet; knees and elbows solve automatically. The teal <strong>export frame</strong> defines the exact crop used for every frame. <strong>Sprite</strong> overlays the current 4×4 character atlas on the stick rig, and <strong>Load sprite</strong> lets you compare another 16-frame sheet. Export PNG still outputs 16 transparent 256×384 cells on one 1024×1536 atlas.</p>
     </div>
   </div>
 
@@ -57,7 +57,10 @@
           <button id="walklab-save" class="walklab-tool" type="button">Save JSON</button>
           <button id="walklab-load" class="walklab-tool" type="button">Load JSON</button>
           <button id="walklab-export" class="walklab-tool" type="button">Export PNG</button>
+          <button id="walklab-sprite" class="walklab-tool active" type="button" aria-pressed="true">Sprite</button>
+          <button id="walklab-sprite-load" class="walklab-tool" type="button">Load sprite</button>
           <input id="walklab-file" type="file" accept="application/json,.json" hidden>
+          <input id="walklab-sprite-file" type="file" accept="image/png,image/webp,image/jpeg,image/*" hidden>
         </div>
 
         <div class="walklab-speed-row">
@@ -69,8 +72,8 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.8.60"></script>
-  <script src="core.js?v=1.8.60"></script>
-  <script src="game-17.js?v=1.8.60"></script>
+  <script src="site-config.js?v=1.8.61"></script>
+  <script src="core.js?v=1.8.61"></script>
+  <script src="game-17.js?v=1.8.61"></script>
 </body>
 </html>
