@@ -1,12 +1,12 @@
-# GameHub v1.8.55
+# GameHub v1.8.56
 
-Walk Lab stick-rig + planted-foot pass.
+Walk Lab gait refinement pass.
 
-- Took **Walk Lab** back to a clean stick figure rather than the mannequin body shapes.
-- Kept visible feet and fixed upper/lower arm and leg lengths.
-- Both arms now attach to one **central shoulder point**.
-- Simplified editing to the useful controls only: pelvis, chest, hands and feet. Knees and elbows solve automatically.
-- Changed leg IK so knees consistently bend forwards instead of folding backwards.
-- Rebuilt the default 8 key poses around a proper stance-foot model: the planted foot moves backwards at exactly the same rate as root travel, so it stays pinned to one point on the moving ground.
-- Kept 8 key poses + 8 generated in-betweens, onion skin, scrub, save/load JSON and transparent PNG export.
-- Added **Reset cycle** so experiments can always return to the clean default walk.
+- Kept the simpler **stick rig** with fixed limb lengths and visible feet.
+- Reworked the default **arm swing** so the hands follow a stronger contralateral arc and use most of the available arm length.
+- Shifted both legs slightly left so they sit more naturally under the character's centre of mass.
+- Added a consistent slight **forward body lean** through the walk.
+- Retuned the eight key leg poses while preserving the planted-foot rule: during stance, foot position + root travel remains constant.
+- Added a fixed-length **hair guide bone** behind the head with automatic bounce / lag through the cycle.
+- `Export PNG` produces a transparent **4×4 page containing all 16 frames**.
+- Save JSON now writes Walk Lab format v4; older v3 files still load with a default hair-bone motion.

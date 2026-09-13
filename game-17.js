@@ -34,7 +34,8 @@
     lowerArm: 0.245,
     upperLeg: 0.38,
     lowerLeg: 0.38,
-    foot: 0.15
+    foot: 0.15,
+    hair: 0.42
   });
 
   const KEY_NAMES = ['Contact L','Down L','Passing L','Up L','Contact R','Down R','Passing R','Up R'];
@@ -44,22 +45,29 @@
   function clonePose(p) { return JSON.parse(JSON.stringify(p)); }
 
   function makeKey(i) {
-    const pelvisY = [0.700, 0.660, 0.690, 0.730, 0.700, 0.660, 0.690, 0.730][i];
-    const lean = [2, 3, 1, 0, 2, 3, 1, 0][i] * DEG;
+    const pelvisY = [0.700, 0.655, 0.690, 0.735, 0.700, 0.655, 0.690, 0.735][i];
+    // A consistent slight forward lean reads more naturally for a travelling walk.
+    const lean = [7, 9, 8, 6, 7, 9, 8, 6][i] * DEG;
 
-    // The stance foot travels backwards exactly as root travel increases.
-    // This makes the planted foot stay fixed in world space when paired with
-    // the moving floor ticks: footX + travel is constant through each stance.
-    const aFootX = [ 0.250,  0.125,  0.000, -0.125, -0.250, -0.125,  0.000,  0.125][i];
-    const bFootX = [-0.250, -0.125,  0.000,  0.125,  0.250,  0.125,  0.000, -0.125][i];
-    const aFootLift = [0.000,0.000,0.000,0.000,0.000,0.080,0.160,0.100][i];
-    const bFootLift = [0.000,0.080,0.160,0.100,0.000,0.000,0.000,0.000][i];
+    // Eight deliberate key poses. During each stance, the planted foot moves
+    // backwards by exactly the same amount that travel moves forwards, so its
+    // world position stays fixed. Both feet are shifted slightly left so the
+    // legs sit more naturally under the centre of mass.
+    const aFootX = [ 0.180,  0.055, -0.070, -0.195, -0.320, -0.260, -0.070,  0.100][i];
+    const bFootX = [-0.320, -0.260, -0.070,  0.100,  0.180,  0.055, -0.070, -0.195][i];
+    const aFootLift = [0.000,0.000,0.000,0.000,0.000,0.035,0.160,0.120][i];
+    const bFootLift = [0.000,0.035,0.160,0.120,0.000,0.000,0.000,0.000][i];
 
-    // Arms counter-swing against the legs. Both shoulders share the same
-    // central attachment point; elbows are solved automatically.
-    const aHandX = [-0.180,-0.090,0.000,0.090,0.180,0.090,0.000,-0.090][i];
-    const bHandX = [ 0.180, 0.090,0.000,-0.090,-0.180,-0.090,0.000, 0.090][i];
-    const handY = [0.300,0.315,0.305,0.290,0.300,0.315,0.305,0.290][i];
+    // Stronger contralateral arm swing. Hands follow a shallow arc and stay
+    // close to full arm extension so the motion reads as a walk rather than
+    // small wrist movements.
+    const aHandX = [-0.210,-0.140,-0.040, 0.100, 0.210, 0.140, 0.040,-0.100][i];
+    const bHandX = [ 0.210, 0.140, 0.040,-0.100,-0.210,-0.140,-0.040, 0.100][i];
+    const handY  = [ 0.410, 0.445, 0.480, 0.445, 0.410, 0.445, 0.480, 0.445][i];
+
+    // One fixed-length hair bone, rooted behind the head. It lags and bounces
+    // through the cycle to give a clean guide for long-hair follow-through.
+    const hairAngle = [155,148,152,162,155,148,152,162][i] * DEG;
 
     return {
       name: KEY_NAMES[i],
@@ -73,6 +81,7 @@
       aHandY: handY,
       bHandX,
       bHandY: handY,
+      hairAngle,
       planted: i < 4 ? 'A' : 'B',
       travel: i / 8,
       key: true
@@ -94,6 +103,7 @@
       aHandY: lerp(a.aHandY, b.aHandY, t),
       bHandX: lerp(a.bHandX, b.bHandX, t),
       bHandY: lerp(a.bHandY, b.bHandY, t),
+      hairAngle: lerp(a.hairAngle ?? 155*DEG, b.hairAngle ?? 155*DEG, t),
       planted: a.planted,
       travel: lerp(a.travel, travelB, t),
       key: false
@@ -188,6 +198,15 @@
       x: neck.x + Math.sin(p.lean) * BODY.headR * 0.95 * scale,
       y: neck.y - Math.cos(p.lean) * BODY.headR * 0.95 * scale
     };
+    const hairRoot = {
+      x: head.x - BODY.headR * 0.72 * scale,
+      y: head.y - BODY.headR * 0.10 * scale
+    };
+    const hairAngle = Number.isFinite(p.hairAngle) ? p.hairAngle : 155 * DEG;
+    const hairTip = {
+      x: hairRoot.x + Math.cos(hairAngle) * BODY.hair * scale,
+      y: hairRoot.y + Math.sin(hairAngle) * BODY.hair * scale
+    };
 
     const aFTarget = { x: cx + p.aFootX * scale, y: groundY - p.aFootLift * scale };
     const bFTarget = { x: cx + p.bFootX * scale, y: groundY - p.bFootLift * scale };
@@ -200,7 +219,7 @@
     const bArm = solveJoint(shoulder, bHTarget, BODY.upperArm*scale, BODY.lowerArm*scale, 'elbow');
 
     return {
-      W,H,scale,cx,groundY,pelvis,chest,shoulder,neck,head,
+      W,H,scale,cx,groundY,pelvis,chest,shoulder,neck,head,hairRoot,hairTip,
       aK:aLeg.joint,aF:aLeg.target,bK:bLeg.joint,bF:bLeg.target,
       aE:aArm.joint,aW:aArm.target,bE:bArm.joint,bW:bArm.target
     };
@@ -253,6 +272,10 @@
     line(c,g.pelvis,g.chest,lw*1.05,core,alpha);
     line(c,g.chest,g.neck,lw*.72,core,alpha);
     circle(c,g.head,BODY.headR*s,ghost?'#c0c5c5':'#f0ebe5',core,alpha);
+    // Long-hair guide bone: deliberately simple and fixed-length.
+    line(c,g.hairRoot,g.hairTip,lw*.58,ghost?'#a5abad':'#7a4b49',alpha*.88);
+    circle(c,g.hairRoot,Math.max(2.5,s*.015),ghost?'#aeb4b5':'#e9e4df',core,alpha*.90);
+    circle(c,g.hairTip,Math.max(2.3,s*.013),ghost?'#aeb4b5':'#b56a64',core,alpha*.90);
     circle(c,g.shoulder,Math.max(3,s*.022),ghost?'#adb4b5':'#f0ebe5',core,alpha);
 
     // Front limbs.
@@ -320,7 +343,7 @@
 
     const p=frames[frame];
     readout.textContent=`Frame ${frame+1} / 16 · ${p.name} · ${p.key?'KEY':'IN-BETWEEN'} · ${p.planted==='A'?'LEFT':'RIGHT'} PLANT`;
-    editHint.textContent=activeJoint ? `Editing ${activeJoint}` : 'Drag pelvis, chest, hands or feet';
+    editHint.textContent=activeJoint ? `Editing ${activeJoint}` : 'Drag pelvis, chest, hands or feet · hair bone is automatic';
     scrub.value=String(frame);
   }
 
@@ -422,7 +445,7 @@
   }
 
   function saveJSON(){
-    const data={type:'GameHubWalkLab',version:3,fps,body:BODY,frames};
+    const data={type:'GameHubWalkLab',version:4,fps,body:BODY,frames};
     downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'walk-lab-animation.json');
   }
 
@@ -432,7 +455,11 @@
       if(!data||!Array.isArray(data.frames)||data.frames.length!==16)throw new Error('Expected a 16-frame Walk Lab animation.');
       const required=['pelvisY','lean','aFootX','aFootLift','bFootX','bFootLift','aHandX','aHandY','bHandX','bHandY'];
       if(!required.every(k=>Number.isFinite(data.frames[0]?.[k])))throw new Error('This is an older Walk Lab format. Reset the cycle or load a v3 animation.');
-      frames=data.frames.map((p,i)=>({...clonePose(p),key:i%2===0}));
+      frames=data.frames.map((p,i)=>({
+        ...clonePose(p),
+        hairAngle:Number.isFinite(p.hairAngle)?p.hairAngle:(i%8===0||i%8===4?155*DEG:152*DEG),
+        key:i%2===0
+      }));
       if(Number.isFinite(data.fps)){fps=clamp(Math.round(data.fps),4,24);fpsSlider.value=String(fps);fpsOut.textContent=`${fps} fps`;}
       frame=0; playing=false; playBtn.textContent='Play'; playBtn.classList.remove('active'); draw();
     }catch(err){alert(`Could not load animation: ${err.message}`);}
@@ -449,7 +476,7 @@
       drawPoseTo(c,p,g,{handles:false,ghost:false});
       c.restore();
     });
-    out.toBlob(blob=>{if(blob)downloadBlob(blob,'walk-lab-reference.png');},'image/png');
+    out.toBlob(blob=>{if(blob)downloadBlob(blob,'walk-lab-16-frame-reference.png');},'image/png');
   }
 
   scrub.addEventListener('input',()=>{frame=Number(scrub.value);playing=false;playBtn.textContent='Play';playBtn.classList.remove('active');draw();});
