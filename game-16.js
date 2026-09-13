@@ -295,7 +295,7 @@
   treeAssets.forEach(([id, w, h]) => {
     const key = `tree${id}`;
     assetAspect[key] = w / h;
-    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.49`, key);
+    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.50`, key);
   });
 
   const groundAssets = [
@@ -306,11 +306,11 @@
   groundAssets.forEach(([id, w, h]) => {
     const key = `ground${id}`;
     assetAspect[key] = w / h;
-    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.49' : null;
-    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.49`, key, fallback);
+    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.50' : null;
+    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.50`, key, fallback);
   });
 
-  textures.characterAtlas = createImageTexture('sidescroll-character-walk.png?v=1.8.49', 'character walk sprite sheet');
+  textures.characterAtlas = createImageTexture('sidescroll-character-walk.png?v=1.8.50', 'character walk sprite sheet');
 
   function mulberry32(seed) {
     return function() {
@@ -324,10 +324,17 @@
   const rand = mulberry32(924315);
   const TILE = { minX: -62, maxX: 62 };
   const TILE_WIDTH = TILE.maxX - TILE.minX;
-  const WORLD = { nearZ: 6.5, farZ: -42 };
+  const WORLD = { nearZ: 10.5, farZ: -42 };
   const fogColor = [0.93, 0.945, 0.95];
   const groundY = -4.55;
-  const pathZ = 0.55;
+
+  // Think of this exactly like a top-down forest plan: a clear path runs along X,
+  // the character walks down its centre, and woodland begins on either side.
+  const pathZ = 0.0;
+  const PATH_HALF_WIDTH = 3.15;
+  const FAR_SIDE_START = -PATH_HALF_WIDTH;
+  const NEAR_SIDE_START = PATH_HALF_WIDTH;
+
 
   const ground = {
     mesh: groundMesh,
@@ -339,7 +346,7 @@
     sy: 1,
     sz: WORLD.nearZ - WORLD.farZ,
     layer: 'ground',
-    tint: [0.155, 0.165, 0.170],
+    tint: [0.175, 0.185, 0.188],
     opacity: 1,
     noFog: false,
     wrap: false
@@ -382,132 +389,139 @@
   function scatterForest() {
     const trees = ['tree01', 'tree02', 'tree03', 'tree04', 'tree05', 'tree06'];
     const allGround = ['ground01','ground02','ground03','ground04','ground05','ground06','ground07','ground08','ground09','ground10','ground11','ground12'];
-    const pathBackGround = ['ground01','ground02','ground03','ground05','ground06','ground08','ground09','ground10','ground11','ground12'];
-    const nearBaseGround = ['ground01','ground02','ground03','ground04','ground05','ground06','ground07','ground08','ground09','ground10','ground11'];
-    const occluderGround = ['ground01','ground02','ground03','ground05','ground08','ground09','ground10','ground11','ground12'];
+    const grassScrub = ['ground01','ground02','ground03','ground05','ground06','ground08','ground09','ground10','ground11','ground12'];
+    const rocks = ['ground03','ground04','ground07','ground10','ground11'];
 
-    // Denser far-side forest wall.
-    for (let i = 0; i < 144; i++) {
+    // FAR SIDE OF PATH -------------------------------------------------------
+    // A dense woodland wall starts clearly behind the path, then gradually
+    // thins with depth. This is the main silhouette mass behind the character.
+    for (let i = 0; i < 178; i++) {
       const x = TILE.minX + rand() * TILE_WIDTH;
-      const depth = Math.pow(rand(), 1.08);
-      const z = -5.2 - depth * 34.5;
+      const depth = Math.pow(rand(), 1.45); // bias density toward the path edge
+      const z = FAR_SIDE_START - 0.55 - depth * 35.5;
       const type = trees[Math.floor(rand() * trees.length)];
-      const height = 10.0 + rand() * (8.0 - depth * 1.5);
+      const height = 9.8 + rand() * (8.2 - depth * 1.8);
       addObject(backdrop, type, x, z, null, height, {
-        shade: 0.96 + rand() * 0.10,
+        shade: 0.97 + rand() * 0.10,
         opacity: 0.92 + rand() * 0.08,
         layer: classifyLayer(z)
       });
     }
 
-    // Additional high canopy accents to break up the upper frame.
-    for (let i = 0; i < 38; i++) {
+    // Taller canopy accents deeper in the forest keep the upper frame alive.
+    for (let i = 0; i < 42; i++) {
       const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = -18 - rand() * 20;
-      const type = trees[(i + Math.floor(rand() * trees.length)) % trees.length];
-      const height = 14.5 + rand() * 7.0;
+      const z = -18.0 - rand() * 21.0;
+      const type = trees[Math.floor(rand() * trees.length)];
+      const height = 14.0 + rand() * 7.5;
       addObject(backdrop, type, x, z, null, height, {
-        shade: 0.98 + rand() * 0.08,
+        shade: 1.00 + rand() * 0.08,
         opacity: 0.86 + rand() * 0.10,
         layer: 'far'
       });
     }
 
-    // Constant fill of smaller assets beyond the path, to close visible gaps.
-    for (let i = 0; i < 170; i++) {
+    // Dense undergrowth right along the far path edge hides the bases of the
+    // first trees and makes the path boundary feel continuous.
+    for (let i = 0; i < 230; i++) {
       const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = -1.8 - Math.pow(rand(), 1.16) * 17.0;
-      const type = pathBackGround[Math.floor(rand() * pathBackGround.length)];
-      const height = 0.85 + rand() * 1.75;
+      const edgeDepth = Math.pow(rand(), 1.8);
+      const z = FAR_SIDE_START - 0.20 - edgeDepth * 8.0;
+      const type = grassScrub[Math.floor(rand() * grassScrub.length)];
+      const height = 0.72 + rand() * 1.40;
       addObject(midfill, type, x, z, null, height, {
-        shade: 1.01 + rand() * 0.08,
-        opacity: 0.88 + rand() * 0.10,
+        shade: 1.00 + rand() * 0.08,
+        opacity: 0.91 + rand() * 0.08,
         layer: classifyLayer(z)
       });
     }
 
-    // A few trees on the near side but kept behind the character plane.
-    for (let i = 0; i < 16; i++) {
+    // A few rocks/bushes extend further back and help blend the first forest
+    // band into the fogged middle distance.
+    for (let i = 0; i < 88; i++) {
       const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = -0.35 + rand() * 0.65;
-      const type = trees[(i * 2 + 1) % trees.length];
-      const height = 7.8 + rand() * 3.4;
-      addObject(midfill, type, x, z, null, height, {
-        shade: 0.92 + rand() * 0.08,
-        opacity: 0.94,
-        layer: 'near'
-      });
-    }
-
-    // Near-side fill stays low and mostly behind the character, but pushed a touch closer
-    // to the camera so the lower screen space feels more populated.
-    for (let i = 0; i < 235; i++) {
-      const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = 0.12 + rand() * 0.78;
-      const type = nearBaseGround[Math.floor(rand() * nearBaseGround.length)];
-      const height = 0.70 + rand() * 1.15;
-      addObject(midfill, type, x, z, null, height, {
-        shade: 0.98 + rand() * 0.08,
-        opacity: 0.90 + rand() * 0.08,
-        layer: 'near'
-      });
-    }
-
-    // True foreground occluders are mostly grass/scrub and deliberately low.
-    for (let i = 0; i < 320; i++) {
-      const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = 1.15 + rand() * 1.35;
-      const type = occluderGround[Math.floor(rand() * occluderGround.length)];
-      const height = 0.34 + rand() * 0.42;
-      addObject(frontOccluders, type, x, z, null, height, {
-        shade: 0.95 + rand() * 0.06,
-        opacity: 0.93 + rand() * 0.05,
-        layer: 'foreground'
-      });
-    }
-
-    // A few larger edge pieces to frame the lower corners without blocking the centre.
-    for (let i = 0; i < 12; i++) {
-      const sideBias = i % 2 === 0 ? -1 : 1;
-      const x = sideBias < 0
-        ? TILE.minX + rand() * 11
-        : TILE.maxX - rand() * 11;
-      const z = 1.25 + rand() * 1.95;
+      const z = FAR_SIDE_START - 5.0 - rand() * 13.5;
       const type = allGround[Math.floor(rand() * allGround.length)];
-      const height = 0.58 + rand() * 0.62;
+      const height = 0.72 + rand() * 1.50;
+      addObject(midfill, type, x, z, null, height, {
+        shade: 1.02 + rand() * 0.07,
+        opacity: 0.86 + rand() * 0.10,
+        layer: classifyLayer(z)
+      });
+    }
+
+    // NEAR SIDE OF PATH ------------------------------------------------------
+    // Keep a real clear corridor in front of the character. Woodland begins
+    // several world units closer to camera than the character instead of
+    // sitting almost on top of the same Z plane.
+
+    // Dense low path-edge strip. At this Z range perspective naturally drops
+    // it lower in frame and gives us stronger foreground parallax.
+    for (let i = 0; i < 310; i++) {
+      const x = TILE.minX + rand() * TILE_WIDTH;
+      const z = NEAR_SIDE_START + 0.25 + rand() * 2.25;
+      const type = grassScrub[Math.floor(rand() * grassScrub.length)];
+      const height = 0.48 + rand() * 0.58;
       addObject(frontOccluders, type, x, z, null, height, {
-        shade: 0.95 + rand() * 0.07,
-        opacity: 0.94,
+        shade: 0.99 + rand() * 0.06,
+        opacity: 0.95 + rand() * 0.04,
         layer: 'foreground'
       });
     }
 
-
-    // Extra very-near low fill to keep the bottom foreground populated without hiding the character.
-    for (let i = 0; i < 360; i++) {
+    // Mid-near layer: still mostly small, but not tiny. This should fill the
+    // lower third rather than leaving isolated postage-stamp props.
+    for (let i = 0; i < 230; i++) {
       const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = 2.35 + rand() * 1.55;
-      const type = occluderGround[Math.floor(rand() * occluderGround.length)];
-      const height = 0.18 + rand() * 0.28;
+      const z = NEAR_SIDE_START + 2.2 + rand() * 2.45;
+      const chooseRock = rand() < 0.28;
+      const list = chooseRock ? rocks : grassScrub;
+      const type = list[Math.floor(rand() * list.length)];
+      const height = 0.55 + rand() * 0.72;
       addObject(frontOccluders, type, x, z, null, height, {
-        shade: 0.98 + rand() * 0.05,
-        opacity: 0.94 + rand() * 0.04,
+        shade: 0.98 + rand() * 0.07,
+        opacity: 0.95 + rand() * 0.04,
         layer: 'foreground'
       });
     }
 
-
-    // Ultra-near skim to soften the bottom edge and avoid the empty floor band.
-    for (let i = 0; i < 240; i++) {
+    // Closest strip: dense grass/rocks with enough real-world size to overlap
+    // one another and cover the floor, but still low enough not to hide the
+    // character when they pass in front.
+    for (let i = 0; i < 205; i++) {
       const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = 3.55 + rand() * 1.45;
-      const type = occluderGround[Math.floor(rand() * occluderGround.length)];
-      const height = 0.10 + rand() * 0.20;
+      const z = NEAR_SIDE_START + 4.6 + rand() * 2.25;
+      const type = allGround[Math.floor(rand() * allGround.length)];
+      const height = 0.48 + rand() * 0.78;
       addObject(frontOccluders, type, x, z, null, height, {
-        shade: 1.00 + rand() * 0.04,
-        opacity: 0.95 + rand() * 0.03,
+        shade: 0.98 + rand() * 0.06,
+        opacity: 0.96,
         layer: 'foreground'
       });
+    }
+
+    // Occasional larger near-side assets give a stronger sense of passing
+    // through woodland, but remain uncommon so the path stays readable.
+    for (let i = 0; i < 20; i++) {
+      const x = TILE.minX + rand() * TILE_WIDTH;
+      const z = NEAR_SIDE_START + 2.5 + rand() * 4.5;
+      if (rand() < 0.42) {
+        const type = trees[Math.floor(rand() * trees.length)];
+        const height = 5.2 + rand() * 4.8;
+        addObject(frontOccluders, type, x, z, null, height, {
+          shade: 0.92 + rand() * 0.08,
+          opacity: 0.95,
+          layer: 'foreground'
+        });
+      } else {
+        const type = allGround[Math.floor(rand() * allGround.length)];
+        const height = 1.05 + rand() * 1.15;
+        addObject(frontOccluders, type, x, z, null, height, {
+          shade: 0.96 + rand() * 0.07,
+          opacity: 0.96,
+          layer: 'foreground'
+        });
+      }
     }
 
     backdrop.sort((a, b) => a.z - b.z);
@@ -531,7 +545,7 @@
     tint: [1.0, 1.0, 1.0],
     opacity: 0.985,
     noFog: false,
-    screenOffsetX: -0.35,
+    screenOffsetX: -0.20,
     distanceTravelled: 0,
     lastFacing: 1,
     wrap: false
@@ -548,10 +562,12 @@
 
   const camera = {
     x: 0,
-    y: -2.00,
-    z: 13.75,
-    targetY: groundY + 1.22,
-    targetZ: -13.2
+    y: -3.00,
+    z: 13.80,
+    // This is intentionally ABOVE the camera Y: the camera is now actually
+    // tilted upward a little, which places the character/path lower in frame.
+    targetY: -2.15,
+    targetZ: -13.0
   };
 
   let projection = mat4Identity();
@@ -672,7 +688,7 @@
 
     statusEl.textContent = debugDepth
       ? `Depth view · camera X ${camera.x.toFixed(1)} · grounded layers`
-      : `3D forest · camera X ${camera.x.toFixed(1)} · lower camera + denser foreground pass`;
+      : `3D forest · camera X ${camera.x.toFixed(1)} · top-down path layout pass`;
 
     requestAnimationFrame(render);
   }

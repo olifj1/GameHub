@@ -1,10 +1,12 @@
-# GameHub v1.8.49
+# GameHub v1.8.50
 
-SideScroll framing + ground-fill pass.
+SideScroll top-down path-layout correction.
 
-- Kept the better **smaller walk-cycle character** from the recent pass.
-- Rotated the **camera up a little more** so the character should sit slightly lower on screen.
-- Pushed the **near-side placement** closer to the camera so the lower screen space fills more naturally.
-- Increased **foreground density** again with extra low grass / rock dressing, including an additional ultra-near skim to reduce the blank lower band.
-- Adjusted the **floor tint** so it sits closer to the trees and rocks instead of reading as a separate nearly-black slab.
-- Kept the illustrated woodland assets, real 3D placement, parallax and depth fog.
+- Rebuilt the SideScroll scatter from the **top-down forest idea** rather than treating the front / character / back layers as almost the same depth.
+- The character now walks along the **centre of a deliberately wide clear path**.
+- The dense far-side woodland starts several real world units behind the character.
+- The near-side woodland now starts several real world units **in front of** the character and extends much closer to the camera, giving stronger perspective and foreground parallax.
+- Near-side dressing is mostly small grass, bushes and rocks, with occasional larger pieces / trees, but the individual props are no longer reduced to tiny specks.
+- Increased asset density on both sides of the path so the ground plane should be much less exposed.
+- The camera is now **actually tilted upward** (target Y above camera Y) instead of still looking slightly down, so the character and path should sit lower in frame.
+- Kept the improved small walk-cycle character and the illustrated woodland art.
