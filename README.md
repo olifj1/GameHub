@@ -1,12 +1,10 @@
-# GameHub v1.8.50
+# GameHub v1.8.51
 
-SideScroll top-down path-layout correction.
+SideScroll original character pass.
 
-- Rebuilt the SideScroll scatter from the **top-down forest idea** rather than treating the front / character / back layers as almost the same depth.
-- The character now walks along the **centre of a deliberately wide clear path**.
-- The dense far-side woodland starts several real world units behind the character.
-- The near-side woodland now starts several real world units **in front of** the character and extends much closer to the camera, giving stronger perspective and foreground parallax.
-- Near-side dressing is mostly small grass, bushes and rocks, with occasional larger pieces / trees, but the individual props are no longer reduced to tiny specks.
-- Increased asset density on both sides of the path so the ground plane should be much less exposed.
-- The camera is now **actually tilted upward** (target Y above camera Y) instead of still looking slightly down, so the character and path should sit lower in frame.
-- Kept the improved small walk-cycle character and the illustrated woodland art.
+- Replaced the borrowed placeholder character with a new **original young girl** design.
+- Added a new **8-frame walk-cycle atlas** with long dark red hair, a cloak, and a light outfit visible underneath.
+- Converted the generated 4×2 sprite sheet into a single-row atlas for the current SideScroll shader / UV workflow.
+- Included the original generated source sheet in the build as `sidescroll-character-sheet-source.png`.
+- Tuned the in-game character size and placement to better suit the new silhouette.
+- Kept the improved wide-path forest layout from the previous SideScroll pass.
