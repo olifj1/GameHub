@@ -56,18 +56,6 @@
   function lerp(a, b, t) { return a + (b - a) * t; }
   function clonePose(p) { return JSON.parse(JSON.stringify(p)); }
 
-  // Build a relaxed arm swing from actual segment angles rather than
-  // hand positions guessed independently. This keeps the shoulder/elbow/wrist
-  // chain smooth and avoids the folded-back look around the middle of the arc.
-  function armTargetFromSwing(degrees) {
-    const upper = degrees * DEG;
-    const fore = upper * 0.30;
-    return {
-      x: Math.sin(upper) * BODY.upperArm + Math.sin(fore) * BODY.lowerArm,
-      y: Math.cos(upper) * BODY.upperArm + Math.cos(fore) * BODY.lowerArm
-    };
-  }
-
   function makeKey(i) {
     const pelvisY = [0.700, 0.655, 0.690, 0.735, 0.700, 0.655, 0.690, 0.735][i];
     // A consistent slight forward lean reads more naturally for a travelling walk.
@@ -82,13 +70,12 @@
     const aFootLift = [0.000,0.000,0.000,0.000,0.000,0.035,0.160,0.120][i];
     const bFootLift = [0.000,0.035,0.160,0.120,0.000,0.000,0.000,0.000][i];
 
-    // Contralateral arm swing derived from segment angles. The arm on the
-    // same side as the leading leg swings back while the opposite arm swings
-    // forward. Passing poses run almost straight beneath the shoulder, which
-    // makes the loop read as one continuous pendulum rather than two IK flips.
-    const swing = [-32, -23, -12, 8, 32, 23, 12, -8][i];
-    const aArm = armTargetFromSwing(swing);
-    const bArm = armTargetFromSwing(-swing);
+    // Smooth contralateral arm swing. These hand targets describe a simple
+    // pendulum arc, with the opposite arm exactly half a cycle out of phase.
+    // The in-between frames then interpolate cleanly without a mid-cycle pop.
+    const aHandX = [-0.200,-0.141, 0.000, 0.141, 0.200, 0.141, 0.000,-0.141][i];
+    const bHandX = [ 0.200, 0.141, 0.000,-0.141,-0.200,-0.141, 0.000, 0.141][i];
+    const handY  = [ 0.400, 0.415, 0.430, 0.415, 0.400, 0.415, 0.430, 0.415][i];
 
     // One fixed-length hair guide rooted low on the back of the head. The
     // angle now hangs mostly downward along the back, with a small delayed
@@ -103,10 +90,10 @@
       aFootLift,
       bFootX,
       bFootLift,
-      aHandX: aArm.x,
-      aHandY: aArm.y,
-      bHandX: bArm.x,
-      bHandY: bArm.y,
+      aHandX,
+      aHandY: handY,
+      bHandX,
+      bHandY: handY,
       hairAngle,
       planted: i < 4 ? 'A' : 'B',
       travel: i / 8,
@@ -206,14 +193,11 @@
       // the backwards-folding legs that made the previous editor confusing.
       joint = c1.x >= c2.x ? c1 : c2;
     } else {
-      // Elbows follow the direction of the hand swing. For a forward hand we
-      // choose the more-forward elbow solution; for a rearward hand we choose
-      // the more-rearward one. Near the centre the arm is almost straight, so
-      // the branch change becomes visually continuous instead of popping.
-      const forward = target.x >= root.x;
-      joint = forward
-        ? (c1.x >= c2.x ? c1 : c2)
-        : (c1.x <= c2.x ? c1 : c2);
+      // Always use the same IK branch for elbows. Selecting by whichever
+      // candidate happened to be lower caused the arm to flip inside-out as
+      // the hand crossed beneath the shoulder. A stable branch gives a smooth,
+      // forward-folding elbow throughout the whole swing.
+      joint = c1;
     }
     return { joint, target: {x: tx, y: ty} };
   }
@@ -532,7 +516,7 @@
       const clamped=clampEndpoint(g.shoulder,pos,BODY.upperArm*s,BODY.lowerArm*s);
       const prefix=name==='aW'?'a':'b';
       p[`${prefix}HandX`]=clamp((clamped.x-g.shoulder.x)/s,-.26,.26);
-      p[`${prefix}HandY`]=clamp((clamped.y-g.shoulder.y)/s,.30,.50);
+      p[`${prefix}HandY`]=clamp((clamped.y-g.shoulder.y)/s,.28,.45);
     }
     draw();
   }
@@ -604,7 +588,7 @@
   }
 
   function saveJSON(){
-    const data={type:'GameHubWalkLab',version:7,fps,body:BODY,exportFrame,export:{cellW:EXPORT.cellW,cellH:EXPORT.cellH,cols:EXPORT.cols,rows:EXPORT.rows,aspect:EXPORT.aspect},frames};
+    const data={type:'GameHubWalkLab',version:8,fps,body:BODY,exportFrame,export:{cellW:EXPORT.cellW,cellH:EXPORT.cellH,cols:EXPORT.cols,rows:EXPORT.rows,aspect:EXPORT.aspect},frames};
     downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'walk-lab-animation.json');
   }
 

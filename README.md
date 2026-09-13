@@ -1,10 +1,8 @@
-# GameHub v1.8.59
+# GameHub v1.8.60
 
-Walk Lab animation refinement pass.
+Walk Lab arm rollback pass.
 
-- Reworked the default **arm swing** from segment angles rather than independent hand targets, giving a smoother pendulum motion across the full cycle.
-- Updated elbow IK so the elbow follows the direction of travel and no longer visibly flips backwards through the middle of the swing.
-- Kept the improved planted-foot leg cycle and 8 key poses + 8 in-betweens.
-- Let the arms extend more naturally through the centre of the swing while retaining fixed upper/lower arm lengths.
-- Nudged the long-hair guide to hang more vertically down the back.
-- Kept the new movable/scalable fixed-ratio export frame and 256×384 per-frame output unchanged.
+- Restored the **v1.8.58 arm swing**, which read more naturally than the latest angular arm experiment.
+- Restored the stable elbow IK branch so the elbows do not flip as the hands pass beneath the shoulders.
+- Kept the newer lower-hanging **hair guide** and all export-frame / atlas features.
+- No changes to the leg cycle or planted-foot behaviour in this pass.
