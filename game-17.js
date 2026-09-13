@@ -35,7 +35,7 @@
     upperLeg: 0.38,
     lowerLeg: 0.38,
     foot: 0.15,
-    hair: 0.42
+    hair: 0.48
   });
 
   const KEY_NAMES = ['Contact L','Down L','Passing L','Up L','Contact R','Down R','Passing R','Up R'];
@@ -58,16 +58,17 @@
     const aFootLift = [0.000,0.000,0.000,0.000,0.000,0.035,0.160,0.120][i];
     const bFootLift = [0.000,0.035,0.160,0.120,0.000,0.000,0.000,0.000][i];
 
-    // Stronger contralateral arm swing. Hands follow a shallow arc and stay
-    // close to full arm extension so the motion reads as a walk rather than
-    // small wrist movements.
-    const aHandX = [-0.210,-0.140,-0.040, 0.100, 0.210, 0.140, 0.040,-0.100][i];
-    const bHandX = [ 0.210, 0.140, 0.040,-0.100,-0.210,-0.140,-0.040, 0.100][i];
-    const handY  = [ 0.410, 0.445, 0.480, 0.445, 0.410, 0.445, 0.480, 0.445][i];
+    // Smooth contralateral arm swing. These hand targets describe a simple
+    // pendulum arc, with the opposite arm exactly half a cycle out of phase.
+    // The in-between frames then interpolate cleanly without a mid-cycle pop.
+    const aHandX = [-0.200,-0.141, 0.000, 0.141, 0.200, 0.141, 0.000,-0.141][i];
+    const bHandX = [ 0.200, 0.141, 0.000,-0.141,-0.200,-0.141, 0.000, 0.141][i];
+    const handY  = [ 0.400, 0.415, 0.430, 0.415, 0.400, 0.415, 0.430, 0.415][i];
 
-    // One fixed-length hair bone, rooted behind the head. It lags and bounces
-    // through the cycle to give a clean guide for long-hair follow-through.
-    const hairAngle = [155,148,152,162,155,148,152,162][i] * DEG;
+    // One fixed-length hair guide rooted low on the back of the head. The
+    // angle now hangs mostly downward along the back, with a small delayed
+    // swing rather than sticking out horizontally behind the head.
+    const hairAngle = [114,110,106,110,114,118,122,118][i] * DEG;
 
     return {
       name: KEY_NAMES[i],
@@ -174,8 +175,11 @@
       // the backwards-folding legs that made the previous editor confusing.
       joint = c1.x >= c2.x ? c1 : c2;
     } else {
-      // Elbows favour the lower candidate for a relaxed hanging arm.
-      joint = c1.y >= c2.y ? c1 : c2;
+      // Always use the same IK branch for elbows. Selecting by whichever
+      // candidate happened to be lower caused the arm to flip inside-out as
+      // the hand crossed beneath the shoulder. A stable branch gives a smooth,
+      // forward-folding elbow throughout the whole swing.
+      joint = c1;
     }
     return { joint, target: {x: tx, y: ty} };
   }
@@ -199,10 +203,10 @@
       y: neck.y - Math.cos(p.lean) * BODY.headR * 0.95 * scale
     };
     const hairRoot = {
-      x: head.x - BODY.headR * 0.72 * scale,
-      y: head.y - BODY.headR * 0.10 * scale
+      x: head.x - BODY.headR * 0.55 * scale,
+      y: head.y + BODY.headR * 0.48 * scale
     };
-    const hairAngle = Number.isFinite(p.hairAngle) ? p.hairAngle : 155 * DEG;
+    const hairAngle = Number.isFinite(p.hairAngle) ? p.hairAngle : 114 * DEG;
     const hairTip = {
       x: hairRoot.x + Math.cos(hairAngle) * BODY.hair * scale,
       y: hairRoot.y + Math.sin(hairAngle) * BODY.hair * scale
@@ -391,8 +395,8 @@
     } else if (name==='aW' || name==='bW') {
       const clamped=clampEndpoint(g.shoulder,pos,BODY.upperArm*s,BODY.lowerArm*s);
       const prefix=name==='aW'?'a':'b';
-      p[`${prefix}HandX`]=clamp((clamped.x-g.shoulder.x)/s,-.30,.30);
-      p[`${prefix}HandY`]=clamp((clamped.y-g.shoulder.y)/s,.16,.44);
+      p[`${prefix}HandX`]=clamp((clamped.x-g.shoulder.x)/s,-.26,.26);
+      p[`${prefix}HandY`]=clamp((clamped.y-g.shoulder.y)/s,.28,.45);
     }
     draw();
   }
@@ -445,7 +449,7 @@
   }
 
   function saveJSON(){
-    const data={type:'GameHubWalkLab',version:4,fps,body:BODY,frames};
+    const data={type:'GameHubWalkLab',version:5,fps,body:BODY,frames};
     downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'walk-lab-animation.json');
   }
 
@@ -457,7 +461,7 @@
       if(!required.every(k=>Number.isFinite(data.frames[0]?.[k])))throw new Error('This is an older Walk Lab format. Reset the cycle or load a v3 animation.');
       frames=data.frames.map((p,i)=>({
         ...clonePose(p),
-        hairAngle:Number.isFinite(p.hairAngle)?p.hairAngle:(i%8===0||i%8===4?155*DEG:152*DEG),
+        hairAngle:Number.isFinite(p.hairAngle)?p.hairAngle:114*DEG,
         key:i%2===0
       }));
       if(Number.isFinite(data.fps)){fps=clamp(Math.round(data.fps),4,24);fpsSlider.value=String(fps);fpsOut.textContent=`${fps} fps`;}

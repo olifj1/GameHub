@@ -1,12 +1,9 @@
-# GameHub v1.8.56
+# GameHub v1.8.57
 
-Walk Lab gait refinement pass.
+Walk Lab arm + hair refinement.
 
-- Kept the simpler **stick rig** with fixed limb lengths and visible feet.
-- Reworked the default **arm swing** so the hands follow a stronger contralateral arc and use most of the available arm length.
-- Shifted both legs slightly left so they sit more naturally under the character's centre of mass.
-- Added a consistent slight **forward body lean** through the walk.
-- Retuned the eight key leg poses while preserving the planted-foot rule: during stance, foot position + root travel remains constant.
-- Added a fixed-length **hair guide bone** behind the head with automatic bounce / lag through the cycle.
-- `Export PNG` produces a transparent **4×4 page containing all 16 frames**.
-- Save JSON now writes Walk Lab format v4; older v3 files still load with a default hair-bone motion.
+- Reworked the default **arm swing** into a smoother pendulum arc with the two arms exactly half a cycle out of phase.
+- Fixed the elbow IK branch so elbows no longer flip / fold backwards as the hands pass beneath the shoulders.
+- Tightened hand editing limits to avoid pathological arm poses while keeping fixed upper/lower arm lengths.
+- Moved the **hair guide root lower on the back of the head** and changed its motion so the bone hangs down the back with a small delayed swing.
+- Kept the improved planted-foot leg cycle, forward lean, 8 key poses + 8 in-betweens, JSON save/load, and 16-frame PNG export.
