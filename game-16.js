@@ -295,7 +295,7 @@
   treeAssets.forEach(([id, w, h]) => {
     const key = `tree${id}`;
     assetAspect[key] = w / h;
-    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.48`, key);
+    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.49`, key);
   });
 
   const groundAssets = [
@@ -306,11 +306,11 @@
   groundAssets.forEach(([id, w, h]) => {
     const key = `ground${id}`;
     assetAspect[key] = w / h;
-    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.48' : null;
-    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.48`, key, fallback);
+    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.49' : null;
+    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.49`, key, fallback);
   });
 
-  textures.characterAtlas = createImageTexture('sidescroll-character-walk.png?v=1.8.48', 'character walk sprite sheet');
+  textures.characterAtlas = createImageTexture('sidescroll-character-walk.png?v=1.8.49', 'character walk sprite sheet');
 
   function mulberry32(seed) {
     return function() {
@@ -339,7 +339,7 @@
     sy: 1,
     sz: WORLD.nearZ - WORLD.farZ,
     layer: 'ground',
-    tint: [0.085, 0.090, 0.095],
+    tint: [0.155, 0.165, 0.170],
     opacity: 1,
     noFog: false,
     wrap: false
@@ -427,7 +427,7 @@
     }
 
     // A few trees on the near side but kept behind the character plane.
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 16; i++) {
       const x = TILE.minX + rand() * TILE_WIDTH;
       const z = -0.35 + rand() * 0.65;
       const type = trees[(i * 2 + 1) % trees.length];
@@ -439,11 +439,11 @@
       });
     }
 
-    // Near-side fill stays low and mostly behind the character, so the world feels dense
-    // without hiding the body.
-    for (let i = 0; i < 185; i++) {
+    // Near-side fill stays low and mostly behind the character, but pushed a touch closer
+    // to the camera so the lower screen space feels more populated.
+    for (let i = 0; i < 235; i++) {
       const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = -0.15 + rand() * 0.58;
+      const z = 0.12 + rand() * 0.78;
       const type = nearBaseGround[Math.floor(rand() * nearBaseGround.length)];
       const height = 0.70 + rand() * 1.15;
       addObject(midfill, type, x, z, null, height, {
@@ -454,11 +454,11 @@
     }
 
     // True foreground occluders are mostly grass/scrub and deliberately low.
-    for (let i = 0; i < 240; i++) {
+    for (let i = 0; i < 320; i++) {
       const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = 0.78 + rand() * 1.05;
+      const z = 1.15 + rand() * 1.35;
       const type = occluderGround[Math.floor(rand() * occluderGround.length)];
-      const height = 0.42 + rand() * 0.52;
+      const height = 0.34 + rand() * 0.42;
       addObject(frontOccluders, type, x, z, null, height, {
         shade: 0.95 + rand() * 0.06,
         opacity: 0.93 + rand() * 0.05,
@@ -472,9 +472,9 @@
       const x = sideBias < 0
         ? TILE.minX + rand() * 11
         : TILE.maxX - rand() * 11;
-      const z = 0.95 + rand() * 1.65;
+      const z = 1.25 + rand() * 1.95;
       const type = allGround[Math.floor(rand() * allGround.length)];
-      const height = 0.78 + rand() * 0.85;
+      const height = 0.58 + rand() * 0.62;
       addObject(frontOccluders, type, x, z, null, height, {
         shade: 0.95 + rand() * 0.07,
         opacity: 0.94,
@@ -484,14 +484,28 @@
 
 
     // Extra very-near low fill to keep the bottom foreground populated without hiding the character.
-    for (let i = 0; i < 220; i++) {
+    for (let i = 0; i < 360; i++) {
       const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = 2.05 + rand() * 1.25;
+      const z = 2.35 + rand() * 1.55;
       const type = occluderGround[Math.floor(rand() * occluderGround.length)];
-      const height = 0.22 + rand() * 0.38;
+      const height = 0.18 + rand() * 0.28;
       addObject(frontOccluders, type, x, z, null, height, {
         shade: 0.98 + rand() * 0.05,
         opacity: 0.94 + rand() * 0.04,
+        layer: 'foreground'
+      });
+    }
+
+
+    // Ultra-near skim to soften the bottom edge and avoid the empty floor band.
+    for (let i = 0; i < 240; i++) {
+      const x = TILE.minX + rand() * TILE_WIDTH;
+      const z = 3.55 + rand() * 1.45;
+      const type = occluderGround[Math.floor(rand() * occluderGround.length)];
+      const height = 0.10 + rand() * 0.20;
+      addObject(frontOccluders, type, x, z, null, height, {
+        shade: 1.00 + rand() * 0.04,
+        opacity: 0.95 + rand() * 0.03,
         layer: 'foreground'
       });
     }
@@ -534,10 +548,10 @@
 
   const camera = {
     x: 0,
-    y: -2.15,
-    z: 13.6,
-    targetY: groundY + 0.95,
-    targetZ: -14.2
+    y: -2.00,
+    z: 13.75,
+    targetY: groundY + 1.22,
+    targetZ: -13.2
   };
 
   let projection = mat4Identity();
@@ -567,7 +581,7 @@
       canvas.width = w;
       canvas.height = h;
       gl.viewport(0, 0, w, h);
-      projection = mat4Perspective((30 * Math.PI) / 180, w / h, 0.1, 180);
+      projection = mat4Perspective((31 * Math.PI) / 180, w / h, 0.1, 180);
     }
   }
 
@@ -658,7 +672,7 @@
 
     statusEl.textContent = debugDepth
       ? `Depth view · camera X ${camera.x.toFixed(1)} · grounded layers`
-      : `3D forest · camera X ${camera.x.toFixed(1)} · improved character pass`;
+      : `3D forest · camera X ${camera.x.toFixed(1)} · lower camera + denser foreground pass`;
 
     requestAnimationFrame(render);
   }
