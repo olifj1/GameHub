@@ -1,10 +1,10 @@
-# GameHub v1.8.58
+# GameHub v1.8.59
 
-Walk Lab export-frame pass.
+Walk Lab animation refinement pass.
 
-- Added a visible **2:3 export frame** directly in the Walk Lab editor.
-- Drag the top handle to move the crop; drag any corner to scale it while the aspect ratio stays locked.
-- Export size is deliberately fixed at **256×384 per frame**.
-- `Export PNG` now writes all 16 frames to a transparent **1024×1536 4×4 atlas**, using the exact same crop for every frame.
-- The export frame position and scale are stored in Walk Lab JSON saves and restored on load.
-- No extra export controls were added; the editor frame itself is the only framing control.
+- Reworked the default **arm swing** from segment angles rather than independent hand targets, giving a smoother pendulum motion across the full cycle.
+- Updated elbow IK so the elbow follows the direction of travel and no longer visibly flips backwards through the middle of the swing.
+- Kept the improved planted-foot leg cycle and 8 key poses + 8 in-betweens.
+- Let the arms extend more naturally through the centre of the swing while retaining fixed upper/lower arm lengths.
+- Nudged the long-hair guide to hang more vertically down the back.
+- Kept the new movable/scalable fixed-ratio export frame and 256×384 per-frame output unchanged.
