@@ -1,10 +1,11 @@
-# GameHub v1.8.53
+# GameHub v1.8.54
 
-Walk Lab prototype.
+Walk Lab editor pass.
 
-- Added **Walk Lab** as a separate GameHub prototype for solving the character gait before another illustrated character pass.
-- Built a **16-frame** cycle from **8 deliberate key poses + 8 in-between poses**.
-- Added a fixed ground line / root reference so unwanted frame-to-frame jumping is easy to spot.
-- Added onion-skin previous / next poses, frame-by-frame scrubbing, previous / next buttons, key-pose-only playback, and adjustable preview speed (default 14 fps).
-- Added planted-foot markers and moving ground ticks to make foot sliding easier to judge.
-- Included `walk-lab-reference.png`, a transparent 16-frame mannequin atlas intended to become the clean pose reference for the next character paint-over.
+- Expanded **Walk Lab** from a viewer into an editable animation tool.
+- Drag joint handles per frame to pose the mannequin.
+- Arms are now full-length two-segment limbs, matching the legs.
+- Limb segment lengths are fixed. Dragging hands or feet uses two-bone IK so limbs rotate instead of stretching.
+- Replaced the stick figure with a simple human-shaped mannequin: tapered upper/lower limbs, torso, neck, hands, feet and an oval head.
+- Kept eight key poses with eight in-betweens; **Make mids** rebuilds the in-between frames from the edited keys.
+- Added copy/paste pose, JSON save/load, and transparent PNG sheet export for use as an image-generation pose reference.
