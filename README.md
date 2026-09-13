@@ -1,11 +1,10 @@
-# GameHub v1.8.45
+# GameHub v1.8.46
 
-SideScroll character scale + walk-cycle pass.
+SideScroll woodland art pass.
 
-- Reduced the SideScroll character plane to roughly **one quarter of the previous size**.
-- Rebuilt the walk animation page as a clear external file: **sidescroll-character-walk.png**.
-- The page contains the eight walk poses in the correct 1 → 8 sequence, cropped from the supplied reference into equal animation cells.
-- The shader still shows one eighth of the page at a time, so this is now a genuine flip-book texture test rather than eight separately drawn runtime characters.
-- The animation remains tied to distance travelled, with shorter leg-swing phases and longer planted-foot/body-travel phases to better match the reference walk breakdown.
-- Idle now holds the first pose instead of flicking between walk frames.
-- Forest density, depth fog and the slower camera movement are otherwise unchanged from v1.8.44.
+- Replaced the procedural black tree/ground placeholders with the new illustrated woodland sprite assets.
+- Added the full editable tree and ground sprite sheets plus alpha-cropped individual sprites used by the renderer.
+- Added six textured tree variants with fuller canopies, branches and varied silhouettes.
+- Added twelve low woodland-floor variants covering grasses, scrub, rocks and fallen wood.
+- Kept the 3D world-space placement and depth fog, with denser trees beyond the path and lower vegetation around the character.
+- Added all SideScroll art assets to the service-worker app shell so the game remains available offline.
