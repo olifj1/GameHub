@@ -18,6 +18,7 @@
   const saveBtn = document.getElementById('walklab-save');
   const loadBtn = document.getElementById('walklab-load');
   const exportBtn = document.getElementById('walklab-export');
+  const rigArtBtn = document.getElementById('walklab-rigart');
   const fileInput = document.getElementById('walklab-file');
   const spriteBtn = document.getElementById('walklab-sprite');
   const spriteLoadBtn = document.getElementById('walklab-sprite-load');
@@ -161,10 +162,108 @@
   // Sprite comparison is deliberately tied to the same fixed 4x4 Walk Lab
   // atlas format as Export PNG. The bundled SideScroll character is loaded by
   // default; the user can replace it with any other 4x4 image sheet.
-  let spriteOverlay = true;
+  let spriteOverlay = false;
   let spriteAtlas = null;
   let spriteAtlasName = 'SideScroll character';
   const SPRITE_OPACITY = 0.58;
+
+  // Cutout-rig artwork. The generated concept sheet is pre-cut into this
+  // transparent atlas so Walk Lab can transform the same pixels on every
+  // frame instead of asking image generation to redraw each pose.
+  let rigArt = true;
+  let rigAtlas = null;
+  const RIG_ATLAS = Object.freeze({
+    width: 2048, height: 576,
+    parts: {
+      head_hood:{x:20,y:20,w:177,h:183}, head_front:{x:217,y:20,w:116,h:151},
+      back_hair:{x:353,y:20,w:214,h:181}, hair_tail_a:{x:587,y:20,w:110,h:151}, hair_tail_b:{x:717,y:20,w:93,h:156},
+      torso_dress:{x:830,y:20,w:156,h:220}, front_skirt:{x:1006,y:20,w:139,h:135},
+      front_cloak:{x:1165,y:20,w:129,h:214}, back_cloak:{x:1314,y:20,w:140,h:216}, rear_cloak:{x:1474,y:20,w:193,h:256},
+      pouch_belt:{x:1687,y:20,w:114,h:48}, near_upper_arm:{x:1821,y:20,w:86,h:114},
+      near_lower_arm:{x:20,y:296,w:110,h:117}, far_upper_arm:{x:150,y:296,w:67,h:108}, far_lower_arm:{x:237,y:296,w:91,h:113},
+      near_upper_leg:{x:348,y:296,w:114,h:202}, near_lower_leg:{x:482,y:296,w:60,h:202}, near_boot:{x:562,y:296,w:125,h:92},
+      far_upper_leg:{x:707,y:296,w:86,h:200}, far_lower_leg:{x:813,y:296,w:68,h:188}, far_boot:{x:901,y:296,w:126,h:99}
+    }
+  });
+
+  function loadRigAtlas() {
+    const img = new Image();
+    img.onload = () => { rigAtlas = img; draw(); };
+    img.onerror = () => { rigAtlas = null; draw(); };
+    img.src = 'walklab-rig-parts.png?v=1.8.62';
+  }
+
+  function rigRect(name) { return RIG_ATLAS.parts[name]; }
+
+  // Similarity-transform one atlas crop so two source anchor points land on
+  // two skeleton points. This is the 2D equivalent of attaching a textured
+  // plane to a bone: translation, rotation and uniform scale are deterministic.
+  function drawRigSegment(c, name, a, b, anchors, alpha = 1) {
+    if (!rigAtlas) return;
+    const r = rigRect(name); if (!r) return;
+    const p0 = { x: anchors[0] * r.w, y: anchors[1] * r.h };
+    const p1 = { x: anchors[2] * r.w, y: anchors[3] * r.h };
+    const svx = p1.x - p0.x, svy = p1.y - p0.y;
+    const dvx = b.x - a.x, dvy = b.y - a.y;
+    const sl = Math.hypot(svx,svy) || 1;
+    const dl = Math.hypot(dvx,dvy) || 1;
+    const scale = dl / sl;
+    const rot = Math.atan2(dvy,dvx) - Math.atan2(svy,svx);
+    c.save(); c.globalAlpha *= alpha; c.translate(a.x,a.y); c.rotate(rot); c.scale(scale,scale);
+    c.drawImage(rigAtlas,r.x,r.y,r.w,r.h,-p0.x,-p0.y,r.w,r.h);
+    c.restore();
+  }
+
+  function drawRigAt(c, name, point, opts = {}) {
+    if (!rigAtlas) return;
+    const r=rigRect(name); if(!r) return;
+    const px=(opts.px ?? .5)*r.w, py=(opts.py ?? .5)*r.h;
+    const scale=opts.scale ?? 1, rot=opts.rot ?? 0;
+    c.save(); c.globalAlpha*=opts.alpha ?? 1; c.translate(point.x,point.y); c.rotate(rot); c.scale(scale,scale);
+    c.drawImage(rigAtlas,r.x,r.y,r.w,r.h,-px,-py,r.w,r.h); c.restore();
+  }
+
+  function drawBoot(c, name, ankle, scale, alpha=1) {
+    const toe={x:ankle.x + BODY.foot*scale,y:ankle.y};
+    drawRigSegment(c,name,ankle,toe,[.28,.18,.88,.68],alpha);
+  }
+
+  function drawRigArt(c,p,g,opts={}) {
+    if(!rigArt || !rigAtlas) return;
+    const alpha=opts.alpha ?? 1;
+    const s=g.scale;
+    const cloakTip={x:g.pelvis.x-.36*s,y:g.pelvis.y+.15*s};
+    const cloakTipFar={x:g.pelvis.x-.48*s,y:g.pelvis.y+.19*s};
+
+    // Back-most secondary pieces.
+    drawRigSegment(c,'back_hair',g.hairRoot,g.hairTip,[.82,.12,.12,.72],alpha*.98);
+    drawRigSegment(c,'rear_cloak',g.shoulder,cloakTipFar,[.62,.08,.28,.88],alpha*.98);
+    drawRigSegment(c,'back_cloak',g.shoulder,cloakTip,[.45,.08,.48,.90],alpha*.96);
+
+    // Far limbs.
+    drawRigSegment(c,'far_upper_arm',g.shoulder,g.bE,[.48,.06,.54,.94],alpha*.95);
+    drawRigSegment(c,'far_lower_arm',g.bE,g.bW,[.20,.08,.58,.73],alpha*.95);
+    drawRigSegment(c,'far_upper_leg',g.pelvis,g.bK,[.32,.04,.55,.95],alpha*.96);
+    drawRigSegment(c,'far_lower_leg',g.bK,g.bF,[.50,.03,.48,.96],alpha*.96);
+    drawBoot(c,'far_boot',g.bF,s,alpha*.96);
+
+    // Torso and main cloak/dress masses.
+    drawRigSegment(c,'torso_dress',g.chest,g.pelvis,[.53,.05,.52,.53],alpha);
+    drawRigSegment(c,'front_skirt',g.pelvis,{x:g.pelvis.x+.01*s,y:g.pelvis.y+.25*s},[.48,.08,.50,.86],alpha*.98);
+    drawRigSegment(c,'front_cloak',g.shoulder,cloakTip,[.56,.08,.46,.90],alpha*.98);
+    drawRigAt(c,'pouch_belt',{x:g.pelvis.x-.01*s,y:g.pelvis.y-.03*s},{px:.55,py:.40,scale:s*.00105,rot:p.lean*.35,alpha});
+
+    // Near limbs over the body.
+    drawRigSegment(c,'near_upper_leg',g.pelvis,g.aK,[.72,.03,.24,.94],alpha);
+    drawRigSegment(c,'near_lower_leg',g.aK,g.aF,[.50,.03,.48,.96],alpha);
+    drawBoot(c,'near_boot',g.aF,s,alpha);
+    drawRigSegment(c,'near_upper_arm',g.shoulder,g.aE,[.86,.06,.30,.94],alpha);
+    drawRigSegment(c,'near_lower_arm',g.aE,g.aW,[.15,.06,.67,.72],alpha);
+
+    // Head last so it stays clean over cloak/hair roots.
+    const headScale=(BODY.headR*2.75*s)/rigRect('head_hood').h;
+    drawRigAt(c,'head_hood',g.neck,{px:.56,py:.79,scale:headScale,rot:p.lean*.32,alpha});
+  }
 
   function keyBlackBackground(sourceCanvas) {
     // Image-gen sheets often arrive on solid black. Key only the near-black
@@ -198,14 +297,16 @@
     return keyBlackBackground(out);
   }
 
-  function loadSpriteURL(url, name = 'Sprite') {
+  function loadSpriteURL(url, name = 'Sprite', enable = true) {
     const img = new Image();
     img.onload = () => {
       spriteAtlas = atlasFromImage(img);
       spriteAtlasName = name;
-      spriteOverlay = true;
-      spriteBtn?.classList.add('active');
-      spriteBtn?.setAttribute('aria-pressed', 'true');
+      if (enable) {
+        spriteOverlay = true;
+        spriteBtn?.classList.add('active');
+        spriteBtn?.setAttribute('aria-pressed', 'true');
+      }
       draw();
     };
     img.onerror = () => {
@@ -536,9 +637,10 @@
       ctx.beginPath(); ctx.moveTo(x,g.groundY+.03*g.scale); ctx.lineTo(x+spacing*.35,g.groundY+.03*g.scale); ctx.stroke();
     }
 
-    // Generated sprite sits beneath the stick rig so pose mismatches are easy
-    // to spot while the lab plays or scrubs through all 16 frames.
+    // Deterministic cutout planes follow the authored bones. The older full-sheet
+    // sprite comparison remains optional underneath.
     drawSpriteFrame(ctx, frame, W, H);
+    drawRigArt(ctx,frames[frame],g,{alpha:.92});
 
     if (onion) {
       const pPrev=frames[(frame+15)%16], pNext=frames[(frame+1)%16];
@@ -549,8 +651,8 @@
     drawExportFrame(ctx,W,H);
 
     const p=frames[frame];
-    readout.textContent=`Frame ${frame+1} / 16 · ${p.name} · ${p.key?'KEY':'IN-BETWEEN'} · ${p.planted==='A'?'LEFT':'RIGHT'} PLANT${spriteOverlay&&spriteAtlas?' · SPRITE':''}`;
-    editHint.textContent=activeExportControl ? `Editing export frame · ${activeExportControl}` : (activeJoint ? `Editing ${activeJoint}` : 'Drag joints · export frame: top handle moves, corners scale');
+    readout.textContent=`Frame ${frame+1} / 16 · ${p.name} · ${p.key?'KEY':'IN-BETWEEN'} · ${p.planted==='A'?'LEFT':'RIGHT'} PLANT${rigArt&&rigAtlas?' · RIG ART':''}${spriteOverlay&&spriteAtlas?' · SPRITE':''}`;
+    editHint.textContent=activeExportControl ? `Editing export frame · ${activeExportControl}` : (activeJoint ? `Editing ${activeJoint}` : 'Drag joints · Rig art follows bones · export frame: top handle moves, corners scale');
     scrub.value=String(frame);
   }
 
@@ -717,7 +819,9 @@
 
     frames.forEach((p,i)=>{
       sc.clearRect(0,0,W,H);
-      drawPoseTo(sc,p,geometry(p,W,H),{handles:false,ghost:false});
+      const gg=geometry(p,W,H);
+      if(rigArt && rigAtlas) drawRigArt(sc,p,gg,{alpha:1});
+      else drawPoseTo(sc,p,gg,{handles:false,ghost:false});
       const col=i%EXPORT.cols,row=Math.floor(i/EXPORT.cols);
       c.drawImage(
         scratch,
@@ -725,7 +829,7 @@
         col*EXPORT.cellW,row*EXPORT.cellH,EXPORT.cellW,EXPORT.cellH
       );
     });
-    out.toBlob(blob=>{if(blob)downloadBlob(blob,'walk-lab-16-frame-reference.png');},'image/png');
+    out.toBlob(blob=>{if(blob)downloadBlob(blob,rigArt&&rigAtlas?'walk-lab-rig-art-16-frame.png':'walk-lab-16-frame-reference.png');},'image/png');
   }
 
   scrub.addEventListener('input',()=>{frame=Number(scrub.value);playing=false;playBtn.textContent='Play';playBtn.classList.remove('active');draw();});
@@ -742,6 +846,7 @@
   loadBtn.addEventListener('click',()=>fileInput.click());
   fileInput.addEventListener('change',()=>{const f=fileInput.files?.[0];if(f)loadJSON(f);fileInput.value='';});
   exportBtn.addEventListener('click',exportPNG);
+  rigArtBtn?.addEventListener('click',()=>{rigArt=!rigArt;rigArtBtn.classList.toggle('active',rigArt);rigArtBtn.setAttribute('aria-pressed',String(rigArt));draw();});
   spriteBtn?.addEventListener('click',()=>{
     spriteOverlay=!spriteOverlay;
     spriteBtn.classList.toggle('active',spriteOverlay);
@@ -772,7 +877,9 @@
 
   playBtn.textContent='Play';
   playBtn.classList.remove('active');
-  loadSpriteURL('sidescroll-character-walk.png?v=1.8.61', 'Minimal iconic girl');
+  loadRigAtlas();
+  loadSpriteURL('sidescroll-character-walk.png?v=1.8.62', 'Minimal iconic girl', false);
+  spriteOverlay=false; spriteBtn?.classList.remove('active'); spriteBtn?.setAttribute('aria-pressed','false');
   draw();
   requestAnimationFrame(animate);
 })();

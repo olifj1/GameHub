@@ -1,4 +1,4 @@
-const CACHE = "gamehub-v1.8.61";
+const CACHE = "gamehub-v1.8.62";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -46,6 +46,8 @@ const APP_SHELL = [
   "./game-17.html",
   "./game-17.js",
   "./walk-lab-reference.png",
+  "./walklab-rig-parts.png",
+  "./walklab-rig-parts-source.png",
   "./sidescroll-character-sheet.png",
   "./sidescroll-character-walk.png",
   "./sidescroll-character-walk-source.png",

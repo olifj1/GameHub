@@ -1,11 +1,13 @@
-# GameHub v1.8.61
+# GameHub v1.8.62
 
-SideScroll generated character + Walk Lab sprite overlay pass.
+Walk Lab cutout-rig experiment.
 
-- Replaced the SideScroll placeholder character with the latest **16-frame minimal-iconic girl** generated from the Walk Lab reference.
-- Converted the generated black-background page to a transparent **1024×1536 RGBA 4×4 atlas** for the game.
-- SideScroll now reads all **16 frames** from the 4×4 atlas while keeping the walk tied to travelled distance.
-- Added a **Sprite** overlay to Walk Lab so the generated character can play directly over the editable stick rig, frame-for-frame.
-- Added **Load sprite** so another 4×4 / 16-frame sheet can be compared without rebuilding the app. Near-black image backgrounds are keyed out automatically for the overlay.
-- The sprite overlay uses the existing movable/scalable export frame, so the exact crop alignment can be judged against the rig.
-- Included the original generated black-background source page as `sidescroll-character-walk-source.png`.
+- Added a transparent **character-parts atlas** derived from the generated rigging sheet.
+- Added a new **Rig art** mode in Walk Lab. The same cutout artwork is attached to the authored stick bones using deterministic 2D transforms, rather than redrawing a whole character independently for each animation frame.
+- Near/far arms and legs, boots, torso/dress, cloak, hood/head and back hair are layered over the existing skeleton.
+- The stick rig remains visible on top so registration problems are easy to diagnose.
+- The older full-sprite-sheet comparison remains available with **Sprite / Load sprite**, but is off by default.
+- **Export PNG** now exports the assembled cutout character when Rig art is enabled, creating the same fixed 16-frame 1024×1536 atlas format for SideScroll.
+- Included `walklab-rig-parts-source.png` (the generated concept sheet) and `walklab-rig-parts.png` (the transparent cutout atlas actually used by Walk Lab).
+
+This is intentionally a first rig-mapping pass: the important test is whether deterministic cutout pieces solve the frame-to-frame consistency problem before refining pivots, cloak segmentation and proportions.

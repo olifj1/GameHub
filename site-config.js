@@ -186,7 +186,7 @@ window.APP_CONFIG = {
       "description": "Explore the layered 3D forest with the new 16-frame minimal-iconic generated walking character.",
       "icon": "♠",
       "enabled": true,
-      "path": "game-16.html?v=1.8.61"
+      "path": "game-16.html?v=1.8.62"
     },
     {
       "id": "game-17",
@@ -194,7 +194,7 @@ window.APP_CONFIG = {
       "description": "Edit the 16-frame stick walk and overlay a matching 4×4 sprite sheet for frame-by-frame comparison.",
       "icon": "↻",
       "enabled": true,
-      "path": "game-17.html?v=1.8.61"
+      "path": "game-17.html?v=1.8.62"
     }
   ]
 };

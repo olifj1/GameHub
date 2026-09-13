@@ -295,7 +295,7 @@
   treeAssets.forEach(([id, w, h]) => {
     const key = `tree${id}`;
     assetAspect[key] = w / h;
-    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.61`, key);
+    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.62`, key);
   });
 
   const groundAssets = [
@@ -306,11 +306,11 @@
   groundAssets.forEach(([id, w, h]) => {
     const key = `ground${id}`;
     assetAspect[key] = w / h;
-    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.61' : null;
-    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.61`, key, fallback);
+    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.62' : null;
+    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.62`, key, fallback);
   });
 
-  textures.characterAtlas = createImageTexture('sidescroll-character-walk.png?v=1.8.61', '16-frame character walk sprite sheet');
+  textures.characterAtlas = createImageTexture('sidescroll-character-walk.png?v=1.8.62', '16-frame character walk sprite sheet');
 
   function mulberry32(seed) {
     return function() {
