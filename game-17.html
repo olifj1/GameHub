@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.8.54">
+  <link rel="stylesheet" href="style.css?v=1.8.55">
   <title>Walk Lab</title>
 </head>
 <body class="modular-game" data-game-id="game-17">
@@ -19,7 +19,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">ANIMATION TOOL</p>
       <h2 id="game-17-info-title">Walk Lab</h2>
-      <p>Drag the white joint handles to edit the current frame. Limb lengths are fixed, so dragging a hand or foot uses simple two-bone IK instead of stretching the limb. Edit the eight key poses, then use <strong>Make mids</strong> to rebuild the eight in-betweens. Save/load animation JSON, or export the current 16-frame mannequin sheet as a PNG for an image-generation paint-over.</p>
+      <p>A simpler fixed-length stick rig for building a clean walk. Drag the pelvis, chest, hands or feet; knees and elbows solve automatically so the limbs cannot stretch or fold backwards. The shoulders share one central attachment point. The default cycle is rebuilt around a genuinely planted stance foot, with moving floor marks to expose any sliding. Edit the eight key poses, then use <strong>Make mids</strong> for the eight in-betweens.</p>
     </div>
   </div>
 
@@ -32,9 +32,9 @@
         </header>
 
         <div class="walklab-stage-wrap">
-          <canvas id="walklab-canvas" aria-label="Editable sixteen frame walk cycle mannequin"></canvas>
+          <canvas id="walklab-canvas" aria-label="Editable sixteen frame stick figure walk cycle"></canvas>
           <div class="walklab-readout" id="walklab-readout">Frame 1 / 16 · Contact L · KEY</div>
-          <div class="walklab-edit-hint" id="walklab-edit-hint">Drag a joint</div>
+          <div class="walklab-edit-hint" id="walklab-edit-hint">Drag pelvis, chest, hands or feet</div>
         </div>
 
         <div class="walklab-scrub-row">
@@ -51,6 +51,7 @@
 
         <div class="walklab-tool-grid">
           <button id="walklab-mids" class="walklab-tool" type="button">Make mids</button>
+          <button id="walklab-reset" class="walklab-tool" type="button">Reset cycle</button>
           <button id="walklab-copy" class="walklab-tool" type="button">Copy pose</button>
           <button id="walklab-paste" class="walklab-tool" type="button" disabled>Paste pose</button>
           <button id="walklab-save" class="walklab-tool" type="button">Save JSON</button>
@@ -68,8 +69,8 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.8.54"></script>
-  <script src="core.js?v=1.8.54"></script>
-  <script src="game-17.js?v=1.8.54"></script>
+  <script src="site-config.js?v=1.8.55"></script>
+  <script src="core.js?v=1.8.55"></script>
+  <script src="game-17.js?v=1.8.55"></script>
 </body>
 </html>

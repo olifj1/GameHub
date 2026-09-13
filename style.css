@@ -10551,7 +10551,7 @@ body[data-game-id="game-16"] .sidescroll-control:active{
   body[data-game-id="game-16"] .sidescroll-control span{font-size:23px;line-height:20px;}
 }
 
-/* GameHub v1.8.54 — Walk Lab */
+/* GameHub v1.8.55 — Walk Lab */
 body[data-game-id="game-17"] .walklab-page{
   width:100%;height:100%;display:flex;flex-direction:column;gap:9px;min-height:0;
 }
@@ -10589,7 +10589,7 @@ body[data-game-id="game-17"] .walklab-plant-dot{background:#718f89;}
   body[data-game-id="game-17"] .walklab-legend{display:none;}
 }
 
-/* GameHub v1.8.54 — Walk Lab editor controls */
+/* GameHub v1.8.55 — Walk Lab editor controls */
 body[data-game-id="game-17"] .walklab-edit-hint{
   position:absolute;left:50%;bottom:10px;transform:translateX(-50%);padding:5px 9px;border-radius:10px;
   background:rgba(247,240,233,.86);border:1px solid rgba(80,88,91,.18);color:#626a6d;font-size:10px;font-weight:800;
