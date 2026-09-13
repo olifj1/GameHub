@@ -22,6 +22,18 @@
   const fpsSlider = document.getElementById('walklab-fps');
   const fpsOut = document.getElementById('walklab-fps-out');
 
+
+  // Export format is deliberately fixed so every animation uses exactly the
+  // same sprite-cell proportions. The user only needs to position/scale the
+  // visible crop frame in the editor.
+  const EXPORT = Object.freeze({
+    cellW: 256,
+    cellH: 384,
+    cols: 4,
+    rows: 4,
+    aspect: 2 / 3
+  });
+
   const DEG = Math.PI / 180;
   const TAU = Math.PI * 2;
 
@@ -136,6 +148,12 @@
   let lastAdvance = performance.now();
   let activeJoint = null;
   let activePointer = null;
+
+  let activeExportControl = null;
+  let exportDragStart = null;
+  // Normalised to the live editor canvas. Width drives height through the
+  // fixed 2:3 aspect ratio; centre stays stable across all 16 frames.
+  let exportFrame = { cx: 0.50, cy: 0.545, width: 0.44 };
 
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -311,6 +329,107 @@
     }
   }
 
+  function exportRect(W = canvas.width, H = canvas.height) {
+    const minW = Math.max(80, W * 0.22);
+    const maxW = Math.max(minW, Math.min(W * 0.90, H * 0.86 * EXPORT.aspect));
+    let w = clamp(exportFrame.width * W, minW, maxW);
+    let h = w / EXPORT.aspect;
+    let cx = exportFrame.cx * W;
+    let cy = exportFrame.cy * H;
+    const margin = Math.max(8, W * 0.018);
+    cx = clamp(cx, margin + w / 2, W - margin - w / 2);
+    cy = clamp(cy, margin + h / 2, H - margin - h / 2);
+    exportFrame.cx = cx / W;
+    exportFrame.cy = cy / H;
+    exportFrame.width = w / W;
+    return { x: cx - w / 2, y: cy - h / 2, w, h, cx, cy };
+  }
+
+  function exportHandles(W = canvas.width, H = canvas.height) {
+    const r = exportRect(W, H);
+    const lift = Math.max(20, W * 0.045);
+    return {
+      rect: r,
+      move: { x: r.cx, y: r.y - lift },
+      corners: [
+        { x: r.x, y: r.y },
+        { x: r.x + r.w, y: r.y },
+        { x: r.x, y: r.y + r.h },
+        { x: r.x + r.w, y: r.y + r.h }
+      ]
+    };
+  }
+
+  function drawExportFrame(c, W = canvas.width, H = canvas.height) {
+    const h = exportHandles(W, H);
+    const r = h.rect;
+    const lineW = Math.max(2, W * 0.0045);
+    const knobR = Math.max(7, W * 0.015);
+    c.save();
+    c.strokeStyle = 'rgba(90,132,125,.92)';
+    c.fillStyle = 'rgba(243,237,231,.90)';
+    c.lineWidth = lineW;
+    c.setLineDash([Math.max(8,W*.016), Math.max(6,W*.012)]);
+    c.strokeRect(r.x, r.y, r.w, r.h);
+    c.setLineDash([]);
+
+    // Move handle and connector.
+    c.beginPath(); c.moveTo(r.cx, r.y); c.lineTo(h.move.x, h.move.y); c.stroke();
+    c.beginPath(); c.arc(h.move.x, h.move.y, knobR * 1.12, 0, TAU); c.fill(); c.stroke();
+    c.beginPath(); c.arc(h.move.x, h.move.y, knobR * .33, 0, TAU); c.fillStyle='#5a847d'; c.fill();
+
+    // Uniform scale handles; scaling is always about the frame centre and the
+    // 2:3 aspect can never drift.
+    c.fillStyle = 'rgba(243,237,231,.94)';
+    for (const q of h.corners) {
+      c.beginPath(); c.arc(q.x, q.y, knobR, 0, TAU); c.fill(); c.stroke();
+    }
+
+    const label = `EXPORT ${EXPORT.cellW}×${EXPORT.cellH}  ·  ATLAS ${EXPORT.cellW*EXPORT.cols}×${EXPORT.cellH*EXPORT.rows}`;
+    c.font = `800 ${Math.max(11, W*.023)}px system-ui, -apple-system, sans-serif`;
+    c.textAlign = 'center';
+    c.textBaseline = 'bottom';
+    const tw = c.measureText(label).width;
+    const tx = r.cx;
+    const ty = r.y - Math.max(6, W*.012);
+    c.fillStyle = 'rgba(41,55,57,.78)';
+    const padX = Math.max(7,W*.014), padY=Math.max(4,W*.008);
+    c.fillRect(tx-tw/2-padX, ty-Math.max(14,W*.032)-padY, tw+padX*2, Math.max(17,W*.036)+padY*2);
+    c.fillStyle = '#f5f0eb';
+    c.fillText(label, tx, ty-padY);
+    c.restore();
+  }
+
+  function findExportControl(pos) {
+    const h = exportHandles();
+    const hitR = Math.max(24, canvas.width * 0.045);
+    if (Math.hypot(pos.x-h.move.x,pos.y-h.move.y) <= hitR) return 'move';
+    for (const q of h.corners) {
+      if (Math.hypot(pos.x-q.x,pos.y-q.y) <= hitR) return 'scale';
+    }
+    return null;
+  }
+
+  function editExportFrame(mode, pos) {
+    const W=canvas.width,H=canvas.height;
+    if (!exportDragStart) return;
+    if (mode === 'move') {
+      const dx = pos.x - exportDragStart.pointer.x;
+      const dy = pos.y - exportDragStart.pointer.y;
+      exportFrame.cx = exportDragStart.frame.cx + dx / W;
+      exportFrame.cy = exportDragStart.frame.cy + dy / H;
+    } else if (mode === 'scale') {
+      const cx = exportDragStart.frame.cx * W;
+      const cy = exportDragStart.frame.cy * H;
+      const halfWFromX = Math.abs(pos.x - cx);
+      const halfWFromY = Math.abs(pos.y - cy) * EXPORT.aspect;
+      const newW = Math.max(halfWFromX, halfWFromY) * 2;
+      exportFrame.width = newW / W;
+    }
+    exportRect(W,H); // clamps and writes the normalised values back.
+    draw();
+  }
+
   function draw() {
     resize();
     const W=canvas.width,H=canvas.height;
@@ -344,10 +463,11 @@
       drawPoseTo(ctx,pNext,geometry(pNext),{ghost:true,alpha:.17});
     }
     drawPoseTo(ctx,frames[frame],g,{handles:true});
+    drawExportFrame(ctx,W,H);
 
     const p=frames[frame];
     readout.textContent=`Frame ${frame+1} / 16 · ${p.name} · ${p.key?'KEY':'IN-BETWEEN'} · ${p.planted==='A'?'LEFT':'RIGHT'} PLANT`;
-    editHint.textContent=activeJoint ? `Editing ${activeJoint}` : 'Drag pelvis, chest, hands or feet · hair bone is automatic';
+    editHint.textContent=activeExportControl ? `Editing export frame · ${activeExportControl}` : (activeJoint ? `Editing ${activeJoint}` : 'Drag joints · export frame: top handle moves, corners scale');
     scrub.value=String(frame);
   }
 
@@ -402,12 +522,31 @@
   }
 
   canvas.addEventListener('pointerdown',e=>{
-    const pos=pointerPos(e); const joint=findJoint(pos); if(!joint)return;
+    const pos=pointerPos(e);
+    const exportControl=findExportControl(pos);
+    if(exportControl){
+      playing=false; playBtn.textContent='Play'; playBtn.classList.remove('active');
+      activeExportControl=exportControl;
+      activePointer=e.pointerId;
+      exportDragStart={pointer:pos,frame:{...exportFrame}};
+      canvas.setPointerCapture?.(e.pointerId);
+      draw();
+      return;
+    }
+    const joint=findJoint(pos); if(!joint)return;
     playing=false; playBtn.textContent='Play'; playBtn.classList.remove('active');
     activeJoint=joint; activePointer=e.pointerId; canvas.setPointerCapture?.(e.pointerId); editJoint(joint,pos);
   });
-  canvas.addEventListener('pointermove',e=>{if(e.pointerId===activePointer&&activeJoint)editJoint(activeJoint,pointerPos(e));});
-  function endDrag(e){if(e.pointerId!==activePointer)return;activePointer=null;activeJoint=null;draw();}
+  canvas.addEventListener('pointermove',e=>{
+    if(e.pointerId!==activePointer)return;
+    const pos=pointerPos(e);
+    if(activeExportControl) editExportFrame(activeExportControl,pos);
+    else if(activeJoint) editJoint(activeJoint,pos);
+  });
+  function endDrag(e){
+    if(e.pointerId!==activePointer)return;
+    activePointer=null; activeJoint=null; activeExportControl=null; exportDragStart=null; draw();
+  }
   canvas.addEventListener('pointerup',endDrag);
   canvas.addEventListener('pointercancel',endDrag);
 
@@ -449,7 +588,7 @@
   }
 
   function saveJSON(){
-    const data={type:'GameHubWalkLab',version:5,fps,body:BODY,frames};
+    const data={type:'GameHubWalkLab',version:6,fps,body:BODY,exportFrame,export:{cellW:EXPORT.cellW,cellH:EXPORT.cellH,cols:EXPORT.cols,rows:EXPORT.rows,aspect:EXPORT.aspect},frames};
     downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'walk-lab-animation.json');
   }
 
@@ -465,20 +604,43 @@
         key:i%2===0
       }));
       if(Number.isFinite(data.fps)){fps=clamp(Math.round(data.fps),4,24);fpsSlider.value=String(fps);fpsOut.textContent=`${fps} fps`;}
+      if(data.exportFrame && Number.isFinite(data.exportFrame.cx) && Number.isFinite(data.exportFrame.cy) && Number.isFinite(data.exportFrame.width)){
+        exportFrame={cx:data.exportFrame.cx,cy:data.exportFrame.cy,width:data.exportFrame.width};
+      }
       frame=0; playing=false; playBtn.textContent='Play'; playBtn.classList.remove('active'); draw();
     }catch(err){alert(`Could not load animation: ${err.message}`);}
   }
 
   function exportPNG(){
-    const cellW=280,cellH=360,cols=4,rows=4;
-    const out=document.createElement('canvas'); out.width=cellW*cols; out.height=cellH*rows;
-    const c=out.getContext('2d'); c.clearRect(0,0,out.width,out.height);
+    // The visible frame is the single source crop for every pose. We render
+    // each animation frame into a transparent editor-sized buffer, crop that
+    // exact rectangle, and scale it into a fixed 256×384 atlas cell.
+    resize();
+    const W=canvas.width,H=canvas.height;
+    const r=exportRect(W,H);
+    const out=document.createElement('canvas');
+    out.width=EXPORT.cellW*EXPORT.cols;
+    out.height=EXPORT.cellH*EXPORT.rows;
+    const c=out.getContext('2d');
+    c.clearRect(0,0,out.width,out.height);
+    c.imageSmoothingEnabled=true;
+    c.imageSmoothingQuality='high';
+
+    const scratch=document.createElement('canvas');
+    scratch.width=W; scratch.height=H;
+    const sc=scratch.getContext('2d');
+    sc.imageSmoothingEnabled=true;
+    sc.imageSmoothingQuality='high';
+
     frames.forEach((p,i)=>{
-      const col=i%cols,row=Math.floor(i/cols);
-      c.save(); c.translate(col*cellW,row*cellH);
-      const g=geometry(p,cellW,cellH);
-      drawPoseTo(c,p,g,{handles:false,ghost:false});
-      c.restore();
+      sc.clearRect(0,0,W,H);
+      drawPoseTo(sc,p,geometry(p,W,H),{handles:false,ghost:false});
+      const col=i%EXPORT.cols,row=Math.floor(i/EXPORT.cols);
+      c.drawImage(
+        scratch,
+        r.x,r.y,r.w,r.h,
+        col*EXPORT.cellW,row*EXPORT.cellH,EXPORT.cellW,EXPORT.cellH
+      );
     });
     out.toBlob(blob=>{if(blob)downloadBlob(blob,'walk-lab-16-frame-reference.png');},'image/png');
   }

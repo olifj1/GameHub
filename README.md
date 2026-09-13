@@ -1,9 +1,10 @@
-# GameHub v1.8.57
+# GameHub v1.8.58
 
-Walk Lab arm + hair refinement.
+Walk Lab export-frame pass.
 
-- Reworked the default **arm swing** into a smoother pendulum arc with the two arms exactly half a cycle out of phase.
-- Fixed the elbow IK branch so elbows no longer flip / fold backwards as the hands pass beneath the shoulders.
-- Tightened hand editing limits to avoid pathological arm poses while keeping fixed upper/lower arm lengths.
-- Moved the **hair guide root lower on the back of the head** and changed its motion so the bone hangs down the back with a small delayed swing.
-- Kept the improved planted-foot leg cycle, forward lean, 8 key poses + 8 in-betweens, JSON save/load, and 16-frame PNG export.
+- Added a visible **2:3 export frame** directly in the Walk Lab editor.
+- Drag the top handle to move the crop; drag any corner to scale it while the aspect ratio stays locked.
+- Export size is deliberately fixed at **256×384 per frame**.
+- `Export PNG` now writes all 16 frames to a transparent **1024×1536 4×4 atlas**, using the exact same crop for every frame.
+- The export frame position and scale are stored in Walk Lab JSON saves and restored on load.
+- No extra export controls were added; the editor frame itself is the only framing control.

@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.8.57">
+  <link rel="stylesheet" href="style.css?v=1.8.58">
   <title>Walk Lab</title>
 </head>
 <body class="modular-game" data-game-id="game-17">
@@ -19,7 +19,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">ANIMATION TOOL</p>
       <h2 id="game-17-info-title">Walk Lab</h2>
-      <p>A fixed-length stick rig for building a clean walk. The default cycle now has a stronger natural arm swing, feet shifted under the centre of mass, a slight forward body lean, and a fixed-length long-hair guide bone with built-in bounce. Drag the pelvis, chest, hands or feet; knees and elbows solve automatically. The stance foot is pinned against root travel, and <strong>Export PNG</strong> outputs all 16 frames on one transparent 4×4 page.</p>
+      <p>A fixed-length stick rig for building a clean walk. Drag the pelvis, chest, hands or feet; knees and elbows solve automatically. The teal <strong>export frame</strong> defines the exact crop used for every animation frame: drag its top handle to move it and any corner to scale it. Its aspect is locked to 2:3, and <strong>Export PNG</strong> outputs all 16 frames as 256×384 cells on one transparent 1024×1536 atlas.</p>
     </div>
   </div>
 
@@ -34,7 +34,7 @@
         <div class="walklab-stage-wrap">
           <canvas id="walklab-canvas" aria-label="Editable sixteen frame stick figure walk cycle"></canvas>
           <div class="walklab-readout" id="walklab-readout">Frame 1 / 16 · Contact L · KEY</div>
-          <div class="walklab-edit-hint" id="walklab-edit-hint">Drag pelvis, chest, hands or feet · hair bone is automatic</div>
+          <div class="walklab-edit-hint" id="walklab-edit-hint">Drag joints · export frame: top handle moves, corners scale</div>
         </div>
 
         <div class="walklab-scrub-row">
@@ -69,8 +69,8 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.8.57"></script>
-  <script src="core.js?v=1.8.57"></script>
-  <script src="game-17.js?v=1.8.57"></script>
+  <script src="site-config.js?v=1.8.58"></script>
+  <script src="core.js?v=1.8.58"></script>
+  <script src="game-17.js?v=1.8.58"></script>
 </body>
 </html>
