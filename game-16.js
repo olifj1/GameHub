@@ -295,7 +295,7 @@
   treeAssets.forEach(([id, w, h]) => {
     const key = `tree${id}`;
     assetAspect[key] = w / h;
-    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.51`, key);
+    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.52`, key);
   });
 
   const groundAssets = [
@@ -306,11 +306,11 @@
   groundAssets.forEach(([id, w, h]) => {
     const key = `ground${id}`;
     assetAspect[key] = w / h;
-    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.51' : null;
-    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.51`, key, fallback);
+    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.52' : null;
+    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.52`, key, fallback);
   });
 
-  textures.characterAtlas = createImageTexture('sidescroll-character-walk.png?v=1.8.51', 'character walk sprite sheet');
+  textures.characterAtlas = createImageTexture('sidescroll-character-walk.png?v=1.8.52', 'character walk sprite sheet');
 
   function mulberry32(seed) {
     return function() {
@@ -537,8 +537,8 @@
     x: 0,
     y: groundY,
     z: pathZ,
-    sx: 1.05,
-    sy: 1.72,
+    sx: 2.20,
+    sy: 3.60,
     sz: 1,
     flip: false,
     layer: 'character',
@@ -688,7 +688,7 @@
 
     statusEl.textContent = debugDepth
       ? `Depth view · camera X ${camera.x.toFixed(1)} · grounded layers`
-      : `3D forest · camera X ${camera.x.toFixed(1)} · original girl character pass`;
+      : `3D forest · camera X ${camera.x.toFixed(1)} · original girl scale pass`;
 
     requestAnimationFrame(render);
   }
