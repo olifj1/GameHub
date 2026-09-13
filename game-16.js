@@ -295,7 +295,7 @@
   treeAssets.forEach(([id, w, h]) => {
     const key = `tree${id}`;
     assetAspect[key] = w / h;
-    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.47`, key);
+    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.48`, key);
   });
 
   const groundAssets = [
@@ -306,11 +306,11 @@
   groundAssets.forEach(([id, w, h]) => {
     const key = `ground${id}`;
     assetAspect[key] = w / h;
-    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.47' : null;
-    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.47`, key, fallback);
+    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.48' : null;
+    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.48`, key, fallback);
   });
 
-  textures.characterAtlas = createImageTexture('sidescroll-character-sheet.png?v=1.8.47', 'character sprite sheet');
+  textures.characterAtlas = createImageTexture('sidescroll-character-walk.png?v=1.8.48', 'character walk sprite sheet');
 
   function mulberry32(seed) {
     return function() {
@@ -384,7 +384,7 @@
     const allGround = ['ground01','ground02','ground03','ground04','ground05','ground06','ground07','ground08','ground09','ground10','ground11','ground12'];
     const pathBackGround = ['ground01','ground02','ground03','ground05','ground06','ground08','ground09','ground10','ground11','ground12'];
     const nearBaseGround = ['ground01','ground02','ground03','ground04','ground05','ground06','ground07','ground08','ground09','ground10','ground11'];
-    const occluderGround = ['ground02','ground05','ground08','ground09','ground10','ground12'];
+    const occluderGround = ['ground01','ground02','ground03','ground05','ground08','ground09','ground10','ground11','ground12'];
 
     // Denser far-side forest wall.
     for (let i = 0; i < 144; i++) {
@@ -414,7 +414,7 @@
     }
 
     // Constant fill of smaller assets beyond the path, to close visible gaps.
-    for (let i = 0; i < 120; i++) {
+    for (let i = 0; i < 170; i++) {
       const x = TILE.minX + rand() * TILE_WIDTH;
       const z = -1.8 - Math.pow(rand(), 1.16) * 17.0;
       const type = pathBackGround[Math.floor(rand() * pathBackGround.length)];
@@ -441,7 +441,7 @@
 
     // Near-side fill stays low and mostly behind the character, so the world feels dense
     // without hiding the body.
-    for (let i = 0; i < 136; i++) {
+    for (let i = 0; i < 185; i++) {
       const x = TILE.minX + rand() * TILE_WIDTH;
       const z = -0.15 + rand() * 0.58;
       const type = nearBaseGround[Math.floor(rand() * nearBaseGround.length)];
@@ -454,11 +454,11 @@
     }
 
     // True foreground occluders are mostly grass/scrub and deliberately low.
-    for (let i = 0; i < 154; i++) {
+    for (let i = 0; i < 240; i++) {
       const x = TILE.minX + rand() * TILE_WIDTH;
       const z = 0.78 + rand() * 1.05;
       const type = occluderGround[Math.floor(rand() * occluderGround.length)];
-      const height = 0.52 + rand() * 0.66;
+      const height = 0.42 + rand() * 0.52;
       addObject(frontOccluders, type, x, z, null, height, {
         shade: 0.95 + rand() * 0.06,
         opacity: 0.93 + rand() * 0.05,
@@ -467,17 +467,31 @@
     }
 
     // A few larger edge pieces to frame the lower corners without blocking the centre.
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 12; i++) {
       const sideBias = i % 2 === 0 ? -1 : 1;
       const x = sideBias < 0
         ? TILE.minX + rand() * 11
         : TILE.maxX - rand() * 11;
       const z = 0.95 + rand() * 1.65;
       const type = allGround[Math.floor(rand() * allGround.length)];
-      const height = 0.95 + rand() * 1.25;
+      const height = 0.78 + rand() * 0.85;
       addObject(frontOccluders, type, x, z, null, height, {
         shade: 0.95 + rand() * 0.07,
         opacity: 0.94,
+        layer: 'foreground'
+      });
+    }
+
+
+    // Extra very-near low fill to keep the bottom foreground populated without hiding the character.
+    for (let i = 0; i < 220; i++) {
+      const x = TILE.minX + rand() * TILE_WIDTH;
+      const z = 2.05 + rand() * 1.25;
+      const type = occluderGround[Math.floor(rand() * occluderGround.length)];
+      const height = 0.22 + rand() * 0.38;
+      addObject(frontOccluders, type, x, z, null, height, {
+        shade: 0.98 + rand() * 0.05,
+        opacity: 0.94 + rand() * 0.04,
         layer: 'foreground'
       });
     }
@@ -495,15 +509,15 @@
     x: 0,
     y: groundY,
     z: pathZ,
-    sx: 3.55,
-    sy: 6.15,
+    sx: 0.90,
+    sy: 1.55,
     sz: 1,
     flip: false,
     layer: 'character',
-    tint: [0.92, 0.93, 0.94],
+    tint: [1.0, 1.0, 1.0],
     opacity: 0.985,
     noFog: false,
-    screenOffsetX: -0.9,
+    screenOffsetX: -0.35,
     distanceTravelled: 0,
     lastFacing: 1,
     wrap: false
@@ -520,9 +534,9 @@
 
   const camera = {
     x: 0,
-    y: -2.55,
-    z: 13.4,
-    targetY: groundY + 0.42,
+    y: -2.15,
+    z: 13.6,
+    targetY: groundY + 0.95,
     targetZ: -14.2
   };
 
@@ -553,7 +567,7 @@
       canvas.width = w;
       canvas.height = h;
       gl.viewport(0, 0, w, h);
-      projection = mat4Perspective((29 * Math.PI) / 180, w / h, 0.1, 180);
+      projection = mat4Perspective((30 * Math.PI) / 180, w / h, 0.1, 180);
     }
   }
 
@@ -604,7 +618,7 @@
     lastTime = now;
 
     const moveDir = (moveRight ? 1 : 0) - (moveLeft ? 1 : 0);
-    const speed = 1.35;
+    const speed = 1.15;
     if (moveDir) {
       camera.x += moveDir * speed * dt;
       hideHint();
@@ -644,7 +658,7 @@
 
     statusEl.textContent = debugDepth
       ? `Depth view · camera X ${camera.x.toFixed(1)} · grounded layers`
-      : `3D forest · camera X ${camera.x.toFixed(1)} · grounded asset pass`;
+      : `3D forest · camera X ${camera.x.toFixed(1)} · improved character pass`;
 
     requestAnimationFrame(render);
   }
@@ -696,7 +710,7 @@
   canvas.addEventListener('pointermove', e => {
     if (e.pointerId !== activePointer) return;
     const dx = e.clientX - dragStartX;
-    camera.x = dragStartCameraX - dx * 0.009;
+    camera.x = dragStartCameraX - dx * 0.0075;
   });
 
   const endDrag = e => {

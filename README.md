@@ -1,10 +1,10 @@
-# GameHub v1.8.47
+# GameHub v1.8.48
 
-SideScroll grounding + visibility fix pass.
+SideScroll character rollback fix + foreground fill pass.
 
-- Fixed the **SideScroll** asset issue by adding a safer image-loading path, including a fallback for the problematic `ground12` prop.
-- Kept the generated illustrated tree and ground sprites in use, but adjusted their scene tinting so they sit closer in brightness and contrast to the walking character.
-- Brought the **character** back into the scene more reliably by changing the layering setup so only low foreground grasses occlude it, rather than larger foreground props hiding the full body.
-- Lowered the **camera height** and reduced the downward look angle so the vertical gaps between depth layers close up more naturally.
-- Increased overall **asset density**, especially around the path edges and near-side fill, so the world reads more like a continuous forest rather than isolated props.
-- Kept the real **3D depth-fog** and parallax system, with denser treelines behind the path and lighter ankle-height occlusion in front.
+- Restored the **newer smaller walk-cycle character** instead of the older oversized placeholder that came back in the last pass.
+- Switched SideScroll to use the better walk atlas again and included it as both `sidescroll-character-walk.png` and the legacy `sidescroll-character-sheet.png` for compatibility.
+- Kept the lower, more grounded camera, but tilted it up a little so the empty dark band at the bottom of the play area is reduced.
+- Increased the amount of **small foreground foliage / rock dressing** so the nearest part of the scene stays more continuously populated.
+- Reduced the size of the closest foreground props so they help with grounding and parallax without overwhelming the character.
+- Kept the denser mid / far woodland from the illustrated asset pass.
