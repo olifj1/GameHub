@@ -241,32 +241,10 @@
     return tex;
   }
 
-  function ellipse(ctx, x, y, rx, ry, rot = 0) {
-    ctx.beginPath();
-    ctx.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  function branch(ctx, x1, y1, x2, y2, width) {
-    ctx.lineWidth = width;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
-  }
-
-  function withMonoShape(ctx, fn) {
-    ctx.fillStyle = '#ffffff';
-    ctx.strokeStyle = '#ffffff';
-    fn();
-  }
-
   const textures = {};
   const assetAspect = {};
 
-  function createImageTexture(url, label = 'image') {
+  function createImageTexture(url, label = 'image', fallbackUrl = null) {
     const tex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texImage2D(
@@ -279,19 +257,29 @@
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-    const image = new Image();
-    image.onload = () => {
-      assetAspect[label] = image.naturalWidth / image.naturalHeight;
-      gl.bindTexture(gl.TEXTURE_2D, tex);
-      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    const loadIntoTexture = src => {
+      const image = new Image();
+      image.onload = () => {
+        assetAspect[label] = image.naturalWidth / image.naturalHeight;
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+      };
+      image.onerror = () => {
+        if (fallbackUrl && src !== fallbackUrl) {
+          loadIntoTexture(fallbackUrl);
+          return;
+        }
+        if (!label.startsWith('ground')) {
+          errorBox.hidden = false;
+          errorBox.textContent = `${label} asset could not be loaded.`;
+        }
+      };
+      image.src = src;
     };
-    image.onerror = () => {
-      errorBox.hidden = false;
-      errorBox.textContent = `${label} asset could not be loaded.`;
-    };
-    image.src = url;
+
+    loadIntoTexture(url);
     return tex;
   }
 
@@ -300,9 +288,6 @@
     ctx.fillRect(0, 0, w, h);
   }, 4, 4);
 
-  // These two full sheets stay in the build as the editable source assets.
-  // The renderer uses the individual alpha-cropped sprites made from them so
-  // each tree / ground prop can be placed independently in the 3D forest.
   const treeAssets = [
     ['01', 237, 955], ['02', 382, 990], ['03', 230, 899],
     ['04', 248, 929], ['05', 240, 837], ['06', 293, 1018]
@@ -310,7 +295,7 @@
   treeAssets.forEach(([id, w, h]) => {
     const key = `tree${id}`;
     assetAspect[key] = w / h;
-    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.46`, key);
+    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.47`, key);
   });
 
   const groundAssets = [
@@ -321,10 +306,11 @@
   groundAssets.forEach(([id, w, h]) => {
     const key = `ground${id}`;
     assetAspect[key] = w / h;
-    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.46`, key);
+    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.47' : null;
+    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.47`, key, fallback);
   });
 
-  textures.characterAtlas = createImageTexture('sidescroll-character-sheet.png?v=1.8.46', 'character sprite sheet');
+  textures.characterAtlas = createImageTexture('sidescroll-character-sheet.png?v=1.8.47', 'character sprite sheet');
 
   function mulberry32(seed) {
     return function() {
@@ -339,8 +325,8 @@
   const TILE = { minX: -62, maxX: 62 };
   const TILE_WIDTH = TILE.maxX - TILE.minX;
   const WORLD = { nearZ: 6.5, farZ: -42 };
-  const fogColor = [0.93, 0.95, 0.95];
-  const groundY = -4.25;
+  const fogColor = [0.93, 0.945, 0.95];
+  const groundY = -4.55;
   const pathZ = 0.55;
 
   const ground = {
@@ -353,14 +339,15 @@
     sy: 1,
     sz: WORLD.nearZ - WORLD.farZ,
     layer: 'ground',
-    tint: [0.060, 0.066, 0.070],
+    tint: [0.085, 0.090, 0.095],
     opacity: 1,
     noFog: false,
     wrap: false
   };
 
   const backdrop = [];
-  const foreground = [];
+  const midfill = [];
+  const frontOccluders = [];
 
   function classifyLayer(z) {
     if (z > 1.2) return 'foreground';
@@ -393,104 +380,111 @@
   }
 
   function scatterForest() {
-    // The tree sheet is intentionally used as a small library rather than a
-    // single repeating backdrop. World-space random placement gives us the
-    // natural variation of a real forest while keeping the density continuous
-    // as the camera moves left/right.
     const trees = ['tree01', 'tree02', 'tree03', 'tree04', 'tree05', 'tree06'];
-    const backTrees = [];
-    const midTrees = [];
+    const allGround = ['ground01','ground02','ground03','ground04','ground05','ground06','ground07','ground08','ground09','ground10','ground11','ground12'];
+    const pathBackGround = ['ground01','ground02','ground03','ground05','ground06','ground08','ground09','ground10','ground11','ground12'];
+    const nearBaseGround = ['ground01','ground02','ground03','ground04','ground05','ground06','ground07','ground08','ground09','ground10','ground11'];
+    const occluderGround = ['ground02','ground05','ground08','ground09','ground10','ground12'];
 
-    // Dense tree wall beyond the path. Most of the visual weight lives here.
-    for (let i = 0; i < 118; i++) {
+    // Denser far-side forest wall.
+    for (let i = 0; i < 144; i++) {
       const x = TILE.minX + rand() * TILE_WIDTH;
-      const depth = Math.pow(rand(), 1.15);
-      const z = -6.0 - depth * 34.0;
-      const height = 10.5 + rand() * (7.5 - depth * 1.8);
+      const depth = Math.pow(rand(), 1.08);
+      const z = -5.2 - depth * 34.5;
       const type = trees[Math.floor(rand() * trees.length)];
-      const width = height * (assetAspect[type] || 0.28);
-      const layerShade = 0.92 + rand() * 0.13;
-      addObject(backdrop, type, x, z, width, height, {
-        shade: layerShade,
-        opacity: 0.94 + rand() * 0.06,
-        layer: z > -18 ? 'near' : (z > -31 ? 'mid' : 'far')
-      });
-      backTrees.push(i);
-    }
-
-    // A smaller number of taller, more open silhouettes give us canopy shapes
-    // higher in frame without turning the foreground into a wall.
-    for (let i = 0; i < 26; i++) {
-      const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = -19 - rand() * 20;
-      const type = trees[(i * 3 + Math.floor(rand() * 2)) % trees.length];
-      const height = 14.0 + rand() * 7.0;
-      const width = height * (assetAspect[type] || 0.28);
-      addObject(backdrop, type, x, z, width, height, {
-        shade: 0.95 + rand() * 0.10,
-        opacity: 0.88 + rand() * 0.10,
-        layer: 'far'
-      });
-      midTrees.push(i);
-    }
-
-    // Low scrub/rocks sit mostly between the character and the tree wall.
-    const lowAssets = ['ground01','ground02','ground03','ground04','ground05','ground06','ground07','ground08','ground09','ground10','ground11','ground12'];
-    for (let i = 0; i < 72; i++) {
-      const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = -1.8 - Math.pow(rand(), 1.25) * 16.5;
-      const type = lowAssets[Math.floor(rand() * lowAssets.length)];
-      const height = 0.75 + rand() * 1.75;
-      const width = height * (assetAspect[type] || 1.2);
-      addObject(backdrop, type, x, z, width, height, {
-        shade: 0.94 + rand() * 0.10,
-        opacity: 0.86 + rand() * 0.12,
+      const height = 10.0 + rand() * (8.0 - depth * 1.5);
+      addObject(backdrop, type, x, z, null, height, {
+        shade: 0.96 + rand() * 0.10,
+        opacity: 0.92 + rand() * 0.08,
         layer: classifyLayer(z)
       });
     }
 
-    // Near-side vegetation is deliberately low: it should constantly skim
-    // the character's ankles/knees rather than obscure the body.
-    const nearGrass = ['ground02','ground05','ground08','ground09'];
-    const nearScrub = ['ground01','ground03','ground06','ground10','ground12'];
-    const nearRocks = ['ground04','ground07','ground11'];
-
-    for (let i = 0; i < 92; i++) {
+    // Additional high canopy accents to break up the upper frame.
+    for (let i = 0; i < 38; i++) {
       const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = 0.7 + rand() * 3.7;
-      let type;
-      const r = rand();
-      if (r < 0.60) type = nearGrass[Math.floor(rand() * nearGrass.length)];
-      else if (r < 0.84) type = nearScrub[Math.floor(rand() * nearScrub.length)];
-      else type = nearRocks[Math.floor(rand() * nearRocks.length)];
-      const height = type.startsWith('ground0') && nearGrass.includes(type)
-        ? 0.72 + rand() * 0.75
-        : 0.62 + rand() * 1.05;
-      const width = height * (assetAspect[type] || 1.2);
-      addObject(foreground, type, x, z, width, height, {
-        shade: 0.90 + rand() * 0.10,
-        opacity: 0.92 + rand() * 0.08,
+      const z = -18 - rand() * 20;
+      const type = trees[(i + Math.floor(rand() * trees.length)) % trees.length];
+      const height = 14.5 + rand() * 7.0;
+      addObject(backdrop, type, x, z, null, height, {
+        shade: 0.98 + rand() * 0.08,
+        opacity: 0.86 + rand() * 0.10,
+        layer: 'far'
+      });
+    }
+
+    // Constant fill of smaller assets beyond the path, to close visible gaps.
+    for (let i = 0; i < 120; i++) {
+      const x = TILE.minX + rand() * TILE_WIDTH;
+      const z = -1.8 - Math.pow(rand(), 1.16) * 17.0;
+      const type = pathBackGround[Math.floor(rand() * pathBackGround.length)];
+      const height = 0.85 + rand() * 1.75;
+      addObject(midfill, type, x, z, null, height, {
+        shade: 1.01 + rand() * 0.08,
+        opacity: 0.88 + rand() * 0.10,
+        layer: classifyLayer(z)
+      });
+    }
+
+    // A few trees on the near side but kept behind the character plane.
+    for (let i = 0; i < 12; i++) {
+      const x = TILE.minX + rand() * TILE_WIDTH;
+      const z = -0.35 + rand() * 0.65;
+      const type = trees[(i * 2 + 1) % trees.length];
+      const height = 7.8 + rand() * 3.4;
+      addObject(midfill, type, x, z, null, height, {
+        shade: 0.92 + rand() * 0.08,
+        opacity: 0.94,
+        layer: 'near'
+      });
+    }
+
+    // Near-side fill stays low and mostly behind the character, so the world feels dense
+    // without hiding the body.
+    for (let i = 0; i < 136; i++) {
+      const x = TILE.minX + rand() * TILE_WIDTH;
+      const z = -0.15 + rand() * 0.58;
+      const type = nearBaseGround[Math.floor(rand() * nearBaseGround.length)];
+      const height = 0.70 + rand() * 1.15;
+      addObject(midfill, type, x, z, null, height, {
+        shade: 0.98 + rand() * 0.08,
+        opacity: 0.90 + rand() * 0.08,
+        layer: 'near'
+      });
+    }
+
+    // True foreground occluders are mostly grass/scrub and deliberately low.
+    for (let i = 0; i < 154; i++) {
+      const x = TILE.minX + rand() * TILE_WIDTH;
+      const z = 0.78 + rand() * 1.05;
+      const type = occluderGround[Math.floor(rand() * occluderGround.length)];
+      const height = 0.52 + rand() * 0.66;
+      addObject(frontOccluders, type, x, z, null, height, {
+        shade: 0.95 + rand() * 0.06,
+        opacity: 0.93 + rand() * 0.05,
         layer: 'foreground'
       });
     }
 
-    // A few near-side trees only, spaced widely enough that the character
-    // remains readable while the foreground still has real depth.
-    for (let i = 0; i < 8; i++) {
-      const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = 2.7 + rand() * 1.8;
-      const type = trees[(i + 1) % trees.length];
-      const height = 8.5 + rand() * 4.0;
-      const width = height * (assetAspect[type] || 0.28);
-      addObject(foreground, type, x, z, width, height, {
-        shade: 0.86 + rand() * 0.10,
+    // A few larger edge pieces to frame the lower corners without blocking the centre.
+    for (let i = 0; i < 18; i++) {
+      const sideBias = i % 2 === 0 ? -1 : 1;
+      const x = sideBias < 0
+        ? TILE.minX + rand() * 11
+        : TILE.maxX - rand() * 11;
+      const z = 0.95 + rand() * 1.65;
+      const type = allGround[Math.floor(rand() * allGround.length)];
+      const height = 0.95 + rand() * 1.25;
+      addObject(frontOccluders, type, x, z, null, height, {
+        shade: 0.95 + rand() * 0.07,
         opacity: 0.94,
         layer: 'foreground'
       });
     }
 
     backdrop.sort((a, b) => a.z - b.z);
-    foreground.sort((a, b) => a.z - b.z);
+    midfill.sort((a, b) => a.z - b.z);
+    frontOccluders.sort((a, b) => a.z - b.z);
   }
 
   scatterForest();
@@ -506,8 +500,8 @@
     sz: 1,
     flip: false,
     layer: 'character',
-    tint: [1, 1, 1],
-    opacity: 0.98,
+    tint: [0.92, 0.93, 0.94],
+    opacity: 0.985,
     noFog: false,
     screenOffsetX: -0.9,
     distanceTravelled: 0,
@@ -526,10 +520,10 @@
 
   const camera = {
     x: 0,
-    y: -1.62,
-    z: 14.0,
-    targetY: groundY + 1.10,
-    targetZ: -13.5
+    y: -2.55,
+    z: 13.4,
+    targetY: groundY + 0.42,
+    targetZ: -14.2
   };
 
   let projection = mat4Identity();
@@ -559,7 +553,7 @@
       canvas.width = w;
       canvas.height = h;
       gl.viewport(0, 0, w, h);
-      projection = mat4Perspective((31 * Math.PI) / 180, w / h, 0.1, 180);
+      projection = mat4Perspective((29 * Math.PI) / 180, w / h, 0.1, 180);
     }
   }
 
@@ -570,7 +564,7 @@
   function tintFor(obj) {
     if (debugDepth) return debugTints[obj.layer] || [1, 1, 1];
     if (obj.tint) return obj.tint;
-    if (obj.asset) return [obj.shade, obj.shade, obj.shade];
+    if (obj.asset) return [obj.shade * 0.99, obj.shade * 1.00, obj.shade * 1.02];
     const base = [0.155, 0.165, 0.172];
     return [base[0] * obj.shade, base[1] * obj.shade, base[2] * obj.shade];
   }
@@ -585,7 +579,7 @@
     const tint = tintFor(obj);
     gl.uniform3f(loc.tint, tint[0], tint[1], tint[2]);
     gl.uniform3f(loc.fogColor, fogColor[0], fogColor[1], fogColor[2]);
-    gl.uniform1f(loc.fogNear, 6.5);
+    gl.uniform1f(loc.fogNear, 6.2);
     gl.uniform1f(loc.fogFar, 44.0);
     gl.uniform1f(loc.fogAmount, obj.noFog ? 0 : (debugDepth ? 0.22 : 1.0));
     gl.uniform1f(loc.opacity, obj.opacity);
@@ -636,6 +630,7 @@
 
     drawObject({ ...ground, x: camera.x }, view);
     for (const obj of backdrop) drawObject(obj, view);
+    for (const obj of midfill) drawObject(obj, view);
 
     const frameIndex = currentCharacterFrame(isWalking);
     drawObject(character, view, {
@@ -645,11 +640,11 @@
       uvOffset: [frameIndex / 8, 0]
     });
 
-    for (const obj of foreground) drawObject(obj, view);
+    for (const obj of frontOccluders) drawObject(obj, view);
 
     statusEl.textContent = debugDepth
-      ? `Depth view · camera X ${camera.x.toFixed(1)} · asset depth`
-      : `3D forest · camera X ${camera.x.toFixed(1)} · illustrated asset test`;
+      ? `Depth view · camera X ${camera.x.toFixed(1)} · grounded layers`
+      : `3D forest · camera X ${camera.x.toFixed(1)} · grounded asset pass`;
 
     requestAnimationFrame(render);
   }
