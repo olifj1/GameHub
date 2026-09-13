@@ -186,7 +186,15 @@ window.APP_CONFIG = {
       "description": "Explore a layered 3D forest path with depth fog, consistent density and a flip-book walking sprite test.",
       "icon": "♠",
       "enabled": true,
-      "path": "game-16.html?v=1.8.52"
+      "path": "game-16.html?v=1.8.53"
+    },
+    {
+      "id": "game-17",
+      "displayName": "Walk Lab",
+      "description": "Study a clean 16-frame walk cycle built from eight key poses and eight in-betweens.",
+      "icon": "↻",
+      "enabled": true,
+      "path": "game-17.html?v=1.8.53"
     }
   ]
 };

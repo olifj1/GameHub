@@ -10550,3 +10550,41 @@ body[data-game-id="game-16"] .sidescroll-control:active{
   body[data-game-id="game-16"] .sidescroll-control{height:54px;border-radius:14px;}
   body[data-game-id="game-16"] .sidescroll-control span{font-size:23px;line-height:20px;}
 }
+
+/* GameHub v1.8.53 — Walk Lab */
+body[data-game-id="game-17"] .walklab-page{
+  width:100%;height:100%;display:flex;flex-direction:column;gap:9px;min-height:0;
+}
+body[data-game-id="game-17"] .walklab-header{flex:0 0 auto;text-align:center;}
+body[data-game-id="game-17"] .walklab-header .kicker{margin-bottom:3px;}
+body[data-game-id="game-17"] .walklab-header h1{font-size:clamp(27px,7vw,38px);}
+body[data-game-id="game-17"] .walklab-stage-wrap{
+  position:relative;flex:1 1 auto;min-height:0;border:2px solid #343b3f;border-radius:22px;overflow:hidden;background:#f3ede7;
+}
+body[data-game-id="game-17"] #walklab-canvas{display:block;width:100%;height:100%;touch-action:none;}
+body[data-game-id="game-17"] .walklab-readout{
+  position:absolute;left:12px;right:12px;top:12px;padding:8px 11px;border-radius:13px;background:rgba(31,39,42,.82);color:#f5f0eb;
+  text-align:center;font-size:12px;font-weight:800;letter-spacing:.035em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+body[data-game-id="game-17"] .walklab-scrub-row{display:grid;grid-template-columns:48px 1fr 48px;align-items:center;gap:8px;flex:0 0 auto;}
+body[data-game-id="game-17"] .walklab-scrub-row input,body[data-game-id="game-17"] .walklab-speed-row input{width:100%;accent-color:#6f8f89;}
+body[data-game-id="game-17"] .walklab-mini{height:42px;border:2px solid #60666a;border-radius:14px;background:#f7f0e9;font-size:22px;font-weight:900;color:#273038;}
+body[data-game-id="game-17"] .walklab-toggle-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex:0 0 auto;}
+body[data-game-id="game-17"] .walklab-pill{height:43px;border:2px solid #676d70;border-radius:14px;background:#f7f0e9;color:#2a3136;font-weight:850;letter-spacing:.03em;}
+body[data-game-id="game-17"] .walklab-pill.active{border-color:#8aa4a0;background:#edf1ee;color:#526f6c;}
+body[data-game-id="game-17"] .walklab-speed-row{display:grid;grid-template-columns:auto 1fr 56px;gap:9px;align-items:center;flex:0 0 auto;font-size:12px;font-weight:850;letter-spacing:.08em;color:#596063;}
+body[data-game-id="game-17"] .walklab-speed-row output{text-align:right;font-variant-numeric:tabular-nums;}
+body[data-game-id="game-17"] .walklab-legend{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;flex:0 0 auto;font-size:10px;font-weight:800;letter-spacing:.04em;color:#6a6e70;}
+body[data-game-id="game-17"] .walklab-legend span{display:flex;align-items:center;gap:5px;}
+body[data-game-id="game-17"] .walklab-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;}
+body[data-game-id="game-17"] .walklab-key-dot{background:#28343a;}
+body[data-game-id="game-17"] .walklab-mid-dot{background:#a6adae;}
+body[data-game-id="game-17"] .walklab-plant-dot{background:#718f89;}
+@media (max-height:720px){
+  body[data-game-id="game-17"] .walklab-page{gap:6px;}
+  body[data-game-id="game-17"] .walklab-header .kicker{display:none;}
+  body[data-game-id="game-17"] .walklab-header h1{font-size:25px;}
+  body[data-game-id="game-17"] .walklab-pill{height:38px;}
+  body[data-game-id="game-17"] .walklab-mini{height:38px;}
+  body[data-game-id="game-17"] .walklab-legend{display:none;}
+}

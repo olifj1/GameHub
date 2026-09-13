@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en" class="gh-game-page">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#e7dbd2">
+  <link rel="stylesheet" href="style.css?v=1.8.53">
+  <title>Walk Lab</title>
+</head>
+<body class="modular-game" data-game-id="game-17">
+  <a class="game-home-button" href="index.html" aria-label="Back to games">← Games</a>
+  <button class="game-info-button" type="button" aria-label="How to use Walk Lab" aria-haspopup="dialog">i</button>
+
+  <div class="game-info-overlay" hidden>
+    <div class="game-info-dialog" role="dialog" aria-modal="true" aria-labelledby="game-17-info-title">
+      <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
+      <p class="kicker">ANIMATION TOOL</p>
+      <h2 id="game-17-info-title">Walk Lab</h2>
+      <p>A clean 16-frame walk study: eight key poses with one in-between between each. The figure is locked to a fixed root and ground line so we can judge the gait before painting the final character over it.</p>
+    </div>
+  </div>
+
+  <main class="screen-wrap">
+    <section class="screen active" aria-labelledby="walklab-title">
+      <div class="page walklab-page">
+        <header class="page-header walklab-header">
+          <p class="kicker" data-site-name="">GameHub</p>
+          <h1 id="walklab-title">Walk Lab</h1>
+        </header>
+
+        <div class="walklab-stage-wrap">
+          <canvas id="walklab-canvas" aria-label="Sixteen frame walk cycle mannequin preview"></canvas>
+          <div class="walklab-readout" id="walklab-readout">Frame 1 / 16 · Contact L · KEY</div>
+        </div>
+
+        <div class="walklab-scrub-row">
+          <button id="walklab-prev" class="walklab-mini" type="button" aria-label="Previous frame">←</button>
+          <input id="walklab-scrub" type="range" min="0" max="15" step="1" value="0" aria-label="Animation frame">
+          <button id="walklab-next" class="walklab-mini" type="button" aria-label="Next frame">→</button>
+        </div>
+
+        <div class="walklab-toggle-row">
+          <button id="walklab-play" class="walklab-pill active" type="button">Pause</button>
+          <button id="walklab-onion" class="walklab-pill active" type="button" aria-pressed="true">Onion</button>
+          <button id="walklab-keys" class="walklab-pill" type="button" aria-pressed="false">Keys only</button>
+        </div>
+
+        <div class="walklab-speed-row">
+          <label for="walklab-fps">Preview</label>
+          <input id="walklab-fps" type="range" min="4" max="24" step="1" value="14">
+          <output id="walklab-fps-out">14 fps</output>
+        </div>
+
+        <div class="walklab-legend">
+          <span><i class="walklab-key-dot"></i>8 key poses</span>
+          <span><i class="walklab-mid-dot"></i>8 in-betweens</span>
+          <span><i class="walklab-plant-dot"></i>planted foot</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="site-config.js?v=1.8.53"></script>
+  <script src="core.js?v=1.8.53"></script>
+  <script src="game-17.js?v=1.8.53"></script>
+</body>
+</html>
