@@ -1,9 +1,8 @@
-# GameHub v1.8.72
+# GameHub v1.8.71
 
-SideScroll woodland path + locomotion recovery build.
+SideScroll live-rig integration fix.
 
-- Restored the missing shared shell files needed for the flat GameHub package: `style.css`, `site-config.js`, `core.js`, `home.js`, `manifest.json`, `sw.js`, and `progress.js`.
-- SideScroll now has a warmer raised dirt path strip with visible shoulders/berms, clearer path separation from foliage, and updated forest colouring.
-- Added SideScroll **RUN** and **JUMP** controls so you can judge broader character control before deeper polish.
-- Added a shared locomotion rig preview with **walk**, **run**, and **jump** modes in Walk Lab.
-- Included a basic offline-capable service worker again for the flat-folder phone workflow.
+- Fixed the WebGL atlas V-coordinate mapping for the live Walk Lab cutout rig. SideScroll was sampling vertically mirrored/opposite atlas rows, making otherwise-correct rig pieces appear mixed up and detached.
+- SideScroll continues to render the live articulated rig directly; no baked walk sprite sheet is used.
+- Reduced the SideScroll character globally by 30% (3.30 → 2.31) while leaving Walk Lab proportions unchanged.
+- Kept the v1.8.70 lower-arm articulation, grounded gait and heel-to-toe foot roll unchanged.
