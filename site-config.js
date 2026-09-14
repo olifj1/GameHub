@@ -1,200 +1,25 @@
-window.APP_CONFIG = {
-  "site": {
-    "internalId": "game-collection",
-    "displayName": "GameHub",
-    "shortName": "GameHub",
-    "tagline": "Small games for learning, experimenting and playing.",
-    "description": "A growing collection of small web games."
-  },
-  "games": [
-    {
-      "id": "game-01",
-      "displayName": "Times Tables",
-      "description": "Build multiplication facts one step at a time.",
-      "icon": "\u00d7",
-      "enabled": true,
-      "path": "game-01.html?v=1.8.4"
-    },
-    {
-      "id": "game-02",
-      "displayName": "Tell the Time",
-      "description": "Move through the day and explore analogue and digital time.",
-      "icon": "\u25f7",
-      "enabled": true,
-      "path": "game-02.html?v=1.8.4"
-    },
-    {
-      "id": "game-03",
-      "displayName": "Sums",
-      "description": "Practise arithmetic at your own pace or race the timer.",
-      "icon": "+",
-      "enabled": true,
-      "path": "game-03.html?v=1.8.4"
-    },
-    {
-      "id": "game-04",
-      "displayName": "Reading",
-      "description": "Read sentences and choose missing words.",
-      "icon": "Aa",
-      "enabled": true,
-      "path": "game-04.html?v=1.8.4"
-    },
-    {
-      "id": "game-05",
-      "displayName": "Maths",
-      "description": "Use maths to solve everyday problems.",
-      "icon": "\u25a6",
-      "enabled": true,
-      "path": "game-05.html?v=1.8.4"
-    },
-    {
-      "id": "game-06",
-      "displayName": "Gravity",
-      "description": "Fly through the cavern, collect the stars and land safely.",
-      "icon": "\u25b3",
-      "enabled": true,
-      "path": "game-06.html?v=1.8.4"
-    },
-    {
-      "id": "game-07",
-      "displayName": "Logic",
-      "description": "Build a program to guide the rover to the flag.",
-      "icon": "{ }",
-      "enabled": true,
-      "path": "game-07.html?v=1.8.4"
-    },
-    {
-      "id": "game-08",
-      "displayName": "Roller Coaster",
-      "description": "Build a coaster, then test whether gravity can carry the cart all the way to the end.",
-      "icon": "\u2301",
-      "enabled": false,
-      "parked": true,
-      "progress": {
-        "enabled": true,
-        "difficulties": [
-          "standard"
-        ],
-        "hasScore": true
-      },
-      "path": "game-08.html?v=1.8.4"
-    },
-    {
-      "id": "game-12",
-      "displayName": "Colour Blocks",
-      "description": "Rotate small groups of tiles to rebuild four solid blocks of colour.",
-      "icon": "\u25a6",
-      "enabled": true,
-      "progress": {
-        "enabled": true,
-        "difficulties": [
-          "easy",
-          "medium",
-          "hard"
-        ],
-        "hasScore": false
-      },
-      "path": "game-12.html?v=1.8.4"
-    },
-    {
-      "id": "game-11",
-      "displayName": "Snake Maze",
-      "description": "Guide a growing snake through looping maze routes and risk detours for bonus gems.",
-      "icon": "S",
-      "enabled": true,
-      "progress": {
-        "enabled": true,
-        "difficulties": [
-          "easy",
-          "medium",
-          "hard"
-        ],
-        "hasScore": true
-      },
-      "path": "game-11.html?v=1.8.4"
-    },
-    {
-      "id": "game-09",
-      "displayName": "Flight",
-      "description": "Start the engine, fly through hoops, loop the loop and land safely.",
-      "icon": "\u2708",
-      "enabled": true,
-      "progress": {
-        "enabled": true,
-        "difficulties": [
-          "easy",
-          "medium",
-          "hard"
-        ],
-        "hasScore": true
-      },
-      "path": "game-09.html?v=1.8.4"
-    },
-    {
-      "id": "game-10",
-      "displayName": "Laser Lab",
-      "description": "Explore reflection angles with free-moving mirrors and coloured light.",
-      "icon": "\u2197",
-      "enabled": true,
-      "progress": {
-        "enabled": true,
-        "difficulties": [
-          "easy",
-          "medium",
-          "hard"
-        ],
-        "hasScore": false
-      },
-      "path": "game-10.html?v=1.8.4"
-    },
-    {
-      "id": "game-13",
-      "displayName": "Racer",
-      "description": "Race long woodland circuits, clip the kerbs and chase faster lap times.",
-      "icon": "\u25b0",
-      "enabled": true,
-      "progress": {
-        "enabled": true,
-        "difficulties": [
-          "easy",
-          "medium",
-          "hard"
-        ],
-        "hasScore": true
-      },
-      "path": "game-13.html?v=1.8.4"
-    },
-    {
-      "id": "game-14",
-      "displayName": "Tower Attack",
-      "description": "Attack and defend in real time: deploy units, place weapons and break the enemy base.",
-      "icon": "⇧",
-      "enabled": true,
-      "path": "game-14.html?v=1.8.13"
-    },
-    {
-      "id": "game-15",
-      "displayName": "My House",
-      "description": "Furnish a four-room 3D dollhouse, dress the rooms and make it your own.",
-      "icon": "⌂",
-      "enabled": true,
-      "path": "game-15.html?v=1.8.23"
-    },
-    {
-      "id": "game-16",
-      "displayName": "SideScroll",
-      "description": "Explore the layered 3D forest with the shared live Walk Lab cutout rig driving the character directly.",
-      "icon": "♠",
-      "enabled": true,
-      "path": "game-16.html?v=1.8.71"
-    },
-    {
-      "id": "game-17",
-      "displayName": "Walk Lab",
-      "description": "Edit a reusable cutout walk rig with true ankle/foot joints, layered art planes, panning and pinch zoom.",
-      "icon": "↻",
-      "enabled": true,
-      "path": "game-17.html?v=1.8.71"
-    }
+window.GH_CONFIG = {
+  version: '1.8.72',
+  siteName: 'GameHub',
+  title: 'Games',
+  tagline: 'Phone-first mini game experiments and prototypes.',
+  games: [
+    { id: 'game-01', title: 'Number Tap', href: 'game-01.html', status: 'Maths warm-up' },
+    { id: 'game-02', title: 'Tell the Time', href: 'game-02.html', status: 'Clock practice' },
+    { id: 'game-03', title: 'Times Tables', href: 'game-03.html', status: 'Quick recall' },
+    { id: 'game-04', title: 'Reading', href: 'game-04.html', status: 'Word practice' },
+    { id: 'game-05', title: 'Sums', href: 'game-05.html', status: 'Mental maths' },
+    { id: 'game-06', title: 'Snake Maze', href: 'game-06.html', status: 'Collect and grow' },
+    { id: 'game-07', title: 'Gravity', href: 'game-07.html', status: 'Thrust and land' },
+    { id: 'game-08', title: 'Top-Down Racer', href: 'game-08.html', status: 'Drive the circuit' },
+    { id: 'game-09', title: 'Laser Lab', href: 'game-09.html', status: 'Bounce the beam' },
+    { id: 'game-10', title: 'Colour Block', href: 'game-10.html', status: 'Rotate the tiles' },
+    { id: 'game-11', title: 'Tower Attack', href: 'game-11.html', status: 'Attack and defend' },
+    { id: 'game-12', title: 'Roller Coaster', href: 'game-12.html', status: 'Prototype' },
+    { id: 'game-13', title: 'House Builder', href: 'game-13.html', status: '3D furnish test' },
+    { id: 'game-14', title: 'Progress', href: 'progress.html', status: 'Stats and stars' },
+    { id: 'game-15', title: 'Forest Depth', href: 'game-15.html', status: 'Depth scene test' },
+    { id: 'game-16', title: 'SideScroll', href: 'game-16.html', status: 'Run and jump prototype' },
+    { id: 'game-17', title: 'Walk Lab', href: 'game-17.html', status: 'Animation sandbox' }
   ]
 };

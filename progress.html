@@ -9,21 +9,37 @@
   <meta name="theme-color" content="#e7dbd2">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=1.8.4">
+  <link rel="stylesheet" href="style.css?v=1.8.72">
   <title>Progress · GameHub</title>
 </head>
-<body class="modular-progress">
+<body class="modular-game">
   <a class="game-home-button" href="index.html" aria-label="Back to games">← Games</a>
-  <main class="progress-shell">
-    <header class="progress-header">
-      <p class="home-kicker">PERSONAL BESTS</p>
-      <h1>Progress</h1>
-      <p>Each game keeps its own results. Stars use the same five-star language, but scores stay with the game they belong to.</p>
-    </header>
-    <section class="progress-games" id="progress-games" aria-label="Game progress"></section>
+  <main class="screen-wrap">
+    <div class="page">
+      <header class="page-header">
+        <p class="kicker">PERSONAL BESTS</p>
+        <h1>Progress</h1>
+      </header>
+      <div class="toolbar-stack">
+        <section class="panel">
+          <h3>About this build</h3>
+          <p>This recovery build restores the shared shell so GameHub can run again from a flat folder.</p>
+          <div class="badge-row">
+            <span class="badge">Offline ready</span>
+            <span class="badge">SideScroll update</span>
+            <span class="badge">Walk / run / jump</span>
+          </div>
+        </section>
+        <section class="panel" id="progress-games-panel">
+          <h3>Tracked games</h3>
+          <p>The SideScroll and Walk Lab prototypes are the active focus in this version.</p>
+          <div id="progress-games"></div>
+        </section>
+      </div>
+    </div>
   </main>
-  <script src="site-config.js?v=1.8.4"></script>
-  <script src="core.js?v=1.8.4"></script>
-  <script src="progress.js?v=1.8.4"></script>
+  <script src="site-config.js?v=1.8.72"></script>
+  <script src="core.js?v=1.8.72"></script>
+  <script src="progress.js?v=1.8.72"></script>
 </body>
 </html>

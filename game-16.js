@@ -1,857 +1,375 @@
-(() => {
-  'use strict';
-
+(function(){
+  const GH = window.GH;
   const Rig = window.GameHubWalkRig;
-  if (!Rig) return;
+  if (!GH || !Rig) return;
 
   const canvas = document.getElementById('sidescroll-canvas');
-  const errorBox = document.getElementById('sidescroll-error');
-  const statusEl = document.getElementById('sidescroll-status');
-  const hintEl = document.getElementById('sidescroll-hint');
-  const debugBtn = document.getElementById('sidescroll-depth');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const status = document.getElementById('sidescroll-status');
+  const hint = document.getElementById('sidescroll-hint');
+  const error = document.getElementById('sidescroll-error');
+  const depthBtn = document.getElementById('sidescroll-depth');
   const depthKey = document.getElementById('sidescroll-depth-key');
   const leftBtn = document.getElementById('sidescroll-left');
   const rightBtn = document.getElementById('sidescroll-right');
-  const resetBtn = document.getElementById('sidescroll-centre');
+  const centreBtn = document.getElementById('sidescroll-centre');
+  const runBtn = document.getElementById('sidescroll-run');
+  const jumpBtn = document.getElementById('sidescroll-jump');
 
-  const gl = canvas.getContext('webgl', {
-    alpha: false,
-    antialias: true,
-    depth: true,
-    premultipliedAlpha: false,
-    powerPreference: 'high-performance'
-  });
-
-  if (!gl) {
-    errorBox.hidden = false;
-    errorBox.textContent = 'WebGL is unavailable on this device/browser.';
-    return;
-  }
-
-  const VERT = `
-    attribute vec3 aPosition;
-    attribute vec2 aUV;
-    uniform mat4 uModel;
-    uniform mat4 uView;
-    uniform mat4 uProjection;
-    uniform vec2 uUvScale;
-    uniform vec2 uUvOffset;
-    varying vec2 vUV;
-    varying float vDepth;
-    void main() {
-      vec4 viewPos = uView * uModel * vec4(aPosition, 1.0);
-      vUV = aUV * uUvScale + uUvOffset;
-      vDepth = max(0.0, -viewPos.z);
-      gl_Position = uProjection * viewPos;
-    }
-  `;
-
-  const FRAG = `
-    precision mediump float;
-    uniform sampler2D uTexture;
-    uniform vec3 uTint;
-    uniform vec3 uFogColor;
-    uniform float uFogNear;
-    uniform float uFogFar;
-    uniform float uFogAmount;
-    uniform float uOpacity;
-    varying vec2 vUV;
-    varying float vDepth;
-    void main() {
-      vec4 tex = texture2D(uTexture, vUV);
-      float alpha = tex.a * uOpacity;
-      if (alpha < 0.045) discard;
-      float fog = smoothstep(uFogNear, uFogFar, vDepth) * uFogAmount;
-      vec3 base = tex.rgb * uTint;
-      vec3 rgb = mix(base, uFogColor, fog);
-      gl_FragColor = vec4(rgb, alpha);
-    }
-  `;
-
-  function compile(type, source) {
-    const shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      throw new Error(gl.getShaderInfoLog(shader) || 'Shader compilation failed');
-    }
-    return shader;
-  }
-
-  function createProgram() {
-    const program = gl.createProgram();
-    gl.attachShader(program, compile(gl.VERTEX_SHADER, VERT));
-    gl.attachShader(program, compile(gl.FRAGMENT_SHADER, FRAG));
-    gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      throw new Error(gl.getProgramInfoLog(program) || 'Program link failed');
-    }
-    return program;
-  }
-
-  let program;
-  try {
-    program = createProgram();
-  } catch (err) {
-    errorBox.hidden = false;
-    errorBox.textContent = `WebGL setup failed: ${err.message}`;
-    return;
-  }
-
-  const loc = {
-    pos: gl.getAttribLocation(program, 'aPosition'),
-    uv: gl.getAttribLocation(program, 'aUV'),
-    model: gl.getUniformLocation(program, 'uModel'),
-    view: gl.getUniformLocation(program, 'uView'),
-    projection: gl.getUniformLocation(program, 'uProjection'),
-    texture: gl.getUniformLocation(program, 'uTexture'),
-    tint: gl.getUniformLocation(program, 'uTint'),
-    fogColor: gl.getUniformLocation(program, 'uFogColor'),
-    fogNear: gl.getUniformLocation(program, 'uFogNear'),
-    fogFar: gl.getUniformLocation(program, 'uFogFar'),
-    fogAmount: gl.getUniformLocation(program, 'uFogAmount'),
-    opacity: gl.getUniformLocation(program, 'uOpacity'),
-    uvScale: gl.getUniformLocation(program, 'uUvScale'),
-    uvOffset: gl.getUniformLocation(program, 'uUvOffset')
+  const state = {
+    camX: 0,
+    charX: 0,
+    charY: 0,
+    vx: 0,
+    vy: 0,
+    move: 0,
+    facing: 1,
+    run: false,
+    depthView: false,
+    onGround: true,
+    jumpClock: 1,
+    animClock: 0,
+    last: 0,
+    drag: null,
+    sceneLength: 5200
   };
 
-  function createMesh(vertices, indices) {
-    const vbo = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-    const ibo = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
-    return { vbo, ibo, count: indices.length };
+  const images = [];
+  const treeImages = [];
+  const groundImages = [];
+  function loadImage(src, list){
+    const image = new Image();
+    image.src = src;
+    image.onload = () => {};
+    image.onerror = () => { if (error) { error.hidden = false; error.textContent = 'A SideScroll asset failed to load.'; } };
+    images.push(image);
+    list.push(image);
+  }
+  ['01','02','03','04','05','06'].forEach((id) => loadImage(`sidescroll-tree-${id}.png`, treeImages));
+  ['01','02','03','04','05','06','07','08','09','10','11','12'].forEach((id) => loadImage(`sidescroll-ground-${id}.png`, groundImages));
+
+  function seeded(i){
+    const x = Math.sin(i * 127.1 + 31.7) * 43758.5453;
+    return x - Math.floor(x);
   }
 
-  const billboardMesh = createMesh(
-    new Float32Array([
-      -0.5, 0.0, 0.0,  0.0, 0.0,
-       0.5, 0.0, 0.0,  1.0, 0.0,
-      -0.5, 1.0, 0.0,  0.0, 1.0,
-       0.5, 1.0, 0.0,  1.0, 1.0
-    ]),
-    new Uint16Array([0,1,2,2,1,3])
-  );
+  const layers = [];
+  function addSprites(count, depthMin, depthMax, type){
+    for (let i = 0; i < count; i += 1) {
+      const r = seeded(i + count * 7 + type.length * 11);
+      const rr = seeded(i + count * 17 + type.length * 13);
+      const depth = GH.lerp(depthMin, depthMax, seeded(i + count * 31));
+      layers.push({
+        type,
+        worldX: GH.lerp(-state.sceneLength * 0.55, state.sceneLength * 0.55, r),
+        depth,
+        variant: Math.floor(rr * (type === 'tree' ? treeImages.length : groundImages.length)),
+        scale: type === 'tree' ? GH.lerp(0.42, 1.28, depth) : GH.lerp(0.36, 1.3, depth),
+        baseY: type === 'tree' ? GH.lerp(0.50, 0.8, depth) : GH.lerp(0.72, 0.98, depth),
+        flip: seeded(i + 99) > 0.5 ? 1 : -1
+      });
+    }
+  }
+  addSprites(26, 0.16, 0.34, 'tree');
+  addSprites(22, 0.34, 0.58, 'tree');
+  addSprites(30, 0.68, 0.98, 'ground');
+  addSprites(34, 1.06, 1.34, 'ground');
+  layers.sort((a, b) => a.depth - b.depth);
 
-  const groundMesh = createMesh(
-    new Float32Array([
-      -0.5, 0.0,  0.0, 0.0, 0.0,
-       0.5, 0.0,  0.0, 1.0, 0.0,
-      -0.5, 0.0, -1.0, 0.0, 1.0,
-       0.5, 0.0, -1.0, 1.0, 1.0
-    ]),
-    new Uint16Array([0,1,2,2,1,3])
-  );
-
-  function createRigPartMesh(name) {
-    const r = Rig.atlasRect(name);
-    if (!r) return null;
-    const p0x = r.a0[0] * r.w, p0y = r.a0[1] * r.h;
-    const left = -p0x, right = r.w - p0x;
-    const top = p0y, bottom = p0y - r.h;
-    const u0 = r.x / Rig.ATLAS.width, u1 = (r.x + r.w) / Rig.ATLAS.width;
-    // Image uploads use UNPACK_FLIP_Y_WEBGL so atlas row coordinates (which are
-    // measured from the image top) must be converted into bottom-origin WebGL V.
-    // The old mapping sampled the opposite atlas rows, which is why boots/head/
-    // torso pieces appeared attached to the correct bones but showed the wrong art.
-    const vTop = 1 - (r.y / Rig.ATLAS.height);
-    const vBottom = 1 - ((r.y + r.h) / Rig.ATLAS.height);
-    return createMesh(
-      new Float32Array([
-        left, bottom, 0, u0, vBottom,
-        right, bottom, 0, u1, vBottom,
-        left, top, 0, u0, vTop,
-        right, top, 0, u1, vTop
-      ]),
-      new Uint16Array([0,1,2,2,1,3])
-    );
+  function resize(){
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
-  const rigPartMeshes = {};
-  Object.keys(Rig.ATLAS.parts).forEach(name => { rigPartMeshes[name] = createRigPartMesh(name); });
+  function setHeld(button, held){ button?.classList.toggle('active', !!held); }
+  function pressMove(dir){ state.move = dir; if (dir !== 0) state.facing = dir; }
+  function releaseMove(dir){ if (state.move === dir) state.move = 0; }
 
-  function bindMesh(mesh) {
-    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vbo);
-    gl.vertexAttribPointer(loc.pos, 3, gl.FLOAT, false, 20, 0);
-    gl.vertexAttribPointer(loc.uv, 2, gl.FLOAT, false, 20, 12);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.ibo);
+  function bindHold(button, onPress, onRelease){
+    if (!button) return;
+    const start = (event) => { event.preventDefault(); onPress(); setHeld(button, true); };
+    const end = (event) => { if (event) event.preventDefault(); onRelease(); setHeld(button, false); };
+    button.addEventListener('pointerdown', start);
+    button.addEventListener('pointerup', end);
+    button.addEventListener('pointerleave', end);
+    button.addEventListener('pointercancel', end);
+    button.addEventListener('touchstart', start, { passive: false });
+    button.addEventListener('touchend', end, { passive: false });
   }
 
-  gl.useProgram(program);
-  gl.enableVertexAttribArray(loc.pos);
-  gl.enableVertexAttribArray(loc.uv);
-  gl.uniform1i(loc.texture, 0);
-  gl.enable(gl.DEPTH_TEST);
-  gl.depthFunc(gl.LEQUAL);
-  gl.enable(gl.BLEND);
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  gl.clearDepth(1);
-
-  function mat4Identity() {
-    return new Float32Array([
-      1,0,0,0,
-      0,1,0,0,
-      0,0,1,0,
-      0,0,0,1
-    ]);
+  function triggerJump(){
+    if (!state.onGround) return;
+    state.onGround = false;
+    state.vy = -216;
+    state.jumpClock = 0;
+    if (jumpBtn) { jumpBtn.classList.add('active'); setTimeout(() => jumpBtn.classList.remove('active'), 180); }
   }
 
-  function mat4Model(x, y, z, sx, sy, sz, flipX = false) {
-    const scaleX = flipX ? -sx : sx;
-    return new Float32Array([
-      scaleX, 0, 0, 0,
-      0, sy, 0, 0,
-      0, 0, sz, 0,
-      x, y, z, 1
-    ]);
-  }
+  bindHold(leftBtn, () => pressMove(-1), () => releaseMove(-1));
+  bindHold(rightBtn, () => pressMove(1), () => releaseMove(1));
+  runBtn?.addEventListener('click', () => { state.run = !state.run; runBtn.classList.toggle('active', state.run); });
+  jumpBtn?.addEventListener('click', triggerJump);
+  centreBtn?.addEventListener('click', () => {
+    state.camX = 0; state.charX = 0; state.charY = 0; state.vx = 0; state.vy = 0; state.move = 0; state.onGround = true; state.jumpClock = 1;
+  });
+  depthBtn?.addEventListener('click', () => {
+    state.depthView = !state.depthView;
+    depthBtn.classList.toggle('active', state.depthView);
+    depthBtn.setAttribute('aria-pressed', state.depthView ? 'true' : 'false');
+    if (depthKey) { depthKey.hidden = !state.depthView; depthKey.setAttribute('aria-hidden', state.depthView ? 'false' : 'true'); }
+  });
 
-  function mat4Model2D(x, y, z, scale, rotation, mirrorX = 1) {
-    const c = Math.cos(rotation), s = Math.sin(rotation);
-    const sx = scale * mirrorX, sy = scale;
-    return new Float32Array([
-      c*sx, s*sx, 0, 0,
-      -s*sy, c*sy, 0, 0,
-      0, 0, 1, 0,
-      x, y, z, 1
-    ]);
-  }
+  canvas.addEventListener('pointerdown', (event) => {
+    state.drag = { x: event.clientX, charX: state.charX };
+    canvas.setPointerCapture(event.pointerId);
+  });
+  canvas.addEventListener('pointermove', (event) => {
+    if (!state.drag) return;
+    const dx = event.clientX - state.drag.x;
+    state.charX = state.drag.charX - dx * 1.25;
+    state.camX = GH.lerp(state.camX, state.charX, 0.2);
+    state.move = 0;
+  });
+  canvas.addEventListener('pointerup', () => { state.drag = null; });
+  canvas.addEventListener('pointercancel', () => { state.drag = null; });
 
-  function mat4Perspective(fovY, aspect, near, far) {
-    const f = 1 / Math.tan(fovY / 2);
-    const nf = 1 / (near - far);
-    return new Float32Array([
-      f / aspect, 0, 0, 0,
-      0, f, 0, 0,
-      0, 0, (far + near) * nf, -1,
-      0, 0, (2 * far * near) * nf, 0
-    ]);
-  }
-
-  function vec3Normalize(v) {
-    const len = Math.hypot(v[0], v[1], v[2]) || 1;
-    return [v[0] / len, v[1] / len, v[2] / len];
-  }
-
-  function vec3Cross(a, b) {
-    return [
-      a[1] * b[2] - a[2] * b[1],
-      a[2] * b[0] - a[0] * b[2],
-      a[0] * b[1] - a[1] * b[0]
-    ];
-  }
-
-  function vec3Subtract(a, b) {
-    return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-  }
-
-  function mat4LookAt(eye, target, up) {
-    const z = vec3Normalize(vec3Subtract(eye, target));
-    const x = vec3Normalize(vec3Cross(up, z));
-    const y = vec3Cross(z, x);
-    return new Float32Array([
-      x[0], y[0], z[0], 0,
-      x[1], y[1], z[1], 0,
-      x[2], y[2], z[2], 0,
-      -(x[0]*eye[0] + x[1]*eye[1] + x[2]*eye[2]),
-      -(y[0]*eye[0] + y[1]*eye[1] + y[2]*eye[2]),
-      -(z[0]*eye[0] + z[1]*eye[1] + z[2]*eye[2]),
-      1
-    ]);
-  }
-
-  function createTexture(draw, w = 256, h = 512) {
-    const c = document.createElement('canvas');
-    c.width = w;
-    c.height = h;
-    const ctx = c.getContext('2d');
-    ctx.clearRect(0, 0, w, h);
-    draw(ctx, w, h);
-
-    const tex = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    return tex;
-  }
-
-  const textures = {};
-  const assetAspect = {};
-
-  function createImageTexture(url, label = 'image', fallbackUrl = null) {
-    const tex = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.texImage2D(
-      gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0,
-      gl.RGBA, gl.UNSIGNED_BYTE,
-      new Uint8Array([0, 0, 0, 0])
-    );
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-    const loadIntoTexture = src => {
-      const image = new Image();
-      image.onload = () => {
-        assetAspect[label] = image.naturalWidth / image.naturalHeight;
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-      };
-      image.onerror = () => {
-        if (fallbackUrl && src !== fallbackUrl) {
-          loadIntoTexture(fallbackUrl);
-          return;
-        }
-        if (!label.startsWith('ground')) {
-          errorBox.hidden = false;
-          errorBox.textContent = `${label} asset could not be loaded.`;
-        }
-      };
-      image.src = src;
-    };
-
-    loadIntoTexture(url);
-    return tex;
-  }
-
-  textures.white = createTexture((ctx, w, h) => {
-    ctx.fillStyle = '#ffffff';
+  function drawSky(w, h){
+    const sky = ctx.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, '#d5dfea');
+    sky.addColorStop(0.44, '#e5edf2');
+    sky.addColorStop(1, '#d8dfe1');
+    ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h);
-  }, 4, 4);
 
-  const treeAssets = [
-    ['01', 237, 955], ['02', 382, 990], ['03', 230, 899],
-    ['04', 248, 929], ['05', 240, 837], ['06', 293, 1018]
-  ];
-  treeAssets.forEach(([id, w, h]) => {
-    const key = `tree${id}`;
-    assetAspect[key] = w / h;
-    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.71`, key);
-  });
+    const mist = ctx.createLinearGradient(0, h * 0.18, 0, h);
+    mist.addColorStop(0, 'rgba(225,236,244,0.0)');
+    mist.addColorStop(1, 'rgba(226,235,239,0.5)');
+    ctx.fillStyle = mist;
+    ctx.fillRect(0, 0, w, h);
+  }
 
-  const groundAssets = [
-    ['01', 351, 297], ['02', 360, 308], ['03', 394, 204], ['04', 276, 281],
-    ['05', 389, 273], ['06', 304, 294], ['07', 267, 275], ['08', 394, 207],
-    ['09', 353, 267], ['10', 309, 171], ['11', 343, 276], ['12', 398, 228]
-  ];
-  groundAssets.forEach(([id, w, h]) => {
-    const key = `ground${id}`;
-    assetAspect[key] = w / h;
-    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.71' : null;
-    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.71`, key, fallback);
-  });
-
-  textures.rigAtlas = createImageTexture(Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.71`, 'Walk Lab cutout rig atlas');
-
-  function mulberry32(seed) {
-    return function() {
-      let t = (seed += 0x6D2B79F5);
-      t = Math.imul(t ^ (t >>> 15), t | 1);
-      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  function getPathMetrics(w, h){
+    return {
+      topY: h * 0.76,
+      topH: h * 0.045,
+      shoulderH: h * 0.05,
+      shoulderW: w * 0.13,
+      margin: w * 0.06
     };
   }
 
-  const rand = mulberry32(924315);
-  const TILE = { minX: -62, maxX: 62 };
-  const TILE_WIDTH = TILE.maxX - TILE.minX;
-  const WORLD = { nearZ: 10.5, farZ: -42 };
-  const fogColor = [0.93, 0.945, 0.95];
-  const groundY = -4.55;
+  function drawPath(w, h){
+    const p = getPathMetrics(w, h);
+    const leftOuter = p.margin;
+    const rightOuter = w - p.margin;
+    const leftTop = leftOuter + p.shoulderW;
+    const rightTop = rightOuter - p.shoulderW;
+    const bottomY = h * 0.93;
 
-  // Think of this exactly like a top-down forest plan: a clear path runs along X,
-  // the character walks down its centre, and woodland begins on either side.
-  const pathZ = 0.0;
-  const PATH_HALF_WIDTH = 3.15;
-  const FAR_SIDE_START = -PATH_HALF_WIDTH;
-  const NEAR_SIDE_START = PATH_HALF_WIDTH;
+    ctx.beginPath();
+    ctx.moveTo(leftOuter, p.topY + p.shoulderH);
+    ctx.lineTo(leftTop, p.topY);
+    ctx.lineTo(rightTop, p.topY);
+    ctx.lineTo(rightOuter, p.topY + p.shoulderH);
+    ctx.lineTo(rightOuter, bottomY);
+    ctx.lineTo(leftOuter, bottomY);
+    ctx.closePath();
+    const sideGrad = ctx.createLinearGradient(0, p.topY, 0, bottomY);
+    sideGrad.addColorStop(0, '#7f6552');
+    sideGrad.addColorStop(1, '#56443b');
+    ctx.fillStyle = sideGrad;
+    ctx.fill();
 
+    ctx.beginPath();
+    ctx.moveTo(leftTop, p.topY);
+    ctx.lineTo(rightTop, p.topY);
+    ctx.lineTo(rightTop, p.topY + p.topH);
+    ctx.lineTo(leftTop, p.topY + p.topH);
+    ctx.closePath();
+    const dirt = ctx.createLinearGradient(0, p.topY, 0, p.topY + p.topH);
+    dirt.addColorStop(0, '#b28a63');
+    dirt.addColorStop(0.5, '#a77b53');
+    dirt.addColorStop(1, '#8a6547');
+    ctx.fillStyle = dirt;
+    ctx.fill();
 
-  const ground = {
-    mesh: groundMesh,
-    texture: textures.white,
-    x: 0,
-    y: groundY,
-    z: WORLD.nearZ,
-    sx: 210,
-    sy: 1,
-    sz: WORLD.nearZ - WORLD.farZ,
-    layer: 'ground',
-    tint: [0.175, 0.185, 0.188],
-    opacity: 1,
-    noFog: false,
-    wrap: false
-  };
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(leftTop, p.topY, rightTop - leftTop, p.topH);
+    ctx.clip();
+    ctx.globalAlpha = 0.16;
+    ctx.strokeStyle = '#6d513f';
+    for (let i = 0; i < 20; i += 1) {
+      const y = p.topY + 3 + ((i * 7) % Math.max(6, p.topH - 4));
+      ctx.beginPath();
+      ctx.moveTo(leftTop - 12 + i * 30, y);
+      ctx.lineTo(leftTop + 26 + i * 30, y + 2);
+      ctx.stroke();
+    }
+    ctx.restore();
 
-  const backdrop = [];
-  const midfill = [];
-  const frontOccluders = [];
+    ctx.fillStyle = 'rgba(199,165,124,0.58)';
+    ctx.fillRect(leftTop, p.topY + 4, rightTop - leftTop, 2);
 
-  function classifyLayer(z) {
-    if (z > 1.2) return 'foreground';
-    if (z > -9) return 'near';
-    if (z > -24) return 'mid';
-    return 'far';
+    if (state.depthView) {
+      ctx.strokeStyle = 'rgba(39,52,59,0.5)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(leftTop, p.topY, rightTop - leftTop, p.topH);
+      ctx.strokeRect(leftOuter, p.topY, rightOuter - leftOuter, bottomY - p.topY);
+    }
+    return p;
   }
 
-  function addObject(collection, type, x, z, width, height, opts = {}) {
-    const resolvedHeight = height;
-    const resolvedWidth = width ?? resolvedHeight * (assetAspect[type] || 1);
-    collection.push({
-      mesh: billboardMesh,
-      texture: textures[type],
-      x,
-      y: opts.y ?? groundY,
-      z,
-      sx: resolvedWidth,
-      sy: resolvedHeight,
-      sz: 1,
-      flip: opts.flip ?? (rand() > 0.5),
-      shade: opts.shade ?? 1,
-      opacity: opts.opacity ?? 1,
-      noFog: !!opts.noFog,
-      tint: opts.tint || null,
-      asset: true,
-      layer: opts.layer || classifyLayer(z),
-      wrap: opts.wrap !== false
+  function projectX(worldX, depth, w){
+    return w * 0.5 + (worldX - state.camX * depth) * (0.22 + depth * 0.05);
+  }
+
+  function drawSprite(sprite, w, h, path){
+    const img = sprite.type === 'tree' ? treeImages[sprite.variant] : groundImages[sprite.variant];
+    if (!img || !img.complete) return;
+    const screenX = projectX(sprite.worldX, sprite.depth, w);
+    const screenY = sprite.type === 'tree'
+      ? h * GH.lerp(0.76, 0.83, sprite.depth)
+      : path.topY + path.topH + GH.lerp(-20, 12, sprite.depth - 0.66);
+    const scale = sprite.scale * (sprite.type === 'tree' ? 0.8 : 0.9);
+    const drawW = img.width * scale;
+    const drawH = img.height * scale;
+    const x = screenX - drawW * 0.5;
+    const y = screenY - drawH;
+
+    ctx.save();
+    const fog = GH.clamp(1.28 - sprite.depth * 0.62, 0.36, 1);
+    ctx.globalAlpha = fog;
+    if (sprite.type === 'tree') {
+      const hue = sprite.depth < 0.4 ? 'hue-rotate(15deg) saturate(0.55) brightness(1.16)' : sprite.depth < 0.7 ? 'hue-rotate(12deg) saturate(0.72) brightness(1.06)' : 'hue-rotate(24deg) saturate(0.95) brightness(1.0)';
+      ctx.filter = hue;
+    } else {
+      ctx.filter = sprite.depth > 1 ? 'hue-rotate(22deg) saturate(1.05) brightness(0.98)' : 'hue-rotate(10deg) saturate(0.75) brightness(1.05)';
+    }
+    if (sprite.flip < 0) {
+      ctx.translate(x + drawW, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(img, 0, y, drawW, drawH);
+    } else {
+      ctx.drawImage(img, x, y, drawW, drawH);
+    }
+    ctx.filter = 'none';
+
+    if (state.depthView) {
+      ctx.globalAlpha = 0.45;
+      ctx.strokeStyle = sprite.depth < 0.4 ? '#ced8dd' : sprite.depth < 0.8 ? '#84939a' : '#40515b';
+      ctx.lineWidth = 1.2;
+      ctx.strokeRect(x, y, drawW, drawH);
+    }
+    ctx.restore();
+  }
+
+  function render(){
+    const rect = canvas.getBoundingClientRect();
+    const w = rect.width;
+    const h = rect.height;
+    ctx.clearRect(0, 0, w, h);
+    drawSky(w, h);
+
+    const path = drawPath(w, h);
+
+    layers.filter((s) => s.depth < 1.0).forEach((sprite) => drawSprite(sprite, w, h, path));
+
+    // near edge foliage outside path shoulders
+    layers.filter((s) => s.depth >= 1.0).forEach((sprite) => {
+      const x = projectX(sprite.worldX, sprite.depth, w);
+      if (x < path.margin + path.shoulderW - 20 || x > w - path.margin - path.shoulderW + 20) drawSprite(sprite, w, h, path);
     });
+
+    // character
+    const charScreenX = projectX(state.charX, 1, w);
+    const charGroundY = path.topY + path.topH + 1;
+    let pose;
+    const speed = Math.abs(state.vx);
+    if (!state.onGround) {
+      pose = Rig.getPose('jump', GH.clamp(state.jumpClock / 0.9, 0, 1));
+    } else if (speed > 70) {
+      pose = Rig.getPose('run', state.animClock);
+    } else if (speed > 6) {
+      pose = Rig.getPose('walk', state.animClock);
+    } else {
+      pose = Rig.getPose('walk', 0.12);
+    }
+
+    ctx.save();
+    ctx.translate(charScreenX, charGroundY + state.charY);
+    if (state.facing < 0) ctx.scale(-1, 1);
+    Rig.drawCharacter(ctx, pose, { x: 0, y: 0, scale: 0.92, showArt: true, showStick: false, showPlanes: false, shadow: true });
+    ctx.restore();
+
+    layers.filter((s) => s.depth >= 1.0).forEach((sprite) => {
+      const x = projectX(sprite.worldX, sprite.depth, w);
+      if (!(x < path.margin + path.shoulderW - 20 || x > w - path.margin - path.shoulderW + 20)) drawSprite(sprite, w, h, path);
+    });
+
+    // front vignette silhouettes
+    ctx.fillStyle = 'rgba(33,40,46,0.12)';
+    ctx.fillRect(0, h * 0.9, w, h * 0.1);
   }
 
-  function scatterForest() {
-    const trees = ['tree01', 'tree02', 'tree03', 'tree04', 'tree05', 'tree06'];
-    const allGround = ['ground01','ground02','ground03','ground04','ground05','ground06','ground07','ground08','ground09','ground10','ground11','ground12'];
-    const grassScrub = ['ground01','ground02','ground03','ground05','ground06','ground08','ground09','ground10','ground11','ground12'];
-    const rocks = ['ground03','ground04','ground07','ground10','ground11'];
+  function tick(now){
+    if (!state.last) state.last = now;
+    const dt = Math.min(0.033, (now - state.last) / 1000);
+    state.last = now;
 
-    // FAR SIDE OF PATH -------------------------------------------------------
-    // A dense woodland wall starts clearly behind the path, then gradually
-    // thins with depth. This is the main silhouette mass behind the character.
-    for (let i = 0; i < 178; i++) {
-      const x = TILE.minX + rand() * TILE_WIDTH;
-      const depth = Math.pow(rand(), 1.45); // bias density toward the path edge
-      const z = FAR_SIDE_START - 0.55 - depth * 35.5;
-      const type = trees[Math.floor(rand() * trees.length)];
-      const height = 9.8 + rand() * (8.2 - depth * 1.8);
-      addObject(backdrop, type, x, z, null, height, {
-        shade: 0.97 + rand() * 0.10,
-        opacity: 0.92 + rand() * 0.08,
-        layer: classifyLayer(z)
-      });
-    }
+    const targetSpeed = state.move * (state.run ? 122 : 68);
+    const accel = state.onGround ? 8 : 4;
+    state.vx = GH.lerp(state.vx, targetSpeed, Math.min(1, accel * dt));
+    if (Math.abs(state.vx) < 0.12) state.vx = 0;
+    state.charX += state.vx * dt;
+    state.charX = GH.clamp(state.charX, -state.sceneLength * 0.5, state.sceneLength * 0.5);
+    if (state.move !== 0) state.facing = state.move;
 
-    // Taller canopy accents deeper in the forest keep the upper frame alive.
-    for (let i = 0; i < 42; i++) {
-      const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = -18.0 - rand() * 21.0;
-      const type = trees[Math.floor(rand() * trees.length)];
-      const height = 14.0 + rand() * 7.5;
-      addObject(backdrop, type, x, z, null, height, {
-        shade: 1.00 + rand() * 0.08,
-        opacity: 0.86 + rand() * 0.10,
-        layer: 'far'
-      });
-    }
-
-    // Dense undergrowth right along the far path edge hides the bases of the
-    // first trees and makes the path boundary feel continuous.
-    for (let i = 0; i < 230; i++) {
-      const x = TILE.minX + rand() * TILE_WIDTH;
-      const edgeDepth = Math.pow(rand(), 1.8);
-      const z = FAR_SIDE_START - 0.20 - edgeDepth * 8.0;
-      const type = grassScrub[Math.floor(rand() * grassScrub.length)];
-      const height = 0.72 + rand() * 1.40;
-      addObject(midfill, type, x, z, null, height, {
-        shade: 1.00 + rand() * 0.08,
-        opacity: 0.91 + rand() * 0.08,
-        layer: classifyLayer(z)
-      });
-    }
-
-    // A few rocks/bushes extend further back and help blend the first forest
-    // band into the fogged middle distance.
-    for (let i = 0; i < 88; i++) {
-      const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = FAR_SIDE_START - 5.0 - rand() * 13.5;
-      const type = allGround[Math.floor(rand() * allGround.length)];
-      const height = 0.72 + rand() * 1.50;
-      addObject(midfill, type, x, z, null, height, {
-        shade: 1.02 + rand() * 0.07,
-        opacity: 0.86 + rand() * 0.10,
-        layer: classifyLayer(z)
-      });
-    }
-
-    // NEAR SIDE OF PATH ------------------------------------------------------
-    // Keep a real clear corridor in front of the character. Woodland begins
-    // several world units closer to camera than the character instead of
-    // sitting almost on top of the same Z plane.
-
-    // Dense low path-edge strip. At this Z range perspective naturally drops
-    // it lower in frame and gives us stronger foreground parallax.
-    for (let i = 0; i < 310; i++) {
-      const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = NEAR_SIDE_START + 0.25 + rand() * 2.25;
-      const type = grassScrub[Math.floor(rand() * grassScrub.length)];
-      const height = 0.48 + rand() * 0.58;
-      addObject(frontOccluders, type, x, z, null, height, {
-        shade: 0.99 + rand() * 0.06,
-        opacity: 0.95 + rand() * 0.04,
-        layer: 'foreground'
-      });
-    }
-
-    // Mid-near layer: still mostly small, but not tiny. This should fill the
-    // lower third rather than leaving isolated postage-stamp props.
-    for (let i = 0; i < 230; i++) {
-      const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = NEAR_SIDE_START + 2.2 + rand() * 2.45;
-      const chooseRock = rand() < 0.28;
-      const list = chooseRock ? rocks : grassScrub;
-      const type = list[Math.floor(rand() * list.length)];
-      const height = 0.55 + rand() * 0.72;
-      addObject(frontOccluders, type, x, z, null, height, {
-        shade: 0.98 + rand() * 0.07,
-        opacity: 0.95 + rand() * 0.04,
-        layer: 'foreground'
-      });
-    }
-
-    // Closest strip: dense grass/rocks with enough real-world size to overlap
-    // one another and cover the floor, but still low enough not to hide the
-    // character when they pass in front.
-    for (let i = 0; i < 205; i++) {
-      const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = NEAR_SIDE_START + 4.6 + rand() * 2.25;
-      const type = allGround[Math.floor(rand() * allGround.length)];
-      const height = 0.48 + rand() * 0.78;
-      addObject(frontOccluders, type, x, z, null, height, {
-        shade: 0.98 + rand() * 0.06,
-        opacity: 0.96,
-        layer: 'foreground'
-      });
-    }
-
-    // Occasional larger near-side assets give a stronger sense of passing
-    // through woodland, but remain uncommon so the path stays readable.
-    for (let i = 0; i < 20; i++) {
-      const x = TILE.minX + rand() * TILE_WIDTH;
-      const z = NEAR_SIDE_START + 2.5 + rand() * 4.5;
-      if (rand() < 0.42) {
-        const type = trees[Math.floor(rand() * trees.length)];
-        const height = 5.2 + rand() * 4.8;
-        addObject(frontOccluders, type, x, z, null, height, {
-          shade: 0.92 + rand() * 0.08,
-          opacity: 0.95,
-          layer: 'foreground'
-        });
-      } else {
-        const type = allGround[Math.floor(rand() * allGround.length)];
-        const height = 1.05 + rand() * 1.15;
-        addObject(frontOccluders, type, x, z, null, height, {
-          shade: 0.96 + rand() * 0.07,
-          opacity: 0.96,
-          layer: 'foreground'
-        });
+    if (!state.onGround) {
+      state.vy += 420 * dt;
+      state.charY += state.vy * dt;
+      state.jumpClock += dt;
+      if (state.charY >= 0) {
+        state.charY = 0;
+        state.vy = 0;
+        state.onGround = true;
+        state.jumpClock = 1;
       }
     }
 
-    backdrop.sort((a, b) => a.z - b.z);
-    midfill.sort((a, b) => a.z - b.z);
-    frontOccluders.sort((a, b) => a.z - b.z);
-  }
-
-  scatterForest();
-
-  const character = {
-    x: 0,
-    y: groundY,
-    z: pathZ,
-    scale: 2.31,
-    tint: [1.0, 1.0, 1.0],
-    opacity: 0.99,
-    screenOffsetX: -0.18,
-    distanceTravelled: 0,
-    lastFacing: 1
-  };
-
-  const SHARED_ANIM_KEY = 'gamehub.walklab.anim.v4';
-  let characterFrames = Rig.DEFAULT_FRAMES.map(Rig.clone);
-  function refreshCharacterFrames() {
-    try {
-      const saved = JSON.parse(localStorage.getItem(SHARED_ANIM_KEY) || 'null');
-      if (saved?.frames?.length === 16) characterFrames = saved.frames.map((p,i) => Rig.normalizedPose(p,i));
-    } catch (_) {}
-  }
-  refreshCharacterFrames();
-
-  const debugTints = {
-    ground: [0.50, 0.46, 0.75],
-    character: [0.86, 0.58, 0.32],
-    foreground: [0.70, 0.32, 0.28],
-    near: [0.67, 0.43, 0.31],
-    mid: [0.42, 0.59, 0.55],
-    far: [0.37, 0.48, 0.68]
-  };
-
-  const camera = {
-    x: 0,
-    y: -3.00,
-    z: 13.80,
-    // This is intentionally ABOVE the camera Y: the camera is now actually
-    // tilted upward a little, which places the character/path lower in frame.
-    targetY: -2.15,
-    targetZ: -13.0
-  };
-
-  let projection = mat4Identity();
-  let debugDepth = false;
-  let moveLeft = false;
-  let moveRight = false;
-  let activePointer = null;
-  let dragStartX = 0;
-  let dragStartCameraX = 0;
-  let lastTime = performance.now();
-  let previousCameraX = camera.x;
-  let hintTimer = window.setTimeout(() => hintEl.classList.add('hidden'), 4200);
-
-  function hideHint() {
-    hintEl.classList.add('hidden');
-    if (hintTimer) {
-      clearTimeout(hintTimer);
-      hintTimer = 0;
+    const pace = state.run ? 1.42 : 1.0;
+    if (Math.abs(state.vx) > 3 && state.onGround) {
+      state.animClock = (state.animClock + dt * pace * (0.55 + Math.abs(state.vx) / 88)) % 1;
     }
-  }
+    state.camX = GH.lerp(state.camX, state.charX, Math.min(1, dt * 3.5));
 
-  function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
-    const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
-    if (canvas.width !== w || canvas.height !== h) {
-      canvas.width = w;
-      canvas.height = h;
-      gl.viewport(0, 0, w, h);
-      projection = mat4Perspective((31 * Math.PI) / 180, w / h, 0.1, 180);
+    if (status) {
+      const locomotion = !state.onGround ? 'jump' : Math.abs(state.vx) > 70 ? 'run' : Math.abs(state.vx) > 6 ? 'walk' : 'idle';
+      status.textContent = `3D forest · path strip · ${locomotion} · camera X ${state.camX.toFixed(1)}`;
     }
+    if (hint) hint.textContent = 'Drag the scene or hold LEFT / RIGHT · toggle RUN · tap JUMP';
+
+    render();
+    requestAnimationFrame(tick);
   }
 
-  function wrapX(x, aroundX) {
-    return x + Math.round((aroundX - x) / TILE_WIDTH) * TILE_WIDTH;
-  }
-
-  function tintFor(obj) {
-    if (debugDepth) return debugTints[obj.layer] || [1, 1, 1];
-    if (obj.tint) return obj.tint;
-    if (obj.asset) return [obj.shade * 0.99, obj.shade * 1.00, obj.shade * 1.02];
-    const base = [0.155, 0.165, 0.172];
-    return [base[0] * obj.shade, base[1] * obj.shade, base[2] * obj.shade];
-  }
-
-  function drawObject(obj, view, extra = null) {
-    bindMesh(obj.mesh);
-    gl.bindTexture(gl.TEXTURE_2D, extra?.texture || obj.texture);
-    const drawX = extra?.x ?? (obj.wrap ? wrapX(obj.x, camera.x) : obj.x);
-    gl.uniformMatrix4fv(loc.model, false, mat4Model(drawX, obj.y, obj.z, obj.sx, obj.sy, obj.sz, obj.flip));
-    gl.uniformMatrix4fv(loc.view, false, view);
-    gl.uniformMatrix4fv(loc.projection, false, projection);
-    const tint = tintFor(obj);
-    gl.uniform3f(loc.tint, tint[0], tint[1], tint[2]);
-    gl.uniform3f(loc.fogColor, fogColor[0], fogColor[1], fogColor[2]);
-    gl.uniform1f(loc.fogNear, 6.2);
-    gl.uniform1f(loc.fogFar, 44.0);
-    gl.uniform1f(loc.fogAmount, obj.noFog ? 0 : (debugDepth ? 0.22 : 1.0));
-    gl.uniform1f(loc.opacity, obj.opacity);
-    gl.uniform2f(loc.uvScale, extra?.uvScale?.[0] ?? 1, extra?.uvScale?.[1] ?? 1);
-    gl.uniform2f(loc.uvOffset, extra?.uvOffset?.[0] ?? 0, extra?.uvOffset?.[1] ?? 0);
-    gl.drawElements(gl.TRIANGLES, obj.mesh.count, gl.UNSIGNED_SHORT, 0);
-  }
-
-  function currentCharacterPhase(isWalking) {
-    if (!isWalking) return 0;
-    const stride = 1.45;
-    return (character.distanceTravelled % stride) / stride;
-  }
-
-  function drawRigPartWebGL(part, view, facing) {
-    const mesh = rigPartMeshes[part.name];
-    const r = Rig.atlasRect(part.name);
-    if (!mesh || !r) return;
-
-    const ax = character.x + part.a.x * character.scale * facing;
-    const ay = character.y + part.a.y * character.scale;
-    const bx = character.x + part.b.x * character.scale * facing;
-    const by = character.y + part.b.y * character.scale;
-    const dvx = bx - ax, dvy = by - ay;
-    const p0x = r.a0[0] * r.w, p0y = r.a0[1] * r.h;
-    const p1x = r.a1[0] * r.w, p1y = r.a1[1] * r.h;
-    const svx = (p1x - p0x) * facing;
-    const svy = -(p1y - p0y);
-    const srcLen = Math.hypot(svx, svy) || 1;
-    const dstLen = Math.hypot(dvx, dvy) || 1;
-    const scale = dstLen / srcLen;
-    const rotation = Math.atan2(dvy, dvx) - Math.atan2(svy, svx);
-
-    bindMesh(mesh);
-    gl.bindTexture(gl.TEXTURE_2D, textures.rigAtlas);
-    const z = character.z + (part.layer - 10) * 0.0009;
-    gl.uniformMatrix4fv(loc.model, false, mat4Model2D(ax, ay, z, scale, rotation, facing));
-    gl.uniformMatrix4fv(loc.view, false, view);
-    gl.uniformMatrix4fv(loc.projection, false, projection);
-    const tint = debugDepth ? debugTints.character : character.tint;
-    gl.uniform3f(loc.tint, tint[0], tint[1], tint[2]);
-    gl.uniform3f(loc.fogColor, fogColor[0], fogColor[1], fogColor[2]);
-    gl.uniform1f(loc.fogNear, 6.2);
-    gl.uniform1f(loc.fogFar, 44.0);
-    gl.uniform1f(loc.fogAmount, debugDepth ? 0.22 : 1.0);
-    gl.uniform1f(loc.opacity, character.opacity * (part.alpha ?? 1));
-    gl.uniform2f(loc.uvScale, 1, 1);
-    gl.uniform2f(loc.uvOffset, 0, 0);
-    gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_SHORT, 0);
-  }
-
-  function drawRigCharacter(view, isWalking) {
-    const phase = currentCharacterPhase(isWalking);
-    const pose = Rig.sampleFrames(characterFrames, phase);
-    const facing = character.lastFacing >= 0 ? 1 : -1;
-    Rig.partsForPose(pose).forEach(part => drawRigPartWebGL(part, view, facing));
-  }
-
-  function render(now) {
-    resize();
-    const dt = Math.min(0.05, (now - lastTime) / 1000);
-    lastTime = now;
-
-    const moveDir = (moveRight ? 1 : 0) - (moveLeft ? 1 : 0);
-    const speed = 1.15;
-    if (moveDir) {
-      camera.x += moveDir * speed * dt;
-      hideHint();
-    }
-
-    const cameraDelta = camera.x - previousCameraX;
-    const isWalking = Math.abs(cameraDelta) > 0.0001 || moveDir !== 0;
-    if (Math.abs(cameraDelta) > 0.0001) {
-      character.distanceTravelled += Math.abs(cameraDelta);
-      character.lastFacing = cameraDelta >= 0 ? 1 : -1;
-    }
-    previousCameraX = camera.x;
-
-    character.x = camera.x + character.screenOffsetX;
-
-    gl.clearColor(fogColor[0], fogColor[1], fogColor[2], 1);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    const eye = [camera.x, camera.y, camera.z];
-    const target = [camera.x, camera.targetY, camera.targetZ];
-    const view = mat4LookAt(eye, target, [0, 1, 0]);
-
-    drawObject({ ...ground, x: camera.x }, view);
-    for (const obj of backdrop) drawObject(obj, view);
-    for (const obj of midfill) drawObject(obj, view);
-
-    drawRigCharacter(view, isWalking);
-
-    for (const obj of frontOccluders) drawObject(obj, view);
-
-    statusEl.textContent = debugDepth
-      ? `Depth view · camera X ${camera.x.toFixed(1)} · grounded layers`
-      : `3D forest · camera X ${camera.x.toFixed(1)} · live Walk Lab rig · arm hinge + foot roll`;
-
-    requestAnimationFrame(render);
-  }
-
-  function bindHold(button, setter) {
-    const down = e => {
-      e.preventDefault();
-      setter(true);
-      hideHint();
-      button.setPointerCapture?.(e.pointerId);
-    };
-    const up = e => {
-      e.preventDefault();
-      setter(false);
-    };
-    button.addEventListener('pointerdown', down);
-    button.addEventListener('pointerup', up);
-    button.addEventListener('pointercancel', up);
-    button.addEventListener('lostpointercapture', up);
-    button.addEventListener('pointerleave', e => {
-      if (e.pointerType === 'mouse') setter(false);
-    });
-  }
-
-  bindHold(leftBtn, v => (moveLeft = v));
-  bindHold(rightBtn, v => (moveRight = v));
-
-  resetBtn.addEventListener('click', () => {
-    camera.x = 0;
-    hideHint();
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowLeft') pressMove(-1);
+    if (event.key === 'ArrowRight') pressMove(1);
+    if (event.key === 'Shift') { state.run = true; runBtn?.classList.add('active'); }
+    if (event.key === ' ' || event.key === 'ArrowUp') triggerJump();
+  });
+  window.addEventListener('keyup', (event) => {
+    if (event.key === 'ArrowLeft') releaseMove(-1);
+    if (event.key === 'ArrowRight') releaseMove(1);
+    if (event.key === 'Shift') { state.run = false; runBtn?.classList.remove('active'); }
   });
 
-  debugBtn.addEventListener('click', () => {
-    debugDepth = !debugDepth;
-    debugBtn.setAttribute('aria-pressed', String(debugDepth));
-    debugBtn.textContent = debugDepth ? 'Normal view' : 'Depth view';
-    depthKey.hidden = !debugDepth;
-    hideHint();
-  });
-
-  canvas.addEventListener('pointerdown', e => {
-    activePointer = e.pointerId;
-    dragStartX = e.clientX;
-    dragStartCameraX = camera.x;
-    canvas.setPointerCapture?.(e.pointerId);
-    hideHint();
-  });
-
-  canvas.addEventListener('pointermove', e => {
-    if (e.pointerId !== activePointer) return;
-    const dx = e.clientX - dragStartX;
-    camera.x = dragStartCameraX - dx * 0.0075;
-  });
-
-  const endDrag = e => {
-    if (e.pointerId === activePointer) activePointer = null;
-  };
-  canvas.addEventListener('pointerup', endDrag);
-  canvas.addEventListener('pointercancel', endDrag);
-
-  window.addEventListener('keydown', e => {
-    const key = e.key.toLowerCase();
-    if (e.key === 'ArrowLeft' || key === 'a') {
-      moveLeft = true;
-      hideHint();
-    }
-    if (e.key === 'ArrowRight' || key === 'd') {
-      moveRight = true;
-      hideHint();
-    }
-    if (e.key === '0') camera.x = 0;
-  });
-
-  window.addEventListener('keyup', e => {
-    const key = e.key.toLowerCase();
-    if (e.key === 'ArrowLeft' || key === 'a') moveLeft = false;
-    if (e.key === 'ArrowRight' || key === 'd') moveRight = false;
-  });
-
-  window.addEventListener('resize', resize, { passive: true });
-  document.addEventListener('visibilitychange', () => {
-    moveLeft = false;
-    moveRight = false;
-    lastTime = performance.now();
-    previousCameraX = camera.x;
-  });
-
+  window.addEventListener('resize', resize);
   resize();
-  requestAnimationFrame(render);
+  requestAnimationFrame(tick);
 })();
