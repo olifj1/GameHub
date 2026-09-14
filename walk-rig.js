@@ -7,7 +7,7 @@
   const lerp = (a, b, t) => a + (b - a) * t;
   const clone = obj => JSON.parse(JSON.stringify(obj));
 
-  // v1.8.70 proportions are measured against the assembled character on the
+  // v1.8.71 proportions are measured against the assembled character on the
   // original simple-parts reference sheet: large head, compact torso and shorter,
   // slimmer limbs.  These values are the rig proportions; the atlas art is then
   // scaled between the same joint pivots rather than driving the skeleton size.

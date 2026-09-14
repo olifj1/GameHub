@@ -1,11 +1,8 @@
-# GameHub v1.8.70
+# GameHub v1.8.71
 
-Walk Lab / SideScroll gait refinement.
+SideScroll live-rig integration fix.
 
-- Added real lower-arm articulation by varying wrist reach through the arm swing, so elbows hinge instead of the lower arms moving rigidly with the upper arms.
-- Added heel-to-toe stance roll and controlled swing-foot rotation.
-- During late stance the toe stays grounded while the heel rises; after toe-off the foot returns through a natural swing angle ready for heel contact.
-- Kept planted feet authoritative so foot roll does not reintroduce the floating-foot problem.
-- Walk Lab renders smoothly every display refresh; there is no animation FPS control. The 16 poses remain editing/control poses only.
-- SideScroll uses the same updated live rig and gait directly, with no baked sprite animation.
-- Bumped the shared animation storage key so older saved poses cannot hide this revised default cycle.
+- Fixed the WebGL atlas V-coordinate mapping for the live Walk Lab cutout rig. SideScroll was sampling vertically mirrored/opposite atlas rows, making otherwise-correct rig pieces appear mixed up and detached.
+- SideScroll continues to render the live articulated rig directly; no baked walk sprite sheet is used.
+- Reduced the SideScroll character globally by 30% (3.30 → 2.31) while leaving Walk Lab proportions unchanged.
+- Kept the v1.8.70 lower-arm articulation, grounded gait and heel-to-toe foot roll unchanged.

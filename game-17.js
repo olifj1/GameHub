@@ -56,7 +56,7 @@
     const img = new Image();
     img.onload = () => { rigAtlas = img; draw(); };
     img.onerror = () => { rigAtlas = null; readout.textContent = 'Rig art failed to load'; draw(); };
-    img.src = Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.70`;
+    img.src = Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.71`;
   }
 
   function resize() {

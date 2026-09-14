@@ -152,13 +152,18 @@
     const left = -p0x, right = r.w - p0x;
     const top = p0y, bottom = p0y - r.h;
     const u0 = r.x / Rig.ATLAS.width, u1 = (r.x + r.w) / Rig.ATLAS.width;
-    const v0 = r.y / Rig.ATLAS.height, v1 = (r.y + r.h) / Rig.ATLAS.height;
+    // Image uploads use UNPACK_FLIP_Y_WEBGL so atlas row coordinates (which are
+    // measured from the image top) must be converted into bottom-origin WebGL V.
+    // The old mapping sampled the opposite atlas rows, which is why boots/head/
+    // torso pieces appeared attached to the correct bones but showed the wrong art.
+    const vTop = 1 - (r.y / Rig.ATLAS.height);
+    const vBottom = 1 - ((r.y + r.h) / Rig.ATLAS.height);
     return createMesh(
       new Float32Array([
-        left, bottom, 0, u0, v1,
-        right, bottom, 0, u1, v1,
-        left, top, 0, u0, v0,
-        right, top, 0, u1, v0
+        left, bottom, 0, u0, vBottom,
+        right, bottom, 0, u1, vBottom,
+        left, top, 0, u0, vTop,
+        right, top, 0, u1, vTop
       ]),
       new Uint16Array([0,1,2,2,1,3])
     );
@@ -331,7 +336,7 @@
   treeAssets.forEach(([id, w, h]) => {
     const key = `tree${id}`;
     assetAspect[key] = w / h;
-    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.70`, key);
+    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.71`, key);
   });
 
   const groundAssets = [
@@ -342,11 +347,11 @@
   groundAssets.forEach(([id, w, h]) => {
     const key = `ground${id}`;
     assetAspect[key] = w / h;
-    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.70' : null;
-    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.70`, key, fallback);
+    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.71' : null;
+    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.71`, key, fallback);
   });
 
-  textures.rigAtlas = createImageTexture(Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.70`, 'Walk Lab cutout rig atlas');
+  textures.rigAtlas = createImageTexture(Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.71`, 'Walk Lab cutout rig atlas');
 
   function mulberry32(seed) {
     return function() {
@@ -571,7 +576,7 @@
     x: 0,
     y: groundY,
     z: pathZ,
-    scale: 3.30,
+    scale: 2.31,
     tint: [1.0, 1.0, 1.0],
     opacity: 0.99,
     screenOffsetX: -0.18,
