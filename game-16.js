@@ -147,25 +147,50 @@
   );
 
   // Real path geometry. X runs along the level; Z is the top-down path width.
-  // The centre is slightly raised and each side has a low berm before sloping
-  // back down to the surrounding forest floor.
-  const pathMesh = createMesh(
-    new Float32Array([
-      -0.5,0.00, 1.00,  0.0,0.00,   0.5,0.00, 1.00, 36.0,0.00,
-      -0.5,0.22, 0.82,  0.0,0.12,   0.5,0.22, 0.82, 36.0,0.12,
-      -0.5,0.12, 0.68,  0.0,0.28,   0.5,0.12, 0.68, 36.0,0.28,
-      -0.5,0.12,-0.68,  0.0,0.72,   0.5,0.12,-0.68, 36.0,0.72,
-      -0.5,0.22,-0.82,  0.0,0.88,   0.5,0.22,-0.82, 36.0,0.88,
-      -0.5,0.00,-1.00,  0.0,1.00,   0.5,0.00,-1.00, 36.0,1.00
-    ]),
-    new Uint16Array([
-      0,1,2, 2,1,3,
-      2,3,4, 4,3,5,
-      4,5,6, 6,5,7,
-      6,7,8, 8,7,9,
-      8,9,10, 10,9,11
-    ])
-  );
+  // The cross-section keeps the low raised shoulders from v1.8.74, but the
+  // whole strip now rolls gently up/down along X so it feels laid through real
+  // woodland rather than extruded as a perfectly straight plank.
+  const PATH_UNDULATION_A = 0.050;
+  const PATH_UNDULATION_B = 0.024;
+  function pathUndulationUnit(t) {
+    const tau = Math.PI * 2;
+    return Math.sin(t * tau * 2.0 + 0.55) * PATH_UNDULATION_A
+         + Math.sin(t * tau * 5.0 - 0.80) * PATH_UNDULATION_B;
+  }
+
+  function createPathMesh(segments = 48) {
+    const rows = [
+      { z: 1.00, y: 0.00, v: 0.00 },
+      { z: 0.82, y: 0.22, v: 0.12 },
+      { z: 0.68, y: 0.12, v: 0.28 },
+      { z:-0.68, y: 0.12, v: 0.72 },
+      { z:-0.82, y: 0.22, v: 0.88 },
+      { z:-1.00, y: 0.00, v: 1.00 }
+    ];
+    const vertices = [];
+    const indices = [];
+    for (let ix = 0; ix <= segments; ix++) {
+      const t = ix / segments;
+      const x = t - 0.5;
+      const rise = pathUndulationUnit(t);
+      for (const row of rows) {
+        vertices.push(x, row.y + rise, row.z, t * 36.0, row.v);
+      }
+    }
+    const rowCount = rows.length;
+    for (let ix = 0; ix < segments; ix++) {
+      for (let iz = 0; iz < rowCount - 1; iz++) {
+        const a = ix * rowCount + iz;
+        const b = (ix + 1) * rowCount + iz;
+        const c = a + 1;
+        const d = b + 1;
+        indices.push(a,b,c, c,b,d);
+      }
+    }
+    return createMesh(new Float32Array(vertices), new Uint16Array(indices));
+  }
+
+  const pathMesh = createPathMesh();
 
   function createRigPartMesh(name) {
     const r = Rig.atlasRect(name);
@@ -380,7 +405,7 @@
   treeAssets.forEach(([id, w, h]) => {
     const key = `tree${id}`;
     assetAspect[key] = w / h;
-    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.73`, key);
+    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.74`, key);
   });
 
   const groundAssets = [
@@ -391,11 +416,11 @@
   groundAssets.forEach(([id, w, h]) => {
     const key = `ground${id}`;
     assetAspect[key] = w / h;
-    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.73' : null;
-    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.73`, key, fallback);
+    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.74' : null;
+    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.74`, key, fallback);
   });
 
-  textures.rigAtlas = createImageTexture(Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.73`, 'Walk Lab cutout rig atlas');
+  textures.rigAtlas = createImageTexture(Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.74`, 'Walk Lab cutout rig atlas');
 
   function mulberry32(seed) {
     return function() {
@@ -422,6 +447,42 @@
   const PATH_TOP_RISE = 0.12;
   const FAR_SIDE_START = -PATH_OUTER_HALF;
   const NEAR_SIDE_START = PATH_OUTER_HALF;
+
+  // First gameplay obstacle: a shin-high fallen log on the path.  It repeats
+  // with the scenery tile, giving us a concrete jump-height/distance target.
+  const TEST_OBSTACLE_X = 5.4;
+  const TEST_OBSTACLE_Z = 0.10;
+  const TEST_OBSTACLE_HEIGHT = 0.74;
+  const TEST_OBSTACLE_HALF_WIDTH = 0.62;
+  const TEST_OBSTACLE_CLEARANCE = 0.68;
+
+  function pathLocalX(x) {
+    let local = ((x + TILE_WIDTH * 0.5) % TILE_WIDTH + TILE_WIDTH) % TILE_WIDTH - TILE_WIDTH * 0.5;
+    return local;
+  }
+
+  function pathUndulationAtX(x) {
+    const t = pathLocalX(x) / TILE_WIDTH + 0.5;
+    return pathUndulationUnit(t);
+  }
+
+  function pathProfileHeight(z) {
+    const az = Math.abs(z);
+    if (az <= PATH_FLAT_HALF) return PATH_TOP_RISE;
+    if (az <= PATH_BERM_HALF) {
+      const t = (az - PATH_FLAT_HALF) / Math.max(0.001, PATH_BERM_HALF - PATH_FLAT_HALF);
+      return Rig.lerp(PATH_TOP_RISE, 0.22, t);
+    }
+    if (az <= PATH_OUTER_HALF) {
+      const t = (az - PATH_BERM_HALF) / Math.max(0.001, PATH_OUTER_HALF - PATH_BERM_HALF);
+      return Rig.lerp(0.22, 0.0, t);
+    }
+    return 0;
+  }
+
+  function pathGroundYAt(x, z = 0) {
+    return groundY + pathProfileHeight(z) + pathUndulationAtX(x);
+  }
 
 
   const ground = {
@@ -497,6 +558,50 @@
     const allGround = ['ground01','ground02','ground03','ground04','ground05','ground06','ground07','ground08','ground09','ground10','ground11','ground12'];
     const grassScrub = ['ground01','ground02','ground03','ground05','ground06','ground08','ground09','ground10','ground11','ground12'];
     const rocks = ['ground03','ground04','ground07','ground10','ground11'];
+    const edgeGrass = ['ground01','ground06','ground10','ground11'];
+
+    // PATH EDGE DRESSING -----------------------------------------------------
+    // A low almost-continuous grass line sits directly on each raised shoulder,
+    // hiding the mathematically sharp edge of the path.  Occasional rocks and
+    // rooty clumps interrupt that line so it still feels naturally scattered.
+    for (let i = 0; i < 145; i++) {
+      const x = TILE.minX + rand() * TILE_WIDTH;
+      const z = -(PATH_BERM_HALF + 0.02 + rand() * 0.34);
+      const type = edgeGrass[Math.floor(rand() * edgeGrass.length)];
+      const height = 0.25 + rand() * 0.34;
+      addObject(midfill, type, x, z, null, height, {
+        y: pathGroundYAt(x, z) - 0.015,
+        shade: 1.01 + rand() * 0.06,
+        opacity: 0.94 + rand() * 0.05,
+        layer: 'near'
+      });
+    }
+    for (let i = 0; i < 155; i++) {
+      const x = TILE.minX + rand() * TILE_WIDTH;
+      const z = PATH_BERM_HALF + 0.02 + rand() * 0.38;
+      const type = edgeGrass[Math.floor(rand() * edgeGrass.length)];
+      const height = 0.26 + rand() * 0.36;
+      addObject(frontOccluders, type, x, z, null, height, {
+        y: pathGroundYAt(x, z) - 0.015,
+        shade: 0.99 + rand() * 0.06,
+        opacity: 0.95 + rand() * 0.04,
+        layer: 'foreground'
+      });
+    }
+    for (let i = 0; i < 24; i++) {
+      const nearSide = rand() > 0.5;
+      const x = TILE.minX + rand() * TILE_WIDTH;
+      const zSign = nearSide ? 1 : -1;
+      const z = zSign * (PATH_BERM_HALF + 0.10 + rand() * 0.50);
+      const type = rocks[Math.floor(rand() * rocks.length)];
+      const height = 0.34 + rand() * 0.38;
+      addObject(nearSide ? frontOccluders : midfill, type, x, z, null, height, {
+        y: pathGroundYAt(x, z) - 0.02,
+        shade: 0.98 + rand() * 0.07,
+        opacity: 0.96,
+        layer: nearSide ? 'foreground' : 'near'
+      });
+    }
 
     // FAR SIDE OF PATH -------------------------------------------------------
     // A dense woodland wall starts clearly behind the path, then gradually
@@ -606,6 +711,15 @@
       });
     }
 
+    // A single readable fallen-log obstacle sits on the playable centre strip.
+    // It is deliberately modest for the first jump-tuning pass.
+    addObject(frontOccluders, 'ground09', TEST_OBSTACLE_X, TEST_OBSTACLE_Z, null, TEST_OBSTACLE_HEIGHT, {
+      y: pathGroundYAt(TEST_OBSTACLE_X, TEST_OBSTACLE_Z),
+      shade: 1.02,
+      opacity: 0.99,
+      layer: 'foreground'
+    });
+
     // Occasional larger near-side assets give a stronger sense of passing
     // through woodland, but remain uncommon so the path stays readable.
     for (let i = 0; i < 20; i++) {
@@ -639,7 +753,7 @@
 
   const character = {
     x: 0,
-    y: groundY + PATH_TOP_RISE,
+    y: pathGroundYAt(0, pathZ),
     z: pathZ,
     scale: 2.31,
     tint: [1.0, 1.0, 1.0],
@@ -650,7 +764,8 @@
   };
 
   const SHARED_ANIM_KEY = 'gamehub.walklab.anim.v4';
-  const SHARED_CLIPS_KEY = 'gamehub.walklab.anim.v5';
+  const SHARED_CLIPS_KEY = 'gamehub.walklab.anim.v6';
+  const PREVIOUS_CLIPS_KEY = 'gamehub.walklab.anim.v5';
   let characterFrames = Rig.DEFAULT_FRAMES.map(Rig.clone);
   let runFrames = Rig.RUN_FRAMES.map(Rig.clone);
   let jumpFrames = Rig.JUMP_FRAMES.map(Rig.clone);
@@ -661,8 +776,15 @@
       if (clips?.run?.length === 16) runFrames = clips.run.map((p,i) => Rig.normalizedPose(p,i));
       if (clips?.jump?.length === 16) jumpFrames = clips.jump.map((p,i) => Rig.normalizedPose(p,i));
       if (!clips?.walk) {
-        const saved = JSON.parse(localStorage.getItem(SHARED_ANIM_KEY) || 'null');
-        if (saved?.frames?.length === 16) characterFrames = saved.frames.map((p,i) => Rig.normalizedPose(p,i));
+        // Carry forward only the proven walk from the previous locomotion key.
+        // Run/jump intentionally reset to the new v1.8.74 defaults so an older
+        // saved experiment cannot silently overwrite this refinement pass.
+        const previous = JSON.parse(localStorage.getItem(PREVIOUS_CLIPS_KEY) || 'null');
+        if (previous?.walk?.length === 16) characterFrames = previous.walk.map((p,i) => Rig.normalizedPose(p,i));
+        else {
+          const saved = JSON.parse(localStorage.getItem(SHARED_ANIM_KEY) || 'null');
+          if (saved?.frames?.length === 16) characterFrames = saved.frames.map((p,i) => Rig.normalizedPose(p,i));
+        }
       }
     } catch (_) {}
   }
@@ -691,8 +813,17 @@
   let debugDepth = false;
   let moveLeft = false;
   let moveRight = false;
+  const WALK_SPEED = 1.15;
+  const RUN_SPEED = 2.85;
+  const WALK_STRIDE = 1.45;
+  const RUN_STRIDE = 2.05;
+  const JUMP_VELOCITY = 4.30;
+  const JUMP_GRAVITY = 9.20;
+  const JUMP_DURATION = (JUMP_VELOCITY * 2) / JUMP_GRAVITY;
+
   let runHeld = false;
   let runBlend = 0;
+  let locomotionPhase = 0;
   let jumping = false;
   let jumpTime = 0;
   let jumpOffset = 0;
@@ -728,6 +859,27 @@
     return x + Math.round((aroundX - x) / TILE_WIDTH) * TILE_WIDTH;
   }
 
+  function nearestObstacleX(aroundX) {
+    return wrapX(TEST_OBSTACLE_X, aroundX);
+  }
+
+  function resolveObstacleMove(currentCameraX, proposedCameraX, clearanceHeight) {
+    if (clearanceHeight >= TEST_OBSTACLE_CLEARANCE) return proposedCameraX;
+    const offset = character.screenOffsetX;
+    const currentX = currentCameraX + offset;
+    const nextX = proposedCameraX + offset;
+    const obstacleX = nearestObstacleX(nextX);
+    const radius = TEST_OBSTACLE_HALF_WIDTH + 0.18;
+    if (Math.abs(nextX - obstacleX) < radius) {
+      // Low movement cannot occupy the log.  If a too-short jump drops back
+      // into its collision span, return to the side the character came from;
+      // a running jump has enough airborne travel to reach the far side.
+      const side = currentX <= obstacleX ? -1 : 1;
+      return obstacleX + side * radius - offset;
+    }
+    return proposedCameraX;
+  }
+
   function tintFor(obj) {
     if (debugDepth) return debugTints[obj.layer] || [1, 1, 1];
     if (obj.tint) return obj.tint;
@@ -761,16 +913,15 @@
   }
 
   function currentCharacterPhase(isWalking) {
-    if (!isWalking) return 0;
-    const stride = 1.45 + runBlend * 0.12;
-    return (character.distanceTravelled % stride) / stride;
+    return isWalking ? locomotionPhase : 0;
   }
 
   function blendPose(a,b,t){
     if (t <= 0.001) return a;
     if (t >= 0.999) return b;
     const keys=['pelvisY','lean','aFootX','aFootLift','aFootAngle','bFootX','bFootLift','bFootAngle','aHandX','aHandY','bHandX','bHandY','hairAngle','hairBend','travel'];
-    const out={...Rig.clone(a),name:t<.5?a.name:b.name,key:false,planted:t<.5?a.planted:b.planted};
+    const planted = a.planted === b.planted ? a.planted : (t < .34 ? a.planted : (t > .66 ? b.planted : null));
+    const out={...Rig.clone(a),name:t<.5?a.name:b.name,key:false,planted};
     keys.forEach(k=>out[k]=Rig.lerp(a[k],b[k],t));
     if(out.planted==='A') out.aFootLift=0;
     if(out.planted==='B') out.bFootLift=0;
@@ -818,7 +969,7 @@
     const phase = currentCharacterPhase(isWalking);
     let pose;
     if (jumping) {
-      const jumpPhase = Rig.clamp(jumpTime / 0.82, 0, 0.999);
+      const jumpPhase = Rig.clamp(jumpTime / JUMP_DURATION, 0, 0.999);
       pose = Rig.sampleFrames(jumpFrames, jumpPhase);
     } else if (isWalking) {
       const walkPose = Rig.sampleFrames(characterFrames, phase);
@@ -837,19 +988,15 @@
     lastTime = now;
 
     const moveDir = (moveRight ? 1 : 0) - (moveLeft ? 1 : 0);
-    const targetRun = runHeld && moveDir !== 0 ? 1 : 0;
-    runBlend += (targetRun - runBlend) * Math.min(1, dt * 7.5);
-    const speed = Rig.lerp(1.15, 2.10, runBlend);
-    if (moveDir) {
-      camera.x += moveDir * speed * dt;
-      hideHint();
-    }
 
+    // Update vertical motion first so obstacle clearance is evaluated against
+    // this frame's actual jump height.  The new arc is roughly twice as tall
+    // as v1.8.73 and lasts just under a second.
     if (jumping) {
       jumpTime += dt;
-      jumpVelocity -= 7.6 * dt;
+      jumpVelocity -= JUMP_GRAVITY * dt;
       jumpOffset += jumpVelocity * dt;
-      if (jumpOffset <= 0 && jumpTime > 0.16) {
+      if (jumpOffset <= 0 && jumpTime > 0.18) {
         jumpOffset = 0;
         jumpVelocity = 0;
         jumping = false;
@@ -857,16 +1004,32 @@
       }
     }
 
+    const targetRun = runHeld && moveDir !== 0 ? 1 : 0;
+    // A slightly slower blend is intentional.  Phase is no longer recomputed
+    // from a changing stride length, so walk->run cannot jump through several
+    // animation frames while the blend is happening.
+    runBlend += (targetRun - runBlend) * Math.min(1, dt * 4.4);
+    const smoothRun = runBlend * runBlend * (3 - 2 * runBlend);
+    const speed = Rig.lerp(WALK_SPEED, RUN_SPEED, smoothRun);
+    if (moveDir) {
+      const proposedX = camera.x + moveDir * speed * dt;
+      camera.x = resolveObstacleMove(camera.x, proposedX, jumpOffset);
+      hideHint();
+    }
+
     const cameraDelta = camera.x - previousCameraX;
-    const isWalking = Math.abs(cameraDelta) > 0.0001 || moveDir !== 0;
-    if (Math.abs(cameraDelta) > 0.0001) {
-      character.distanceTravelled += Math.abs(cameraDelta);
+    const isWalking = Math.abs(cameraDelta) > 0.0001;
+    if (isWalking) {
+      const travel = Math.abs(cameraDelta);
+      const stride = Rig.lerp(WALK_STRIDE, RUN_STRIDE, smoothRun);
+      locomotionPhase = (locomotionPhase + travel / Math.max(0.001, stride)) % 1;
+      character.distanceTravelled += travel;
       character.lastFacing = cameraDelta >= 0 ? 1 : -1;
     }
     previousCameraX = camera.x;
 
     character.x = camera.x + character.screenOffsetX;
-    character.y = groundY + PATH_TOP_RISE + jumpOffset;
+    character.y = pathGroundYAt(character.x, pathZ) + jumpOffset;
 
     gl.clearColor(fogColor[0], fogColor[1], fogColor[2], 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -924,7 +1087,7 @@
     jumping = true;
     jumpTime = 0;
     jumpOffset = 0;
-    jumpVelocity = 2.72;
+    jumpVelocity = JUMP_VELOCITY;
     hideHint();
   }
   jumpBtn.addEventListener('pointerdown', e => {
@@ -992,7 +1155,8 @@
     jumpTime = 0;
     jumpOffset = 0;
     jumpVelocity = 0;
-    character.y = groundY + PATH_TOP_RISE;
+    locomotionPhase = 0;
+    character.y = pathGroundYAt(character.x, pathZ);
     lastTime = performance.now();
     previousCameraX = camera.x;
   });

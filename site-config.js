@@ -183,18 +183,18 @@ window.APP_CONFIG = {
     {
       "id": "game-16",
       "displayName": "SideScroll",
-      "description": "Explore the layered 3D forest on a raised woodland path with live walk, run and jump control.",
+      "description": "Explore the layered 3D forest, clear a fallen-log obstacle, and test the refined walk, run and jump controls.",
       "icon": "♠",
       "enabled": true,
-      "path": "game-16.html?v=1.8.73"
+      "path": "game-16.html?v=1.8.74"
     },
     {
       "id": "game-17",
       "displayName": "Walk Lab",
-      "description": "Edit the shared cutout locomotion rig across walk, run and jump clips with panning and pinch zoom.",
+      "description": "Inspect and edit the shared cutout walk, airborne run and trailing-leg jump clips with panning and pinch zoom.",
       "icon": "↻",
       "enabled": true,
-      "path": "game-17.html?v=1.8.73"
+      "path": "game-17.html?v=1.8.74"
     }
   ]
 };

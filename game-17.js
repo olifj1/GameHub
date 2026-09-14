@@ -32,7 +32,7 @@
     run: Rig.RUN_FRAMES.map(Rig.clone),
     jump: Rig.JUMP_FRAMES.map(Rig.clone)
   };
-  const clipCycleMs = { walk:1050, run:720, jump:900 };
+  const clipCycleMs = { walk:1050, run:650, jump:935 };
   let activeClip = 'walk';
   let frames = clips[activeClip];
   let frame = 0;
@@ -49,10 +49,11 @@
   let rigAtlas = null;
 
   const SHARED_ANIM_KEY = 'gamehub.walklab.anim.v4';
-  const SHARED_CLIPS_KEY = 'gamehub.walklab.anim.v5';
+  const SHARED_CLIPS_KEY = 'gamehub.walklab.anim.v6';
+  const PREVIOUS_CLIPS_KEY = 'gamehub.walklab.anim.v5';
   function persistSharedAnimation(){
     try{
-      localStorage.setItem(SHARED_CLIPS_KEY, JSON.stringify({version:13,walk:clips.walk,run:clips.run,jump:clips.jump}));
+      localStorage.setItem(SHARED_CLIPS_KEY, JSON.stringify({version:14,walk:clips.walk,run:clips.run,jump:clips.jump}));
       // Keep v4 walk compatibility for the previous SideScroll build.
       localStorage.setItem(SHARED_ANIM_KEY, JSON.stringify({version:12,frames:clips.walk}));
     }catch(_){}
@@ -68,7 +69,7 @@
     const img = new Image();
     img.onload = () => { rigAtlas = img; draw(); };
     img.onerror = () => { rigAtlas = null; readout.textContent = 'Rig art failed to load'; draw(); };
-    img.src = Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.73`;
+    img.src = Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.74`;
   }
 
   function resize() {
@@ -97,7 +98,7 @@
 
   function clipView(phase, sv = screenView()) {
     if (activeClip !== 'jump') return sv;
-    const lift = Math.sin(Rig.clamp(phase,0,1) * Math.PI) * .31;
+    const lift = Math.sin(Rig.clamp(phase,0,1) * Math.PI) * .43;
     return {...sv, groundY: sv.groundY - lift * sv.scale};
   }
 
@@ -337,7 +338,7 @@
 
   function downloadBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
   function saveJSON(){
-    const data={type:'GameHubWalkLab',version:13,body:Rig.BODY,activeClip,clips:{walk:clips.walk,run:clips.run,jump:clips.jump}};
+    const data={type:'GameHubWalkLab',version:14,body:Rig.BODY,activeClip,clips:{walk:clips.walk,run:clips.run,jump:clips.jump}};
     downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'walk-lab-locomotion-v3.json');
   }
   async function loadJSON(file){
@@ -390,8 +391,14 @@
       if(savedClips.run?.length===16) clips.run=savedClips.run.map((p,i)=>Rig.normalizedPose(p,i));
       if(savedClips.jump?.length===16) clips.jump=savedClips.jump.map((p,i)=>Rig.normalizedPose(p,i));
     } else {
-      const saved=JSON.parse(localStorage.getItem(SHARED_ANIM_KEY)||'null');
-      if(saved?.frames?.length===16) clips.walk=saved.frames.map((p,i)=>Rig.normalizedPose(p,i));
+      // Preserve a hand-tuned walk from v1.8.74 if present, but deliberately
+      // start run/jump from the new defaults in this refinement pass.
+      const previous=JSON.parse(localStorage.getItem(PREVIOUS_CLIPS_KEY)||'null');
+      if(previous?.walk?.length===16) clips.walk=previous.walk.map((p,i)=>Rig.normalizedPose(p,i));
+      else {
+        const saved=JSON.parse(localStorage.getItem(SHARED_ANIM_KEY)||'null');
+        if(saved?.frames?.length===16) clips.walk=saved.frames.map((p,i)=>Rig.normalizedPose(p,i));
+      }
     }
   }catch(_){}
   frames=clips[activeClip];updateClipButtons();persistSharedAnimation();

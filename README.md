@@ -1,10 +1,11 @@
-# GameHub v1.8.73
+# GameHub v1.8.74
 
-SideScroll path + locomotion MVP pass, built directly from the user-confirmed v1.8.71 release.
+SideScroll path-edge + locomotion refinement.
 
-- Added a real raised dirt path mesh with a textured centre and low berms/sloped edges on both sides.
-- Shifted the palette toward warmer earth, slightly greener foliage and cooler/bluer distance fog.
-- Added live **Run** and **Jump** controls to SideScroll while keeping the existing articulated cutout character.
-- Added a simple continuous Walk → Run blend; jump uses its own articulated pose clip plus real vertical movement in the 3D scene.
-- Added **Walk / Run / Jump** clip switching to Walk Lab so all three motions can be inspected and edited on the same rig.
-- Left the GameHub home page, other games and global app structure unchanged from v1.8.71.
+- Softened both raised path edges with dense short grass and occasional rocks/root clumps.
+- Added subtle real height undulation along the path mesh; the character follows the same path height.
+- Rebuilt the run poses with longer reach and genuine airborne flight phases.
+- Increased run speed and stride distance, and changed walk→run blending so animation phase stays continuous instead of briefly accelerating through walk frames.
+- Raised the jump arc and changed the jump pose sequence to trail the legs after takeoff, tuck later near the apex, then extend for landing.
+- Added a shin-high fallen-log obstacle on the path with simple collision so the jump now has a concrete clearance target.
+- Bumped the shared locomotion storage key so older experimental run/jump clips do not override these new defaults; an existing saved walk is still carried forward.

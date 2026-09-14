@@ -137,44 +137,52 @@
   // Extra locomotion clips use the same articulated cutout rig.  They are kept
   // as authored pose data rather than baked sprites, so Walk Lab and SideScroll
   // can evaluate them continuously and transition between them.
-  const RUN_KEY_NAMES = ['Run Contact L','Run Down L','Run Passing L','Run Flight L','Run Contact R','Run Down R','Run Passing R','Run Flight R'];
+  const RUN_KEY_NAMES = ['Run Contact L','Run Compress L','Run Toe-off L','Run Flight L','Run Contact R','Run Compress R','Run Toe-off R','Run Flight R'];
   function makeRunKey(i){
-    const pelvisY=[.500,.468,.515,.492,.500,.468,.515,.492][i];
-    const lean=[9,12,11,9,9,12,11,9][i]*DEG;
-    const aFootX=[ .178,.105,-.020,-.150,-.188,-.115,.018,.155][i];
-    const bFootX=[-.188,-.115,.018,.155, .178,.105,-.020,-.150][i];
-    const aFootLift=[0,0,.018,.078,.135,.160,.105,.045][i];
-    const bFootLift=[.135,.160,.105,.045,0,0,.018,.078][i];
-    const aFootAngle=[2,-6,-16,-25,-17,-6,10,8][i]*DEG;
-    const bFootAngle=[-17,-6,10,8,2,-6,-16,-25][i]*DEG;
-    const aHandX=[-.180,-.145,-.055,.085,.180,.145,.055,-.085][i];
-    const bHandX=[ .180, .145, .055,-.085,-.180,-.145,-.055,.085][i];
-    const aHandY=[.355,.335,.295,.255,.245,.265,.305,.340][i];
-    const bHandY=[.245,.265,.305,.340,.355,.335,.295,.255][i];
-    const hairAngle=[112,108,102,100,108,116,121,118][i]*DEG;
-    const hairBend=[16,12,7,5,12,18,20,18][i]*DEG;
-    const planted=i<3?'A':(i===3?null:(i<7?'B':null));
+    // A proper run rather than a fast walk: longer reach, stronger counter-swing
+    // and a genuine airborne phase after each toe-off.  The two flight keys on
+    // each half-cycle have no planted foot, so the rig is allowed to leave the
+    // floor instead of being pulled back down by stance-foot IK.
+    const pelvisY=[.505,.474,.526,.548,.505,.474,.526,.548][i];
+    const lean=[10,13,12,10,10,13,12,10][i]*DEG;
+    const aFootX=[ .225,.125,-.045,-.205,-.235,-.125,.045,.205][i];
+    const bFootX=[-.235,-.125,.045,.205, .225,.125,-.045,-.205][i];
+    const aFootLift=[0,0,.040,.125,.155,.175,.120,.065][i];
+    const bFootLift=[.155,.175,.120,.065,0,0,.040,.125][i];
+    const aFootAngle=[5,-5,-22,-26,-16,-4,12,10][i]*DEG;
+    const bFootAngle=[-16,-4,12,10,5,-5,-22,-26][i]*DEG;
+    const aHandX=[-.220,-.175,-.075,.110,.220,.175,.075,-.110][i];
+    const bHandX=[ .220, .175, .075,-.110,-.220,-.175,-.075,.110][i];
+    const aHandY=[.370,.345,.300,.248,.235,.260,.315,.355][i];
+    const bHandY=[.235,.260,.315,.355,.370,.345,.300,.248][i];
+    const hairAngle=[113,109,102,98,107,117,124,120][i]*DEG;
+    const hairBend=[18,14,8,5,12,20,23,20][i]*DEG;
+    const planted=(i===0||i===1)?'A':((i===4||i===5)?'B':null);
     return {name:RUN_KEY_NAMES[i],pelvisY,lean,aFootX,aFootLift,aFootAngle,bFootX,bFootLift,bFootAngle,aHandX,aHandY,bHandX,bHandY,hairAngle,hairBend,planted,travel:i/8,key:true};
   }
   function runKeys(){return Array.from({length:8},(_,i)=>makeRunKey(i));}
 
-  const JUMP_KEY_NAMES=['Jump Compress','Jump Takeoff','Jump Rise','Jump Tuck','Jump Apex','Jump Fall','Jump Extend','Jump Land'];
+  const JUMP_KEY_NAMES=['Jump Compress','Jump Takeoff','Jump Trail','Jump Tuck','Jump Apex','Jump Open','Jump Extend','Jump Land'];
   function makeJumpKey(i){
-    const pelvisY=[.468,.500,.515,.495,.492,.505,.493,.466][i];
-    const lean=[7,10,9,5,2,3,5,7][i]*DEG;
-    const aFootX=[ .070,.080,.035,-.035,-.055,-.010,.055,.095][i];
-    const bFootX=[-.070,-.050,-.085,-.125,-.100,-.055,-.020,-.085][i];
-    const aFootLift=[0,.020,.080,.155,.175,.120,.045,0][i];
-    const bFootLift=[0,.025,.105,.180,.165,.110,.035,0][i];
-    const aFootAngle=[0,-10,-18,-22,-14,2,10,0][i]*DEG;
-    const bFootAngle=[0,-6,-14,-18,-10,4,8,0][i]*DEG;
-    const aHandX=[-.070,.015,.110,.165,.155,.105,.035,-.045][i];
-    const bHandX=[ .070,.145,.180,.145,.090,.030,-.035,.045][i];
-    const aHandY=[.310,.270,.225,.205,.215,.245,.285,.320][i];
-    const bHandY=[.310,.255,.215,.200,.220,.255,.295,.325][i];
-    const hairAngle=[110,116,123,128,130,125,118,112][i]*DEG;
-    const hairBend=[12,18,22,25,24,20,16,12][i]*DEG;
-    const planted=i===0?'A':(i===7?'B':null);
+    // The first airborne pose deliberately keeps both legs long and trailing.
+    // Tuck happens later, around the middle of the arc, before the legs open
+    // again for landing.  The world-space jump trajectory in SideScroll handles
+    // the actual height; these values only describe the body shape within it.
+    const pelvisY=[.466,.500,.518,.510,.505,.512,.500,.466][i];
+    const lean=[7,11,13,9,4,4,6,8][i]*DEG;
+    const aFootX=[ .060,-.020,-.155,-.085,-.040,.000,.075,.105][i];
+    const bFootX=[-.060,-.105,-.205,-.155,-.105,-.050,.015,-.095][i];
+    const aFootLift=[0,.010,.035,.145,.185,.135,.045,0][i];
+    const bFootLift=[0,.015,.050,.185,.205,.145,.035,0][i];
+    const aFootAngle=[0,-12,-24,-24,-12,4,12,0][i]*DEG;
+    const bFootAngle=[0,-10,-20,-18,-8,6,10,0][i]*DEG;
+    const aHandX=[-.065,.030,.125,.185,.170,.105,.025,-.050][i];
+    const bHandX=[ .065,.155,.205,.165,.105,.035,-.045,.050][i];
+    const aHandY=[.315,.265,.220,.205,.215,.250,.292,.325][i];
+    const bHandY=[.315,.250,.205,.198,.220,.265,.305,.328][i];
+    const hairAngle=[110,117,126,132,133,128,120,113][i]*DEG;
+    const hairBend=[12,19,25,28,27,22,17,12][i]*DEG;
+    const planted=(i===0||i===1)?'A':(i===7?'B':null);
     return {name:JUMP_KEY_NAMES[i],pelvisY,lean,aFootX,aFootLift,aFootAngle,bFootX,bFootLift,bFootAngle,aHandX,aHandY,bHandX,bHandY,hairAngle,hairBend,planted,travel:i/8,key:true};
   }
   function jumpKeys(){return Array.from({length:8},(_,i)=>makeJumpKey(i));}
