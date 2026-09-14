@@ -41,9 +41,9 @@
   let showPlanes = false;
   let rigAtlas = null;
 
-  const SHARED_ANIM_KEY = 'gamehub.walklab.anim.v3';
+  const SHARED_ANIM_KEY = 'gamehub.walklab.anim.v4';
   function persistSharedAnimation(){
-    try{ localStorage.setItem(SHARED_ANIM_KEY, JSON.stringify({version:11,frames})); }catch(_){}
+    try{ localStorage.setItem(SHARED_ANIM_KEY, JSON.stringify({version:12,frames})); }catch(_){}
   }
 
   // Editor camera: normalised pan keeps the view stable across DPR/resizes.
@@ -56,7 +56,7 @@
     const img = new Image();
     img.onload = () => { rigAtlas = img; draw(); };
     img.onerror = () => { rigAtlas = null; readout.textContent = 'Rig art failed to load'; draw(); };
-    img.src = Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.69`;
+    img.src = Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.70`;
   }
 
   function resize() {
@@ -311,7 +311,7 @@
 
   function downloadBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
   function saveJSON(){
-    const data={type:'GameHubWalkLab',version:11,body:Rig.BODY,frames};
+    const data={type:'GameHubWalkLab',version:12,body:Rig.BODY,frames};
     downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'walk-lab-animation-v2.json');
   }
   async function loadJSON(file){

@@ -1,11 +1,11 @@
-# GameHub v1.8.69
+# GameHub v1.8.70
 
-Walk Lab grounded gait pass.
+Walk Lab / SideScroll gait refinement.
 
-- Calibrated upper/lower arm atlas pivots so the painted pieces meet at the elbow.
-- Rebuilt the walk around a planted-foot stance: contact, hip drop, rise through passing, then the opposite plant.
-- A planted heel is now authoritative; IK lowers the pelvis if necessary instead of lifting the foot off the floor.
-- Reduced swing-foot height and kept stance feet flat for a more grounded walk.
-- Walk Lab playback now runs continuously at display refresh via interpolation; the old FPS slider has been removed.
-- Discrete 16 control poses remain available for editing, stepping and JSON save/load.
-- SideScroll shares the same grounded rig and animation data.
+- Added real lower-arm articulation by varying wrist reach through the arm swing, so elbows hinge instead of the lower arms moving rigidly with the upper arms.
+- Added heel-to-toe stance roll and controlled swing-foot rotation.
+- During late stance the toe stays grounded while the heel rises; after toe-off the foot returns through a natural swing angle ready for heel contact.
+- Kept planted feet authoritative so foot roll does not reintroduce the floating-foot problem.
+- Walk Lab renders smoothly every display refresh; there is no animation FPS control. The 16 poses remain editing/control poses only.
+- SideScroll uses the same updated live rig and gait directly, with no baked sprite animation.
+- Bumped the shared animation storage key so older saved poses cannot hide this revised default cycle.

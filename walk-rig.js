@@ -7,7 +7,7 @@
   const lerp = (a, b, t) => a + (b - a) * t;
   const clone = obj => JSON.parse(JSON.stringify(obj));
 
-  // v1.8.69 proportions are measured against the assembled character on the
+  // v1.8.70 proportions are measured against the assembled character on the
   // original simple-parts reference sheet: large head, compact torso and shorter,
   // slimmer limbs.  These values are the rig proportions; the atlas art is then
   // scaled between the same joint pivots rather than driving the skeleton size.
@@ -75,24 +75,28 @@
     const pelvisY = [0.507,0.470,0.532,0.522,0.507,0.470,0.532,0.522][i];
     const lean = [3.5,4.5,3.5,2.5,3.5,4.5,3.5,2.5][i] * DEG;
 
-    // Local heel travel counteracts forward world travel.  The stance heel is
-    // always on the floor; the swing foot only clears the floor by ~10 cm at
-    // maximum, avoiding the old "moon walk" arc.
+    // Local heel travel counteracts forward world travel. The stance foot is
+    // grounded throughout its half-cycle; the swing foot clears only enough to
+    // read as a normal walk rather than a floaty/moon-walk arc.
     const aFootX = [ 0.120,0.070,0.000,-0.090,-0.145,-0.090,0.000,0.100][i];
     const bFootX = [-0.145,-0.090,0.000, 0.100, 0.120,0.070,0.000,-0.090][i];
-    const aFootLift=[0,0,0,0,.035,.070,.105,.065][i];
-    const bFootLift=[.035,.070,.105,.065,0,0,0,0][i];
+    const aFootLift=[0,0,0,0,.022,.060,.092,.052][i];
+    const bFootLift=[.022,.060,.092,.052,0,0,0,0][i];
 
-    // Keep the planted foot flat for now.  Toe/heel roll can be layered in once
-    // the main weight transfer is convincing.
-    const aFootAngle=[0,0,0,0,-7,-11,-4,1][i] * DEG;
-    const bFootAngle=[-7,-11,-4,1,0,0,0,0][i] * DEG;
+    // Foot roll is now part of the gait. During late stance the heel rises while
+    // the toe remains on the floor; immediately after toe-off the foot stays
+    // pointed briefly, then dorsiflexes through swing ready for heel contact.
+    const aFootAngle=[0,0,-5,-22,-18,-8,8,4][i] * DEG;
+    const bFootAngle=[-18,-8,8,4,0,0,-5,-22][i] * DEG;
 
-    // Relaxed counter-swing.  The atlas anchors are calibrated at the real
-    // painted shoulder/elbow/wrist centres, so these now join cleanly at elbow.
-    const aHandX=[-.090,-.072,-.020,.050,.090,.072,.020,-.050][i];
-    const bHandX=[ .090, .072, .020,-.050,-.090,-.072,-.020,.050][i];
-    const handY=[.280,.290,.300,.295,.280,.290,.300,.295][i];
+    // Counter-swing with changing reach. Back-swing arms are more extended;
+    // forward-swing arms are more flexed. That varying shoulder->wrist radius
+    // makes the elbow actually hinge, so the lower arm no longer rides rigidly
+    // with the upper arm.
+    const aHandX=[-.125,-.105,-.040,.045,.125,.105,.040,-.045][i];
+    const bHandX=[ .125, .105, .040,-.045,-.125,-.105,-.040,.045][i];
+    const aHandY=[.342,.332,.312,.292,.282,.292,.312,.332][i];
+    const bHandY=[.282,.292,.312,.332,.342,.332,.312,.292][i];
 
     const hairAngle=[110,108,104,106,110,114,117,114][i]*DEG;
     const hairBend=[10,8,5,8,12,15,16,13][i]*DEG;
@@ -101,7 +105,7 @@
       name:KEY_NAMES[i], pelvisY, lean,
       aFootX,aFootLift,aFootAngle,
       bFootX,bFootLift,bFootAngle,
-      aHandX,aHandY:handY,bHandX,bHandY:handY,
+      aHandX,aHandY,bHandX,bHandY,
       hairAngle,hairBend,
       planted:i<4?'A':'B', travel:i/8, key:true
     };
@@ -194,8 +198,18 @@
     // within the two-bone leg's reachable circle.
     const aHeel={x:p.aFootX,y:p.planted==='A'?0:p.aFootLift};
     const bHeel={x:p.bFootX,y:p.planted==='B'?0:p.bFootLift};
-    let aFoot=footGeometry(aHeel,p.planted==='A'?0:p.aFootAngle);
-    let bFoot=footGeometry(bHeel,p.planted==='B'?0:p.bFootAngle);
+    let aFoot=footGeometry(aHeel,p.aFootAngle);
+    let bFoot=footGeometry(bHeel,p.bFootAngle);
+
+    // A grounded foot may roll rather than being forced flat. Whichever end of
+    // the foot is lowest becomes the floor contact: neutral gives heel+toe
+    // contact; late stance keeps the toe pinned while the heel rises.
+    const groundFoot=(f)=>{
+      const dy=-Math.min(f.heel.y,f.toe.y);
+      return {heel:{x:f.heel.x,y:f.heel.y+dy},ankle:{x:f.ankle.x,y:f.ankle.y+dy},toe:{x:f.toe.x,y:f.toe.y+dy}};
+    };
+    if(p.planted==='A') aFoot=groundFoot(aFoot);
+    if(p.planted==='B') bFoot=groundFoot(bFoot);
 
     let pelvisY=p.pelvisY;
     const support=p.planted==='A'?aFoot:bFoot;
