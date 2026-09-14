@@ -183,10 +183,10 @@ window.APP_CONFIG = {
     {
       "id": "game-16",
       "displayName": "SideScroll",
-      "description": "Explore the layered 3D forest, clear a fallen-log obstacle, and test the refined walk, run and jump controls.",
+      "description": "Explore the layered 3D forest with a spring movement slider, jump the fallen log, and test the walk-to-run range.",
       "icon": "♠",
       "enabled": true,
-      "path": "game-16.html?v=1.8.74"
+      "path": "game-16.html?v=1.8.75"
     },
     {
       "id": "game-17",

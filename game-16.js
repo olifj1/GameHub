@@ -10,9 +10,8 @@
   const hintEl = document.getElementById('sidescroll-hint');
   const debugBtn = document.getElementById('sidescroll-depth');
   const depthKey = document.getElementById('sidescroll-depth-key');
-  const leftBtn = document.getElementById('sidescroll-left');
-  const rightBtn = document.getElementById('sidescroll-right');
-  const runBtn = document.getElementById('sidescroll-run');
+  const driveControl = document.getElementById('sidescroll-drive');
+  const driveThumb = document.getElementById('sidescroll-drive-thumb');
   const jumpBtn = document.getElementById('sidescroll-jump');
 
   const gl = canvas.getContext('webgl', {
@@ -405,7 +404,7 @@
   treeAssets.forEach(([id, w, h]) => {
     const key = `tree${id}`;
     assetAspect[key] = w / h;
-    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.74`, key);
+    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.75`, key);
   });
 
   const groundAssets = [
@@ -416,11 +415,11 @@
   groundAssets.forEach(([id, w, h]) => {
     const key = `ground${id}`;
     assetAspect[key] = w / h;
-    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.74' : null;
-    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.74`, key, fallback);
+    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.75' : null;
+    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.75`, key, fallback);
   });
 
-  textures.rigAtlas = createImageTexture(Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.74`, 'Walk Lab cutout rig atlas');
+  textures.rigAtlas = createImageTexture(Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.75`, 'Walk Lab cutout rig atlas');
 
   function mulberry32(seed) {
     return function() {
@@ -559,6 +558,35 @@
     const grassScrub = ['ground01','ground02','ground03','ground05','ground06','ground08','ground09','ground10','ground11','ground12'];
     const rocks = ['ground03','ground04','ground07','ground10','ground11'];
     const edgeGrass = ['ground01','ground06','ground10','ground11'];
+
+    // FAR PATH LIP ----------------------------------------------------------
+    // The far edge is the one the side camera reads most clearly, so give it a
+    // deliberately continuous low grass seam slightly inside the top of the
+    // path.  The pieces overlap the dirt by a few centimetres and hide the
+    // geometric line before the larger far-side woodland begins.
+    const farLipCount = 238;
+    for (let i = 0; i < farLipCount; i++) {
+      const spacing = TILE_WIDTH / farLipCount;
+      const x = TILE.minX + (i + 0.5) * spacing + (rand() - 0.5) * spacing * 0.72;
+      const z = -(PATH_FLAT_HALF - 0.04 + rand() * 0.28);
+      const type = edgeGrass[Math.floor(rand() * edgeGrass.length)];
+      const height = 0.34 + rand() * 0.34;
+      addObject(midfill, type, x, z, null, height, {
+        y: pathGroundYAt(x, z) - 0.075,
+        shade: 1.015 + rand() * 0.055,
+        opacity: 0.96 + rand() * 0.035,
+        layer: 'near'
+      });
+      if (i % 15 === 0 && rand() > 0.28) {
+        const rockType = rocks[Math.floor(rand() * rocks.length)];
+        addObject(midfill, rockType, x + (rand() - 0.5) * 0.42, z - 0.12 - rand() * 0.18, null, 0.34 + rand() * 0.30, {
+          y: pathGroundYAt(x, z) - 0.06,
+          shade: 0.99 + rand() * 0.07,
+          opacity: 0.97,
+          layer: 'near'
+        });
+      }
+    }
 
     // PATH EDGE DRESSING -----------------------------------------------------
     // A low almost-continuous grass line sits directly on each raised shoulder,
@@ -811,8 +839,13 @@
 
   let projection = mat4Identity();
   let debugDepth = false;
-  let moveLeft = false;
-  let moveRight = false;
+  let driveAxis = 0;
+  let drivePointer = null;
+  let keyLeft = false;
+  let keyRight = false;
+  let keyRun = false;
+  const DRIVE_DEADZONE = 0.08;
+  const WALK_POINT = 0.50;
   const WALK_SPEED = 1.15;
   const RUN_SPEED = 2.85;
   const WALK_STRIDE = 1.45;
@@ -821,7 +854,6 @@
   const JUMP_GRAVITY = 9.20;
   const JUMP_DURATION = (JUMP_VELOCITY * 2) / JUMP_GRAVITY;
 
-  let runHeld = false;
   let runBlend = 0;
   let locomotionPhase = 0;
   let jumping = false;
@@ -987,7 +1019,26 @@
     const dt = Math.min(0.05, (now - lastTime) / 1000);
     lastTime = now;
 
-    const moveDir = (moveRight ? 1 : 0) - (moveLeft ? 1 : 0);
+    const keyDir = (keyRight ? 1 : 0) - (keyLeft ? 1 : 0);
+    const usingKeys = keyDir !== 0;
+    const rawAxis = usingKeys ? keyDir * (keyRun ? 1 : WALK_POINT) : driveAxis;
+    const axisMag = Math.abs(rawAxis);
+    const moveDir = axisMag > DRIVE_DEADZONE ? Math.sign(rawAxis) : 0;
+
+    // Map the spring slider directly to motion: halfway from centre is a full
+    // walk, the outer half progressively opens into the run.  This keeps one
+    // continuous thumb gesture for direction and speed.
+    let analogSpeed = 0;
+    let targetRun = 0;
+    if (moveDir) {
+      if (axisMag <= WALK_POINT) {
+        const walkAmount = Rig.clamp((axisMag - DRIVE_DEADZONE) / Math.max(0.001, WALK_POINT - DRIVE_DEADZONE), 0, 1);
+        analogSpeed = WALK_SPEED * walkAmount;
+      } else {
+        targetRun = Rig.clamp((axisMag - WALK_POINT) / Math.max(0.001, 1 - WALK_POINT), 0, 1);
+        analogSpeed = Rig.lerp(WALK_SPEED, RUN_SPEED, targetRun);
+      }
+    }
 
     // Update vertical motion first so obstacle clearance is evaluated against
     // this frame's actual jump height.  The new arc is roughly twice as tall
@@ -1004,15 +1055,13 @@
       }
     }
 
-    const targetRun = runHeld && moveDir !== 0 ? 1 : 0;
-    // A slightly slower blend is intentional.  Phase is no longer recomputed
-    // from a changing stride length, so walk->run cannot jump through several
-    // animation frames while the blend is happening.
-    runBlend += (targetRun - runBlend) * Math.min(1, dt * 4.4);
+    // Preserve the smooth pose blend while allowing the slider to control
+    // actual ground speed continuously.  Releasing the thumb springs straight
+    // back to idle rather than leaving a run latch behind.
+    runBlend += (targetRun - runBlend) * Math.min(1, dt * 5.2);
     const smoothRun = runBlend * runBlend * (3 - 2 * runBlend);
-    const speed = Rig.lerp(WALK_SPEED, RUN_SPEED, smoothRun);
-    if (moveDir) {
-      const proposedX = camera.x + moveDir * speed * dt;
+    if (moveDir && analogSpeed > 0) {
+      const proposedX = camera.x + moveDir * analogSpeed * dt;
       camera.x = resolveObstacleMove(camera.x, proposedX, jumpOffset);
       hideHint();
     }
@@ -1055,32 +1104,57 @@
     requestAnimationFrame(render);
   }
 
-  function bindHold(button, setter) {
-    const down = e => {
-      e.preventDefault();
-      setter(true);
-      hideHint();
-      button.setPointerCapture?.(e.pointerId);
-    };
-    const up = e => {
-      e.preventDefault();
-      setter(false);
-    };
-    button.addEventListener('pointerdown', down);
-    button.addEventListener('pointerup', up);
-    button.addEventListener('pointercancel', up);
-    button.addEventListener('lostpointercapture', up);
-    button.addEventListener('pointerleave', e => {
-      if (e.pointerType === 'mouse') setter(false);
-    });
+  function setDriveAxis(value) {
+    driveAxis = Rig.clamp(value, -1, 1);
+    const display = Math.abs(driveAxis) < DRIVE_DEADZONE ? 0 : driveAxis;
+    if (driveThumb) driveThumb.style.left = `${50 + display * 43}%`;
+    if (driveControl) {
+      driveControl.setAttribute('aria-valuenow', String(Math.round(display * 100)));
+      driveControl.classList.toggle('moving', display !== 0);
+      driveControl.classList.toggle('running', Math.abs(display) > WALK_POINT + 0.04);
+    }
   }
 
-  bindHold(leftBtn, v => (moveLeft = v));
-  bindHold(rightBtn, v => (moveRight = v));
-  bindHold(runBtn, v => {
-    runHeld = v;
-    runBtn?.setAttribute('aria-pressed', String(v));
-  });
+  function updateDriveFromPointer(e) {
+    if (!driveControl) return;
+    const rect = driveControl.getBoundingClientRect();
+    const centre = rect.left + rect.width * 0.5;
+    const usableHalf = rect.width * 0.43;
+    setDriveAxis((e.clientX - centre) / Math.max(1, usableHalf));
+  }
+
+  if (driveControl) {
+    driveControl.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      drivePointer = e.pointerId;
+      driveControl.classList.add('dragging');
+      driveControl.setPointerCapture?.(e.pointerId);
+      updateDriveFromPointer(e);
+      hideHint();
+    });
+    driveControl.addEventListener('pointermove', e => {
+      if (e.pointerId !== drivePointer) return;
+      e.preventDefault();
+      updateDriveFromPointer(e);
+    });
+    const releaseDrive = e => {
+      if (drivePointer !== null && e.pointerId !== drivePointer) return;
+      drivePointer = null;
+      driveControl.classList.remove('dragging');
+      setDriveAxis(0);
+    };
+    driveControl.addEventListener('pointerup', releaseDrive);
+    driveControl.addEventListener('pointercancel', releaseDrive);
+    driveControl.addEventListener('lostpointercapture', releaseDrive);
+    driveControl.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); setDriveAxis(Math.max(-1, driveAxis - 0.25)); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); setDriveAxis(Math.min(1, driveAxis + 0.25)); }
+      if (e.key === 'Home' || e.key === '0') { e.preventDefault(); setDriveAxis(0); }
+    });
+    driveControl.addEventListener('keyup', e => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') setDriveAxis(0);
+    });
+  }
 
   function triggerJump(){
     if (jumping) return;
@@ -1127,30 +1201,31 @@
   window.addEventListener('keydown', e => {
     const key = e.key.toLowerCase();
     if (e.key === 'ArrowLeft' || key === 'a') {
-      moveLeft = true;
+      keyLeft = true;
       hideHint();
     }
     if (e.key === 'ArrowRight' || key === 'd') {
-      moveRight = true;
+      keyRight = true;
       hideHint();
     }
-    if (e.key === 'Shift') runHeld = true;
+    if (e.key === 'Shift') keyRun = true;
     if (e.key === ' ' || e.key === 'ArrowUp' || key === 'w') { e.preventDefault(); triggerJump(); }
     if (e.key === '0') camera.x = 0;
   });
 
   window.addEventListener('keyup', e => {
     const key = e.key.toLowerCase();
-    if (e.key === 'ArrowLeft' || key === 'a') moveLeft = false;
-    if (e.key === 'ArrowRight' || key === 'd') moveRight = false;
-    if (e.key === 'Shift') runHeld = false;
+    if (e.key === 'ArrowLeft' || key === 'a') keyLeft = false;
+    if (e.key === 'ArrowRight' || key === 'd') keyRight = false;
+    if (e.key === 'Shift') keyRun = false;
   });
 
   window.addEventListener('resize', resize, { passive: true });
   document.addEventListener('visibilitychange', () => {
-    moveLeft = false;
-    moveRight = false;
-    runHeld = false;
+    keyLeft = false;
+    keyRight = false;
+    keyRun = false;
+    setDriveAxis(0);
     jumping = false;
     jumpTime = 0;
     jumpOffset = 0;

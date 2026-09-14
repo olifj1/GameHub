@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.8.74">
+  <link rel="stylesheet" href="style.css?v=1.8.75">
   <title>SideScroll</title>
 </head>
 <body class="modular-game" data-game-id="game-16">
@@ -19,7 +19,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">PROTOTYPE</p>
       <h2 id="game-16-info-title">SideScroll</h2>
-      <p>The forest still uses real 3D planes and depth fog. The raised dirt path now undulates gently and its shoulders are dressed with short grass and occasional rocks. RUN has a longer airborne stride, while JUMP is taller with trailing takeoff legs. A fallen log on the path is the first real obstacle to clear.</p>
+      <p>The forest still uses real 3D planes and depth fog. Drag the spring movement control left or right: halfway gives a walk and pushing to the edge blends into the run. Release it and it returns to centre. Jump remains a separate thumb-sized button. The far path lip now has a denser grass-and-rock seam to hide the hard geometry edge.</p>
     </div>
   </div>
 
@@ -45,23 +45,24 @@
             <span><i class="far"></i>Far</span>
           </div>
 
-          <div class="sidescroll-hint" id="sidescroll-hint">Hold LEFT / RIGHT · hold RUN · tap JUMP to clear the fallen log</div>
+          <div class="sidescroll-hint" id="sidescroll-hint">Drag the movement control · halfway = WALK · edge = RUN · tap JUMP</div>
           <div class="sidescroll-error" id="sidescroll-error" hidden></div>
         </div>
 
-        <div class="sidescroll-controls sidescroll-controls-four" aria-label="Movement controls">
-          <button class="sidescroll-control" id="sidescroll-left" type="button" aria-label="Walk left">
-            <span aria-hidden="true">←</span><small>LEFT</small>
-          </button>
-          <button class="sidescroll-control sidescroll-action" id="sidescroll-run" type="button" aria-label="Hold to run" aria-pressed="false">
-            <span aria-hidden="true">»</span><small>RUN</small>
-          </button>
-          <button class="sidescroll-control sidescroll-action" id="sidescroll-jump" type="button" aria-label="Jump">
+        <div class="sidescroll-controls sidescroll-controls-drive" aria-label="Movement controls">
+          <button class="sidescroll-control sidescroll-action sidescroll-jump-control" id="sidescroll-jump" type="button" aria-label="Jump">
             <span aria-hidden="true">↑</span><small>JUMP</small>
           </button>
-          <button class="sidescroll-control" id="sidescroll-right" type="button" aria-label="Walk right">
-            <span aria-hidden="true">→</span><small>RIGHT</small>
-          </button>
+          <div class="sidescroll-drive" id="sidescroll-drive" role="slider" aria-label="Move left or right; halfway walks and the edge runs" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+            <div class="sidescroll-drive-track" aria-hidden="true">
+              <span class="drive-zone drive-run-left">RUN</span>
+              <span class="drive-zone drive-walk-left">WALK</span>
+              <span class="drive-centre-mark"></span>
+              <span class="drive-zone drive-walk-right">WALK</span>
+              <span class="drive-zone drive-run-right">RUN</span>
+              <span class="sidescroll-drive-thumb" id="sidescroll-drive-thumb"><i></i></span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -70,6 +71,6 @@
   <script src="site-config.js?v=1.8.74"></script>
   <script src="core.js?v=1.8.74"></script>
   <script src="walk-rig.js?v=1.8.74"></script>
-  <script src="game-16.js?v=1.8.74"></script>
+  <script src="game-16.js?v=1.8.75"></script>
 </body>
 </html>

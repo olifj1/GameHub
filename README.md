@@ -1,11 +1,9 @@
-# GameHub v1.8.74
+# GameHub v1.8.75
 
-SideScroll path-edge + locomotion refinement.
+SideScroll control + path-edge refinement.
 
-- Softened both raised path edges with dense short grass and occasional rocks/root clumps.
-- Added subtle real height undulation along the path mesh; the character follows the same path height.
-- Rebuilt the run poses with longer reach and genuine airborne flight phases.
-- Increased run speed and stride distance, and changed walk→run blending so animation phase stays continuous instead of briefly accelerating through walk frames.
-- Raised the jump arc and changed the jump pose sequence to trail the legs after takeoff, tuck later near the apex, then extend for landing.
-- Added a shin-high fallen-log obstacle on the path with simple collision so the jump now has a concrete clearance target.
-- Bumped the shared locomotion storage key so older experimental run/jump clips do not override these new defaults; an existing saved walk is still carried forward.
+- Replaced the four separate movement buttons with a spring-return analogue slider plus a dedicated Jump button.
+- Half travel gives normal walking speed; pushing toward either outer edge blends progressively into the run in that direction.
+- The movement thumb snaps back to centre when released and supports simultaneous jump input.
+- Added a denser overlapping strip of short grass and occasional rocks along the far path lip to hide the visible hard geometry line.
+- Built directly from the working v1.8.74 package; Walk Lab and unrelated GameHub pages are otherwise unchanged.
