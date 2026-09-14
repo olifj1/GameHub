@@ -26,37 +26,30 @@
 
   const KEY_NAMES = ['Contact L','Down L','Passing L','Up L','Contact R','Down R','Passing R','Up R'];
 
-  // 2040×1536 / 6×4 programmatic atlas. Every slot is fixed and all artwork
-  // is clipped back to these exact cells / silhouettes.
+  // v4 atlas: art extracted programmatically from the first simple-parts character sheet.
+  // The sheet is authoritative for the character design; limbs are separated deterministically
+  // and the cream source background has been removed to alpha.
   const ATLAS = Object.freeze({
-    width: 2040,
-    height: 1536,
-    cellW: 340,
+    width: 1600,
+    height: 1152,
+    cellW: 320,
     cellH: 384,
-    url: 'walklab-rig-v3.png',
-    templateUrl: 'walklab-rig-v3-template.png',
+    url: 'walklab-rig-v4.png',
+    sourceUrl: 'walklab-character-source.png',
     parts: {
-      head_hood:       {c:0,r:0,a0:[.50,.82],a1:[.53,.18]},
-      front_hair:      {c:1,r:0,a0:[.49,.76],a1:[.54,.20]},
-      back_hair:       {c:2,r:0,a0:[.67,.16],a1:[.22,.80]},
-      hair_tail_a:     {c:3,r:0,a0:[.55,.16],a1:[.42,.80]},
-      hair_tail_b:     {c:4,r:0,a0:[.50,.16],a1:[.38,.82]},
-      torso_upper:     {c:5,r:0,a0:[.50,.12],a1:[.49,.82]},
-      dress_lower:     {c:0,r:1,a0:[.50,.12],a1:[.50,.78]},
-      cloak_rear:      {c:1,r:1,a0:[.58,.12],a1:[.28,.82]},
-      cloak_back_upper:{c:2,r:1,a0:[.50,.12],a1:[.49,.76]},
-      cloak_front:     {c:3,r:1,a0:[.50,.12],a1:[.49,.78]},
-      pouch:           {c:4,r:1,a0:[.50,.50],a1:[.66,.50]},
-      near_upper_arm:  {c:5,r:1,a0:[.50,.14],a1:[.50,.84]},
-      near_lower_arm:  {c:0,r:2,a0:[.49,.14],a1:[.49,.72]},
-      far_upper_arm:   {c:1,r:2,a0:[.50,.14],a1:[.49,.82]},
-      far_lower_arm:   {c:2,r:2,a0:[.49,.14],a1:[.48,.72]},
-      near_upper_leg:  {c:3,r:2,a0:[.50,.12],a1:[.50,.84]},
-      near_lower_leg:  {c:4,r:2,a0:[.50,.12],a1:[.50,.84]},
-      near_foot:       {c:5,r:2,a0:[.32,.34],a1:[.76,.54]},
-      far_upper_leg:   {c:0,r:3,a0:[.50,.12],a1:[.50,.84]},
-      far_lower_leg:   {c:1,r:3,a0:[.50,.12],a1:[.50,.84]},
-      far_foot:        {c:2,r:3,a0:[.34,.34],a1:[.76,.53]}
+      head:            {c:0,r:0,a0:[.5181,.7157],a1:[.5181,.2729]},
+      torso_upper:     {c:1,r:0,a0:[.5188,.2167],a1:[.5125,.7807]},
+      dress_lower:     {c:2,r:0,a0:[.5163,.2566],a1:[.5163,.7434]},
+      far_upper_arm:   {c:3,r:0,a0:[.4984,.1719],a1:[.4984,.8281]},
+      far_lower_arm:   {c:4,r:0,a0:[.5000,.1719],a1:[.5000,.6562]},
+      far_upper_leg:   {c:0,r:1,a0:[.4984,.2266],a1:[.4984,.7734]},
+      far_lower_leg:   {c:1,r:1,a0:[.5000,.1651],a1:[.5000,.8323]},
+      far_foot:        {c:2,r:1,a0:[.4139,.3984],a1:[.6780,.5625]},
+      near_upper_leg:  {c:3,r:1,a0:[.4984,.2572],a1:[.4984,.7428]},
+      near_lower_leg:  {c:4,r:1,a0:[.4984,.1651],a1:[.4984,.8323]},
+      near_foot:       {c:0,r:2,a0:[.4019,.3984],a1:[.7035,.5625]},
+      near_upper_arm:  {c:1,r:2,a0:[.5000,.1784],a1:[.5000,.8216]},
+      near_lower_arm:  {c:2,r:2,a0:[.5000,.1719],a1:[.5000,.6562]}
     }
   });
 
@@ -67,18 +60,21 @@
   }
 
   function makeKey(i) {
-    const pelvisY = [0.700,0.655,0.690,0.735,0.700,0.655,0.690,0.735][i];
-    const lean = [7,9,8,6,7,9,8,6][i] * DEG;
-    const aFootX = [ 0.180,0.055,-0.070,-0.195,-0.320,-0.260,-0.070,0.100][i];
-    const bFootX = [-0.320,-0.260,-0.070,0.100, 0.180,0.055,-0.070,-0.195][i];
-    const aFootLift=[0,0,0,0,.055,.100,.180,.130][i];
-    const bFootLift=[.055,.100,.180,.130,0,0,0,0][i];
-    const aFootAngle=[0,0,0,0,-8,-14,-7,2][i] * DEG;
-    const bFootAngle=[-8,-14,-7,2,0,0,0,0][i] * DEG;
+    // Reference-driven walk: contact / passing / up poses are deliberately tall so
+    // the support leg can approach full extension instead of staying permanently crouched.
+    const pelvisY = [0.820,0.750,0.805,0.845,0.820,0.750,0.805,0.845][i];
+    const lean = [6,8,7,5,6,8,7,5][i] * DEG;
+    const aFootX = [ 0.300,0.180,-0.020,-0.280,-0.330,-0.200,-0.020,0.200][i];
+    const bFootX = [-0.330,-0.200,-0.020,0.200, 0.300,0.180,-0.020,-0.280][i];
+    const aFootLift=[0,0,0,0,.060,.115,.190,.135][i];
+    const bFootLift=[.060,.115,.190,.135,0,0,0,0][i];
+    const aFootAngle=[0,0,1,3,-10,-15,-7,1][i] * DEG;
+    const bFootAngle=[-10,-15,-7,1,0,0,1,3][i] * DEG;
 
-    const aHandX=[-.200,-.141,0,.141,.200,.141,0,-.141][i];
-    const bHandX=[ .200, .141,0,-.141,-.200,-.141,0,.141][i];
-    const handY=[.400,.415,.430,.415,.400,.415,.430,.415][i];
+    // Counter-swing based on the assembled reference: near hand trails when near foot leads.
+    const aHandX=[-.190,-.145,-.040,.100,.190,.145,.040,-.100][i];
+    const bHandX=[ .190, .145, .040,-.100,-.190,-.145,-.040,.100][i];
+    const handY=[.390,.405,.420,.410,.390,.405,.420,.410][i];
 
     const hairAngle=[110,108,104,106,110,114,117,114][i]*DEG;
     const hairBend=[10,8,5,8,12,15,16,13][i]*DEG;
@@ -219,35 +215,23 @@
   function seg(name,a,b,layer,alpha=1){ return {name,a,b,layer,alpha,kind:'segment'}; }
 
   function partsForPose(pose){
-    const g=geometry(pose), p=g.pose;
-    const pouchA={x:g.pelvis.x-.02,y:g.pelvis.y+.03};
-    const pouchB={x:pouchA.x+.10,y:pouchA.y};
-    const hairBTip={x:g.hairTip.x-.05,y:g.hairTip.y+.025};
-    // Fixed painter's order. These layers are intentionally explicit so the
-    // character reads like a cutout puppet rather than a bag of independent sprites.
+    const g=geometry(pose);
+    // Deliberately simple v4 cutout: no cloak, extra hair chains or accessories yet.
+    // Painter order is explicit: far leg / far arm / body / near leg / dress / near arm / head.
     return [
-      seg('cloak_rear',g.shoulder,g.cloakTip,0,.98),
-      seg('back_hair',g.hairRoot,g.hairMid,1,.98),
-      seg('hair_tail_b',g.hairMid,hairBTip,2,.98),
-      seg('hair_tail_a',g.hairMid,g.hairTip,3,1),
-      seg('far_upper_arm',g.shoulder,g.bE,4,.94),
-      seg('far_lower_arm',g.bE,g.bW,5,.94),
-      seg('far_upper_leg',g.pelvis,g.bK,6,.95),
-      seg('far_lower_leg',g.bK,g.bAnkle,7,.95),
-      seg('far_foot',g.bAnkle,g.bToe,8,.96),
-      seg('cloak_back_upper',g.shoulder,g.cloakMid,9,.98),
-      seg('torso_upper',g.chest,g.pelvis,10,1),
-      seg('near_upper_leg',g.pelvis,g.aK,11,1),
-      seg('near_lower_leg',g.aK,g.aAnkle,12,1),
-      seg('near_foot',g.aAnkle,g.aToe,13,1),
-      seg('dress_lower',g.pelvis,g.dressHem,14,1),
-      seg('near_upper_arm',g.shoulder,g.aE,15,1),
-      seg('near_lower_arm',g.aE,g.aW,16,1),
-      seg('head_hood',g.neck,g.headTop,17,1),
-      // The v3 head contains the face/fringe already. front_hair remains a reserved
-      // atlas slot for a later art pass so we do not double-draw facial features.
-      seg('cloak_front',g.shoulder,g.cloakFrontTip,19,.99),
-      seg('pouch',pouchA,pouchB,20,1)
+      seg('far_upper_leg',g.pelvis,g.bK,0,.94),
+      seg('far_lower_leg',g.bK,g.bAnkle,1,.94),
+      seg('far_foot',g.bAnkle,g.bToe,2,.95),
+      seg('far_upper_arm',g.shoulder,g.bE,3,.93),
+      seg('far_lower_arm',g.bE,g.bW,4,.93),
+      seg('torso_upper',g.chest,g.pelvis,5,1),
+      seg('near_upper_leg',g.pelvis,g.aK,6,1),
+      seg('near_lower_leg',g.aK,g.aAnkle,7,1),
+      seg('near_foot',g.aAnkle,g.aToe,8,1),
+      seg('dress_lower',g.pelvis,g.dressHem,9,1),
+      seg('near_upper_arm',g.shoulder,g.aE,10,1),
+      seg('near_lower_arm',g.aE,g.aW,11,1),
+      seg('head',g.neck,g.headTop,12,1)
     ];
   }
 

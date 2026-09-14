@@ -57,7 +57,7 @@
     const img = new Image();
     img.onload = () => { rigAtlas = img; draw(); };
     img.onerror = () => { rigAtlas = null; draw(); };
-    img.src = `walklab-rig-v3.png?v=1.8.65`;
+    img.src = `${Rig.ATLAS.url}?v=1.8.66`;
   }
 
   function resize() {
@@ -117,9 +117,6 @@
     // Core.
     line(c,g.pelvis,g.chest,lw*1.06,core,alpha); line(c,g.chest,g.neck,lw*.7,core,alpha);
     circle(c,g.head,Rig.BODY.headR*s,ghost?'#c4c8c7':'#f0ebe5',core,alpha);
-    // Two-bone hair guide.
-    line(c,g.hairRoot,g.hairMid,lw*.52,ghost?'#a9afb0':'#7a4b49',alpha*.88);
-    line(c,g.hairMid,g.hairTip,lw*.46,ghost?'#a9afb0':'#8b5550',alpha*.88);
 
     // Near leg / foot.
     line(c,g.pelvis,g.aK,lw,front,alpha); line(c,g.aK,g.aAnkle,lw,front,alpha); line(c,g.aAnkle,g.aToe,lw*.78,front,alpha);
@@ -128,7 +125,7 @@
     line(c,g.shoulder,g.aE,lw*.82,front,alpha); line(c,g.aE,g.aW,lw*.82,front,alpha);
 
     // Automatic hinges.
-    for(const q of [g.aK,g.bK,g.aAnkle,g.bAnkle,g.aE,g.bE,g.hairMid]) circle(c,q,Math.max(2.4,s*.012),ghost?'#acb2b2':'#dad6d1',core,alpha*.95);
+    for(const q of [g.aK,g.bK,g.aAnkle,g.bAnkle,g.aE,g.bE]) circle(c,q,Math.max(2.4,s*.012),ghost?'#acb2b2':'#dad6d1',core,alpha*.95);
     circle(c,g.shoulder,Math.max(3,s*.019),ghost?'#acb2b2':'#f0ebe5',core,alpha);
 
     // Heel contact marks make the difference between heel, ankle and toe clear.
@@ -139,7 +136,7 @@
     footMark(g.aHeel,g.aToe,pose.planted==='A'); footMark(g.bHeel,g.bToe,pose.planted==='B');
 
     if(handles&&!ghost){
-      const hs=[['pelvis',g.pelvis],['chest',g.chest],['aHeel',g.aHeel],['bHeel',g.bHeel],['aW',g.aW],['bW',g.bW],['hairTip',g.hairTip]];
+      const hs=[['pelvis',g.pelvis],['chest',g.chest],['aHeel',g.aHeel],['bHeel',g.bHeel],['aW',g.aW],['bW',g.bW]];
       for(const [name,q] of hs){
         const selected=name===activeJoint;
         circle(c,q,(selected?.030:.024)*s,selected?'#6f8f89':'#fffdfa','#344047',1);
@@ -209,7 +206,7 @@
 
   function findJoint(pos){
     const g=screenGeometry(frames[frame]),s=g.scale;
-    const list=[['pelvis',g.pelvis],['chest',g.chest],['aHeel',g.aHeel],['bHeel',g.bHeel],['aW',g.aW],['bW',g.bW],['hairTip',g.hairTip]];
+    const list=[['pelvis',g.pelvis],['chest',g.chest],['aHeel',g.aHeel],['bHeel',g.bHeel],['aW',g.aW],['bW',g.bW]];
     const radius=.080*s; let best=null,bestD=Infinity;
     for(const [name,q] of list){const d=Math.hypot(pos.x-q.x,pos.y-q.y);if(d<radius&&d<bestD){best=name;bestD=d;}}
     return best;
@@ -228,9 +225,6 @@
       const prefix=name==='aW'?'a':'b';
       p[`${prefix}HandX`]=Rig.clamp(local.x-lg.shoulder.x,-.28,.28);
       p[`${prefix}HandY`]=Rig.clamp(lg.shoulder.y-local.y,.27,.47);
-    } else if(name==='hairTip'){
-      const dx=local.x-lg.hairRoot.x,dy=local.y-lg.hairRoot.y;
-      p.hairAngle=Rig.clamp(Math.atan2(-dy,dx),88*Rig.DEG,145*Rig.DEG);
     }
     persistSharedAnimation();
     draw();

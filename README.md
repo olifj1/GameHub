@@ -1,13 +1,12 @@
-# GameHub v1.8.65
+# GameHub v1.8.66
 
-Walk Lab cutout orientation audit.
+Walk Lab simple-character rebuild.
 
-- Fixed the core Walk Lab canvas transform that was reversing the atlas Y axis and making the character planes point roughly opposite to their bones.
-- Audited the authoritative v3 atlas anchors: head, torso, dress, cloak, hair, arms, legs and feet now all use the same **A → B** convention.
-- Fixed the plane-debug transform to use that same convention.
-- **Planes** debug now draws an A → B arrow on every cutout so orientation errors are visible immediately.
-- Restored the correct elbow IK branch for the shared world-space rig. The previous screen-space-to-world-space conversion had swapped the branch, making elbows bend backwards.
-- Knee, ankle and separate foot setup remain unchanged.
-- SideScroll continues to use the same live Walk Lab rig; the elbow fix therefore carries directly into the game.
-
-Note: SideScroll/WebGL uses a Y-up local mesh, so its atlas source-axis conversion intentionally remains Y-inverted. That is the correct convention for the WebGL renderer and is separate from the Walk Lab canvas bug fixed here.
+- Returned to the **first simple-parts character design** as the authoritative art source; later regenerated variants are not used.
+- Removed the cream source background programmatically to create a transparent atlas.
+- Split the original long near/far leg artwork into independent **thigh + shin + foot** pieces while preserving the original proportions.
+- Simplified the live cutout rig to head, upper/lower body, upper/lower arms, upper/lower legs and separate feet; cloak / extra hair pieces are removed for now.
+- Reworked the default 16-frame walk so contact / passing / up poses become much taller and the support leg can approach full extension instead of remaining permanently crouched.
+- Frame 1 is tuned toward the assembled reference pose from the source sheet.
+- Walk Lab and SideScroll now both load the atlas directly from the shared rig definition to prevent the two renderers drifting onto different art files.
+- SideScroll continues to render the live rig directly rather than a baked flipbook.
