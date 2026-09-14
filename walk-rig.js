@@ -134,6 +134,63 @@
 
   const DEFAULT_FRAMES = buildFramesFromKeys(defaultKeys());
 
+  // Extra locomotion clips use the same articulated cutout rig.  They are kept
+  // as authored pose data rather than baked sprites, so Walk Lab and SideScroll
+  // can evaluate them continuously and transition between them.
+  const RUN_KEY_NAMES = ['Run Contact L','Run Down L','Run Passing L','Run Flight L','Run Contact R','Run Down R','Run Passing R','Run Flight R'];
+  function makeRunKey(i){
+    const pelvisY=[.500,.468,.515,.492,.500,.468,.515,.492][i];
+    const lean=[9,12,11,9,9,12,11,9][i]*DEG;
+    const aFootX=[ .178,.105,-.020,-.150,-.188,-.115,.018,.155][i];
+    const bFootX=[-.188,-.115,.018,.155, .178,.105,-.020,-.150][i];
+    const aFootLift=[0,0,.018,.078,.135,.160,.105,.045][i];
+    const bFootLift=[.135,.160,.105,.045,0,0,.018,.078][i];
+    const aFootAngle=[2,-6,-16,-25,-17,-6,10,8][i]*DEG;
+    const bFootAngle=[-17,-6,10,8,2,-6,-16,-25][i]*DEG;
+    const aHandX=[-.180,-.145,-.055,.085,.180,.145,.055,-.085][i];
+    const bHandX=[ .180, .145, .055,-.085,-.180,-.145,-.055,.085][i];
+    const aHandY=[.355,.335,.295,.255,.245,.265,.305,.340][i];
+    const bHandY=[.245,.265,.305,.340,.355,.335,.295,.255][i];
+    const hairAngle=[112,108,102,100,108,116,121,118][i]*DEG;
+    const hairBend=[16,12,7,5,12,18,20,18][i]*DEG;
+    const planted=i<3?'A':(i===3?null:(i<7?'B':null));
+    return {name:RUN_KEY_NAMES[i],pelvisY,lean,aFootX,aFootLift,aFootAngle,bFootX,bFootLift,bFootAngle,aHandX,aHandY,bHandX,bHandY,hairAngle,hairBend,planted,travel:i/8,key:true};
+  }
+  function runKeys(){return Array.from({length:8},(_,i)=>makeRunKey(i));}
+
+  const JUMP_KEY_NAMES=['Jump Compress','Jump Takeoff','Jump Rise','Jump Tuck','Jump Apex','Jump Fall','Jump Extend','Jump Land'];
+  function makeJumpKey(i){
+    const pelvisY=[.468,.500,.515,.495,.492,.505,.493,.466][i];
+    const lean=[7,10,9,5,2,3,5,7][i]*DEG;
+    const aFootX=[ .070,.080,.035,-.035,-.055,-.010,.055,.095][i];
+    const bFootX=[-.070,-.050,-.085,-.125,-.100,-.055,-.020,-.085][i];
+    const aFootLift=[0,.020,.080,.155,.175,.120,.045,0][i];
+    const bFootLift=[0,.025,.105,.180,.165,.110,.035,0][i];
+    const aFootAngle=[0,-10,-18,-22,-14,2,10,0][i]*DEG;
+    const bFootAngle=[0,-6,-14,-18,-10,4,8,0][i]*DEG;
+    const aHandX=[-.070,.015,.110,.165,.155,.105,.035,-.045][i];
+    const bHandX=[ .070,.145,.180,.145,.090,.030,-.035,.045][i];
+    const aHandY=[.310,.270,.225,.205,.215,.245,.285,.320][i];
+    const bHandY=[.310,.255,.215,.200,.220,.255,.295,.325][i];
+    const hairAngle=[110,116,123,128,130,125,118,112][i]*DEG;
+    const hairBend=[12,18,22,25,24,20,16,12][i]*DEG;
+    const planted=i===0?'A':(i===7?'B':null);
+    return {name:JUMP_KEY_NAMES[i],pelvisY,lean,aFootX,aFootLift,aFootAngle,bFootX,bFootLift,bFootAngle,aHandX,aHandY,bHandX,bHandY,hairAngle,hairBend,planted,travel:i/8,key:true};
+  }
+  function jumpKeys(){return Array.from({length:8},(_,i)=>makeJumpKey(i));}
+
+  function buildFramesWithNames(keys,names){
+    const out=new Array(16);
+    for(let i=0;i<8;i++){
+      const a=clone(keys[i]);a.key=true;a.name=names[i];out[i*2]=a;
+      const ni=(i+1)%8,b=keys[ni],travelB=ni===0?1:b.travel;
+      out[i*2+1]=interpolatePose(a,b,.5,`${names[i]} → ${names[ni]}`,travelB);
+    }
+    return out;
+  }
+  const RUN_FRAMES=buildFramesWithNames(runKeys(),RUN_KEY_NAMES);
+  const JUMP_FRAMES=buildFramesWithNames(jumpKeys(),JUMP_KEY_NAMES);
+
   function normalizedPose(p,i=0){
     const d=DEFAULT_FRAMES[i%16];
     return {
@@ -212,11 +269,16 @@
     if(p.planted==='B') bFoot=groundFoot(bFoot);
 
     let pelvisY=p.pelvisY;
-    const support=p.planted==='A'?aFoot:bFoot;
-    const maxReach=BODY.upperLeg+BODY.lowerLeg-.0015;
-    const dx=support.ankle.x;
-    const reachY=support.ankle.y+Math.sqrt(Math.max(0,maxReach*maxReach-dx*dx));
-    pelvisY=Math.min(pelvisY,reachY);
+    // Walk/stance poses have one authoritative support foot. Run flight and
+    // airborne jump poses deliberately have no planted foot, so they must not
+    // be pulled back down by the grounding correction.
+    if(p.planted==='A'||p.planted==='B'){
+      const support=p.planted==='A'?aFoot:bFoot;
+      const maxReach=BODY.upperLeg+BODY.lowerLeg-.0015;
+      const dx=support.ankle.x;
+      const reachY=support.ankle.y+Math.sqrt(Math.max(0,maxReach*maxReach-dx*dx));
+      pelvisY=Math.min(pelvisY,reachY);
+    }
 
     const pelvis={x:0,y:pelvisY};
     const chest={x:pelvis.x+Math.sin(p.lean)*BODY.torso,y:pelvis.y+Math.cos(p.lean)*BODY.torso};
@@ -316,8 +378,8 @@
   }
 
   window.GameHubWalkRig={
-    DEG,TAU,BODY,ATLAS,KEY_NAMES,DEFAULT_FRAMES,
-    clone,clamp,lerp,makeKey,defaultKeys,interpolatePose,buildFramesFromKeys,normalizedPose,sampleFrames,
+    DEG,TAU,BODY,ATLAS,KEY_NAMES,RUN_KEY_NAMES,JUMP_KEY_NAMES,DEFAULT_FRAMES,RUN_FRAMES,JUMP_FRAMES,
+    clone,clamp,lerp,makeKey,defaultKeys,makeRunKey,runKeys,makeJumpKey,jumpKeys,interpolatePose,buildFramesFromKeys,buildFramesWithNames,normalizedPose,sampleFrames,
     geometry,partsForPose,atlasRect,projectPoint,drawCanvas,solveJoint,footGeometry
   };
 })();

@@ -1,8 +1,10 @@
-# GameHub v1.8.71
+# GameHub v1.8.73
 
-SideScroll live-rig integration fix.
+SideScroll path + locomotion MVP pass, built directly from the user-confirmed v1.8.71 release.
 
-- Fixed the WebGL atlas V-coordinate mapping for the live Walk Lab cutout rig. SideScroll was sampling vertically mirrored/opposite atlas rows, making otherwise-correct rig pieces appear mixed up and detached.
-- SideScroll continues to render the live articulated rig directly; no baked walk sprite sheet is used.
-- Reduced the SideScroll character globally by 30% (3.30 → 2.31) while leaving Walk Lab proportions unchanged.
-- Kept the v1.8.70 lower-arm articulation, grounded gait and heel-to-toe foot roll unchanged.
+- Added a real raised dirt path mesh with a textured centre and low berms/sloped edges on both sides.
+- Shifted the palette toward warmer earth, slightly greener foliage and cooler/bluer distance fog.
+- Added live **Run** and **Jump** controls to SideScroll while keeping the existing articulated cutout character.
+- Added a simple continuous Walk → Run blend; jump uses its own articulated pose clip plus real vertical movement in the 3D scene.
+- Added **Walk / Run / Jump** clip switching to Walk Lab so all three motions can be inspected and edited on the same rig.
+- Left the GameHub home page, other games and global app structure unchanged from v1.8.71.

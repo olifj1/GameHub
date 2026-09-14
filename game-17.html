@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.8.71">
+  <link rel="stylesheet" href="style.css?v=1.8.73">
   <title>Walk Lab</title>
 </head>
 <body class="modular-game" data-game-id="game-17">
@@ -19,7 +19,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">ANIMATION TOOL</p>
       <h2 id="game-17-info-title">Walk Lab</h2>
-      <p>A reusable 2D cutout-rig editor. The walk now uses continuous playback, independent elbow motion and heel-to-toe foot roll. Planted feet remain grounded while the hips move through the stride. Drag the pelvis, chest, hands or heel controls; knees, elbows and ankles solve automatically. Drag empty space to pan and pinch the canvas to zoom. <strong>Planes</strong> shows each attachment rectangle and A→B direction.</p>
+      <p>A reusable 2D cutout-rig editor. Walk is still the editable base cycle, and this pass adds separate Run and Jump clips using the same rig. Switch clips to compare the full locomotion set, then refine joints, foot contact and proportions without baking sprite sheets.</p>
     </div>
   </div>
 
@@ -41,6 +41,12 @@
           <button id="walklab-prev" class="walklab-mini" type="button" aria-label="Previous frame">←</button>
           <input id="walklab-scrub" type="range" min="0" max="15" step="1" value="0" aria-label="Animation frame">
           <button id="walklab-next" class="walklab-mini" type="button" aria-label="Next frame">→</button>
+        </div>
+
+        <div class="walklab-clip-row" aria-label="Animation clip">
+          <button class="walklab-clip active" id="walklab-clip-walk" type="button" data-clip="walk" aria-pressed="true">Walk</button>
+          <button class="walklab-clip" id="walklab-clip-run" type="button" data-clip="run" aria-pressed="false">Run</button>
+          <button class="walklab-clip" id="walklab-clip-jump" type="button" data-clip="jump" aria-pressed="false">Jump</button>
         </div>
 
         <div class="walklab-toggle-row">
@@ -67,9 +73,9 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.8.71"></script>
-  <script src="core.js?v=1.8.71"></script>
-  <script src="walk-rig.js?v=1.8.71"></script>
-  <script src="game-17.js?v=1.8.71"></script>
+  <script src="site-config.js?v=1.8.73"></script>
+  <script src="core.js?v=1.8.73"></script>
+  <script src="walk-rig.js?v=1.8.73"></script>
+  <script src="game-17.js?v=1.8.73"></script>
 </body>
 </html>

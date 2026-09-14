@@ -183,18 +183,18 @@ window.APP_CONFIG = {
     {
       "id": "game-16",
       "displayName": "SideScroll",
-      "description": "Explore the layered 3D forest with the shared live Walk Lab cutout rig driving the character directly.",
+      "description": "Explore the layered 3D forest on a raised woodland path with live walk, run and jump control.",
       "icon": "♠",
       "enabled": true,
-      "path": "game-16.html?v=1.8.71"
+      "path": "game-16.html?v=1.8.73"
     },
     {
       "id": "game-17",
       "displayName": "Walk Lab",
-      "description": "Edit a reusable cutout walk rig with true ankle/foot joints, layered art planes, panning and pinch zoom.",
+      "description": "Edit the shared cutout locomotion rig across walk, run and jump clips with panning and pinch zoom.",
       "icon": "↻",
       "enabled": true,
-      "path": "game-17.html?v=1.8.71"
+      "path": "game-17.html?v=1.8.73"
     }
   ]
 };

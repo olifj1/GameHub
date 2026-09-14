@@ -12,7 +12,8 @@
   const depthKey = document.getElementById('sidescroll-depth-key');
   const leftBtn = document.getElementById('sidescroll-left');
   const rightBtn = document.getElementById('sidescroll-right');
-  const resetBtn = document.getElementById('sidescroll-centre');
+  const runBtn = document.getElementById('sidescroll-run');
+  const jumpBtn = document.getElementById('sidescroll-jump');
 
   const gl = canvas.getContext('webgl', {
     alpha: false,
@@ -145,6 +146,27 @@
     new Uint16Array([0,1,2,2,1,3])
   );
 
+  // Real path geometry. X runs along the level; Z is the top-down path width.
+  // The centre is slightly raised and each side has a low berm before sloping
+  // back down to the surrounding forest floor.
+  const pathMesh = createMesh(
+    new Float32Array([
+      -0.5,0.00, 1.00,  0.0,0.00,   0.5,0.00, 1.00, 36.0,0.00,
+      -0.5,0.22, 0.82,  0.0,0.12,   0.5,0.22, 0.82, 36.0,0.12,
+      -0.5,0.12, 0.68,  0.0,0.28,   0.5,0.12, 0.68, 36.0,0.28,
+      -0.5,0.12,-0.68,  0.0,0.72,   0.5,0.12,-0.68, 36.0,0.72,
+      -0.5,0.22,-0.82,  0.0,0.88,   0.5,0.22,-0.82, 36.0,0.88,
+      -0.5,0.00,-1.00,  0.0,1.00,   0.5,0.00,-1.00, 36.0,1.00
+    ]),
+    new Uint16Array([
+      0,1,2, 2,1,3,
+      2,3,4, 4,3,5,
+      4,5,6, 6,5,7,
+      6,7,8, 8,7,9,
+      8,9,10, 10,9,11
+    ])
+  );
+
   function createRigPartMesh(name) {
     const r = Rig.atlasRect(name);
     if (!r) return null;
@@ -262,7 +284,7 @@
     ]);
   }
 
-  function createTexture(draw, w = 256, h = 512) {
+  function createTexture(draw, w = 256, h = 512, repeat = false) {
     const c = document.createElement('canvas');
     c.width = w;
     c.height = h;
@@ -277,8 +299,8 @@
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, repeat ? gl.REPEAT : gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, repeat ? gl.REPEAT : gl.CLAMP_TO_EDGE);
     return tex;
   }
 
@@ -329,6 +351,28 @@
     ctx.fillRect(0, 0, w, h);
   }, 4, 4);
 
+
+  textures.pathDirt = createTexture((ctx,w,h) => {
+    const grad=ctx.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,'#a9845f');
+    grad.addColorStop(.45,'#987352');
+    grad.addColorStop(1,'#765844');
+    ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
+    let seed=7319;
+    const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+    for(let i=0;i<720;i++){
+      const x=random()*w,y=random()*h,r=.4+random()*2.2;
+      ctx.globalAlpha=.035+random()*.10;
+      ctx.fillStyle=random()>.52?'#d1ad7e':'#4f4037';
+      ctx.beginPath();ctx.ellipse(x,y,r*1.8,r,.35,0,Math.PI*2);ctx.fill();
+    }
+    ctx.globalAlpha=.10;ctx.strokeStyle='#dbc092';ctx.lineWidth=1;
+    for(let i=0;i<18;i++){
+      const y=6+i*7+(i%3)*2;ctx.beginPath();ctx.moveTo(-10,y);ctx.bezierCurveTo(55,y+3,135,y-4,270,y+2);ctx.stroke();
+    }
+    ctx.globalAlpha=1;
+  },256,128,true);
+
   const treeAssets = [
     ['01', 237, 955], ['02', 382, 990], ['03', 230, 899],
     ['04', 248, 929], ['05', 240, 837], ['06', 293, 1018]
@@ -336,7 +380,7 @@
   treeAssets.forEach(([id, w, h]) => {
     const key = `tree${id}`;
     assetAspect[key] = w / h;
-    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.71`, key);
+    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.73`, key);
   });
 
   const groundAssets = [
@@ -347,11 +391,11 @@
   groundAssets.forEach(([id, w, h]) => {
     const key = `ground${id}`;
     assetAspect[key] = w / h;
-    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.71' : null;
-    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.71`, key, fallback);
+    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.73' : null;
+    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.73`, key, fallback);
   });
 
-  textures.rigAtlas = createImageTexture(Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.71`, 'Walk Lab cutout rig atlas');
+  textures.rigAtlas = createImageTexture(Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.73`, 'Walk Lab cutout rig atlas');
 
   function mulberry32(seed) {
     return function() {
@@ -366,15 +410,18 @@
   const TILE = { minX: -62, maxX: 62 };
   const TILE_WIDTH = TILE.maxX - TILE.minX;
   const WORLD = { nearZ: 10.5, farZ: -42 };
-  const fogColor = [0.93, 0.945, 0.95];
+  const fogColor = [0.875, 0.915, 0.945];
   const groundY = -4.55;
 
   // Think of this exactly like a top-down forest plan: a clear path runs along X,
   // the character walks down its centre, and woodland begins on either side.
   const pathZ = 0.0;
-  const PATH_HALF_WIDTH = 3.15;
-  const FAR_SIDE_START = -PATH_HALF_WIDTH;
-  const NEAR_SIDE_START = PATH_HALF_WIDTH;
+  const PATH_FLAT_HALF = 2.45;
+  const PATH_BERM_HALF = 2.95;
+  const PATH_OUTER_HALF = 3.60;
+  const PATH_TOP_RISE = 0.12;
+  const FAR_SIDE_START = -PATH_OUTER_HALF;
+  const NEAR_SIDE_START = PATH_OUTER_HALF;
 
 
   const ground = {
@@ -387,10 +434,27 @@
     sy: 1,
     sz: WORLD.nearZ - WORLD.farZ,
     layer: 'ground',
-    tint: [0.175, 0.185, 0.188],
+    tint: [0.205, 0.195, 0.180],
     opacity: 1,
     noFog: false,
     wrap: false
+  };
+
+
+  const pathStrip = {
+    mesh: pathMesh,
+    texture: textures.pathDirt,
+    x: 0,
+    y: groundY,
+    z: pathZ,
+    sx: TILE_WIDTH,
+    sy: 1,
+    sz: PATH_OUTER_HALF,
+    layer: 'ground',
+    tint: [1.02, 0.99, 0.95],
+    opacity: 1,
+    noFog: false,
+    wrap: true
   };
 
   const backdrop = [];
@@ -422,6 +486,7 @@
       noFog: !!opts.noFog,
       tint: opts.tint || null,
       asset: true,
+      assetName: type,
       layer: opts.layer || classifyLayer(z),
       wrap: opts.wrap !== false
     });
@@ -574,7 +639,7 @@
 
   const character = {
     x: 0,
-    y: groundY,
+    y: groundY + PATH_TOP_RISE,
     z: pathZ,
     scale: 2.31,
     tint: [1.0, 1.0, 1.0],
@@ -585,11 +650,20 @@
   };
 
   const SHARED_ANIM_KEY = 'gamehub.walklab.anim.v4';
+  const SHARED_CLIPS_KEY = 'gamehub.walklab.anim.v5';
   let characterFrames = Rig.DEFAULT_FRAMES.map(Rig.clone);
+  let runFrames = Rig.RUN_FRAMES.map(Rig.clone);
+  let jumpFrames = Rig.JUMP_FRAMES.map(Rig.clone);
   function refreshCharacterFrames() {
     try {
-      const saved = JSON.parse(localStorage.getItem(SHARED_ANIM_KEY) || 'null');
-      if (saved?.frames?.length === 16) characterFrames = saved.frames.map((p,i) => Rig.normalizedPose(p,i));
+      const clips = JSON.parse(localStorage.getItem(SHARED_CLIPS_KEY) || 'null');
+      if (clips?.walk?.length === 16) characterFrames = clips.walk.map((p,i) => Rig.normalizedPose(p,i));
+      if (clips?.run?.length === 16) runFrames = clips.run.map((p,i) => Rig.normalizedPose(p,i));
+      if (clips?.jump?.length === 16) jumpFrames = clips.jump.map((p,i) => Rig.normalizedPose(p,i));
+      if (!clips?.walk) {
+        const saved = JSON.parse(localStorage.getItem(SHARED_ANIM_KEY) || 'null');
+        if (saved?.frames?.length === 16) characterFrames = saved.frames.map((p,i) => Rig.normalizedPose(p,i));
+      }
     } catch (_) {}
   }
   refreshCharacterFrames();
@@ -617,6 +691,12 @@
   let debugDepth = false;
   let moveLeft = false;
   let moveRight = false;
+  let runHeld = false;
+  let runBlend = 0;
+  let jumping = false;
+  let jumpTime = 0;
+  let jumpOffset = 0;
+  let jumpVelocity = 0;
   let activePointer = null;
   let dragStartX = 0;
   let dragStartCameraX = 0;
@@ -651,7 +731,12 @@
   function tintFor(obj) {
     if (debugDepth) return debugTints[obj.layer] || [1, 1, 1];
     if (obj.tint) return obj.tint;
-    if (obj.asset) return [obj.shade * 0.99, obj.shade * 1.00, obj.shade * 1.02];
+    if (obj.asset) {
+      // Slightly greener vegetation against the warmer path, while preserving
+      // the original illustrated texture values and the cool fog depth cue.
+      if ((obj.assetName || '').startsWith('tree')) return [obj.shade * 0.94, obj.shade * 1.025, obj.shade * 0.94];
+      return [obj.shade * 0.96, obj.shade * 1.015, obj.shade * 0.95];
+    }
     const base = [0.155, 0.165, 0.172];
     return [base[0] * obj.shade, base[1] * obj.shade, base[2] * obj.shade];
   }
@@ -677,8 +762,19 @@
 
   function currentCharacterPhase(isWalking) {
     if (!isWalking) return 0;
-    const stride = 1.45;
+    const stride = 1.45 + runBlend * 0.12;
     return (character.distanceTravelled % stride) / stride;
+  }
+
+  function blendPose(a,b,t){
+    if (t <= 0.001) return a;
+    if (t >= 0.999) return b;
+    const keys=['pelvisY','lean','aFootX','aFootLift','aFootAngle','bFootX','bFootLift','bFootAngle','aHandX','aHandY','bHandX','bHandY','hairAngle','hairBend','travel'];
+    const out={...Rig.clone(a),name:t<.5?a.name:b.name,key:false,planted:t<.5?a.planted:b.planted};
+    keys.forEach(k=>out[k]=Rig.lerp(a[k],b[k],t));
+    if(out.planted==='A') out.aFootLift=0;
+    if(out.planted==='B') out.bFootLift=0;
+    return out;
   }
 
   function drawRigPartWebGL(part, view, facing) {
@@ -720,7 +816,17 @@
 
   function drawRigCharacter(view, isWalking) {
     const phase = currentCharacterPhase(isWalking);
-    const pose = Rig.sampleFrames(characterFrames, phase);
+    let pose;
+    if (jumping) {
+      const jumpPhase = Rig.clamp(jumpTime / 0.82, 0, 0.999);
+      pose = Rig.sampleFrames(jumpFrames, jumpPhase);
+    } else if (isWalking) {
+      const walkPose = Rig.sampleFrames(characterFrames, phase);
+      const runPose = Rig.sampleFrames(runFrames, phase);
+      pose = blendPose(walkPose, runPose, runBlend);
+    } else {
+      pose = Rig.sampleFrames(characterFrames, 0.02);
+    }
     const facing = character.lastFacing >= 0 ? 1 : -1;
     Rig.partsForPose(pose).forEach(part => drawRigPartWebGL(part, view, facing));
   }
@@ -731,10 +837,24 @@
     lastTime = now;
 
     const moveDir = (moveRight ? 1 : 0) - (moveLeft ? 1 : 0);
-    const speed = 1.15;
+    const targetRun = runHeld && moveDir !== 0 ? 1 : 0;
+    runBlend += (targetRun - runBlend) * Math.min(1, dt * 7.5);
+    const speed = Rig.lerp(1.15, 2.10, runBlend);
     if (moveDir) {
       camera.x += moveDir * speed * dt;
       hideHint();
+    }
+
+    if (jumping) {
+      jumpTime += dt;
+      jumpVelocity -= 7.6 * dt;
+      jumpOffset += jumpVelocity * dt;
+      if (jumpOffset <= 0 && jumpTime > 0.16) {
+        jumpOffset = 0;
+        jumpVelocity = 0;
+        jumping = false;
+        jumpTime = 0;
+      }
     }
 
     const cameraDelta = camera.x - previousCameraX;
@@ -746,6 +866,7 @@
     previousCameraX = camera.x;
 
     character.x = camera.x + character.screenOffsetX;
+    character.y = groundY + PATH_TOP_RISE + jumpOffset;
 
     gl.clearColor(fogColor[0], fogColor[1], fogColor[2], 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -755,6 +876,7 @@
     const view = mat4LookAt(eye, target, [0, 1, 0]);
 
     drawObject({ ...ground, x: camera.x }, view);
+    drawObject(pathStrip, view);
     for (const obj of backdrop) drawObject(obj, view);
     for (const obj of midfill) drawObject(obj, view);
 
@@ -762,9 +884,10 @@
 
     for (const obj of frontOccluders) drawObject(obj, view);
 
+    const motionLabel = jumping ? 'JUMP' : (runBlend > .55 && isWalking ? 'RUN' : (isWalking ? 'WALK' : 'IDLE'));
     statusEl.textContent = debugDepth
-      ? `Depth view · camera X ${camera.x.toFixed(1)} · grounded layers`
-      : `3D forest · camera X ${camera.x.toFixed(1)} · live Walk Lab rig · arm hinge + foot roll`;
+      ? `Depth view · camera X ${camera.x.toFixed(1)} · raised path geometry`
+      : `3D forest · ${motionLabel} · camera X ${camera.x.toFixed(1)} · warm path / cool fog`;
 
     requestAnimationFrame(render);
   }
@@ -791,10 +914,23 @@
 
   bindHold(leftBtn, v => (moveLeft = v));
   bindHold(rightBtn, v => (moveRight = v));
+  bindHold(runBtn, v => {
+    runHeld = v;
+    runBtn?.setAttribute('aria-pressed', String(v));
+  });
 
-  resetBtn.addEventListener('click', () => {
-    camera.x = 0;
+  function triggerJump(){
+    if (jumping) return;
+    jumping = true;
+    jumpTime = 0;
+    jumpOffset = 0;
+    jumpVelocity = 2.72;
     hideHint();
+  }
+  jumpBtn.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    triggerJump();
+    jumpBtn.setPointerCapture?.(e.pointerId);
   });
 
   debugBtn.addEventListener('click', () => {
@@ -835,6 +971,8 @@
       moveRight = true;
       hideHint();
     }
+    if (e.key === 'Shift') runHeld = true;
+    if (e.key === ' ' || e.key === 'ArrowUp' || key === 'w') { e.preventDefault(); triggerJump(); }
     if (e.key === '0') camera.x = 0;
   });
 
@@ -842,12 +980,19 @@
     const key = e.key.toLowerCase();
     if (e.key === 'ArrowLeft' || key === 'a') moveLeft = false;
     if (e.key === 'ArrowRight' || key === 'd') moveRight = false;
+    if (e.key === 'Shift') runHeld = false;
   });
 
   window.addEventListener('resize', resize, { passive: true });
   document.addEventListener('visibilitychange', () => {
     moveLeft = false;
     moveRight = false;
+    runHeld = false;
+    jumping = false;
+    jumpTime = 0;
+    jumpOffset = 0;
+    jumpVelocity = 0;
+    character.y = groundY + PATH_TOP_RISE;
     lastTime = performance.now();
     previousCameraX = camera.x;
   });

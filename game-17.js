@@ -25,13 +25,20 @@
   const planesBtn = document.getElementById('walklab-planes');
   const fitBtn = document.getElementById('walklab-fit');
   const fileInput = document.getElementById('walklab-file');
+  const clipButtons = [...document.querySelectorAll('.walklab-clip[data-clip]')];
 
-  let frames = Rig.DEFAULT_FRAMES.map(Rig.clone);
+  const clips = {
+    walk: Rig.DEFAULT_FRAMES.map(Rig.clone),
+    run: Rig.RUN_FRAMES.map(Rig.clone),
+    jump: Rig.JUMP_FRAMES.map(Rig.clone)
+  };
+  const clipCycleMs = { walk:1050, run:720, jump:900 };
+  let activeClip = 'walk';
+  let frames = clips[activeClip];
   let frame = 0;
   let playing = false;
   let onion = false;
   let keysOnly = false;
-  const PLAY_CYCLE_MS = 1050;
   let playPhase = 0;
   let copiedPose = null;
   let lastAnimTime = performance.now();
@@ -42,8 +49,13 @@
   let rigAtlas = null;
 
   const SHARED_ANIM_KEY = 'gamehub.walklab.anim.v4';
+  const SHARED_CLIPS_KEY = 'gamehub.walklab.anim.v5';
   function persistSharedAnimation(){
-    try{ localStorage.setItem(SHARED_ANIM_KEY, JSON.stringify({version:12,frames})); }catch(_){}
+    try{
+      localStorage.setItem(SHARED_CLIPS_KEY, JSON.stringify({version:13,walk:clips.walk,run:clips.run,jump:clips.jump}));
+      // Keep v4 walk compatibility for the previous SideScroll build.
+      localStorage.setItem(SHARED_ANIM_KEY, JSON.stringify({version:12,frames:clips.walk}));
+    }catch(_){}
   }
 
   // Editor camera: normalised pan keeps the view stable across DPR/resizes.
@@ -56,7 +68,7 @@
     const img = new Image();
     img.onload = () => { rigAtlas = img; draw(); };
     img.onerror = () => { rigAtlas = null; readout.textContent = 'Rig art failed to load'; draw(); };
-    img.src = Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.71`;
+    img.src = Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.73`;
   }
 
   function resize() {
@@ -81,6 +93,12 @@
   function toScreen(pt, sv = screenView()) { return Rig.projectPoint(pt, sv); }
   function toLocal(pos, sv = screenView()) {
     return { x:(pos.x-sv.cx)/sv.scale, y:(sv.groundY-pos.y)/sv.scale };
+  }
+
+  function clipView(phase, sv = screenView()) {
+    if (activeClip !== 'jump') return sv;
+    const lift = Math.sin(Rig.clamp(phase,0,1) * Math.PI) * .31;
+    return {...sv, groundY: sv.groundY - lift * sv.scale};
   }
 
   function screenGeometry(pose, sv = screenView()) {
@@ -175,32 +193,36 @@
   function draw() {
     resize();
     const W=canvas.width,H=canvas.height,sv=screenView(W,H);
+    const phase=playing?playPhase:frame/16;
     const pose=playing?Rig.sampleFrames(frames,playPhase):frames[frame];
-    const g=screenGeometry(pose,sv);
+    const charView=clipView(phase,sv);
+    const g=screenGeometry(pose,charView);
     ctx.clearRect(0,0,W,H); ctx.fillStyle='#f3ede7';ctx.fillRect(0,0,W,H);
 
     const pad=W*.055;
     ctx.strokeStyle='rgba(76,82,86,.20)';ctx.lineWidth=Math.max(1,W*.003);ctx.strokeRect(pad,H*.07,W-pad*2,H*.81);
-    ctx.strokeStyle='rgba(60,68,70,.40)';ctx.beginPath();ctx.moveTo(pad,g.groundY);ctx.lineTo(W-pad,g.groundY);ctx.stroke();
+    ctx.strokeStyle='rgba(60,68,70,.40)';ctx.beginPath();ctx.moveTo(pad,sv.groundY);ctx.lineTo(W-pad,sv.groundY);ctx.stroke();
 
     // Travelling ground marks for foot-slide checking.
     const spacing=sv.scale*.25,travelPx=(pose.travel||0)*sv.scale,offset=-((travelPx%spacing)+spacing)%spacing;
     ctx.strokeStyle='rgba(88,100,99,.15)';ctx.lineWidth=Math.max(1,W*.002);
     for(let x=offset-spacing;x<W+spacing;x+=spacing){ctx.beginPath();ctx.moveTo(x,g.groundY+sv.scale*.025);ctx.lineTo(x+spacing*.35,g.groundY+sv.scale*.025);ctx.stroke();}
 
-    if(showArt&&rigAtlas) Rig.drawCanvas(ctx,rigAtlas,pose,sv,{alpha:.98});
-    if(showPlanes) drawPlaneDebug(ctx,pose,sv);
+    if(showArt&&rigAtlas) Rig.drawCanvas(ctx,rigAtlas,pose,charView,{alpha:.98});
+    if(showPlanes) drawPlaneDebug(ctx,pose,charView);
 
     if(onion&&showStick){
       const pp=frames[(frame+15)%16],pn=frames[(frame+1)%16];
-      drawStick(ctx,pp,screenGeometry(pp,sv),{ghost:true,alpha:.16});
-      drawStick(ctx,pn,screenGeometry(pn,sv),{ghost:true,alpha:.16});
+      drawStick(ctx,pp,screenGeometry(pp,charView),{ghost:true,alpha:.16});
+      drawStick(ctx,pn,screenGeometry(pn,charView),{ghost:true,alpha:.16});
     }
     if(showStick) drawStick(ctx,pose,g,{handles:true});
 
+    const plant=pose.planted==='A'?'LEFT PLANT':pose.planted==='B'?'RIGHT PLANT':'AIRBORNE';
+    const clipLabel=activeClip.toUpperCase();
     readout.textContent=playing
-      ? `Playing smooth walk · ${pose.planted==='A'?'LEFT':'RIGHT'} PLANT · ${Math.round(view.zoom*100)}%`
-      : `Frame ${frame+1} / 16 · ${pose.name} · ${pose.key?'KEY':'IN-BETWEEN'} · ${pose.planted==='A'?'LEFT':'RIGHT'} PLANT · ${Math.round(view.zoom*100)}%`;
+      ? `Playing ${clipLabel} · ${plant} · ${Math.round(view.zoom*100)}%`
+      : `${clipLabel} · Frame ${frame+1} / 16 · ${pose.name} · ${pose.key?'KEY':'IN-BETWEEN'} · ${plant} · ${Math.round(view.zoom*100)}%`;
     editHint.textContent=activeJoint?`Editing ${activeJoint}`:'Drag joints · drag empty space to pan · pinch to zoom';
     if(!playing) scrub.value=String(frame);
   }
@@ -208,7 +230,7 @@
   function pointerPos(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height};}
 
   function findJoint(pos){
-    const g=screenGeometry(frames[frame]),s=g.scale;
+    const g=screenGeometry(frames[frame],clipView(frame/16)),s=g.scale;
     const list=[['pelvis',g.pelvis],['chest',g.chest],['aHeel',g.aHeel],['bHeel',g.bHeel],['aW',g.aW],['bW',g.bW]];
     const radius=.080*s; let best=null,bestD=Infinity;
     for(const [name,q] of list){const d=Math.hypot(pos.x-q.x,pos.y-q.y);if(d<radius&&d<bestD){best=name;bestD=d;}}
@@ -216,7 +238,7 @@
   }
 
   function editJoint(name,pos){
-    const p=frames[frame],sv=screenView(),local=toLocal(pos,sv),lg=Rig.geometry(p);
+    const p=frames[frame],sv=clipView(frame/16),local=toLocal(pos,sv),lg=Rig.geometry(p);
     if(name==='pelvis') p.pelvisY=Rig.clamp(local.y,.445,.545);
     else if(name==='chest') p.lean=Rig.clamp(Math.atan2(local.x-lg.pelvis.x,local.y-lg.pelvis.y),-18*Rig.DEG,20*Rig.DEG);
     else if(name==='aHeel'||name==='bHeel'){
@@ -291,7 +313,7 @@
     const dt=Math.min(50,Math.max(0,now-lastAnimTime));
     lastAnimTime=now;
     if(playing){
-      playPhase=(playPhase+dt/PLAY_CYCLE_MS)%1;
+      playPhase=(playPhase+dt/(clipCycleMs[activeClip]||1050))%1;
       frame=Math.floor(playPhase*16)%16;
       draw();
     }
@@ -306,21 +328,43 @@
     persistSharedAnimation();
     draw();
   }
-  function resetCycle(){frames=Rig.DEFAULT_FRAMES.map(Rig.clone);frame=0;playPhase=0;playing=false;copiedPose=null;pasteBtn.disabled=true;persistSharedAnimation();fitView();draw();}
+  function resetCycle(){
+    const defaults=activeClip==='run'?Rig.RUN_FRAMES:(activeClip==='jump'?Rig.JUMP_FRAMES:Rig.DEFAULT_FRAMES);
+    clips[activeClip]=defaults.map(Rig.clone);frames=clips[activeClip];
+    frame=0;playPhase=0;playing=false;copiedPose=null;pasteBtn.disabled=true;persistSharedAnimation();fitView();draw();
+  }
   function fitView(){view.zoom=1;view.panX=0;view.panY=0;draw();}
 
   function downloadBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
   function saveJSON(){
-    const data={type:'GameHubWalkLab',version:12,body:Rig.BODY,frames};
-    downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'walk-lab-animation-v2.json');
+    const data={type:'GameHubWalkLab',version:13,body:Rig.BODY,activeClip,clips:{walk:clips.walk,run:clips.run,jump:clips.jump}};
+    downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'walk-lab-locomotion-v3.json');
   }
   async function loadJSON(file){
     try{
-      const data=JSON.parse(await file.text()); if(!data||!Array.isArray(data.frames)||data.frames.length!==16)throw new Error('Expected a 16-frame Walk Lab animation.');
-      frames=data.frames.map((p,i)=>Rig.normalizedPose(p,i));
-      frame=0;playPhase=0;playing=false;persistSharedAnimation();fitView();draw();
+      const data=JSON.parse(await file.text());
+      if(data?.clips){
+        for(const name of ['walk','run','jump']) if(Array.isArray(data.clips[name])&&data.clips[name].length===16) clips[name]=data.clips[name].map((p,i)=>Rig.normalizedPose(p,i));
+        activeClip=['walk','run','jump'].includes(data.activeClip)?data.activeClip:'walk';
+      } else if(Array.isArray(data?.frames)&&data.frames.length===16){
+        clips[activeClip]=data.frames.map((p,i)=>Rig.normalizedPose(p,i));
+      } else throw new Error('Expected Walk Lab locomotion clips or a 16-frame animation.');
+      frames=clips[activeClip];frame=0;playPhase=0;playing=false;updateClipButtons();persistSharedAnimation();fitView();draw();
     }catch(err){alert(`Could not load animation: ${err.message}`);}
   }
+
+  function updateClipButtons(){
+    clipButtons.forEach(btn=>{
+      const active=btn.dataset.clip===activeClip;
+      btn.classList.toggle('active',active);btn.setAttribute('aria-pressed',String(active));
+    });
+  }
+  function switchClip(name){
+    if(!clips[name])return;
+    activeClip=name;frames=clips[name];frame=0;playPhase=0;copiedPose=null;pasteBtn.disabled=true;
+    updateClipButtons();persistSharedAnimation();draw();
+  }
+  clipButtons.forEach(btn=>btn.addEventListener('click',()=>switchClip(btn.dataset.clip)));
 
   scrub.addEventListener('input',()=>{frame=Number(scrub.value);playPhase=frame/16;playing=false;playBtn.textContent='Play';playBtn.classList.remove('active');draw();});
   prev.addEventListener('click',()=>{playing=false;playBtn.textContent='Play';playBtn.classList.remove('active');step(-1);});
@@ -339,7 +383,17 @@
   window.addEventListener('resize',draw,{passive:true});
 
   playBtn.textContent='Play';playBtn.classList.remove('active');onionBtn.classList.remove('active');
-  try{ const saved=JSON.parse(localStorage.getItem(SHARED_ANIM_KEY)||'null'); if(saved?.frames?.length===16){frames=saved.frames.map((p,i)=>Rig.normalizedPose(p,i));} }catch(_){}
-  persistSharedAnimation();
+  try{
+    const savedClips=JSON.parse(localStorage.getItem(SHARED_CLIPS_KEY)||'null');
+    if(savedClips){
+      if(savedClips.walk?.length===16) clips.walk=savedClips.walk.map((p,i)=>Rig.normalizedPose(p,i));
+      if(savedClips.run?.length===16) clips.run=savedClips.run.map((p,i)=>Rig.normalizedPose(p,i));
+      if(savedClips.jump?.length===16) clips.jump=savedClips.jump.map((p,i)=>Rig.normalizedPose(p,i));
+    } else {
+      const saved=JSON.parse(localStorage.getItem(SHARED_ANIM_KEY)||'null');
+      if(saved?.frames?.length===16) clips.walk=saved.frames.map((p,i)=>Rig.normalizedPose(p,i));
+    }
+  }catch(_){}
+  frames=clips[activeClip];updateClipButtons();persistSharedAnimation();
   loadRigAtlas();draw();requestAnimationFrame(animate);
 })();

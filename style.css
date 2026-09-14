@@ -10611,3 +10611,29 @@ body[data-game-id="game-17"] #walklab-canvas:active{cursor:grabbing;}
   body[data-game-id="game-17"] .walklab-tool{height:33px;font-size:9px;}
   body[data-game-id="game-17"] .walklab-edit-hint{display:none;}
 }
+
+/* GameHub v1.8.73 — SideScroll locomotion controls */
+body[data-game-id="game-16"] .sidescroll-controls.sidescroll-controls-four{
+  grid-template-columns:1fr .82fr .82fr 1fr;
+}
+body[data-game-id="game-16"] .sidescroll-action{
+  color:var(--gh-accent);
+  border-color:color-mix(in srgb,var(--gh-accent) 58%,var(--gh-line));
+}
+body[data-game-id="game-16"] .sidescroll-action[aria-pressed="true"]{
+  background:#e4ece8;
+  color:#486963;
+}
+
+/* GameHub v1.8.73 — Walk Lab clip selector */
+body[data-game-id="game-17"] .walklab-clip-row{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:0 0 auto;
+}
+body[data-game-id="game-17"] .walklab-clip{
+  height:34px;border:2px solid #73797c;border-radius:12px;background:#f7f0e9;color:#30383c;
+  font-size:10px;font-weight:900;letter-spacing:.05em;
+}
+body[data-game-id="game-17"] .walklab-clip.active{
+  border-color:#8aa4a0;background:#edf1ee;color:#526f6c;
+}
+@media(max-height:760px){body[data-game-id="game-17"] .walklab-clip{height:30px;font-size:9px;}}
