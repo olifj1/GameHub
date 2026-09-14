@@ -7,7 +7,7 @@
   const lerp = (a, b, t) => a + (b - a) * t;
   const clone = obj => JSON.parse(JSON.stringify(obj));
 
-  // v1.8.68 proportions are measured against the assembled character on the
+  // v1.8.69 proportions are measured against the assembled character on the
   // original simple-parts reference sheet: large head, compact torso and shorter,
   // slimmer limbs.  These values are the rig proportions; the atlas art is then
   // scaled between the same joint pivots rather than driving the skeleton size.
@@ -48,16 +48,16 @@
       head:            {c:0,r:0,a0:[.5181,.7157],a1:[.5181,.2729]},
       torso_upper:     {c:1,r:0,a0:[.5188,.2167],a1:[.5125,.7807]},
       dress_lower:     {c:2,r:0,a0:[.5163,.2566],a1:[.5163,.7434]},
-      far_upper_arm:   {c:3,r:0,a0:[.4984,.1719],a1:[.4984,.8281]},
-      far_lower_arm:   {c:4,r:0,a0:[.5000,.1719],a1:[.5000,.6562]},
+      far_upper_arm:   {c:3,r:0,a0:[.4287,.1719],a1:[.5492,.8281]},
+      far_lower_arm:   {c:4,r:0,a0:[.3777,.1719],a1:[.5865,.6562]},
       far_upper_leg:   {c:0,r:1,a0:[.4984,.2266],a1:[.4984,.7734]},
       far_lower_leg:   {c:1,r:1,a0:[.5000,.1651],a1:[.5000,.8323]},
       far_foot:        {c:2,r:1,a0:[.4139,.3984],a1:[.6780,.5625]},
       near_upper_leg:  {c:3,r:1,a0:[.4984,.2572],a1:[.4984,.7428]},
       near_lower_leg:  {c:4,r:1,a0:[.4984,.1651],a1:[.4984,.8323]},
       near_foot:       {c:0,r:2,a0:[.4019,.3984],a1:[.7035,.5625]},
-      near_upper_arm:  {c:1,r:2,a0:[.5000,.1784],a1:[.5000,.8216]},
-      near_lower_arm:  {c:2,r:2,a0:[.5000,.1719],a1:[.5000,.6562]}
+      near_upper_arm:  {c:1,r:2,a0:[.3612,.1784],a1:[.5877,.8216]},
+      near_lower_arm:  {c:2,r:2,a0:[.3832,.1719],a1:[.5358,.6562]}
     }
   });
 
@@ -68,26 +68,31 @@
   }
 
   function makeKey(i) {
-    // Reference-proportion walk.  The support leg is intentionally close to
-    // straight at contact and passing, with the deepest compression confined to
-    // the down pose.  This removes the permanent crouch visible in earlier cycles.
-    const pelvisY = [0.510,0.490,0.530,0.520,0.510,0.490,0.530,0.520][i];
-    const lean = [4,5,4,3,4,5,4,3][i] * DEG;
+    // Grounded side-view walk.  The stance foot stays flat on y=0 for the
+    // complete contact -> down -> passing -> up half-cycle.  Hip height follows
+    // the classic walk rhythm: contact, drop, rise through passing, then a small
+    // high point before the opposite foot takes over.
+    const pelvisY = [0.507,0.470,0.532,0.522,0.507,0.470,0.532,0.522][i];
+    const lean = [3.5,4.5,3.5,2.5,3.5,4.5,3.5,2.5][i] * DEG;
 
-    // A/B are the two legs.  The planted heel travels from just ahead of the
-    // pelvis to just behind it while staying on the floor; the other leg clears
-    // the ground with a modest knee fold rather than tucking underneath the body.
-    const aFootX = [ 0.120,0.070,0.000,-0.100,-0.160,-0.100,0.000,0.100][i];
-    const bFootX = [-0.160,-0.100,0.000, 0.100, 0.120, 0.070,0.000,-0.100][i];
-    const aFootLift=[0,0,0,0,.055,.105,.145,.095][i];
-    const bFootLift=[.055,.105,.145,.095,0,0,0,0][i];
-    const aFootAngle=[0,0,0,7,-9,-14,-5,2][i] * DEG;
-    const bFootAngle=[-9,-14,-5,2,0,0,0,7][i] * DEG;
+    // Local heel travel counteracts forward world travel.  The stance heel is
+    // always on the floor; the swing foot only clears the floor by ~10 cm at
+    // maximum, avoiding the old "moon walk" arc.
+    const aFootX = [ 0.120,0.070,0.000,-0.090,-0.145,-0.090,0.000,0.100][i];
+    const bFootX = [-0.145,-0.090,0.000, 0.100, 0.120,0.070,0.000,-0.090][i];
+    const aFootLift=[0,0,0,0,.035,.070,.105,.065][i];
+    const bFootLift=[.035,.070,.105,.065,0,0,0,0][i];
 
-    // Smaller, relaxed counter-swing to match the assembled reference image.
-    const aHandX=[-.095,-.075,-.025,.055,.095,.075,.025,-.055][i];
-    const bHandX=[ .095, .075, .025,-.055,-.095,-.075,-.025,.055][i];
-    const handY=[.285,.295,.305,.300,.285,.295,.305,.300][i];
+    // Keep the planted foot flat for now.  Toe/heel roll can be layered in once
+    // the main weight transfer is convincing.
+    const aFootAngle=[0,0,0,0,-7,-11,-4,1][i] * DEG;
+    const bFootAngle=[-7,-11,-4,1,0,0,0,0][i] * DEG;
+
+    // Relaxed counter-swing.  The atlas anchors are calibrated at the real
+    // painted shoulder/elbow/wrist centres, so these now join cleanly at elbow.
+    const aHandX=[-.090,-.072,-.020,.050,.090,.072,.020,-.050][i];
+    const bHandX=[ .090, .072, .020,-.050,-.090,-.072,-.020,.050][i];
+    const handY=[.280,.290,.300,.295,.280,.290,.300,.295][i];
 
     const hairAngle=[110,108,104,106,110,114,117,114][i]*DEG;
     const hairBend=[10,8,5,8,12,15,16,13][i]*DEG;
@@ -108,6 +113,8 @@
     const keys=['pelvisY','lean','aFootX','aFootLift','aFootAngle','bFootX','bFootLift','bFootAngle','aHandX','aHandY','bHandX','bHandY','hairAngle','hairBend'];
     const out={name,planted:a.planted,travel:lerp(a.travel,travelB,t),key:false};
     keys.forEach(k=>out[k]=lerp(a[k],b[k],t));
+    if(out.planted==='A') out.aFootLift=0;
+    if(out.planted==='B') out.bFootLift=0;
     return out;
   }
 
@@ -181,7 +188,23 @@
 
   function geometry(pose){
     const p=normalizedPose(pose);
-    const pelvis={x:0,y:p.pelvisY};
+
+    // A planted heel is authoritative.  Never lift it to satisfy IK.  Instead,
+    // lower the pelvis by the tiny amount required to keep the planted ankle
+    // within the two-bone leg's reachable circle.
+    const aHeel={x:p.aFootX,y:p.planted==='A'?0:p.aFootLift};
+    const bHeel={x:p.bFootX,y:p.planted==='B'?0:p.bFootLift};
+    let aFoot=footGeometry(aHeel,p.planted==='A'?0:p.aFootAngle);
+    let bFoot=footGeometry(bHeel,p.planted==='B'?0:p.bFootAngle);
+
+    let pelvisY=p.pelvisY;
+    const support=p.planted==='A'?aFoot:bFoot;
+    const maxReach=BODY.upperLeg+BODY.lowerLeg-.0015;
+    const dx=support.ankle.x;
+    const reachY=support.ankle.y+Math.sqrt(Math.max(0,maxReach*maxReach-dx*dx));
+    pelvisY=Math.min(pelvisY,reachY);
+
+    const pelvis={x:0,y:pelvisY};
     const chest={x:pelvis.x+Math.sin(p.lean)*BODY.torso,y:pelvis.y+Math.cos(p.lean)*BODY.torso};
     const shoulder={...chest};
     const neck={x:chest.x+Math.sin(p.lean)*BODY.neck,y:chest.y+Math.cos(p.lean)*BODY.neck};
@@ -192,17 +215,18 @@
     const h2Angle=p.hairAngle+p.hairBend;
     const h2={x:h1.x+Math.cos(h2Angle)*BODY.hair2,y:h1.y-Math.sin(h2Angle)*BODY.hair2};
 
-    const aHeel={x:p.aFootX,y:p.aFootLift};
-    const bHeel={x:p.bFootX,y:p.bFootLift};
-    let aFoot=footGeometry(aHeel,p.aFootAngle), bFoot=footGeometry(bHeel,p.bFootAngle);
     const aLeg=solveJoint(pelvis,aFoot.ankle,BODY.upperLeg,BODY.lowerLeg,'knee');
     const bLeg=solveJoint(pelvis,bFoot.ankle,BODY.upperLeg,BODY.lowerLeg,'knee');
-    // If a foot target was out of reach, keep the foot attached to the clamped ankle.
+
+    // A swing target may still be outside the reachable circle while authored.
+    // Only the swing foot may follow a clamped ankle.  The stance foot remains
+    // physically planted on y=0 at all times.
     const shiftFoot=(f,newAnkle)=>{
       const dx=newAnkle.x-f.ankle.x,dy=newAnkle.y-f.ankle.y;
       return {ankle:newAnkle,heel:{x:f.heel.x+dx,y:f.heel.y+dy},toe:{x:f.toe.x+dx,y:f.toe.y+dy}};
     };
-    aFoot=shiftFoot(aFoot,aLeg.target); bFoot=shiftFoot(bFoot,bLeg.target);
+    if(p.planted!=='A') aFoot=shiftFoot(aFoot,aLeg.target);
+    if(p.planted!=='B') bFoot=shiftFoot(bFoot,bLeg.target);
 
     const aWTarget={x:shoulder.x+p.aHandX,y:shoulder.y-p.aHandY};
     const bWTarget={x:shoulder.x+p.bHandX,y:shoulder.y-p.bHandY};

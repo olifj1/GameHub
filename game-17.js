@@ -25,26 +25,25 @@
   const planesBtn = document.getElementById('walklab-planes');
   const fitBtn = document.getElementById('walklab-fit');
   const fileInput = document.getElementById('walklab-file');
-  const fpsSlider = document.getElementById('walklab-fps');
-  const fpsOut = document.getElementById('walklab-fps-out');
 
   let frames = Rig.DEFAULT_FRAMES.map(Rig.clone);
   let frame = 0;
   let playing = false;
   let onion = false;
   let keysOnly = false;
-  let fps = 14;
+  const PLAY_CYCLE_MS = 1050;
+  let playPhase = 0;
   let copiedPose = null;
-  let lastAdvance = performance.now();
+  let lastAnimTime = performance.now();
 
   let showArt = true;
   let showStick = true;
   let showPlanes = false;
   let rigAtlas = null;
 
-  const SHARED_ANIM_KEY = 'gamehub.walklab.anim.v2';
+  const SHARED_ANIM_KEY = 'gamehub.walklab.anim.v3';
   function persistSharedAnimation(){
-    try{ localStorage.setItem(SHARED_ANIM_KEY, JSON.stringify({version:10,frames,fps})); }catch(_){}
+    try{ localStorage.setItem(SHARED_ANIM_KEY, JSON.stringify({version:11,frames})); }catch(_){}
   }
 
   // Editor camera: normalised pan keeps the view stable across DPR/resizes.
@@ -57,7 +56,7 @@
     const img = new Image();
     img.onload = () => { rigAtlas = img; draw(); };
     img.onerror = () => { rigAtlas = null; readout.textContent = 'Rig art failed to load'; draw(); };
-    img.src = Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.68`;
+    img.src = Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.69`;
   }
 
   function resize() {
@@ -175,7 +174,9 @@
 
   function draw() {
     resize();
-    const W=canvas.width,H=canvas.height,sv=screenView(W,H),pose=frames[frame],g=screenGeometry(pose,sv);
+    const W=canvas.width,H=canvas.height,sv=screenView(W,H);
+    const pose=playing?Rig.sampleFrames(frames,playPhase):frames[frame];
+    const g=screenGeometry(pose,sv);
     ctx.clearRect(0,0,W,H); ctx.fillStyle='#f3ede7';ctx.fillRect(0,0,W,H);
 
     const pad=W*.055;
@@ -197,9 +198,11 @@
     }
     if(showStick) drawStick(ctx,pose,g,{handles:true});
 
-    readout.textContent=`Frame ${frame+1} / 16 · ${pose.name} · ${pose.key?'KEY':'IN-BETWEEN'} · ${pose.planted==='A'?'LEFT':'RIGHT'} PLANT · ${Math.round(view.zoom*100)}%`;
+    readout.textContent=playing
+      ? `Playing smooth walk · ${pose.planted==='A'?'LEFT':'RIGHT'} PLANT · ${Math.round(view.zoom*100)}%`
+      : `Frame ${frame+1} / 16 · ${pose.name} · ${pose.key?'KEY':'IN-BETWEEN'} · ${pose.planted==='A'?'LEFT':'RIGHT'} PLANT · ${Math.round(view.zoom*100)}%`;
     editHint.textContent=activeJoint?`Editing ${activeJoint}`:'Drag joints · drag empty space to pan · pinch to zoom';
-    scrub.value=String(frame);
+    if(!playing) scrub.value=String(frame);
   }
 
   function pointerPos(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height};}
@@ -214,7 +217,7 @@
 
   function editJoint(name,pos){
     const p=frames[frame],sv=screenView(),local=toLocal(pos,sv),lg=Rig.geometry(p);
-    if(name==='pelvis') p.pelvisY=Rig.clamp(local.y,.625,.76);
+    if(name==='pelvis') p.pelvisY=Rig.clamp(local.y,.445,.545);
     else if(name==='chest') p.lean=Rig.clamp(Math.atan2(local.x-lg.pelvis.x,local.y-lg.pelvis.y),-18*Rig.DEG,20*Rig.DEG);
     else if(name==='aHeel'||name==='bHeel'){
       const prefix=name==='aHeel'?'a':'b';
@@ -282,9 +285,18 @@
 
   function step(dir){
     if(keysOnly){frame=(frame+dir*2+16)%16;if(frame%2)frame=(frame+1)%16;}else frame=(frame+dir+16)%16;
-    lastAdvance=performance.now();draw();
+    playPhase=frame/16;draw();
   }
-  function animate(now){if(playing){const interval=1000/fps;if(now-lastAdvance>=interval){step(1);lastAdvance=now;}}requestAnimationFrame(animate);}
+  function animate(now){
+    const dt=Math.min(50,Math.max(0,now-lastAnimTime));
+    lastAnimTime=now;
+    if(playing){
+      playPhase=(playPhase+dt/PLAY_CYCLE_MS)%1;
+      frame=Math.floor(playPhase*16)%16;
+      draw();
+    }
+    requestAnimationFrame(animate);
+  }
 
   function rebuildMids(){
     for(let i=0;i<8;i++){
@@ -294,27 +306,26 @@
     persistSharedAnimation();
     draw();
   }
-  function resetCycle(){frames=Rig.DEFAULT_FRAMES.map(Rig.clone);frame=0;playing=false;copiedPose=null;pasteBtn.disabled=true;persistSharedAnimation();fitView();draw();}
+  function resetCycle(){frames=Rig.DEFAULT_FRAMES.map(Rig.clone);frame=0;playPhase=0;playing=false;copiedPose=null;pasteBtn.disabled=true;persistSharedAnimation();fitView();draw();}
   function fitView(){view.zoom=1;view.panX=0;view.panY=0;draw();}
 
   function downloadBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
   function saveJSON(){
-    const data={type:'GameHubWalkLab',version:10,fps,body:Rig.BODY,frames};
+    const data={type:'GameHubWalkLab',version:11,body:Rig.BODY,frames};
     downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'walk-lab-animation-v2.json');
   }
   async function loadJSON(file){
     try{
       const data=JSON.parse(await file.text()); if(!data||!Array.isArray(data.frames)||data.frames.length!==16)throw new Error('Expected a 16-frame Walk Lab animation.');
       frames=data.frames.map((p,i)=>Rig.normalizedPose(p,i));
-      if(Number.isFinite(data.fps)){fps=Rig.clamp(Math.round(data.fps),4,24);fpsSlider.value=String(fps);fpsOut.textContent=`${fps} fps`;}
-      frame=0;playing=false;persistSharedAnimation();fitView();draw();
+      frame=0;playPhase=0;playing=false;persistSharedAnimation();fitView();draw();
     }catch(err){alert(`Could not load animation: ${err.message}`);}
   }
 
-  scrub.addEventListener('input',()=>{frame=Number(scrub.value);playing=false;playBtn.textContent='Play';playBtn.classList.remove('active');draw();});
+  scrub.addEventListener('input',()=>{frame=Number(scrub.value);playPhase=frame/16;playing=false;playBtn.textContent='Play';playBtn.classList.remove('active');draw();});
   prev.addEventListener('click',()=>{playing=false;playBtn.textContent='Play';playBtn.classList.remove('active');step(-1);});
   next.addEventListener('click',()=>{playing=false;playBtn.textContent='Play';playBtn.classList.remove('active');step(1);});
-  playBtn.addEventListener('click',()=>{playing=!playing;playBtn.textContent=playing?'Pause':'Play';playBtn.classList.toggle('active',playing);lastAdvance=performance.now();draw();});
+  playBtn.addEventListener('click',()=>{playing=!playing;playBtn.textContent=playing?'Pause':'Play';playBtn.classList.toggle('active',playing);if(playing)playPhase=frame/16;lastAnimTime=performance.now();draw();});
   onionBtn.addEventListener('click',()=>{onion=!onion;onionBtn.classList.toggle('active',onion);onionBtn.setAttribute('aria-pressed',String(onion));draw();});
   keysBtn.addEventListener('click',()=>{keysOnly=!keysOnly;keysBtn.classList.toggle('active',keysOnly);keysBtn.setAttribute('aria-pressed',String(keysOnly));if(keysOnly&&frame%2)frame=(frame+1)%16;draw();});
   midsBtn.addEventListener('click',rebuildMids);resetBtn.addEventListener('click',resetCycle);fitBtn.addEventListener('click',fitView);
@@ -325,11 +336,10 @@
   artBtn.addEventListener('click',()=>{showArt=!showArt;artBtn.classList.toggle('active',showArt);artBtn.setAttribute('aria-pressed',String(showArt));draw();});
   stickBtn.addEventListener('click',()=>{showStick=!showStick;stickBtn.classList.toggle('active',showStick);stickBtn.setAttribute('aria-pressed',String(showStick));draw();});
   planesBtn.addEventListener('click',()=>{showPlanes=!showPlanes;planesBtn.classList.toggle('active',showPlanes);planesBtn.setAttribute('aria-pressed',String(showPlanes));draw();});
-  fpsSlider.addEventListener('input',()=>{fps=Number(fpsSlider.value);fpsOut.textContent=`${fps} fps`;lastAdvance=performance.now();});
   window.addEventListener('resize',draw,{passive:true});
 
   playBtn.textContent='Play';playBtn.classList.remove('active');onionBtn.classList.remove('active');
-  try{ const saved=JSON.parse(localStorage.getItem(SHARED_ANIM_KEY)||'null'); if(saved?.frames?.length===16){frames=saved.frames.map((p,i)=>Rig.normalizedPose(p,i)); if(Number.isFinite(saved.fps)){fps=Rig.clamp(saved.fps,4,24);fpsSlider.value=String(fps);fpsOut.textContent=`${fps} fps`;}} }catch(_){}
+  try{ const saved=JSON.parse(localStorage.getItem(SHARED_ANIM_KEY)||'null'); if(saved?.frames?.length===16){frames=saved.frames.map((p,i)=>Rig.normalizedPose(p,i));} }catch(_){}
   persistSharedAnimation();
   loadRigAtlas();draw();requestAnimationFrame(animate);
 })();

@@ -1,11 +1,11 @@
-# GameHub v1.8.68
+# GameHub v1.8.69
 
-Walk Lab rig-art loading fix.
+Walk Lab grounded gait pass.
 
-- Fixes the regression where **Rig art** could be enabled but no character planes appeared.
-- The current v4 character atlas is now embedded directly in the shared `walk-rig.js`, so Walk Lab and SideScroll no longer depend on a separate PNG request in order to display the character.
-- The external `walklab-rig-v4.png` is still included as a working/source asset, but it is no longer a required service-worker cache dependency.
-- Walk Lab now reports an explicit rig-art load failure instead of silently showing only the stick skeleton.
-- SideScroll uses the same embedded atlas, keeping the two views on exactly the same character art.
-
-No pose/proportion changes in this release; this is deliberately a loading/packaging fix so v1.8.67 can be judged properly.
+- Calibrated upper/lower arm atlas pivots so the painted pieces meet at the elbow.
+- Rebuilt the walk around a planted-foot stance: contact, hip drop, rise through passing, then the opposite plant.
+- A planted heel is now authoritative; IK lowers the pelvis if necessary instead of lifting the foot off the floor.
+- Reduced swing-foot height and kept stance feet flat for a more grounded walk.
+- Walk Lab playback now runs continuously at display refresh via interpolation; the old FPS slider has been removed.
+- Discrete 16 control poses remain available for editing, stepping and JSON save/load.
+- SideScroll shares the same grounded rig and animation data.

@@ -331,7 +331,7 @@
   treeAssets.forEach(([id, w, h]) => {
     const key = `tree${id}`;
     assetAspect[key] = w / h;
-    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.68`, key);
+    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.69`, key);
   });
 
   const groundAssets = [
@@ -342,11 +342,11 @@
   groundAssets.forEach(([id, w, h]) => {
     const key = `ground${id}`;
     assetAspect[key] = w / h;
-    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.68' : null;
-    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.68`, key, fallback);
+    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.69' : null;
+    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.69`, key, fallback);
   });
 
-  textures.rigAtlas = createImageTexture(Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.68`, 'Walk Lab cutout rig atlas');
+  textures.rigAtlas = createImageTexture(Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.69`, 'Walk Lab cutout rig atlas');
 
   function mulberry32(seed) {
     return function() {
@@ -579,7 +579,7 @@
     lastFacing: 1
   };
 
-  const SHARED_ANIM_KEY = 'gamehub.walklab.anim.v2';
+  const SHARED_ANIM_KEY = 'gamehub.walklab.anim.v3';
   let characterFrames = Rig.DEFAULT_FRAMES.map(Rig.clone);
   function refreshCharacterFrames() {
     try {
