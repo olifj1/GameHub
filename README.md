@@ -1,13 +1,13 @@
-# GameHub v1.8.64
+# GameHub v1.8.65
 
-Walk Lab cutout-rig calibration pass.
+Walk Lab cutout orientation audit.
 
-- Replaced the remapped/generated cutout atlas with a **programmatic calibration skin** drawn directly into the authoritative part masks.
-- Every limb/body/cloak piece now fills its own mask and reaches the exact source pivots used by the rig, removing the large invisible offsets that made v1.8.63 look exploded.
-- Kept separate **hip → knee → ankle → foot** chains and the direct live-rig renderer in SideScroll.
-- Tightened the cloak guide positions now that the art geometry is trustworthy.
-- Reworked the fixed draw order for rear cloak/hair, far limbs, torso, near limbs, dress, near arm, head and front pieces.
-- Walk Lab still supports pan, pinch zoom, Fit view, stick overlay and plane debugging.
-- Added `walklab-rig-v3-template.png` and `walklab-rig-v3-mask.png` as the new authoritative art templates for a later image-generated paint pass.
+- Fixed the core Walk Lab canvas transform that was reversing the atlas Y axis and making the character planes point roughly opposite to their bones.
+- Audited the authoritative v3 atlas anchors: head, torso, dress, cloak, hair, arms, legs and feet now all use the same **A → B** convention.
+- Fixed the plane-debug transform to use that same convention.
+- **Planes** debug now draws an A → B arrow on every cutout so orientation errors are visible immediately.
+- Restored the correct elbow IK branch for the shared world-space rig. The previous screen-space-to-world-space conversion had swapped the branch, making elbows bend backwards.
+- Knee, ankle and separate foot setup remain unchanged.
+- SideScroll continues to use the same live Walk Lab rig; the elbow fix therefore carries directly into the game.
 
-The v3 art is deliberately simple: this release is for validating attachment, pivots and layering before replacing the calibration colours with final character artwork.
+Note: SideScroll/WebGL uses a Y-up local mesh, so its atlas source-axis conversion intentionally remains Y-inverted. That is the correct convention for the WebGL renderer and is separate from the Walk Lab canvas bug fixed here.

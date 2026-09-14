@@ -57,7 +57,7 @@
     const img = new Image();
     img.onload = () => { rigAtlas = img; draw(); };
     img.onerror = () => { rigAtlas = null; draw(); };
-    img.src = `walklab-rig-v3.png?v=1.8.64`;
+    img.src = `walklab-rig-v3.png?v=1.8.65`;
   }
 
   function resize() {
@@ -154,14 +154,24 @@
       const r=Rig.atlasRect(part.name); if(!r)continue;
       const A=Rig.projectPoint(part.a,sv),B=Rig.projectPoint(part.b,sv);
       const p0={x:r.a0[0]*r.w,y:r.a0[1]*r.h},p1={x:r.a1[0]*r.w,y:r.a1[1]*r.h};
-      const svx=p1.x-p0.x,svy=-(p1.y-p0.y),dvx=B.x-A.x,dvy=B.y-A.y;
+      const svx=p1.x-p0.x,svy=p1.y-p0.y,dvx=B.x-A.x,dvy=B.y-A.y;
       const sl=Math.hypot(svx,svy)||1,dl=Math.hypot(dvx,dvy)||1,sc=dl/sl,rot=Math.atan2(dvy,dvx)-Math.atan2(svy,svx);
       const tr=(x,y)=>{
-        const lx=(x-p0.x)*sc,ly=(p0.y-y)*sc,co=Math.cos(rot),si=Math.sin(rot);
+        const lx=(x-p0.x)*sc,ly=(y-p0.y)*sc,co=Math.cos(rot),si=Math.sin(rot);
         return {x:A.x+lx*co-ly*si,y:A.y+lx*si+ly*co};
       };
       const q=[tr(0,0),tr(r.w,0),tr(r.w,r.h),tr(0,r.h)];
       c.beginPath();c.moveTo(q[0].x,q[0].y);q.slice(1).forEach(v=>c.lineTo(v.x,v.y));c.closePath();c.stroke();
+
+      // Orientation audit: show the authoritative A→B axis used by each plane.
+      c.save(); c.setLineDash([]); c.globalAlpha=.8; c.strokeStyle='#9a554d'; c.fillStyle='#9a554d';
+      c.beginPath(); c.moveTo(A.x,A.y); c.lineTo(B.x,B.y); c.stroke();
+      const ang=Math.atan2(B.y-A.y,B.x-A.x),ah=Math.max(5,canvas.width*.009);
+      c.beginPath();
+      c.moveTo(B.x,B.y);
+      c.lineTo(B.x-Math.cos(ang-.55)*ah,B.y-Math.sin(ang-.55)*ah);
+      c.lineTo(B.x-Math.cos(ang+.55)*ah,B.y-Math.sin(ang+.55)*ah);
+      c.closePath(); c.fill(); c.restore();
     }
     c.restore();
   }

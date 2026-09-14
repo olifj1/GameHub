@@ -148,8 +148,17 @@
     const ux=dx/d,uy=dy/d,bx=root.x+ux*a,by=root.y+uy*a,px=-uy,py=ux;
     const c1={x:bx+px*h,y:by+py*h},c2={x:bx-px*h,y:by-py*h};
     let joint;
-    if(mode==='knee') joint=c1.x>=c2.x?c1:c2;
-    else joint=c1; // stable arm branch
+    if(mode==='knee') {
+      // World-space Y points upward. Keep side-view knees bending toward travel
+      // (screen-right) regardless of which algebraic IK candidate is c1/c2.
+      joint=c1.x>=c2.x?c1:c2;
+    } else {
+      // The older editor solved in screen-space (Y down) and used c1 for the
+      // visually-correct elbow branch. This shared rig solves in world-space
+      // (Y up), which swaps that branch. c2 restores the same forward/natural
+      // elbow bend and prevents the arm appearing to fold backwards.
+      joint=c2;
+    }
     return {joint,target:t};
   }
 
@@ -253,7 +262,11 @@
     const flip=view.flipX??1;
     const p0={x:r.a0[0]*r.w,y:r.a0[1]*r.h};
     const p1={x:r.a1[0]*r.w,y:r.a1[1]*r.h};
-    const svx=(p1.x-p0.x)*flip,svy=-(p1.y-p0.y);
+    // Canvas and atlas image coordinates both use +Y downward. The v3 atlas
+    // anchors were authored in that same convention, so preserve the source Y
+    // direction here. Negating it rotated every cutout plane roughly 180° away
+    // from the bone it was supposed to follow.
+    const svx=(p1.x-p0.x)*flip,svy=(p1.y-p0.y);
     const dvx=B.x-A.x,dvy=B.y-A.y;
     const sl=Math.hypot(svx,svy)||1,dl=Math.hypot(dvx,dvy)||1;
     const scale=dl/sl,rot=Math.atan2(dvy,dvx)-Math.atan2(svy,svx);
