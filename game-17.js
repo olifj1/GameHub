@@ -57,7 +57,7 @@
     const img = new Image();
     img.onload = () => { rigAtlas = img; draw(); };
     img.onerror = () => { rigAtlas = null; draw(); };
-    img.src = `walklab-rig-v2.png?v=1.8.63`;
+    img.src = `walklab-rig-v3.png?v=1.8.64`;
   }
 
   function resize() {

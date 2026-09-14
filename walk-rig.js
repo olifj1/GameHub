@@ -33,8 +33,8 @@
     height: 1536,
     cellW: 340,
     cellH: 384,
-    url: 'walklab-rig-v2.png',
-    templateUrl: 'walklab-rig-v2-template.png',
+    url: 'walklab-rig-v3.png',
+    templateUrl: 'walklab-rig-v3-template.png',
     parts: {
       head_hood:       {c:0,r:0,a0:[.50,.82],a1:[.53,.18]},
       front_hair:      {c:1,r:0,a0:[.49,.76],a1:[.54,.20]},
@@ -194,9 +194,9 @@
     const waist={x:lerp(chest.x,pelvis.x,.78),y:lerp(chest.y,pelvis.y,.78)};
     const dressHem={x:pelvis.x-.015,y:Math.max(.17,pelvis.y-.33)};
     const sway=Math.sin((p.travel||0)*TAU)*.035;
-    const cloakMid={x:shoulder.x-.20-sway,y:shoulder.y-.26};
-    const cloakTip={x:cloakMid.x-.27-sway*.6,y:cloakMid.y-.26};
-    const cloakFrontTip={x:pelvis.x-.10+sway*.3,y:pelvis.y-.26};
+    const cloakMid={x:shoulder.x-.155-sway*.70,y:shoulder.y-.205};
+    const cloakTip={x:cloakMid.x-.205-sway*.45,y:cloakMid.y-.225};
+    const cloakFrontTip={x:pelvis.x-.070+sway*.25,y:pelvis.y-.215};
 
     return {
       pose:p,pelvis,chest,shoulder,neck,head,headTop,waist,dressHem,
@@ -214,28 +214,29 @@
     const pouchA={x:g.pelvis.x-.02,y:g.pelvis.y+.03};
     const pouchB={x:pouchA.x+.10,y:pouchA.y};
     const hairBTip={x:g.hairTip.x-.05,y:g.hairTip.y+.025};
+    // Fixed painter's order. These layers are intentionally explicit so the
+    // character reads like a cutout puppet rather than a bag of independent sprites.
     return [
       seg('cloak_rear',g.shoulder,g.cloakTip,0,.98),
       seg('back_hair',g.hairRoot,g.hairMid,1,.98),
       seg('hair_tail_b',g.hairMid,hairBTip,2,.98),
-      seg('far_upper_arm',g.shoulder,g.bE,3,.96),
-      seg('far_lower_arm',g.bE,g.bW,4,.96),
-      seg('far_upper_leg',g.pelvis,g.bK,5,.97),
-      seg('far_lower_leg',g.bK,g.bAnkle,6,.97),
-      seg('far_foot',g.bAnkle,g.bToe,7,.97),
-      seg('cloak_back_upper',g.shoulder,g.cloakMid,8,.98),
-      seg('torso_upper',g.chest,g.pelvis,9,1),
-      seg('near_upper_leg',g.pelvis,g.aK,10,1),
-      seg('near_lower_leg',g.aK,g.aAnkle,11,1),
-      seg('near_foot',g.aAnkle,g.aToe,12,1),
-      seg('dress_lower',g.pelvis,g.dressHem,13,1),
-      seg('near_upper_arm',g.shoulder,g.aE,14,1),
-      seg('near_lower_arm',g.aE,g.aW,15,1),
-      seg('head_hood',g.neck,g.headTop,16,1),
-      // front_hair is reserved in the atlas for the next art pass; the current
-      // remapped head already contains the face/front hair, so drawing both
-      // would double the features.
-      seg('hair_tail_a',g.hairMid,g.hairTip,18,1),
+      seg('hair_tail_a',g.hairMid,g.hairTip,3,1),
+      seg('far_upper_arm',g.shoulder,g.bE,4,.94),
+      seg('far_lower_arm',g.bE,g.bW,5,.94),
+      seg('far_upper_leg',g.pelvis,g.bK,6,.95),
+      seg('far_lower_leg',g.bK,g.bAnkle,7,.95),
+      seg('far_foot',g.bAnkle,g.bToe,8,.96),
+      seg('cloak_back_upper',g.shoulder,g.cloakMid,9,.98),
+      seg('torso_upper',g.chest,g.pelvis,10,1),
+      seg('near_upper_leg',g.pelvis,g.aK,11,1),
+      seg('near_lower_leg',g.aK,g.aAnkle,12,1),
+      seg('near_foot',g.aAnkle,g.aToe,13,1),
+      seg('dress_lower',g.pelvis,g.dressHem,14,1),
+      seg('near_upper_arm',g.shoulder,g.aE,15,1),
+      seg('near_lower_arm',g.aE,g.aW,16,1),
+      seg('head_hood',g.neck,g.headTop,17,1),
+      // The v3 head contains the face/fringe already. front_hair remains a reserved
+      // atlas slot for a later art pass so we do not double-draw facial features.
       seg('cloak_front',g.shoulder,g.cloakFrontTip,19,.99),
       seg('pouch',pouchA,pouchB,20,1)
     ];

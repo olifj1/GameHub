@@ -186,7 +186,7 @@ window.APP_CONFIG = {
       "description": "Explore the layered 3D forest with the shared live Walk Lab cutout rig driving the character directly.",
       "icon": "♠",
       "enabled": true,
-      "path": "game-16.html?v=1.8.63"
+      "path": "game-16.html?v=1.8.64"
     },
     {
       "id": "game-17",
@@ -194,7 +194,7 @@ window.APP_CONFIG = {
       "description": "Edit a reusable cutout walk rig with true ankle/foot joints, layered art planes, panning and pinch zoom.",
       "icon": "↻",
       "enabled": true,
-      "path": "game-17.html?v=1.8.63"
+      "path": "game-17.html?v=1.8.64"
     }
   ]
 };

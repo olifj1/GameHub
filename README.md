@@ -1,15 +1,13 @@
-# GameHub v1.8.63
+# GameHub v1.8.64
 
-SideScroll / Walk Lab cutout-rig v2.
+Walk Lab cutout-rig calibration pass.
 
-- Rebuilt **Walk Lab** around a reusable 2D cutout rig rather than sprite-sheet baking.
-- Added proper **hip → knee → ankle → foot** leg chains. Heel contact is now separate from the ankle and the textured boot follows the ankle-to-toe bone.
-- Split character art into explicit planes: upper torso, lower dress, upper/lower arms, upper/lower legs, feet, hood/head, front/back hair, two hair tails, cloak layers and pouch.
-- Added deterministic **layer ordering** for far limbs, body, near limbs, dress, head/hair and cloak pieces.
-- Added a two-bone hair guide and simple two-stage cloak motion.
-- Removed the old export crop / sprite-comparison workflow from Walk Lab.
-- Added **drag-to-pan**, **pinch zoom**, **Fit view**, stick toggle and plane-debug toggle.
-- Walk Lab animation edits are stored locally and **SideScroll reads the same live rig animation** on load.
-- SideScroll now renders the character as individual WebGL cutout planes driven by the shared Walk Lab rig; it no longer plays a baked 16-frame character atlas.
-- Added `walklab-rig-v2-template.png` and `walklab-rig-v2-mask.png` as the authoritative programmatic art template for future character-art passes.
-- Added `walklab-rig-v2.png` as the current first-pass art atlas mapped to those exact plane shapes.
+- Replaced the remapped/generated cutout atlas with a **programmatic calibration skin** drawn directly into the authoritative part masks.
+- Every limb/body/cloak piece now fills its own mask and reaches the exact source pivots used by the rig, removing the large invisible offsets that made v1.8.63 look exploded.
+- Kept separate **hip → knee → ankle → foot** chains and the direct live-rig renderer in SideScroll.
+- Tightened the cloak guide positions now that the art geometry is trustworthy.
+- Reworked the fixed draw order for rear cloak/hair, far limbs, torso, near limbs, dress, near arm, head and front pieces.
+- Walk Lab still supports pan, pinch zoom, Fit view, stick overlay and plane debugging.
+- Added `walklab-rig-v3-template.png` and `walklab-rig-v3-mask.png` as the new authoritative art templates for a later image-generated paint pass.
+
+The v3 art is deliberately simple: this release is for validating attachment, pivots and layering before replacing the calibration colours with final character artwork.
