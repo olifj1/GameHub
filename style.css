@@ -10367,7 +10367,7 @@ body[data-game-id="game-14"] .attack-slot-copy small{font-size:6.8px}
 }
 
 /* ============================================================
-   GameHub v1.8.62 — SideScroll visible sprite-sheet fix
+   GameHub v1.8.63 — SideScroll visible sprite-sheet fix
    ============================================================ */
 body[data-game-id="game-16"], .game-card[data-game-id="game-16"] { --gh-accent:#5f7f7b; }
 
@@ -10551,7 +10551,7 @@ body[data-game-id="game-16"] .sidescroll-control:active{
   body[data-game-id="game-16"] .sidescroll-control span{font-size:23px;line-height:20px;}
 }
 
-/* GameHub v1.8.62 — Walk Lab */
+/* GameHub v1.8.63 — Walk Lab */
 body[data-game-id="game-17"] .walklab-page{
   width:100%;height:100%;display:flex;flex-direction:column;gap:9px;min-height:0;
 }
@@ -10589,7 +10589,7 @@ body[data-game-id="game-17"] .walklab-plant-dot{background:#718f89;}
   body[data-game-id="game-17"] .walklab-legend{display:none;}
 }
 
-/* GameHub v1.8.62 — Walk Lab editor controls */
+/* GameHub v1.8.63 — Walk Lab editor controls */
 body[data-game-id="game-17"] .walklab-edit-hint{
   position:absolute;left:50%;bottom:10px;transform:translateX(-50%);padding:5px 9px;border-radius:10px;
   background:rgba(247,240,233,.86);border:1px solid rgba(80,88,91,.18);color:#626a6d;font-size:10px;font-weight:800;
@@ -10605,7 +10605,8 @@ body[data-game-id="game-17"] .walklab-tool{
 body[data-game-id="game-17"] .walklab-tool:active{transform:translateY(1px);background:#ece6df;}
 body[data-game-id="game-17"] .walklab-tool.active{border-color:#8aa4a0;background:#edf1ee;color:#526f6c;}
 body[data-game-id="game-17"] .walklab-tool:disabled{opacity:.38;transform:none;}
-body[data-game-id="game-17"] #walklab-canvas{cursor:crosshair;}
+body[data-game-id="game-17"] #walklab-canvas{cursor:grab;}
+body[data-game-id="game-17"] #walklab-canvas:active{cursor:grabbing;}
 @media (max-height:760px){
   body[data-game-id="game-17"] .walklab-tool{height:33px;font-size:9px;}
   body[data-game-id="game-17"] .walklab-edit-hint{display:none;}

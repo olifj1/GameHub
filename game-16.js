@@ -1,6 +1,9 @@
 (() => {
   'use strict';
 
+  const Rig = window.GameHubWalkRig;
+  if (!Rig) return;
+
   const canvas = document.getElementById('sidescroll-canvas');
   const errorBox = document.getElementById('sidescroll-error');
   const statusEl = document.getElementById('sidescroll-status');
@@ -142,6 +145,28 @@
     new Uint16Array([0,1,2,2,1,3])
   );
 
+  function createRigPartMesh(name) {
+    const r = Rig.atlasRect(name);
+    if (!r) return null;
+    const p0x = r.a0[0] * r.w, p0y = r.a0[1] * r.h;
+    const left = -p0x, right = r.w - p0x;
+    const top = p0y, bottom = p0y - r.h;
+    const u0 = r.x / Rig.ATLAS.width, u1 = (r.x + r.w) / Rig.ATLAS.width;
+    const v0 = r.y / Rig.ATLAS.height, v1 = (r.y + r.h) / Rig.ATLAS.height;
+    return createMesh(
+      new Float32Array([
+        left, bottom, 0, u0, v1,
+        right, bottom, 0, u1, v1,
+        left, top, 0, u0, v0,
+        right, top, 0, u1, v0
+      ]),
+      new Uint16Array([0,1,2,2,1,3])
+    );
+  }
+
+  const rigPartMeshes = {};
+  Object.keys(Rig.ATLAS.parts).forEach(name => { rigPartMeshes[name] = createRigPartMesh(name); });
+
   function bindMesh(mesh) {
     gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vbo);
     gl.vertexAttribPointer(loc.pos, 3, gl.FLOAT, false, 20, 0);
@@ -174,6 +199,17 @@
       scaleX, 0, 0, 0,
       0, sy, 0, 0,
       0, 0, sz, 0,
+      x, y, z, 1
+    ]);
+  }
+
+  function mat4Model2D(x, y, z, scale, rotation, mirrorX = 1) {
+    const c = Math.cos(rotation), s = Math.sin(rotation);
+    const sx = scale * mirrorX, sy = scale;
+    return new Float32Array([
+      c*sx, s*sx, 0, 0,
+      -s*sy, c*sy, 0, 0,
+      0, 0, 1, 0,
       x, y, z, 1
     ]);
   }
@@ -295,7 +331,7 @@
   treeAssets.forEach(([id, w, h]) => {
     const key = `tree${id}`;
     assetAspect[key] = w / h;
-    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.62`, key);
+    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.63`, key);
   });
 
   const groundAssets = [
@@ -306,11 +342,11 @@
   groundAssets.forEach(([id, w, h]) => {
     const key = `ground${id}`;
     assetAspect[key] = w / h;
-    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.62' : null;
-    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.62`, key, fallback);
+    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.63' : null;
+    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.63`, key, fallback);
   });
 
-  textures.characterAtlas = createImageTexture('sidescroll-character-walk.png?v=1.8.62', '16-frame character walk sprite sheet');
+  textures.rigAtlas = createImageTexture('walklab-rig-v2.png?v=1.8.63', 'Walk Lab cutout rig atlas');
 
   function mulberry32(seed) {
     return function() {
@@ -532,24 +568,26 @@
   scatterForest();
 
   const character = {
-    mesh: billboardMesh,
-    texture: textures.characterAtlas,
     x: 0,
     y: groundY,
     z: pathZ,
-    sx: 2.40,
-    sy: 3.60,
-    sz: 1,
-    flip: false,
-    layer: 'character',
+    scale: 2.65,
     tint: [1.0, 1.0, 1.0],
-    opacity: 0.985,
-    noFog: false,
+    opacity: 0.99,
     screenOffsetX: -0.18,
     distanceTravelled: 0,
-    lastFacing: 1,
-    wrap: false
+    lastFacing: 1
   };
+
+  const SHARED_ANIM_KEY = 'gamehub.walklab.anim.v2';
+  let characterFrames = Rig.DEFAULT_FRAMES.map(Rig.clone);
+  function refreshCharacterFrames() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(SHARED_ANIM_KEY) || 'null');
+      if (saved?.frames?.length === 16) characterFrames = saved.frames.map((p,i) => Rig.normalizedPose(p,i));
+    } catch (_) {}
+  }
+  refreshCharacterFrames();
 
   const debugTints = {
     ground: [0.50, 0.46, 0.75],
@@ -632,26 +670,54 @@
     gl.drawElements(gl.TRIANGLES, obj.mesh.count, gl.UNSIGNED_SHORT, 0);
   }
 
-  function currentCharacterFrame(isWalking) {
-    // The generated atlas now follows the Walk Lab format exactly: 16 frames
-    // arranged left-to-right, top-to-bottom in a 4x4 page. Walking advances
-    // by travelled world distance so the extra frames smooth the same stride
-    // rather than changing the character's ground speed.
+  function currentCharacterPhase(isWalking) {
     if (!isWalking) return 0;
     const stride = 2.8;
-    const normalized = (character.distanceTravelled % stride) / stride;
-    return Math.floor(normalized * 16) % 16;
+    return (character.distanceTravelled % stride) / stride;
   }
 
-  function characterAtlasUV(frameIndex) {
-    const col = frameIndex % 4;
-    const rowFromTop = Math.floor(frameIndex / 4);
-    // Images are uploaded with UNPACK_FLIP_Y_WEBGL=true, so the source image's
-    // top row lives in the upper quarter of texture-V space.
-    return {
-      scale: [1 / 4, 1 / 4],
-      offset: [col / 4, (3 - rowFromTop) / 4]
-    };
+  function drawRigPartWebGL(part, view, facing) {
+    const mesh = rigPartMeshes[part.name];
+    const r = Rig.atlasRect(part.name);
+    if (!mesh || !r) return;
+
+    const ax = character.x + part.a.x * character.scale * facing;
+    const ay = character.y + part.a.y * character.scale;
+    const bx = character.x + part.b.x * character.scale * facing;
+    const by = character.y + part.b.y * character.scale;
+    const dvx = bx - ax, dvy = by - ay;
+    const p0x = r.a0[0] * r.w, p0y = r.a0[1] * r.h;
+    const p1x = r.a1[0] * r.w, p1y = r.a1[1] * r.h;
+    const svx = (p1x - p0x) * facing;
+    const svy = -(p1y - p0y);
+    const srcLen = Math.hypot(svx, svy) || 1;
+    const dstLen = Math.hypot(dvx, dvy) || 1;
+    const scale = dstLen / srcLen;
+    const rotation = Math.atan2(dvy, dvx) - Math.atan2(svy, svx);
+
+    bindMesh(mesh);
+    gl.bindTexture(gl.TEXTURE_2D, textures.rigAtlas);
+    const z = character.z + (part.layer - 10) * 0.0009;
+    gl.uniformMatrix4fv(loc.model, false, mat4Model2D(ax, ay, z, scale, rotation, facing));
+    gl.uniformMatrix4fv(loc.view, false, view);
+    gl.uniformMatrix4fv(loc.projection, false, projection);
+    const tint = debugDepth ? debugTints.character : character.tint;
+    gl.uniform3f(loc.tint, tint[0], tint[1], tint[2]);
+    gl.uniform3f(loc.fogColor, fogColor[0], fogColor[1], fogColor[2]);
+    gl.uniform1f(loc.fogNear, 6.2);
+    gl.uniform1f(loc.fogFar, 44.0);
+    gl.uniform1f(loc.fogAmount, debugDepth ? 0.22 : 1.0);
+    gl.uniform1f(loc.opacity, character.opacity * (part.alpha ?? 1));
+    gl.uniform2f(loc.uvScale, 1, 1);
+    gl.uniform2f(loc.uvOffset, 0, 0);
+    gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_SHORT, 0);
+  }
+
+  function drawRigCharacter(view, isWalking) {
+    const phase = currentCharacterPhase(isWalking);
+    const pose = Rig.sampleFrames(characterFrames, phase);
+    const facing = character.lastFacing >= 0 ? 1 : -1;
+    Rig.partsForPose(pose).forEach(part => drawRigPartWebGL(part, view, facing));
   }
 
   function render(now) {
@@ -674,7 +740,6 @@
     }
     previousCameraX = camera.x;
 
-    character.flip = character.lastFacing < 0;
     character.x = camera.x + character.screenOffsetX;
 
     gl.clearColor(fogColor[0], fogColor[1], fogColor[2], 1);
@@ -688,20 +753,13 @@
     for (const obj of backdrop) drawObject(obj, view);
     for (const obj of midfill) drawObject(obj, view);
 
-    const frameIndex = currentCharacterFrame(isWalking);
-    const charUV = characterAtlasUV(frameIndex);
-    drawObject(character, view, {
-      texture: character.texture,
-      x: character.x,
-      uvScale: charUV.scale,
-      uvOffset: charUV.offset
-    });
+    drawRigCharacter(view, isWalking);
 
     for (const obj of frontOccluders) drawObject(obj, view);
 
     statusEl.textContent = debugDepth
       ? `Depth view · camera X ${camera.x.toFixed(1)} · grounded layers`
-      : `3D forest · camera X ${camera.x.toFixed(1)} · 16-frame generated character pass`;
+      : `3D forest · camera X ${camera.x.toFixed(1)} · live Walk Lab cutout rig`;
 
     requestAnimationFrame(render);
   }

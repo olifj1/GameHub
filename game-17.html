@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.8.62">
+  <link rel="stylesheet" href="style.css?v=1.8.63">
   <title>Walk Lab</title>
 </head>
 <body class="modular-game" data-game-id="game-17">
@@ -19,7 +19,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">ANIMATION TOOL</p>
       <h2 id="game-17-info-title">Walk Lab</h2>
-      <p>A fixed-length stick rig for building a clean walk. Drag the pelvis, chest, hands or feet; knees and elbows solve automatically. The teal <strong>export frame</strong> defines the exact crop used for every frame. <strong>Rig art</strong> attaches transparent character-part planes to the stick bones, so the same artwork is transformed deterministically by the animation. <strong>Sprite</strong> keeps the older full-sheet comparison mode available. Export PNG outputs the assembled rig art when Rig art is enabled, otherwise it exports the stick reference.</p>
+      <p>A reusable 2D cutout-rig editor. Drag the pelvis, chest, hands, heel controls or hair guide; knees, elbows and ankles solve automatically. <strong>Rig art</strong> uses deterministic textured planes attached to the bones, with explicit front/back layering. Drag empty space to pan and pinch the canvas to zoom. <strong>Planes</strong> shows the actual attachment rectangles and pivots used by the renderer.</p>
     </div>
   </div>
 
@@ -34,7 +34,7 @@
         <div class="walklab-stage-wrap">
           <canvas id="walklab-canvas" aria-label="Editable sixteen frame stick figure walk cycle"></canvas>
           <div class="walklab-readout" id="walklab-readout">Frame 1 / 16 · Contact L · KEY</div>
-          <div class="walklab-edit-hint" id="walklab-edit-hint">Drag joints · Rig art follows the bones · export frame: top handle moves, corners scale</div>
+          <div class="walklab-edit-hint" id="walklab-edit-hint">Drag joints · drag empty space to pan · pinch to zoom</div>
         </div>
 
         <div class="walklab-scrub-row">
@@ -44,24 +44,23 @@
         </div>
 
         <div class="walklab-toggle-row">
-          <button id="walklab-play" class="walklab-pill active" type="button">Pause</button>
-          <button id="walklab-onion" class="walklab-pill active" type="button" aria-pressed="true">Onion</button>
+          <button id="walklab-play" class="walklab-pill" type="button">Play</button>
+          <button id="walklab-onion" class="walklab-pill" type="button" aria-pressed="false">Onion</button>
           <button id="walklab-keys" class="walklab-pill" type="button" aria-pressed="false">Keys only</button>
         </div>
 
         <div class="walklab-tool-grid">
           <button id="walklab-mids" class="walklab-tool" type="button">Make mids</button>
           <button id="walklab-reset" class="walklab-tool" type="button">Reset cycle</button>
+          <button id="walklab-fit" class="walklab-tool" type="button">Fit view</button>
           <button id="walklab-copy" class="walklab-tool" type="button">Copy pose</button>
           <button id="walklab-paste" class="walklab-tool" type="button" disabled>Paste pose</button>
           <button id="walklab-save" class="walklab-tool" type="button">Save JSON</button>
           <button id="walklab-load" class="walklab-tool" type="button">Load JSON</button>
-          <button id="walklab-export" class="walklab-tool" type="button">Export PNG</button>
           <button id="walklab-rigart" class="walklab-tool active" type="button" aria-pressed="true">Rig art</button>
-          <button id="walklab-sprite" class="walklab-tool" type="button" aria-pressed="false">Sprite</button>
-          <button id="walklab-sprite-load" class="walklab-tool" type="button">Load sprite</button>
+          <button id="walklab-stick" class="walklab-tool active" type="button" aria-pressed="true">Stick</button>
+          <button id="walklab-planes" class="walklab-tool" type="button" aria-pressed="false">Planes</button>
           <input id="walklab-file" type="file" accept="application/json,.json" hidden>
-          <input id="walklab-sprite-file" type="file" accept="image/png,image/webp,image/jpeg,image/*" hidden>
         </div>
 
         <div class="walklab-speed-row">
@@ -73,8 +72,9 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.8.62"></script>
-  <script src="core.js?v=1.8.62"></script>
-  <script src="game-17.js?v=1.8.62"></script>
+  <script src="site-config.js?v=1.8.63"></script>
+  <script src="core.js?v=1.8.63"></script>
+  <script src="walk-rig.js?v=1.8.63"></script>
+  <script src="game-17.js?v=1.8.63"></script>
 </body>
 </html>

@@ -1,13 +1,15 @@
-# GameHub v1.8.62
+# GameHub v1.8.63
 
-Walk Lab cutout-rig experiment.
+SideScroll / Walk Lab cutout-rig v2.
 
-- Added a transparent **character-parts atlas** derived from the generated rigging sheet.
-- Added a new **Rig art** mode in Walk Lab. The same cutout artwork is attached to the authored stick bones using deterministic 2D transforms, rather than redrawing a whole character independently for each animation frame.
-- Near/far arms and legs, boots, torso/dress, cloak, hood/head and back hair are layered over the existing skeleton.
-- The stick rig remains visible on top so registration problems are easy to diagnose.
-- The older full-sprite-sheet comparison remains available with **Sprite / Load sprite**, but is off by default.
-- **Export PNG** now exports the assembled cutout character when Rig art is enabled, creating the same fixed 16-frame 1024×1536 atlas format for SideScroll.
-- Included `walklab-rig-parts-source.png` (the generated concept sheet) and `walklab-rig-parts.png` (the transparent cutout atlas actually used by Walk Lab).
-
-This is intentionally a first rig-mapping pass: the important test is whether deterministic cutout pieces solve the frame-to-frame consistency problem before refining pivots, cloak segmentation and proportions.
+- Rebuilt **Walk Lab** around a reusable 2D cutout rig rather than sprite-sheet baking.
+- Added proper **hip → knee → ankle → foot** leg chains. Heel contact is now separate from the ankle and the textured boot follows the ankle-to-toe bone.
+- Split character art into explicit planes: upper torso, lower dress, upper/lower arms, upper/lower legs, feet, hood/head, front/back hair, two hair tails, cloak layers and pouch.
+- Added deterministic **layer ordering** for far limbs, body, near limbs, dress, head/hair and cloak pieces.
+- Added a two-bone hair guide and simple two-stage cloak motion.
+- Removed the old export crop / sprite-comparison workflow from Walk Lab.
+- Added **drag-to-pan**, **pinch zoom**, **Fit view**, stick toggle and plane-debug toggle.
+- Walk Lab animation edits are stored locally and **SideScroll reads the same live rig animation** on load.
+- SideScroll now renders the character as individual WebGL cutout planes driven by the shared Walk Lab rig; it no longer plays a baked 16-frame character atlas.
+- Added `walklab-rig-v2-template.png` and `walklab-rig-v2-mask.png` as the authoritative programmatic art template for future character-art passes.
+- Added `walklab-rig-v2.png` as the current first-pass art atlas mapped to those exact plane shapes.

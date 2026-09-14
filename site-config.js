@@ -183,18 +183,18 @@ window.APP_CONFIG = {
     {
       "id": "game-16",
       "displayName": "SideScroll",
-      "description": "Explore the layered 3D forest with the new 16-frame minimal-iconic generated walking character.",
+      "description": "Explore the layered 3D forest with the shared live Walk Lab cutout rig driving the character directly.",
       "icon": "♠",
       "enabled": true,
-      "path": "game-16.html?v=1.8.62"
+      "path": "game-16.html?v=1.8.63"
     },
     {
       "id": "game-17",
       "displayName": "Walk Lab",
-      "description": "Edit the 16-frame stick walk and overlay a matching 4×4 sprite sheet for frame-by-frame comparison.",
+      "description": "Edit a reusable cutout walk rig with true ankle/foot joints, layered art planes, panning and pinch zoom.",
       "icon": "↻",
       "enabled": true,
-      "path": "game-17.html?v=1.8.62"
+      "path": "game-17.html?v=1.8.63"
     }
   ]
 };
