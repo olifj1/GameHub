@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.8.75">
+  <link rel="stylesheet" href="style.css?v=1.8.76">
   <title>SideScroll</title>
 </head>
 <body class="modular-game" data-game-id="game-16">
@@ -19,7 +19,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">PROTOTYPE</p>
       <h2 id="game-16-info-title">SideScroll</h2>
-      <p>The forest still uses real 3D planes and depth fog. Drag the spring movement control left or right: halfway gives a walk and pushing to the edge blends into the run. Release it and it returns to centre. Jump remains a separate thumb-sized button. The far path lip now has a denser grass-and-rock seam to hide the hard geometry edge.</p>
+      <p>Play mode keeps the spring movement control and jump button. Tap EDIT to author the scene: select and drag scenery on the ground plane, add assets from the library, duplicate or remove them, adjust scale, and toggle simple solid collision. Edits save locally on this device so you can immediately switch back to PLAY and test them.</p>
     </div>
   </div>
 
@@ -36,7 +36,10 @@
 
           <div class="sidescroll-stage-hud">
             <div class="sidescroll-status" id="sidescroll-status">3D forest · raised dirt path · walk / run / jump</div>
-            <button id="sidescroll-depth" class="sidescroll-depth-button" type="button" aria-pressed="false">Depth view</button>
+            <div class="sidescroll-stage-actions">
+              <button id="sidescroll-depth" class="sidescroll-depth-button" type="button" aria-pressed="false">Depth</button>
+              <button id="sidescroll-edit" class="sidescroll-edit-button" type="button" aria-pressed="false">Edit</button>
+            </div>
           </div>
 
           <div class="sidescroll-depth-key" id="sidescroll-depth-key" hidden aria-hidden="true">
@@ -45,11 +48,24 @@
             <span><i class="far"></i>Far</span>
           </div>
 
+          <canvas class="sidescroll-editor-overlay" id="sidescroll-editor-overlay" aria-hidden="true"></canvas>
+
+          <div class="sidescroll-editor-palette" id="sidescroll-editor-palette" hidden>
+            <div class="sidescroll-editor-palette-head">
+              <strong>Add asset</strong>
+              <span class="sidescroll-editor-palette-actions">
+                <button class="scene-reset" id="sidescroll-editor-reset" type="button">Reset</button>
+                <button id="sidescroll-editor-palette-close" type="button" aria-label="Close asset library">×</button>
+              </span>
+            </div>
+            <div class="sidescroll-editor-assets" id="sidescroll-editor-assets"></div>
+          </div>
+
           <div class="sidescroll-hint" id="sidescroll-hint">Drag the movement control · halfway = WALK · edge = RUN · tap JUMP</div>
           <div class="sidescroll-error" id="sidescroll-error" hidden></div>
         </div>
 
-        <div class="sidescroll-controls sidescroll-controls-drive" aria-label="Movement controls">
+        <div class="sidescroll-controls sidescroll-controls-drive" id="sidescroll-play-controls" aria-label="Movement controls">
           <button class="sidescroll-control sidescroll-action sidescroll-jump-control" id="sidescroll-jump" type="button" aria-label="Jump">
             <span aria-hidden="true">↑</span><small>JUMP</small>
           </button>
@@ -64,13 +80,22 @@
             </div>
           </div>
         </div>
+
+        <div class="sidescroll-editor-controls" id="sidescroll-editor-controls" hidden aria-label="Scene editor controls">
+          <button class="sidescroll-editor-tool primary" id="sidescroll-editor-add" type="button"><span>＋</span><small>ADD</small></button>
+          <button class="sidescroll-editor-tool" id="sidescroll-editor-duplicate" type="button"><span>⧉</span><small>DUPLICATE</small></button>
+          <button class="sidescroll-editor-tool" id="sidescroll-editor-scale-down" type="button"><span>−</span><small>SCALE</small></button>
+          <button class="sidescroll-editor-tool" id="sidescroll-editor-scale-up" type="button"><span>＋</span><small>SCALE</small></button>
+          <button class="sidescroll-editor-tool" id="sidescroll-editor-collision" type="button"><span>▣</span><small>COLLISION</small></button>
+          <button class="sidescroll-editor-tool danger" id="sidescroll-editor-delete" type="button"><span>×</span><small>DELETE</small></button>
+        </div>
       </div>
     </section>
   </main>
 
-  <script src="site-config.js?v=1.8.74"></script>
-  <script src="core.js?v=1.8.74"></script>
-  <script src="walk-rig.js?v=1.8.74"></script>
-  <script src="game-16.js?v=1.8.75"></script>
+  <script src="site-config.js?v=1.8.76"></script>
+  <script src="core.js?v=1.8.76"></script>
+  <script src="walk-rig.js?v=1.8.76"></script>
+  <script src="game-16.js?v=1.8.76"></script>
 </body>
 </html>

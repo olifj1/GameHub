@@ -1,9 +1,11 @@
-# GameHub v1.8.75
+# GameHub v1.8.76
 
-SideScroll control + path-edge refinement.
+SideScroll editor MVP.
 
-- Replaced the four separate movement buttons with a spring-return analogue slider plus a dedicated Jump button.
-- Half travel gives normal walking speed; pushing toward either outer edge blends progressively into the run in that direction.
-- The movement thumb snaps back to centre when released and supports simultaneous jump input.
-- Added a denser overlapping strip of short grass and occasional rocks along the far path lip to hide the visible hard geometry line.
-- Built directly from the working v1.8.74 package; Walk Lab and unrelated GameHub pages are otherwise unchanged.
+- Uses v1.8.75 as the base; other GameHub games and Walk Lab are unchanged.
+- Extends the warm dirt texture across the whole ground plane so gaps in foliage no longer reveal a flat dark floor.
+- Adds a **Play / Edit** toggle directly in SideScroll.
+- Edit mode can select scenery, drag it across the ground plane, pan on empty space, add any existing tree/ground asset, duplicate, delete, scale, and toggle simple solid collision.
+- Scene edits auto-save locally on the device and are immediately testable by switching back to Play. The asset library includes a Reset control to clear local scene edits.
+- Collision volumes are visible in Edit mode; foreground dressing is ghosted there so hidden gameplay objects are easier to find.
+- The existing fallen-log obstacle is now part of the editable collision system rather than a one-off hard-coded collision test.

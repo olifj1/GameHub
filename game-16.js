@@ -13,6 +13,21 @@
   const driveControl = document.getElementById('sidescroll-drive');
   const driveThumb = document.getElementById('sidescroll-drive-thumb');
   const jumpBtn = document.getElementById('sidescroll-jump');
+  const editBtn = document.getElementById('sidescroll-edit');
+  const playControls = document.getElementById('sidescroll-play-controls');
+  const editorControls = document.getElementById('sidescroll-editor-controls');
+  const editorOverlay = document.getElementById('sidescroll-editor-overlay');
+  const editorOverlayCtx = editorOverlay?.getContext('2d');
+  const editorPalette = document.getElementById('sidescroll-editor-palette');
+  const editorAssetsEl = document.getElementById('sidescroll-editor-assets');
+  const editorPaletteClose = document.getElementById('sidescroll-editor-palette-close');
+  const editorResetBtn = document.getElementById('sidescroll-editor-reset');
+  const editorAddBtn = document.getElementById('sidescroll-editor-add');
+  const editorDuplicateBtn = document.getElementById('sidescroll-editor-duplicate');
+  const editorScaleDownBtn = document.getElementById('sidescroll-editor-scale-down');
+  const editorScaleUpBtn = document.getElementById('sidescroll-editor-scale-up');
+  const editorCollisionBtn = document.getElementById('sidescroll-editor-collision');
+  const editorDeleteBtn = document.getElementById('sidescroll-editor-delete');
 
   const gl = canvas.getContext('webgl', {
     alpha: false,
@@ -486,7 +501,7 @@
 
   const ground = {
     mesh: groundMesh,
-    texture: textures.white,
+    texture: textures.pathDirt,
     x: 0,
     y: groundY,
     z: WORLD.nearZ,
@@ -494,8 +509,9 @@
     sy: 1,
     sz: WORLD.nearZ - WORLD.farZ,
     layer: 'ground',
-    tint: [0.205, 0.195, 0.180],
+    tint: [0.56, 0.59, 0.54],
     opacity: 1,
+    uvScale: [42, 12],
     noFog: false,
     wrap: false
   };
@@ -521,6 +537,23 @@
   const midfill = [];
   const frontOccluders = [];
 
+  const SCENE_STORAGE_KEY = 'gamehub.sidescroll.scene.v1';
+  let sceneIdCounter = 0;
+  let userSceneCounter = 0;
+  let testObstacleObject = null;
+
+  const sceneData = (() => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(SCENE_STORAGE_KEY) || 'null');
+      if (parsed && parsed.version === 1) return parsed;
+    } catch (_) {}
+    return { version: 1, overrides: {}, added: [] };
+  })();
+
+  function saveSceneData() {
+    try { localStorage.setItem(SCENE_STORAGE_KEY, JSON.stringify(sceneData)); } catch (_) {}
+  }
+
   function classifyLayer(z) {
     if (z > 1.2) return 'foreground';
     if (z > -9) return 'near';
@@ -531,7 +564,8 @@
   function addObject(collection, type, x, z, width, height, opts = {}) {
     const resolvedHeight = height;
     const resolvedWidth = width ?? resolvedHeight * (assetAspect[type] || 1);
-    collection.push({
+    const obj = {
+      id: opts.id || `proc-${++sceneIdCounter}`,
       mesh: billboardMesh,
       texture: textures[type],
       x,
@@ -539,6 +573,8 @@
       z,
       sx: resolvedWidth,
       sy: resolvedHeight,
+      baseSx: opts.baseSx ?? resolvedWidth,
+      baseSy: opts.baseSy ?? resolvedHeight,
       sz: 1,
       flip: opts.flip ?? (rand() > 0.5),
       shade: opts.shade ?? 1,
@@ -548,8 +584,13 @@
       asset: true,
       assetName: type,
       layer: opts.layer || classifyLayer(z),
-      wrap: opts.wrap !== false
-    });
+      wrap: opts.wrap !== false,
+      collision: opts.collision ? { ...opts.collision } : null,
+      deleted: !!opts.deleted,
+      userAdded: !!opts.userAdded
+    };
+    collection.push(obj);
+    return obj;
   }
 
   function scatterForest() {
@@ -741,11 +782,12 @@
 
     // A single readable fallen-log obstacle sits on the playable centre strip.
     // It is deliberately modest for the first jump-tuning pass.
-    addObject(frontOccluders, 'ground09', TEST_OBSTACLE_X, TEST_OBSTACLE_Z, null, TEST_OBSTACLE_HEIGHT, {
+    testObstacleObject = addObject(frontOccluders, 'ground09', TEST_OBSTACLE_X, TEST_OBSTACLE_Z, null, TEST_OBSTACLE_HEIGHT, {
       y: pathGroundYAt(TEST_OBSTACLE_X, TEST_OBSTACLE_Z),
       shade: 1.02,
       opacity: 0.99,
-      layer: 'foreground'
+      layer: 'foreground',
+      collision: { halfWidth: TEST_OBSTACLE_HALF_WIDTH, height: TEST_OBSTACLE_CLEARANCE, depth: 0.82 }
     });
 
     // Occasional larger near-side assets give a stronger sense of passing
@@ -777,7 +819,79 @@
     frontOccluders.sort((a, b) => a.z - b.z);
   }
 
+  function allSceneObjects() {
+    return [...backdrop, ...midfill, ...frontOccluders];
+  }
+
+  function targetCollectionForZ(z) {
+    if (z > 0.85) return frontOccluders;
+    if (z > -12) return midfill;
+    return backdrop;
+  }
+
+  function moveObjectToCorrectCollection(obj) {
+    const target = targetCollectionForZ(obj.z);
+    for (const list of [backdrop, midfill, frontOccluders]) {
+      const idx = list.indexOf(obj);
+      if (idx >= 0 && list !== target) list.splice(idx, 1);
+    }
+    if (!target.includes(obj)) target.push(obj);
+    obj.layer = classifyLayer(obj.z);
+  }
+
+  function applyOverrideToObject(obj, override) {
+    if (!override) return;
+    if (Number.isFinite(override.x)) obj.x = override.x;
+    if (Number.isFinite(override.z)) obj.z = override.z;
+    if (Number.isFinite(override.sx)) obj.sx = override.sx;
+    if (Number.isFinite(override.sy)) obj.sy = override.sy;
+    if (typeof override.flip === 'boolean') obj.flip = override.flip;
+    if (typeof override.deleted === 'boolean') obj.deleted = override.deleted;
+    if (override.collision === null) obj.collision = null;
+    else if (override.collision) obj.collision = { ...override.collision };
+    obj.y = pathGroundYAt(obj.x, obj.z);
+    moveObjectToCorrectCollection(obj);
+  }
+
+  function recordObjectEdit(obj) {
+    if (!obj) return;
+    if (obj.userAdded) {
+      const saved = sceneData.added.find(item => item.id === obj.id);
+      const payload = {
+        id: obj.id, assetName: obj.assetName, x: obj.x, z: obj.z,
+        sx: obj.sx, sy: obj.sy, flip: obj.flip, collision: obj.collision ? { ...obj.collision } : null,
+        deleted: !!obj.deleted
+      };
+      if (saved) Object.assign(saved, payload);
+      else sceneData.added.push(payload);
+    } else {
+      sceneData.overrides[obj.id] = {
+        x: obj.x, z: obj.z, sx: obj.sx, sy: obj.sy, flip: obj.flip,
+        collision: obj.collision ? { ...obj.collision } : null, deleted: !!obj.deleted
+      };
+    }
+    saveSceneData();
+  }
+
+  function restoreSceneEdits() {
+    for (const obj of allSceneObjects()) applyOverrideToObject(obj, sceneData.overrides[obj.id]);
+    for (const saved of sceneData.added || []) {
+      userSceneCounter += 1;
+      const collection = targetCollectionForZ(saved.z);
+      const obj = addObject(collection, saved.assetName, saved.x, saved.z, saved.sx, saved.sy, {
+        id: saved.id, baseSx: saved.sx, baseSy: saved.sy, flip: saved.flip,
+        y: pathGroundYAt(saved.x, saved.z), collision: saved.collision, deleted: saved.deleted,
+        userAdded: true, shade: 1.0, opacity: 0.98, layer: classifyLayer(saved.z)
+      });
+      obj.sx = saved.sx; obj.sy = saved.sy;
+    }
+    backdrop.sort((a,b)=>a.z-b.z);
+    midfill.sort((a,b)=>a.z-b.z);
+    frontOccluders.sort((a,b)=>a.z-b.z);
+  }
+
   scatterForest();
+  restoreSceneEdits();
 
   const character = {
     x: 0,
@@ -863,6 +977,22 @@
   let activePointer = null;
   let dragStartX = 0;
   let dragStartCameraX = 0;
+
+  let editMode = false;
+  let selectedObject = null;
+  let editorPointer = null;
+  let editorDragKind = null;
+  let editorDragOffset = { x: 0, z: 0 };
+  let editorPanStart = 0;
+  let editorPanCameraX = 0;
+  let addAssetType = null;
+  let currentViewMatrix = mat4Identity();
+  const editorAssetNames = [
+    'tree01','tree02','tree03','tree04','tree05','tree06',
+    'ground01','ground02','ground03','ground04','ground05','ground06',
+    'ground07','ground08','ground09','ground10','ground11','ground12'
+  ];
+
   let lastTime = performance.now();
   let previousCameraX = camera.x;
   let hintTimer = window.setTimeout(() => hintEl.classList.add('hidden'), 4200);
@@ -885,31 +1015,378 @@
       gl.viewport(0, 0, w, h);
       projection = mat4Perspective((31 * Math.PI) / 180, w / h, 0.1, 180);
     }
+    if (editorOverlay && editorOverlayCtx) {
+      const ow = Math.max(1, Math.round(editorOverlay.clientWidth * dpr));
+      const oh = Math.max(1, Math.round(editorOverlay.clientHeight * dpr));
+      if (editorOverlay.width !== ow || editorOverlay.height !== oh) {
+        editorOverlay.width = ow;
+        editorOverlay.height = oh;
+      }
+      editorOverlayCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+  }
+
+  function mat4TransformPoint(m, x, y, z, w = 1) {
+    return [
+      m[0]*x + m[4]*y + m[8]*z + m[12]*w,
+      m[1]*x + m[5]*y + m[9]*z + m[13]*w,
+      m[2]*x + m[6]*y + m[10]*z + m[14]*w,
+      m[3]*x + m[7]*y + m[11]*z + m[15]*w
+    ];
+  }
+
+  function projectWorldPoint(x, y, z) {
+    const v = mat4TransformPoint(currentViewMatrix, x, y, z, 1);
+    const c = mat4TransformPoint(projection, v[0], v[1], v[2], v[3]);
+    if (!c[3] || c[3] <= 0) return null;
+    const nx = c[0] / c[3];
+    const ny = c[1] / c[3];
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (nx * 0.5 + 0.5) * rect.width,
+      y: (1 - (ny * 0.5 + 0.5)) * rect.height,
+      ndcZ: c[2] / c[3]
+    };
+  }
+
+  function cameraRayFromClient(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const nx = ((clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1;
+    const ny = 1 - ((clientY - rect.top) / Math.max(1, rect.height)) * 2;
+    const eye = [camera.x, camera.y, camera.z];
+    const forward = vec3Normalize([camera.x - eye[0], camera.targetY - eye[1], camera.targetZ - eye[2]]);
+    const right = vec3Normalize(vec3Cross(forward, [0, 1, 0]));
+    const up = vec3Normalize(vec3Cross(right, forward));
+    const tan = Math.tan((31 * Math.PI / 180) * 0.5);
+    const aspect = rect.width / Math.max(1, rect.height);
+    const dir = vec3Normalize([
+      forward[0] + right[0] * nx * tan * aspect + up[0] * ny * tan,
+      forward[1] + right[1] * nx * tan * aspect + up[1] * ny * tan,
+      forward[2] + right[2] * nx * tan * aspect + up[2] * ny * tan
+    ]);
+    return { eye, dir };
+  }
+
+  function groundPointFromClient(clientX, clientY) {
+    const ray = cameraRayFromClient(clientX, clientY);
+    if (Math.abs(ray.dir[1]) < 0.0001) return null;
+    let targetY = groundY + PATH_TOP_RISE;
+    let t = (targetY - ray.eye[1]) / ray.dir[1];
+    if (t <= 0) return null;
+    let x = ray.eye[0] + ray.dir[0] * t;
+    let z = ray.eye[2] + ray.dir[2] * t;
+    targetY = pathGroundYAt(x, z);
+    t = (targetY - ray.eye[1]) / ray.dir[1];
+    if (t <= 0) return null;
+    x = ray.eye[0] + ray.dir[0] * t;
+    z = ray.eye[2] + ray.dir[2] * t;
+    return { x, z, y: pathGroundYAt(x, z) };
+  }
+
+  function objectScreenBounds(obj) {
+    if (!obj || obj.deleted) return null;
+    const x = obj.wrap ? wrapX(obj.x, camera.x) : obj.x;
+    const points = [
+      projectWorldPoint(x - obj.sx * 0.5, obj.y, obj.z),
+      projectWorldPoint(x + obj.sx * 0.5, obj.y, obj.z),
+      projectWorldPoint(x - obj.sx * 0.5, obj.y + obj.sy, obj.z),
+      projectWorldPoint(x + obj.sx * 0.5, obj.y + obj.sy, obj.z)
+    ].filter(Boolean);
+    if (points.length < 2) return null;
+    const xs = points.map(p => p.x), ys = points.map(p => p.y);
+    const left = Math.min(...xs), right = Math.max(...xs), top = Math.min(...ys), bottom = Math.max(...ys);
+    return { left, right, top, bottom, width: right-left, height: bottom-top, cx:(left+right)*0.5, cy:(top+bottom)*0.5 };
+  }
+
+  function pickSceneObject(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const px = clientX - rect.left;
+    const py = clientY - rect.top;
+    const candidates = [];
+    for (const obj of allSceneObjects()) {
+      if (obj.deleted) continue;
+      const b = objectScreenBounds(obj);
+      if (!b || b.right < -20 || b.left > rect.width + 20 || b.bottom < -20 || b.top > rect.height + 20) continue;
+      const pad = 7;
+      if (px < b.left-pad || px > b.right+pad || py < b.top-pad || py > b.bottom+pad) continue;
+      const centreDist = Math.hypot(px-b.cx, py-b.cy);
+      const area = Math.max(1, b.width*b.height);
+      const score = centreDist + Math.sqrt(area) * 0.10 - obj.z * 1.8;
+      candidates.push({ obj, score });
+    }
+    candidates.sort((a,b)=>a.score-b.score);
+    return candidates[0]?.obj || null;
+  }
+
+  function sortSceneCollections() {
+    backdrop.sort((a,b)=>a.z-b.z);
+    midfill.sort((a,b)=>a.z-b.z);
+    frontOccluders.sort((a,b)=>a.z-b.z);
+  }
+
+  function updateEditorButtons() {
+    const has = !!selectedObject && !selectedObject.deleted;
+    [editorDuplicateBtn, editorScaleDownBtn, editorScaleUpBtn, editorCollisionBtn, editorDeleteBtn].forEach(btn => {
+      if (btn) btn.disabled = !has;
+    });
+    editorCollisionBtn?.classList.toggle('active', !!selectedObject?.collision);
+    editorAddBtn?.classList.toggle('active', !!addAssetType);
+  }
+
+  function selectObject(obj) {
+    selectedObject = obj && !obj.deleted ? obj : null;
+    addAssetType = null;
+    if (editorPalette) editorPalette.hidden = true;
+    updateAssetPaletteState();
+    updateEditorButtons();
+  }
+
+  function setEditMode(on) {
+    editMode = !!on;
+    document.body.classList.toggle('sidescroll-editing', editMode);
+    if (editBtn) {
+      editBtn.setAttribute('aria-pressed', String(editMode));
+      editBtn.textContent = editMode ? 'Play' : 'Edit';
+    }
+    if (playControls) playControls.hidden = editMode;
+    if (editorControls) editorControls.hidden = !editMode;
+    if (!editMode) {
+      selectedObject = null;
+      addAssetType = null;
+      if (editorPalette) editorPalette.hidden = true;
+      setDriveAxis(0);
+    } else {
+      setDriveAxis(0);
+      jumping = false;
+      jumpOffset = 0;
+      jumpVelocity = 0;
+      hintEl.classList.remove('hidden');
+    }
+    updateAssetPaletteState();
+    updateEditorButtons();
+  }
+
+  function defaultAssetHeight(name) {
+    if (name.startsWith('tree')) return 8.2;
+    if (name === 'ground09' || name === 'ground04' || name === 'ground07') return 0.88;
+    return 0.82;
+  }
+
+  function createUserObject(type, point) {
+    const h = defaultAssetHeight(type);
+    const w = h * (assetAspect[type] || 1);
+    const id = `user-${Date.now().toString(36)}-${++userSceneCounter}`;
+    const collection = targetCollectionForZ(point.z);
+    const obj = addObject(collection, type, point.x, point.z, w, h, {
+      id, userAdded:true, baseSx:w, baseSy:h, y:pathGroundYAt(point.x, point.z),
+      shade:1, opacity:.99, layer:classifyLayer(point.z)
+    });
+    moveObjectToCorrectCollection(obj);
+    sortSceneCollections();
+    recordObjectEdit(obj);
+    selectObject(obj);
+    return obj;
+  }
+
+  function duplicateSelected() {
+    if (!selectedObject || selectedObject.deleted) return;
+    const point = { x:selectedObject.x + 0.85, z:selectedObject.z + 0.18 };
+    const id = `user-${Date.now().toString(36)}-${++userSceneCounter}`;
+    const obj = addObject(targetCollectionForZ(point.z), selectedObject.assetName, point.x, point.z, selectedObject.sx, selectedObject.sy, {
+      id, userAdded:true, baseSx:selectedObject.baseSx || selectedObject.sx, baseSy:selectedObject.baseSy || selectedObject.sy,
+      y:pathGroundYAt(point.x, point.z), shade:selectedObject.shade, opacity:selectedObject.opacity,
+      flip:selectedObject.flip, layer:classifyLayer(point.z), collision:selectedObject.collision ? { ...selectedObject.collision } : null
+    });
+    sortSceneCollections();
+    recordObjectEdit(obj);
+    selectObject(obj);
+  }
+
+  function scaleSelected(multiplier) {
+    if (!selectedObject || selectedObject.deleted) return;
+    const next = Rig.clamp((selectedObject.sy * multiplier), 0.18, selectedObject.assetName.startsWith('tree') ? 24 : 5.0);
+    const ratio = next / Math.max(0.001, selectedObject.sy);
+    selectedObject.sy = next;
+    selectedObject.sx *= ratio;
+    if (selectedObject.collision) {
+      selectedObject.collision.halfWidth *= ratio;
+      selectedObject.collision.height *= ratio;
+    }
+    selectedObject.y = pathGroundYAt(selectedObject.x, selectedObject.z);
+    recordObjectEdit(selectedObject);
+    updateEditorButtons();
+  }
+
+  function toggleSelectedCollision() {
+    if (!selectedObject || selectedObject.deleted) return;
+    selectedObject.collision = selectedObject.collision ? null : {
+      halfWidth: Math.max(0.18, selectedObject.sx * 0.34),
+      height: Math.max(0.24, selectedObject.sy * 0.66),
+      depth: Math.max(0.42, Math.min(1.15, selectedObject.sx * 0.42))
+    };
+    recordObjectEdit(selectedObject);
+    updateEditorButtons();
+  }
+
+  function deleteSelected() {
+    if (!selectedObject || selectedObject.deleted) return;
+    selectedObject.deleted = true;
+    recordObjectEdit(selectedObject);
+    selectedObject = null;
+    updateEditorButtons();
+  }
+
+  function updateAssetPaletteState() {
+    if (!editorAssetsEl) return;
+    editorAssetsEl.querySelectorAll('.sidescroll-editor-asset').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.asset === addAssetType);
+    });
+  }
+
+  function buildAssetPalette() {
+    if (!editorAssetsEl) return;
+    editorAssetsEl.innerHTML = '';
+    for (const name of editorAssetNames) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'sidescroll-editor-asset';
+      btn.dataset.asset = name;
+      const file = name.startsWith('tree')
+        ? `sidescroll-tree-${name.slice(-2)}.png`
+        : `sidescroll-ground-${name.slice(-2)}.png`;
+      btn.innerHTML = `<img src="${file}" alt=""><small>${name.startsWith('tree') ? 'TREE' : 'GROUND'} ${Number(name.slice(-2))}</small>`;
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        addAssetType = name;
+        selectedObject = null;
+        updateAssetPaletteState();
+        updateEditorButtons();
+        if (editorPalette) editorPalette.hidden = true;
+        hintEl.textContent = `Tap the ground to add ${name}`;
+        hintEl.classList.remove('hidden');
+      });
+      editorAssetsEl.appendChild(btn);
+    }
+  }
+
+  function drawEditorOverlay() {
+    if (!editorOverlayCtx || !editorOverlay) return;
+    const ctx = editorOverlayCtx;
+    const w = editorOverlay.clientWidth;
+    const h = editorOverlay.clientHeight;
+    ctx.clearRect(0, 0, w, h);
+    if (!editMode) return;
+
+    // Show authored gameplay collision even when the object itself is partly
+    // hidden by foreground dressing. This makes logs/rocks much easier to
+    // find and tune in edit mode.
+    for (const obj of collisionObjects()) {
+      if (obj === selectedObject) continue;
+      const c = obj.collision;
+      const drawX = obj.wrap ? wrapX(obj.x, camera.x) : obj.x;
+      const y0 = pathGroundYAt(obj.x, obj.z);
+      const points = [
+        projectWorldPoint(drawX-c.halfWidth, y0, obj.z),
+        projectWorldPoint(drawX+c.halfWidth, y0, obj.z),
+        projectWorldPoint(drawX-c.halfWidth, y0+c.height, obj.z),
+        projectWorldPoint(drawX+c.halfWidth, y0+c.height, obj.z)
+      ].filter(Boolean);
+      if (points.length < 2) continue;
+      const xs=points.map(p=>p.x), ys=points.map(p=>p.y);
+      const left=Math.min(...xs), right=Math.max(...xs), top=Math.min(...ys), bottom=Math.max(...ys);
+      ctx.save();
+      ctx.strokeStyle='rgba(226,161,92,.58)';
+      ctx.lineWidth=1.25;
+      ctx.setLineDash([3,3]);
+      ctx.strokeRect(left,top,right-left,bottom-top);
+      ctx.restore();
+    }
+
+    if (selectedObject && !selectedObject.deleted) {
+      const b = objectScreenBounds(selectedObject);
+      if (b) {
+        ctx.save();
+        ctx.strokeStyle = '#93c0b8';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6,4]);
+        ctx.strokeRect(b.left-4, b.top-4, b.width+8, b.height+8);
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(20,31,34,.78)';
+        const label = `${selectedObject.assetName}  x ${selectedObject.x.toFixed(1)}  z ${selectedObject.z.toFixed(1)}`;
+        ctx.font = '700 10px -apple-system, BlinkMacSystemFont, sans-serif';
+        const tw = ctx.measureText(label).width + 14;
+        const lx = Math.max(4, Math.min(w-tw-4, b.left));
+        const ly = Math.max(42, b.top-25);
+        ctx.fillRect(lx, ly, tw, 19);
+        ctx.fillStyle = '#f2f7f6';
+        ctx.fillText(label, lx+7, ly+13);
+        ctx.restore();
+      }
+
+      if (selectedObject.collision) {
+        const c = selectedObject.collision;
+        const drawX = selectedObject.wrap ? wrapX(selectedObject.x, camera.x) : selectedObject.x;
+        const y0 = pathGroundYAt(selectedObject.x, selectedObject.z);
+        const points = [
+          projectWorldPoint(drawX-c.halfWidth, y0, selectedObject.z),
+          projectWorldPoint(drawX+c.halfWidth, y0, selectedObject.z),
+          projectWorldPoint(drawX-c.halfWidth, y0+c.height, selectedObject.z),
+          projectWorldPoint(drawX+c.halfWidth, y0+c.height, selectedObject.z)
+        ].filter(Boolean);
+        if (points.length >= 2) {
+          const xs=points.map(p=>p.x), ys=points.map(p=>p.y);
+          const left=Math.min(...xs), right=Math.max(...xs), top=Math.min(...ys), bottom=Math.max(...ys);
+          ctx.save();
+          ctx.fillStyle='rgba(228,164,89,.12)';
+          ctx.strokeStyle='#e2a15c';
+          ctx.lineWidth=2;
+          ctx.setLineDash([4,3]);
+          ctx.fillRect(left,top,right-left,bottom-top);
+          ctx.strokeRect(left,top,right-left,bottom-top);
+          ctx.restore();
+        }
+      }
+    }
+
+    if (addAssetType) {
+      ctx.save();
+      ctx.fillStyle='rgba(20,31,34,.75)';
+      ctx.font='800 11px -apple-system, BlinkMacSystemFont, sans-serif';
+      const text=`ADD ${addAssetType.toUpperCase()} · tap ground`;
+      const tw=ctx.measureText(text).width+18;
+      ctx.fillRect((w-tw)/2,52,tw,24);
+      ctx.fillStyle='#f2f7f6';
+      ctx.fillText(text,(w-tw)/2+9,68);
+      ctx.restore();
+    }
   }
 
   function wrapX(x, aroundX) {
     return x + Math.round((aroundX - x) / TILE_WIDTH) * TILE_WIDTH;
   }
 
-  function nearestObstacleX(aroundX) {
-    return wrapX(TEST_OBSTACLE_X, aroundX);
+  function collisionObjects() {
+    return allSceneObjects().filter(obj => !obj.deleted && obj.collision);
   }
 
   function resolveObstacleMove(currentCameraX, proposedCameraX, clearanceHeight) {
-    if (clearanceHeight >= TEST_OBSTACLE_CLEARANCE) return proposedCameraX;
     const offset = character.screenOffsetX;
     const currentX = currentCameraX + offset;
     const nextX = proposedCameraX + offset;
-    const obstacleX = nearestObstacleX(nextX);
-    const radius = TEST_OBSTACLE_HALF_WIDTH + 0.18;
-    if (Math.abs(nextX - obstacleX) < radius) {
-      // Low movement cannot occupy the log.  If a too-short jump drops back
-      // into its collision span, return to the side the character came from;
-      // a running jump has enough airborne travel to reach the far side.
-      const side = currentX <= obstacleX ? -1 : 1;
-      return obstacleX + side * radius - offset;
+    let resolved = proposedCameraX;
+    for (const obj of collisionObjects()) {
+      const c = obj.collision;
+      if (!c || clearanceHeight >= (c.height ?? 0.6)) continue;
+      const depth = c.depth ?? 0.8;
+      if (Math.abs(obj.z - pathZ) > depth) continue;
+      const obstacleX = wrapX(obj.x, nextX);
+      const radius = (c.halfWidth ?? Math.max(0.22, obj.sx * 0.34)) + 0.18;
+      if (Math.abs(nextX - obstacleX) < radius) {
+        const side = currentX <= obstacleX ? -1 : 1;
+        resolved = obstacleX + side * radius - offset;
+      }
     }
-    return proposedCameraX;
+    return resolved;
   }
 
   function tintFor(obj) {
@@ -926,6 +1403,7 @@
   }
 
   function drawObject(obj, view, extra = null) {
+    if (obj.deleted) return;
     bindMesh(obj.mesh);
     gl.bindTexture(gl.TEXTURE_2D, extra?.texture || obj.texture);
     const drawX = extra?.x ?? (obj.wrap ? wrapX(obj.x, camera.x) : obj.x);
@@ -938,9 +1416,10 @@
     gl.uniform1f(loc.fogNear, 6.2);
     gl.uniform1f(loc.fogFar, 44.0);
     gl.uniform1f(loc.fogAmount, obj.noFog ? 0 : (debugDepth ? 0.22 : 1.0));
-    gl.uniform1f(loc.opacity, obj.opacity);
-    gl.uniform2f(loc.uvScale, extra?.uvScale?.[0] ?? 1, extra?.uvScale?.[1] ?? 1);
-    gl.uniform2f(loc.uvOffset, extra?.uvOffset?.[0] ?? 0, extra?.uvOffset?.[1] ?? 0);
+    const editorGhost = editMode && obj.layer === 'foreground' && obj !== selectedObject ? 0.56 : 1.0;
+    gl.uniform1f(loc.opacity, obj.opacity * editorGhost);
+    gl.uniform2f(loc.uvScale, extra?.uvScale?.[0] ?? obj.uvScale?.[0] ?? 1, extra?.uvScale?.[1] ?? obj.uvScale?.[1] ?? 1);
+    gl.uniform2f(loc.uvOffset, extra?.uvOffset?.[0] ?? obj.uvOffset?.[0] ?? 0, extra?.uvOffset?.[1] ?? obj.uvOffset?.[1] ?? 0);
     gl.drawElements(gl.TRIANGLES, obj.mesh.count, gl.UNSIGNED_SHORT, 0);
   }
 
@@ -1021,7 +1500,7 @@
 
     const keyDir = (keyRight ? 1 : 0) - (keyLeft ? 1 : 0);
     const usingKeys = keyDir !== 0;
-    const rawAxis = usingKeys ? keyDir * (keyRun ? 1 : WALK_POINT) : driveAxis;
+    const rawAxis = editMode ? 0 : (usingKeys ? keyDir * (keyRun ? 1 : WALK_POINT) : driveAxis);
     const axisMag = Math.abs(rawAxis);
     const moveDir = axisMag > DRIVE_DEADZONE ? Math.sign(rawAxis) : 0;
 
@@ -1086,6 +1565,7 @@
     const eye = [camera.x, camera.y, camera.z];
     const target = [camera.x, camera.targetY, camera.targetZ];
     const view = mat4LookAt(eye, target, [0, 1, 0]);
+    currentViewMatrix = view;
 
     drawObject({ ...ground, x: camera.x }, view);
     drawObject(pathStrip, view);
@@ -1096,10 +1576,19 @@
 
     for (const obj of frontOccluders) drawObject(obj, view);
 
+    drawEditorOverlay();
+
     const motionLabel = jumping ? 'JUMP' : (runBlend > .55 && isWalking ? 'RUN' : (isWalking ? 'WALK' : 'IDLE'));
-    statusEl.textContent = debugDepth
-      ? `Depth view · camera X ${camera.x.toFixed(1)} · raised path geometry`
-      : `3D forest · ${motionLabel} · camera X ${camera.x.toFixed(1)} · warm path / cool fog`;
+    if (editMode) {
+      const selected = selectedObject && !selectedObject.deleted
+        ? `${selectedObject.assetName}${selectedObject.collision ? ' · COLLISION' : ''}`
+        : (addAssetType ? `ADD ${addAssetType}` : 'tap scenery to select');
+      statusEl.textContent = `EDIT · ${selected}`;
+    } else {
+      statusEl.textContent = debugDepth
+        ? `Depth view · camera X ${camera.x.toFixed(1)} · raised path geometry`
+        : `3D forest · ${motionLabel} · camera X ${camera.x.toFixed(1)} · dirt ground / scene editor`;
+    }
 
     requestAnimationFrame(render);
   }
@@ -1157,7 +1646,7 @@
   }
 
   function triggerJump(){
-    if (jumping) return;
+    if (editMode || jumping) return;
     jumping = true;
     jumpTime = 0;
     jumpOffset = 0;
@@ -1178,21 +1667,108 @@
     hideHint();
   });
 
+  if (editBtn) editBtn.addEventListener('click', () => setEditMode(!editMode));
+  editorAddBtn?.addEventListener('click', () => {
+    if (!editMode || !editorPalette) return;
+    editorPalette.hidden = !editorPalette.hidden;
+    if (!editorPalette.hidden) {
+      addAssetType = null;
+      selectedObject = null;
+      updateAssetPaletteState();
+      updateEditorButtons();
+    }
+  });
+  editorPaletteClose?.addEventListener('click', () => {
+    if (editorPalette) editorPalette.hidden = true;
+    addAssetType = null;
+    updateAssetPaletteState();
+    updateEditorButtons();
+  });
+  editorResetBtn?.addEventListener('click', () => {
+    if (!window.confirm('Reset all SideScroll scene edits on this device?')) return;
+    try { localStorage.removeItem(SCENE_STORAGE_KEY); } catch (_) {}
+    window.location.reload();
+  });
+  editorDuplicateBtn?.addEventListener('click', duplicateSelected);
+  editorScaleDownBtn?.addEventListener('click', () => scaleSelected(0.90));
+  editorScaleUpBtn?.addEventListener('click', () => scaleSelected(1.10));
+  editorCollisionBtn?.addEventListener('click', toggleSelectedCollision);
+  editorDeleteBtn?.addEventListener('click', deleteSelected);
+
   canvas.addEventListener('pointerdown', e => {
+    canvas.setPointerCapture?.(e.pointerId);
+    hideHint();
+    if (editMode) {
+      editorPointer = e.pointerId;
+      if (addAssetType) {
+        const point = groundPointFromClient(e.clientX, e.clientY);
+        if (point) {
+          createUserObject(addAssetType, point);
+          addAssetType = null;
+          updateAssetPaletteState();
+          updateEditorButtons();
+          hintEl.textContent = 'Added · drag to move · use the tools below to tune it';
+          hintEl.classList.remove('hidden');
+        }
+        editorPointer = null;
+        return;
+      }
+
+      const hit = pickSceneObject(e.clientX, e.clientY);
+      if (hit) {
+        selectObject(hit);
+        const point = groundPointFromClient(e.clientX, e.clientY);
+        editorDragKind = 'object';
+        if (point) editorDragOffset = { x: hit.x - point.x, z: hit.z - point.z };
+        else editorDragOffset = { x: 0, z: 0 };
+        hintEl.textContent = 'Selected · drag on the ground plane to reposition';
+        hintEl.classList.remove('hidden');
+      } else {
+        selectObject(null);
+        editorDragKind = 'pan';
+        editorPanStart = e.clientX;
+        editorPanCameraX = camera.x;
+        hintEl.textContent = 'Empty-space drag pans along the level';
+        hintEl.classList.remove('hidden');
+      }
+      return;
+    }
+
     activePointer = e.pointerId;
     dragStartX = e.clientX;
     dragStartCameraX = camera.x;
-    canvas.setPointerCapture?.(e.pointerId);
-    hideHint();
   });
 
   canvas.addEventListener('pointermove', e => {
+    if (editMode) {
+      if (e.pointerId !== editorPointer) return;
+      if (editorDragKind === 'object' && selectedObject) {
+        const point = groundPointFromClient(e.clientX, e.clientY);
+        if (!point) return;
+        selectedObject.x = point.x + editorDragOffset.x;
+        selectedObject.z = Rig.clamp(point.z + editorDragOffset.z, WORLD.farZ + 0.8, WORLD.nearZ - 0.6);
+        selectedObject.y = pathGroundYAt(selectedObject.x, selectedObject.z);
+        moveObjectToCorrectCollection(selectedObject);
+        sortSceneCollections();
+      } else if (editorDragKind === 'pan') {
+        const dx = e.clientX - editorPanStart;
+        camera.x = editorPanCameraX - dx * 0.0075;
+      }
+      return;
+    }
     if (e.pointerId !== activePointer) return;
     const dx = e.clientX - dragStartX;
     camera.x = dragStartCameraX - dx * 0.0075;
   });
 
   const endDrag = e => {
+    if (editMode) {
+      if (e.pointerId !== editorPointer) return;
+      if (editorDragKind === 'object' && selectedObject) recordObjectEdit(selectedObject);
+      editorPointer = null;
+      editorDragKind = null;
+      return;
+    }
     if (e.pointerId === activePointer) activePointer = null;
   };
   canvas.addEventListener('pointerup', endDrag);
@@ -1200,6 +1776,11 @@
 
   window.addEventListener('keydown', e => {
     const key = e.key.toLowerCase();
+    if (editMode) {
+      if (e.key === 'Escape') { selectObject(null); if (editorPalette) editorPalette.hidden = true; addAssetType = null; updateAssetPaletteState(); }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedObject) { e.preventDefault(); deleteSelected(); }
+      return;
+    }
     if (e.key === 'ArrowLeft' || key === 'a') {
       keyLeft = true;
       hideHint();
@@ -1215,6 +1796,7 @@
 
   window.addEventListener('keyup', e => {
     const key = e.key.toLowerCase();
+    if (editMode) return;
     if (e.key === 'ArrowLeft' || key === 'a') keyLeft = false;
     if (e.key === 'ArrowRight' || key === 'd') keyRight = false;
     if (e.key === 'Shift') keyRun = false;
@@ -1236,6 +1818,9 @@
     previousCameraX = camera.x;
   });
 
+  buildAssetPalette();
+  updateEditorButtons();
+  setEditMode(false);
   resize();
   requestAnimationFrame(render);
 })();
