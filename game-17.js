@@ -57,7 +57,7 @@
     const img = new Image();
     img.onload = () => { rigAtlas = img; draw(); };
     img.onerror = () => { rigAtlas = null; draw(); };
-    img.src = `${Rig.ATLAS.url}?v=1.8.66`;
+    img.src = `${Rig.ATLAS.url}?v=1.8.67`;
   }
 
   function resize() {

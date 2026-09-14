@@ -331,7 +331,7 @@
   treeAssets.forEach(([id, w, h]) => {
     const key = `tree${id}`;
     assetAspect[key] = w / h;
-    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.66`, key);
+    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.67`, key);
   });
 
   const groundAssets = [
@@ -342,11 +342,11 @@
   groundAssets.forEach(([id, w, h]) => {
     const key = `ground${id}`;
     assetAspect[key] = w / h;
-    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.66' : null;
-    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.66`, key, fallback);
+    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.67' : null;
+    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.67`, key, fallback);
   });
 
-  textures.rigAtlas = createImageTexture(`${Rig.ATLAS.url}?v=1.8.66`, 'Walk Lab cutout rig atlas');
+  textures.rigAtlas = createImageTexture(`${Rig.ATLAS.url}?v=1.8.67`, 'Walk Lab cutout rig atlas');
 
   function mulberry32(seed) {
     return function() {
@@ -571,7 +571,7 @@
     x: 0,
     y: groundY,
     z: pathZ,
-    scale: 2.65,
+    scale: 3.30,
     tint: [1.0, 1.0, 1.0],
     opacity: 0.99,
     screenOffsetX: -0.18,
@@ -672,7 +672,7 @@
 
   function currentCharacterPhase(isWalking) {
     if (!isWalking) return 0;
-    const stride = 2.8;
+    const stride = 1.45;
     return (character.distanceTravelled % stride) / stride;
   }
 

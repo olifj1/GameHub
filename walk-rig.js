@@ -7,17 +7,21 @@
   const lerp = (a, b, t) => a + (b - a) * t;
   const clone = obj => JSON.parse(JSON.stringify(obj));
 
+  // v1.8.67 proportions are measured against the assembled character on the
+  // original simple-parts reference sheet: large head, compact torso and shorter,
+  // slimmer limbs.  These values are the rig proportions; the atlas art is then
+  // scaled between the same joint pivots rather than driving the skeleton size.
   const BODY = Object.freeze({
-    torso: 0.40,
-    neck: 0.055,
-    headR: 0.105,
-    upperArm: 0.255,
-    lowerArm: 0.245,
-    upperLeg: 0.38,
-    lowerLeg: 0.38,
-    foot: 0.16,
-    ankleHeight: 0.090,
-    ankleForward: 0.038,
+    torso: 0.30,
+    neck: 0.040,
+    headR: 0.170,
+    upperArm: 0.190,
+    lowerArm: 0.180,
+    upperLeg: 0.240,
+    lowerLeg: 0.230,
+    foot: 0.145,
+    ankleHeight: 0.065,
+    ankleForward: 0.035,
     hair1: 0.27,
     hair2: 0.25,
     cloak1: 0.34,
@@ -60,21 +64,26 @@
   }
 
   function makeKey(i) {
-    // Reference-driven walk: contact / passing / up poses are deliberately tall so
-    // the support leg can approach full extension instead of staying permanently crouched.
-    const pelvisY = [0.820,0.750,0.805,0.845,0.820,0.750,0.805,0.845][i];
-    const lean = [6,8,7,5,6,8,7,5][i] * DEG;
-    const aFootX = [ 0.300,0.180,-0.020,-0.280,-0.330,-0.200,-0.020,0.200][i];
-    const bFootX = [-0.330,-0.200,-0.020,0.200, 0.300,0.180,-0.020,-0.280][i];
-    const aFootLift=[0,0,0,0,.060,.115,.190,.135][i];
-    const bFootLift=[.060,.115,.190,.135,0,0,0,0][i];
-    const aFootAngle=[0,0,1,3,-10,-15,-7,1][i] * DEG;
-    const bFootAngle=[-10,-15,-7,1,0,0,1,3][i] * DEG;
+    // Reference-proportion walk.  The support leg is intentionally close to
+    // straight at contact and passing, with the deepest compression confined to
+    // the down pose.  This removes the permanent crouch visible in earlier cycles.
+    const pelvisY = [0.510,0.490,0.530,0.520,0.510,0.490,0.530,0.520][i];
+    const lean = [4,5,4,3,4,5,4,3][i] * DEG;
 
-    // Counter-swing based on the assembled reference: near hand trails when near foot leads.
-    const aHandX=[-.190,-.145,-.040,.100,.190,.145,.040,-.100][i];
-    const bHandX=[ .190, .145, .040,-.100,-.190,-.145,-.040,.100][i];
-    const handY=[.390,.405,.420,.410,.390,.405,.420,.410][i];
+    // A/B are the two legs.  The planted heel travels from just ahead of the
+    // pelvis to just behind it while staying on the floor; the other leg clears
+    // the ground with a modest knee fold rather than tucking underneath the body.
+    const aFootX = [ 0.120,0.070,0.000,-0.100,-0.160,-0.100,0.000,0.100][i];
+    const bFootX = [-0.160,-0.100,0.000, 0.100, 0.120, 0.070,0.000,-0.100][i];
+    const aFootLift=[0,0,0,0,.055,.105,.145,.095][i];
+    const bFootLift=[.055,.105,.145,.095,0,0,0,0][i];
+    const aFootAngle=[0,0,0,7,-9,-14,-5,2][i] * DEG;
+    const bFootAngle=[-9,-14,-5,2,0,0,0,7][i] * DEG;
+
+    // Smaller, relaxed counter-swing to match the assembled reference image.
+    const aHandX=[-.095,-.075,-.025,.055,.095,.075,.025,-.055][i];
+    const bHandX=[ .095, .075, .025,-.055,-.095,-.075,-.025,.055][i];
+    const handY=[.285,.295,.305,.300,.285,.295,.305,.300][i];
 
     const hairAngle=[110,108,104,106,110,114,117,114][i]*DEG;
     const hairBend=[10,8,5,8,12,15,16,13][i]*DEG;
@@ -197,7 +206,7 @@
     const bArm=solveJoint(shoulder,bWTarget,BODY.upperArm,BODY.lowerArm,'elbow');
 
     const waist={x:lerp(chest.x,pelvis.x,.78),y:lerp(chest.y,pelvis.y,.78)};
-    const dressHem={x:pelvis.x-.015,y:Math.max(.17,pelvis.y-.33)};
+    const dressHem={x:pelvis.x-.010,y:Math.max(.14,pelvis.y-.185)};
     const sway=Math.sin((p.travel||0)*TAU)*.035;
     const cloakMid={x:shoulder.x-.155-sway*.70,y:shoulder.y-.205};
     const cloakTip={x:cloakMid.x-.205-sway*.45,y:cloakMid.y-.225};

@@ -1,12 +1,11 @@
-# GameHub v1.8.66
+# GameHub v1.8.67
 
-Walk Lab simple-character rebuild.
+Walk Lab reference-proportion and gait pass.
 
-- Returned to the **first simple-parts character design** as the authoritative art source; later regenerated variants are not used.
-- Removed the cream source background programmatically to create a transparent atlas.
-- Split the original long near/far leg artwork into independent **thigh + shin + foot** pieces while preserving the original proportions.
-- Simplified the live cutout rig to head, upper/lower body, upper/lower arms, upper/lower legs and separate feet; cloak / extra hair pieces are removed for now.
-- Reworked the default 16-frame walk so contact / passing / up poses become much taller and the support leg can approach full extension instead of remaining permanently crouched.
-- Frame 1 is tuned toward the assembled reference pose from the source sheet.
-- Walk Lab and SideScroll now both load the atlas directly from the shared rig definition to prevent the two renderers drifting onto different art files.
-- SideScroll continues to render the live rig directly rather than a baked flipbook.
+- Kept the original simple-parts character artwork from v1.8.66; no new generated character art in this release.
+- Retuned the shared rig proportions against the assembled reference image: **larger head, shorter torso, shorter arms and substantially shorter legs**.
+- Reduced the lower dress/skirt rig span so the body no longer dominates the character.
+- Rebuilt the default walk keys so the planted leg approaches **full extension at contact and passing**, with the knee compression concentrated in the down pose instead of a permanent crouch.
+- Reduced hand swing and body lean to better match the relaxed reference walk.
+- Updated SideScroll to use the same new live-rig proportions and adjusted its character scale so the apparent on-screen size stays comparable.
+- Retuned SideScroll stride distance to the shorter leg cycle so planted feet should slide less relative to the world.
