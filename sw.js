@@ -1,4 +1,4 @@
-const CACHE = "gamehub-v1.8.87";
+const CACHE = "gamehub-v1.8.88";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -61,7 +61,9 @@ const APP_SHELL = [
   "./sidescroll-woodland-ground.png",
   "./sidescroll-dressing-atlas.png",
   "./sidescroll-audio-forest.mp3",
-  "./sidescroll-audio-footsteps-loop.wav",
+  "./sidescroll-audio-footsteps-slow.wav",
+  "./sidescroll-audio-footsteps-walk.wav",
+  "./sidescroll-audio-footsteps-run.wav",
   "./tower-assets.js",
   "./tower-vehicles.png",
   "./tower-defences.png",

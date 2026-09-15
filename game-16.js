@@ -34,31 +34,36 @@
   const editorCollisionBtn = document.getElementById('sidescroll-editor-collision');
   const editorDeleteBtn = document.getElementById('sidescroll-editor-delete');
 
-  // SideScroll audio is deliberately simple: one looping woodland bed plus
-  // one reusable footstep voice.  On iPhone/PWA we unlock both from the first
-  // genuine gesture, then leave the render loop completely alone.
+  // SideScroll audio is deliberately conservative for iPhone/PWA playback.
+  // All footstep streams are started once from the first real gesture and then
+  // left running at a fixed rate. Gameplay only changes volume; it never seeks,
+  // pauses, restarts or retimes a footstep stream while the character moves.
   const SideScrollAudio = (() => {
     const ENABLE_KEY = 'gamehub.sidescroll.audio.enabled.v1';
-    const VERSION = '1.8.87';
-    const FOOTSTEP_LOOP_SECONDS = 1.260861678;
-    const FOOTSTEP_SECOND_START_PHASE = 0.48414;
+    const VERSION = '1.8.88';
     const files = {
       forest: `sidescroll-audio-forest.mp3?v=${VERSION}`,
-      footsteps: `sidescroll-audio-footsteps-loop.wav?v=${VERSION}`
+      slow: `sidescroll-audio-footsteps-slow.wav?v=${VERSION}`,
+      walk: `sidescroll-audio-footsteps-walk.wav?v=${VERSION}`,
+      run: `sidescroll-audio-footsteps-run.wav?v=${VERSION}`
+    };
+    const modes = {
+      slow: { duration: 4 / 2.35, volume: 0.17 },
+      walk: { duration: 1.45 / 1.15, volume: 0.19 },
+      run: { duration: 2.05 / 2.85, volume: 0.20 }
     };
 
     let enabled = true;
     let ambient = null;
-    let footsteps = null;
     let ambientPlayPending = false;
-    let footstepsPlayPending = false;
-    let footstepsStarted = false;
-    let motionActive = false;
-    let footstepsAudible = false;
-    let syncRequested = true;
-    let desiredFootstepVolume = 0.35;
-    let lastFootstepRate = 1;
+    let loops = null;
+    let loopStarted = { slow: false, walk: false, run: false };
+    let loopPlayPending = { slow: false, walk: false, run: false };
     let lastPlaySucceeded = false;
+    let motionActive = false;
+    let activeMode = 'walk';
+    let pendingUnmute = false;
+    let previousAudioPhase = 0;
 
     try {
       if (localStorage.getItem(ENABLE_KEY) === '0') enabled = false;
@@ -89,40 +94,40 @@
     }
 
     function ensureMedia() {
-      if (ambient && footsteps) return;
+      if (ambient && loops) return;
 
       ambient = makeAudio(files.forest, true);
       ambient.volume = 0.48;
-
-      // This is one pre-built loop containing two copies of the same footstep
-      // sample with the correct silence between them.  It runs continuously
-      // after the first user gesture; gameplay never rewinds or replays it.
-      footsteps = makeAudio(files.footsteps, true);
-      footsteps.volume = 0;
-      footsteps.playbackRate = 1;
-
       ambient.addEventListener('playing', () => {
-        lastPlaySucceeded = true;
         ambientPlayPending = false;
+        lastPlaySucceeded = true;
         updateButton();
       });
       ambient.addEventListener('pause', () => {
         ambientPlayPending = false;
       });
 
-      footsteps.addEventListener('playing', () => {
-        footstepsPlayPending = false;
-        footstepsStarted = true;
-        syncRequested = true;
-        lastPlaySucceeded = true;
-        updateButton();
-      });
-      footsteps.addEventListener('pause', () => {
-        footstepsPlayPending = false;
-        footstepsStarted = false;
-        footstepsAudible = false;
-        syncRequested = true;
-      });
+      loops = {
+        slow: makeAudio(files.slow, true),
+        walk: makeAudio(files.walk, true),
+        run: makeAudio(files.run, true)
+      };
+
+      for (const [name, audio] of Object.entries(loops)) {
+        audio.volume = 0;
+        audio.playbackRate = 1;
+        audio.addEventListener('playing', () => {
+          loopPlayPending[name] = false;
+          loopStarted[name] = true;
+          lastPlaySucceeded = true;
+          updateButton();
+        });
+        audio.addEventListener('pause', () => {
+          loopPlayPending[name] = false;
+          loopStarted[name] = false;
+          if (name === activeMode) pendingUnmute = true;
+        });
+      }
     }
 
     function startAmbience() {
@@ -145,108 +150,137 @@
       }
     }
 
-    function startFootstepStream() {
+    function startFootstepStreams() {
       if (!enabled) return;
       ensureMedia();
-      if (!footsteps || !footsteps.paused || footstepsPlayPending) return;
-
-      // Keep it silent while it starts.  Once running, walking only adjusts
-      // volume/playbackRate; there are no per-step play(), pause() or seeks.
-      footsteps.volume = 0;
-      footstepsPlayPending = true;
-      try {
-        const promise = footsteps.play();
-        if (promise && typeof promise.catch === 'function') {
-          promise.catch(err => {
-            footstepsPlayPending = false;
-            console.warn('SideScroll footstep loop play was blocked', err);
-          });
+      for (const [name, audio] of Object.entries(loops)) {
+        if (!audio.paused || loopPlayPending[name]) continue;
+        audio.volume = 0;
+        audio.playbackRate = 1;
+        loopPlayPending[name] = true;
+        try {
+          const promise = audio.play();
+          if (promise && typeof promise.catch === 'function') {
+            promise.catch(err => {
+              loopPlayPending[name] = false;
+              console.warn(`SideScroll ${name} footstep stream was blocked`, err);
+            });
+          }
+        } catch (err) {
+          loopPlayPending[name] = false;
+          console.warn(`SideScroll ${name} footstep stream failed`, err);
         }
-      } catch (err) {
-        footstepsPlayPending = false;
-        console.warn('SideScroll footstep loop play failed', err);
       }
     }
 
     function unlock() {
       if (!enabled) { updateButton(); return; }
       ensureMedia();
+      // The forest bed starts independently. The three tiny cadence loops are
+      // also unlocked here while the user's gesture is still active, but muted.
       startAmbience();
-      startFootstepStream();
+      startFootstepStreams();
     }
 
-    function setFootstepMotion(active, runAmount = 0, actualSpeed = 0, stride = 1, carrying = false) {
-      ensureMedia();
+    function phaseFor(mode) {
+      const audio = loops?.[mode];
+      const duration = modes[mode]?.duration || 1;
+      if (!audio || !loopStarted[mode] || !Number.isFinite(audio.currentTime)) return null;
+      return ((audio.currentTime / duration) % 1 + 1) % 1;
+    }
 
-      const nextActive = Boolean(active && enabled && footstepsStarted);
+    function crossed(previous, current, target) {
+      if (current >= previous) return target > previous && target <= current;
+      return target > previous || target <= current;
+    }
+
+    function crossedContact(previous, current) {
+      return crossed(previous, current, 0) ||
+        crossed(previous, current, 0.25) ||
+        crossed(previous, current, 0.5) ||
+        crossed(previous, current, 0.75);
+    }
+
+    function chooseMode(speed) {
+      // Hysteresis keeps the same cadence selected while the thumb wobbles near
+      // a boundary. Switching modes only changes which already-running loop is audible.
+      if (activeMode === 'run') {
+        if (speed >= 1.60) return 'run';
+        return speed < 0.72 ? 'slow' : 'walk';
+      }
+      if (activeMode === 'slow') {
+        if (speed <= 0.82) return 'slow';
+        return speed > 1.95 ? 'run' : 'walk';
+      }
+      if (speed < 0.64) return 'slow';
+      if (speed > 1.95) return 'run';
+      return 'walk';
+    }
+
+    function muteLoops() {
+      if (!loops) return;
+      for (const audio of Object.values(loops)) {
+        if (audio.volume !== 0) audio.volume = 0;
+      }
+    }
+
+    function setFootstepMotion(active, runAmount = 0, actualSpeed = 0) {
+      ensureMedia();
+      const speed = Math.max(0, Number(actualSpeed) || 0);
+      const nextActive = Boolean(active && enabled && loops && Object.values(loopStarted).some(Boolean));
+
       if (!nextActive) {
+        if (motionActive) muteLoops();
         motionActive = false;
-        footstepsAudible = false;
-        syncRequested = true;
-        if (footsteps && footsteps.volume !== 0) footsteps.volume = 0;
+        pendingUnmute = true;
         return null;
       }
 
-      const run = Math.max(0, Math.min(1, runAmount));
-      const safeStride = Math.max(0.001, stride);
-      const rate = Math.max(0.25, Math.min(1.9, FOOTSTEP_LOOP_SECONDS * Math.max(0, actualSpeed) / safeStride));
-      desiredFootstepVolume = (0.34 + run * 0.07) * (carrying ? 0.96 : 1);
-
-      if (footsteps && Math.abs(rate - lastFootstepRate) > 0.025) {
-        lastFootstepRate = rate;
-        footsteps.playbackRate = rate;
-      }
-
-      if (!motionActive) {
+      const nextMode = chooseMode(speed);
+      if (!motionActive || nextMode !== activeMode) {
+        muteLoops();
+        activeMode = nextMode;
         motionActive = true;
-        footstepsAudible = false;
-        syncRequested = true;
-        if (footsteps && footsteps.volume !== 0) footsteps.volume = 0;
+        pendingUnmute = true;
+        previousAudioPhase = phaseFor(activeMode) ?? 0;
       }
 
-      if (syncRequested && footsteps) {
-        syncRequested = false;
-        const phase = ((footsteps.currentTime / FOOTSTEP_LOOP_SECONDS) % 1 + 1) % 1;
-        return Number.isFinite(phase) ? phase : 0;
+      const phase = phaseFor(activeMode);
+      if (phase === null) return null;
+
+      // Reveal the fixed-rate loop exactly on its next embedded foot contact so
+      // movement never begins with half of a sample. No transport operation occurs.
+      if (pendingUnmute && loopStarted[activeMode]) {
+        if (crossedContact(previousAudioPhase, phase)) {
+          const selected = loops[activeMode];
+          selected.volume = modes[activeMode].volume;
+          pendingUnmute = false;
+        }
       }
-
-      return null;
-    }
-
-    function updateFootstepPhase(previousPhase, currentPhase) {
-      if (!enabled || !motionActive || !footstepsStarted || footstepsAudible || !footsteps) return;
-
-      // Turn the already-running loop up only at the start of one of its two
-      // embedded samples.  This avoids revealing a chopped-off step when the
-      // player begins moving midway through the silent loop.
-      if (
-        phaseCrossed(previousPhase, currentPhase, 0) ||
-        phaseCrossed(previousPhase, currentPhase, FOOTSTEP_SECOND_START_PHASE)
-      ) {
-        footsteps.volume = desiredFootstepVolume;
-        footstepsAudible = true;
-      }
+      previousAudioPhase = phase;
+      return phase;
     }
 
     function stopAll() {
       motionActive = false;
-      footstepsAudible = false;
-      syncRequested = true;
-
+      pendingUnmute = true;
+      muteLoops();
       if (ambient) {
         try { ambient.pause(); } catch (_) {}
       }
-      if (footsteps) {
-        footsteps.volume = 0;
-        try { footsteps.pause(); } catch (_) {}
-      }
+      // Footstep cadence streams deliberately stay alive and muted. This means
+      // turning sound back on cannot introduce a movement hitch by restarting them.
     }
 
     function setEnabled(next) {
       enabled = Boolean(next);
       try { localStorage.setItem(ENABLE_KEY, enabled ? '1' : '0'); } catch (_) {}
-      if (enabled) unlock();
-      else stopAll();
+      if (enabled) {
+        startAmbience();
+        startFootstepStreams();
+      } else {
+        stopAll();
+      }
       updateButton();
     }
 
@@ -254,20 +288,26 @@
 
     function recover() {
       ambientPlayPending = false;
-      footstepsPlayPending = false;
-      footstepsStarted = footsteps ? !footsteps.paused : false;
-      syncRequested = true;
-      if (footsteps) footsteps.volume = 0;
+      if (loops) {
+        for (const name of Object.keys(loops)) {
+          loopPlayPending[name] = false;
+          loopStarted[name] = !loops[name].paused;
+          loops[name].volume = 0;
+          loops[name].playbackRate = 1;
+        }
+      }
+      motionActive = false;
+      pendingUnmute = true;
       if (enabled) {
         startAmbience();
-        startFootstepStream();
+        startFootstepStreams();
       }
       updateButton();
     }
 
     ensureMedia();
     updateButton();
-    return { unlock, setFootstepMotion, updateFootstepPhase, toggle, recover };
+    return { unlock, setFootstepMotion, toggle, recover };
   })();
 
   const gl = canvas.getContext('webgl', {
@@ -2413,33 +2453,27 @@
     if (isWalking) {
       const travel = Math.abs(cameraDelta);
       const stride = Rig.lerp(WALK_STRIDE, RUN_STRIDE, smoothRun);
-      const previousPhase = locomotionPhase;
       const actualSpeed = travel / Math.max(0.001, dt);
 
-      // The footstep stream is already playing silently.  Match its playback
-      // rate to the travelled-distance cadence, and only reveal it while the
-      // character is actually walking on the ground.
+      // Audio is now the phase master whenever its fixed cadence stream is ready.
+      // This guarantees four audible contacts per four visual contacts without
+      // touching playbackRate, currentTime, play() or pause() while walking.
       const syncedAudioPhase = SideScrollAudio.setFootstepMotion(
         footstepEligible,
         smoothRun,
-        actualSpeed,
-        stride,
-        Boolean(carriedObject)
+        actualSpeed
       );
 
       if (syncedAudioPhase !== null) {
-        // Re-sync once when movement begins.  After this, audio and animation
-        // advance at the same rate without any per-step media operations.
         locomotionPhase = syncedAudioPhase;
       } else {
         locomotionPhase = (locomotionPhase + travel / Math.max(0.001, stride)) % 1;
-        SideScrollAudio.updateFootstepPhase(previousPhase, locomotionPhase);
       }
 
       character.distanceTravelled += travel;
       character.lastFacing = cameraDelta >= 0 ? 1 : -1;
     } else {
-      SideScrollAudio.setFootstepMotion(false, smoothRun, 0, WALK_STRIDE, Boolean(carriedObject));
+      SideScrollAudio.setFootstepMotion(false, smoothRun, 0);
     }
     previousCameraX = camera.x;
 
