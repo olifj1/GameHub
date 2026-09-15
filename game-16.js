@@ -424,7 +424,7 @@
   treeAssets.forEach(([id, w, h]) => {
     const key = `tree${id}`;
     assetAspect[key] = w / h;
-    textures[key] = createImageTexture(`sidescroll-tree-${id}.png?v=1.8.75`, key);
+    textures[key] = createImageTexture(`sidescroll-tree-${id}.png`, key, id === '01' ? 'sidescroll-woodland-tree.png' : 'sidescroll-tree-01.png');
   });
 
   const groundAssets = [
@@ -435,11 +435,38 @@
   groundAssets.forEach(([id, w, h]) => {
     const key = `ground${id}`;
     assetAspect[key] = w / h;
-    const fallback = id === '12' ? 'sidescroll-ground-11.png?v=1.8.75' : null;
-    textures[key] = createImageTexture(`sidescroll-ground-${id}.png?v=1.8.75`, key, fallback);
+    const fallback = id === '01' ? 'sidescroll-woodland-ground.png' : 'sidescroll-ground-01.png';
+    textures[key] = createImageTexture(`sidescroll-ground-${id}.png`, key, fallback);
   });
 
-  textures.rigAtlas = createImageTexture(Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.75`, 'Walk Lab cutout rig atlas');
+  // Gameplay asset: a deliberately simple, readable wooden crate.  It is
+  // generated in code so it has no extra file dependency and can be used as
+  // the first editor-authored platform/obstacle.
+  assetAspect.crate = 1.08;
+  textures.crate = createTexture((ctx, w, h) => {
+    ctx.clearRect(0, 0, w, h);
+    const x = 30, y = 46, cw = 186, ch = 174;
+    // top and side give a tiny bit of volume while staying in the illustrated style
+    ctx.fillStyle = '#a97b4e';
+    ctx.beginPath(); ctx.moveTo(x, y + 18); ctx.lineTo(x + 22, y); ctx.lineTo(x + cw, y); ctx.lineTo(x + cw - 20, y + 18); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#775339';
+    ctx.beginPath(); ctx.moveTo(x + cw - 20, y + 18); ctx.lineTo(x + cw, y); ctx.lineTo(x + cw, y + ch - 8); ctx.lineTo(x + cw - 20, y + ch); ctx.closePath(); ctx.fill();
+    const g = ctx.createLinearGradient(x, y + 18, x, y + ch);
+    g.addColorStop(0, '#b78654'); g.addColorStop(1, '#8b5f3d');
+    ctx.fillStyle = g; ctx.fillRect(x, y + 18, cw - 20, ch - 18);
+    ctx.strokeStyle = '#5d402e'; ctx.lineWidth = 8; ctx.strokeRect(x + 4, y + 22, cw - 28, ch - 30);
+    ctx.lineWidth = 10;
+    ctx.beginPath(); ctx.moveTo(x + 12, y + 30); ctx.lineTo(x + cw - 32, y + ch - 18); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + cw - 32, y + 30); ctx.lineTo(x + 12, y + ch - 18); ctx.stroke();
+    ctx.strokeStyle = 'rgba(235,198,143,.42)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(x + 12, y + 34); ctx.lineTo(x + cw - 34, y + 34); ctx.stroke();
+    for (let i=0;i<6;i++) {
+      ctx.strokeStyle = `rgba(77,49,32,${0.12 + i*0.012})`; ctx.lineWidth = 2;
+      const yy = y + 46 + i * 22; ctx.beginPath(); ctx.moveTo(x + 16, yy); ctx.lineTo(x + cw - 38, yy + (i%2?2:-2)); ctx.stroke();
+    }
+  }, 256, 256, false);
+
+  textures.rigAtlas = createImageTexture(Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.78`, 'Walk Lab cutout rig atlas');
 
   function mulberry32(seed) {
     return function() {
@@ -542,7 +569,7 @@
   const midfill = [];
   const frontOccluders = [];
 
-  const SCENE_STORAGE_KEY = 'gamehub.sidescroll.scene.v1';
+  const SCENE_STORAGE_KEY = 'gamehub.sidescroll.scene.v2';
   let sceneIdCounter = 0;
   let userSceneCounter = 0;
   let testObstacleObject = null;
@@ -550,9 +577,9 @@
   const sceneData = (() => {
     try {
       const parsed = JSON.parse(localStorage.getItem(SCENE_STORAGE_KEY) || 'null');
-      if (parsed && parsed.version === 1) return parsed;
+      if (parsed && parsed.version === 2) return parsed;
     } catch (_) {}
-    return { version: 1, overrides: {}, added: [] };
+    return { version: 2, overrides: {}, added: [] };
   })();
 
   function saveSceneData() {
@@ -588,6 +615,8 @@
       tint: opts.tint || null,
       asset: true,
       assetName: type,
+      category: opts.category || 'dressing',
+      gameplayType: opts.gameplayType || null,
       layer: opts.layer || classifyLayer(z),
       wrap: opts.wrap !== false,
       collision: opts.collision ? { ...opts.collision } : null,
@@ -785,14 +814,18 @@
       });
     }
 
-    // A single readable fallen-log obstacle sits on the playable centre strip.
-    // It is deliberately modest for the first jump-tuning pass.
-    testObstacleObject = addObject(frontOccluders, 'ground09', TEST_OBSTACLE_X, TEST_OBSTACLE_Z, null, TEST_OBSTACLE_HEIGHT, {
+    // First gameplay object: a clean wooden crate on the playable strip.
+    // Unlike dressing, gameplay assets have authored collision and can be
+    // stood on.  This gives the editor a clear object for jump tuning.
+    testObstacleObject = addObject(frontOccluders, 'crate', TEST_OBSTACLE_X, TEST_OBSTACLE_Z, 1.12, 1.04, {
+      id: 'gameplay-crate-01',
       y: pathGroundYAt(TEST_OBSTACLE_X, TEST_OBSTACLE_Z),
-      shade: 1.02,
-      opacity: 0.99,
+      shade: 1.0,
+      opacity: 1.0,
       layer: 'foreground',
-      collision: { halfWidth: TEST_OBSTACLE_HALF_WIDTH, height: TEST_OBSTACLE_CLEARANCE, depth: 0.82 }
+      category: 'gameplay',
+      gameplayType: 'crate',
+      collision: { halfWidth: 0.52, height: 0.98, depth: 0.82, platform: true }
     });
 
     // Occasional larger near-side assets give a stronger sense of passing
@@ -835,7 +868,7 @@
   }
 
   function moveObjectToCorrectCollection(obj) {
-    const target = targetCollectionForZ(obj.z);
+    const target = obj.category === 'gameplay' ? frontOccluders : targetCollectionForZ(obj.z);
     for (const list of [backdrop, midfill, frontOccluders]) {
       const idx = list.indexOf(obj);
       if (idx >= 0 && list !== target) list.splice(idx, 1);
@@ -852,6 +885,8 @@
     if (Number.isFinite(override.sy)) obj.sy = override.sy;
     if (typeof override.flip === 'boolean') obj.flip = override.flip;
     if (typeof override.deleted === 'boolean') obj.deleted = override.deleted;
+    if (override.category) obj.category = override.category;
+    if ('gameplayType' in override) obj.gameplayType = override.gameplayType;
     if (override.collision === null) obj.collision = null;
     else if (override.collision) obj.collision = { ...override.collision };
     obj.y = pathGroundYAt(obj.x, obj.z);
@@ -865,14 +900,15 @@
       const payload = {
         id: obj.id, assetName: obj.assetName, x: obj.x, z: obj.z,
         sx: obj.sx, sy: obj.sy, flip: obj.flip, collision: obj.collision ? { ...obj.collision } : null,
-        deleted: !!obj.deleted
+        category: obj.category || 'dressing', gameplayType: obj.gameplayType || null, deleted: !!obj.deleted
       };
       if (saved) Object.assign(saved, payload);
       else sceneData.added.push(payload);
     } else {
       sceneData.overrides[obj.id] = {
         x: obj.x, z: obj.z, sx: obj.sx, sy: obj.sy, flip: obj.flip,
-        collision: obj.collision ? { ...obj.collision } : null, deleted: !!obj.deleted
+        collision: obj.collision ? { ...obj.collision } : null, category: obj.category || 'dressing',
+        gameplayType: obj.gameplayType || null, deleted: !!obj.deleted
       };
     }
     saveSceneData();
@@ -882,11 +918,12 @@
     for (const obj of allSceneObjects()) applyOverrideToObject(obj, sceneData.overrides[obj.id]);
     for (const saved of sceneData.added || []) {
       userSceneCounter += 1;
-      const collection = targetCollectionForZ(saved.z);
+      const collection = saved.category === 'gameplay' || saved.assetName === 'crate' ? frontOccluders : targetCollectionForZ(saved.z);
       const obj = addObject(collection, saved.assetName, saved.x, saved.z, saved.sx, saved.sy, {
         id: saved.id, baseSx: saved.sx, baseSy: saved.sy, flip: saved.flip,
         y: pathGroundYAt(saved.x, saved.z), collision: saved.collision, deleted: saved.deleted,
-        userAdded: true, shade: 1.0, opacity: 0.98, layer: classifyLayer(saved.z)
+        userAdded: true, shade: 1.0, opacity: 0.98, layer: classifyLayer(saved.z),
+        category: saved.category || (saved.assetName === 'crate' ? 'gameplay' : 'dressing'), gameplayType: saved.gameplayType || (saved.assetName === 'crate' ? 'crate' : null)
       });
       obj.sx = saved.sx; obj.sy = saved.sy;
     }
@@ -979,6 +1016,7 @@
   let jumpTime = 0;
   let jumpOffset = 0;
   let jumpVelocity = 0;
+  let standingOnObject = null;
   let activePointer = null;
   let dragStartX = 0;
   let dragStartCameraX = 0;
@@ -994,11 +1032,19 @@
   let editorTapState = null;
   let selectionCycleInfo = null;
   let currentViewMatrix = mat4Identity();
-  const editorAssetNames = [
-    'tree01','tree02','tree03','tree04','tree05','tree06',
-    'ground01','ground02','ground03','ground04','ground05','ground06',
-    'ground07','ground08','ground09','ground10','ground11','ground12'
+  const editorAssetGroups = [
+    { title: 'GAMEPLAY', items: [
+      { name: 'crate', label: 'WOODEN CRATE', category: 'gameplay', gameplayType: 'crate' }
+    ]},
+    { title: 'DRESSING · TREES', items: [
+      'tree01','tree02','tree03','tree04','tree05','tree06'
+    ].map(name => ({ name, label: `TREE ${Number(name.slice(-2))}`, category: 'dressing' }))},
+    { title: 'DRESSING · GROUND', items: [
+      'ground01','ground02','ground03','ground04','ground05','ground06',
+      'ground07','ground08','ground09','ground10','ground11','ground12'
+    ].map(name => ({ name, label: `GROUND ${Number(name.slice(-2))}`, category: 'dressing' }))}
   ];
+  const editorAssetInfo = new Map(editorAssetGroups.flatMap(group => group.items.map(item => [item.name, item])));
 
   let lastTime = performance.now();
   let previousCameraX = camera.x;
@@ -1171,11 +1217,17 @@
       addAssetType = null;
       if (editorPalette) editorPalette.hidden = true;
       setDriveAxis(0);
+      // If a crate has just been positioned underneath the character, enter
+      // Play mode standing on its top rather than intersecting it.
+      const support = platformUnder(camera.x + character.screenOffsetX, Infinity);
+      if (support) { jumpOffset = support.offset; standingOnObject = support.obj; }
+      else if (!jumping) { jumpOffset = 0; standingOnObject = null; }
     } else {
       setDriveAxis(0);
       jumping = false;
       jumpOffset = 0;
       jumpVelocity = 0;
+      standingOnObject = null;
       hintEl.classList.remove('hidden');
     }
     updateAssetPaletteState();
@@ -1183,6 +1235,7 @@
   }
 
   function defaultAssetHeight(name) {
+    if (name === 'crate') return 1.04;
     if (name.startsWith('tree')) return 8.2;
     if (name === 'ground09' || name === 'ground04' || name === 'ground07') return 0.88;
     return 0.82;
@@ -1192,10 +1245,15 @@
     const h = defaultAssetHeight(type);
     const w = h * (assetAspect[type] || 1);
     const id = `user-${Date.now().toString(36)}-${++userSceneCounter}`;
-    const collection = targetCollectionForZ(point.z);
+    const info = editorAssetInfo.get(type) || { category: 'dressing', gameplayType: null };
+    const collection = info.category === 'gameplay' ? frontOccluders : targetCollectionForZ(point.z);
+    const gameplayCollision = type === 'crate'
+      ? { halfWidth: Math.max(0.46, w * 0.43), height: h * 0.94, depth: 0.82, platform: true }
+      : null;
     const obj = addObject(collection, type, point.x, point.z, w, h, {
       id, userAdded:true, baseSx:w, baseSy:h, y:pathGroundYAt(point.x, point.z),
-      shade:1, opacity:.99, layer:classifyLayer(point.z)
+      shade:1, opacity:.99, layer:classifyLayer(point.z),
+      category: info.category || 'dressing', gameplayType: info.gameplayType || null, collision: gameplayCollision
     });
     moveObjectToCorrectCollection(obj);
     sortSceneCollections();
@@ -1211,7 +1269,8 @@
     const obj = addObject(targetCollectionForZ(point.z), selectedObject.assetName, point.x, point.z, selectedObject.sx, selectedObject.sy, {
       id, userAdded:true, baseSx:selectedObject.baseSx || selectedObject.sx, baseSy:selectedObject.baseSy || selectedObject.sy,
       y:pathGroundYAt(point.x, point.z), shade:selectedObject.shade, opacity:selectedObject.opacity,
-      flip:selectedObject.flip, layer:classifyLayer(point.z), collision:selectedObject.collision ? { ...selectedObject.collision } : null
+      flip:selectedObject.flip, layer:classifyLayer(point.z), collision:selectedObject.collision ? { ...selectedObject.collision } : null,
+      category:selectedObject.category || 'dressing', gameplayType:selectedObject.gameplayType || null
     });
     sortSceneCollections();
     recordObjectEdit(obj);
@@ -1220,7 +1279,7 @@
 
   function scaleSelected(multiplier) {
     if (!selectedObject || selectedObject.deleted) return;
-    const next = Rig.clamp((selectedObject.sy * multiplier), 0.18, selectedObject.assetName.startsWith('tree') ? 24 : 5.0);
+    const next = Rig.clamp((selectedObject.sy * multiplier), 0.18, selectedObject.assetName.startsWith('tree') ? 24 : (selectedObject.assetName === 'crate' ? 3.0 : 5.0));
     const ratio = next / Math.max(0.001, selectedObject.sy);
     selectedObject.sy = next;
     selectedObject.sx *= ratio;
@@ -1236,9 +1295,10 @@
   function toggleSelectedCollision() {
     if (!selectedObject || selectedObject.deleted) return;
     selectedObject.collision = selectedObject.collision ? null : {
-      halfWidth: Math.max(0.18, selectedObject.sx * 0.34),
-      height: Math.max(0.24, selectedObject.sy * 0.66),
-      depth: Math.max(0.42, Math.min(1.15, selectedObject.sx * 0.42))
+      halfWidth: Math.max(0.18, selectedObject.sx * (selectedObject.category === 'gameplay' ? 0.43 : 0.34)),
+      height: Math.max(0.24, selectedObject.sy * (selectedObject.category === 'gameplay' ? 0.94 : 0.66)),
+      depth: Math.max(0.42, Math.min(1.15, selectedObject.sx * 0.42)),
+      platform: selectedObject.category === 'gameplay'
     };
     recordObjectEdit(selectedObject);
     updateEditorButtons();
@@ -1262,26 +1322,39 @@
   function buildAssetPalette() {
     if (!editorAssetsEl) return;
     editorAssetsEl.innerHTML = '';
-    for (const name of editorAssetNames) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'sidescroll-editor-asset';
-      btn.dataset.asset = name;
-      const file = name.startsWith('tree')
-        ? `sidescroll-tree-${name.slice(-2)}.png`
-        : `sidescroll-ground-${name.slice(-2)}.png`;
-      btn.innerHTML = `<img src="${file}" alt=""><small>${name.startsWith('tree') ? 'TREE' : 'GROUND'} ${Number(name.slice(-2))}</small>`;
-      btn.addEventListener('click', e => {
-        e.preventDefault();
-        addAssetType = name;
-        selectedObject = null;
-        updateAssetPaletteState();
-        updateEditorButtons();
-        if (editorPalette) editorPalette.hidden = true;
-        hintEl.textContent = `Tap the ground to add ${name}`;
-        hintEl.classList.remove('hidden');
-      });
-      editorAssetsEl.appendChild(btn);
+    for (const group of editorAssetGroups) {
+      const heading = document.createElement('div');
+      heading.className = 'sidescroll-editor-asset-group';
+      heading.textContent = group.title;
+      editorAssetsEl.appendChild(heading);
+      for (const info of group.items) {
+        const name = info.name;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `sidescroll-editor-asset ${info.category === 'gameplay' ? 'gameplay' : 'dressing'}`;
+        btn.dataset.asset = name;
+        if (name === 'crate') {
+          btn.innerHTML = `<span class="sidescroll-crate-thumb" aria-hidden="true"><i></i></span><small>${info.label}</small>`;
+        } else {
+          const file = name.startsWith('tree')
+            ? `sidescroll-tree-${name.slice(-2)}.png`
+            : `sidescroll-ground-${name.slice(-2)}.png`;
+          btn.innerHTML = `<img src="${file}" alt=""><small>${info.label}</small>`;
+        }
+        btn.addEventListener('click', e => {
+          e.preventDefault();
+          addAssetType = name;
+          selectedObject = null;
+          updateAssetPaletteState();
+          updateEditorButtons();
+          if (editorPalette) editorPalette.hidden = true;
+          hintEl.textContent = info.category === 'gameplay'
+            ? `Tap the path to add ${info.label.toLowerCase()} · gameplay collision included`
+            : `Tap the ground to add ${name}`;
+          hintEl.classList.remove('hidden');
+        });
+        editorAssetsEl.appendChild(btn);
+      }
     }
   }
 
@@ -1387,6 +1460,29 @@
     return allSceneObjects().filter(obj => !obj.deleted && obj.collision);
   }
 
+  function platformOffsetFor(obj, characterX) {
+    if (!obj?.collision?.platform) return 0;
+    const platformTop = pathGroundYAt(obj.x, obj.z) + (obj.collision.height ?? obj.sy * 0.94);
+    return platformTop - pathGroundYAt(characterX, pathZ);
+  }
+
+  function platformUnder(characterX, ceiling = Infinity) {
+    let best = null;
+    let bestOffset = -Infinity;
+    for (const obj of collisionObjects()) {
+      const c = obj.collision;
+      if (!c?.platform) continue;
+      const depth = c.depth ?? 0.82;
+      if (Math.abs(obj.z - pathZ) > depth) continue;
+      const obstacleX = wrapX(obj.x, characterX);
+      const radius = Math.max(0.12, (c.halfWidth ?? obj.sx * 0.43) - 0.07);
+      if (Math.abs(characterX - obstacleX) > radius) continue;
+      const offset = platformOffsetFor(obj, characterX);
+      if (offset <= ceiling + 0.08 && offset > bestOffset) { best = obj; bestOffset = offset; }
+    }
+    return best ? { obj: best, offset: bestOffset } : null;
+  }
+
   function resolveObstacleMove(currentCameraX, proposedCameraX, clearanceHeight) {
     const offset = character.screenOffsetX;
     const currentX = currentCameraX + offset;
@@ -1394,10 +1490,14 @@
     let resolved = proposedCameraX;
     for (const obj of collisionObjects()) {
       const c = obj.collision;
-      if (!c || clearanceHeight >= (c.height ?? 0.6)) continue;
+      if (!c) continue;
       const depth = c.depth ?? 0.8;
       if (Math.abs(obj.z - pathZ) > depth) continue;
       const obstacleX = wrapX(obj.x, nextX);
+      const topOffset = c.platform ? platformOffsetFor(obj, nextX) : (c.height ?? 0.6);
+      // If the character's feet are already at or above the top surface they
+      // can pass over it; otherwise the side of the collider blocks movement.
+      if (clearanceHeight >= topOffset - 0.035) continue;
       const radius = (c.halfWidth ?? Math.max(0.22, obj.sx * 0.34)) + 0.18;
       if (Math.abs(nextX - obstacleX) < radius) {
         const side = currentX <= obstacleX ? -1 : 1;
@@ -1544,18 +1644,46 @@
       }
     }
 
-    // Update vertical motion first so obstacle clearance is evaluated against
-    // this frame's actual jump height.  The new arc is roughly twice as tall
-    // as v1.8.73 and lasts just under a second.
+    // Vertical motion supports real gameplay platforms.  When descending, the
+    // character can cross a platform top and land on it; walking off a crate
+    // turns into a short fall instead of snapping to the ground.
+    const previousJumpOffset = jumpOffset;
     if (jumping) {
       jumpTime += dt;
       jumpVelocity -= JUMP_GRAVITY * dt;
       jumpOffset += jumpVelocity * dt;
-      if (jumpOffset <= 0 && jumpTime > 0.18) {
+
+      if (jumpVelocity <= 0) {
+        const characterXNow = camera.x + character.screenOffsetX;
+        const platform = platformUnder(characterXNow, previousJumpOffset + 0.10);
+        if (platform && previousJumpOffset >= platform.offset - 0.04 && jumpOffset <= platform.offset) {
+          jumpOffset = platform.offset;
+          jumpVelocity = 0;
+          jumping = false;
+          jumpTime = 0;
+          standingOnObject = platform.obj;
+        }
+      }
+
+      if (jumping && jumpOffset <= 0 && jumpTime > 0.18) {
         jumpOffset = 0;
         jumpVelocity = 0;
         jumping = false;
         jumpTime = 0;
+        standingOnObject = null;
+      }
+    } else if (standingOnObject) {
+      const characterXNow = camera.x + character.screenOffsetX;
+      const support = platformUnder(characterXNow, jumpOffset + 0.12);
+      if (support && support.obj === standingOnObject) {
+        jumpOffset = support.offset;
+      } else {
+        // The feet have left the edge: preserve the current height and let
+        // gravity take over naturally.
+        standingOnObject = null;
+        jumping = true;
+        jumpTime = 0.22;
+        jumpVelocity = 0;
       }
     }
 
@@ -1608,7 +1736,7 @@
       const selectedDepth = selectionCycleInfo && selectedObject && selectionCycleInfo.objects.includes(selectedObject) && selectionCycleInfo.objects.length > 1
         ? ` · DEPTH ${selectionCycleInfo.objects.indexOf(selectedObject)+1}/${selectionCycleInfo.objects.length}` : '';
       const selected = selectedObject && !selectedObject.deleted
-        ? `${selectedObject.assetName}${selectedObject.collision ? ' · COLLISION' : ''}${selectedDepth}`
+        ? `${selectedObject.category === 'gameplay' ? 'GAMEPLAY · ' : 'DRESSING · '}${selectedObject.assetName}${selectedObject.collision ? ' · COLLISION' : ''}${selectedDepth}`
         : (addAssetType ? `ADD ${addAssetType}` : 'tap scenery to select');
       statusEl.textContent = `EDIT · ${selected}`;
     } else {
@@ -1676,7 +1804,9 @@
     if (editMode || jumping) return;
     jumping = true;
     jumpTime = 0;
-    jumpOffset = 0;
+    // Keep the current support height so jumping from the top of a crate starts
+    // from that surface rather than teleporting back to path level.
+    standingOnObject = null;
     jumpVelocity = JUMP_VELOCITY;
     hideHint();
   }
@@ -1869,6 +1999,7 @@
     jumpTime = 0;
     jumpOffset = 0;
     jumpVelocity = 0;
+    standingOnObject = null;
     locomotionPhase = 0;
     character.y = pathGroundYAt(character.x, pathZ);
     lastTime = performance.now();
