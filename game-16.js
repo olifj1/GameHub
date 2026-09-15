@@ -34,32 +34,22 @@
   const editorCollisionBtn = document.getElementById('sidescroll-editor-collision');
   const editorDeleteBtn = document.getElementById('sidescroll-editor-delete');
 
-  // SideScroll audio is deliberately local/offline. iOS requires the
-  // AudioContext to be unlocked by a genuine user gesture. Fetch the audio
-  // bytes immediately so the first tap only has to resume/decode them, then
-  // keep retrying the ambience start after later gestures/visibility changes.
+  // SideScroll audio is deliberately simple: one looping woodland bed plus
+  // one reusable footstep voice.  On iPhone/PWA we unlock both from the first
+  // genuine gesture, then leave the render loop completely alone.
   const SideScrollAudio = (() => {
     const ENABLE_KEY = 'gamehub.sidescroll.audio.enabled.v1';
-    const VERSION = '1.8.85';
+    const VERSION = '1.8.86';
     const files = {
       forest: `sidescroll-audio-forest.mp3?v=${VERSION}`,
-      jump: `sidescroll-audio-jump.mp3?v=${VERSION}`,
-      land: `sidescroll-audio-land.mp3?v=${VERSION}`,
-      cratePickup: `sidescroll-audio-crate-pickup.mp3?v=${VERSION}`,
-      crateDrop: `sidescroll-audio-crate-drop.mp3?v=${VERSION}`,
-      footsteps: Array.from({ length: 4 }, (_, i) => `sidescroll-audio-footstep-${String(i).padStart(2,'0')}.mp3?v=${VERSION}`)
+      footstep: `sidescroll-audio-footstep-00.mp3?v=${VERSION}`
     };
 
-    // iPhone Home-Screen PWAs have had several WebKit regressions where a
-    // Web Audio AudioContext claims to be running but produces silence. For
-    // SideScroll we therefore use ordinary HTMLMediaElement playback. It is
-    // less clever, but much more resilient for a small set of local sounds.
     let enabled = true;
     let ambient = null;
-    let pools = new Map();
-    let poolCursor = new Map();
-    let lastFootstep = -1;
-    let mediaGeneration = 0;
+    let footstep = null;
+    let footstepPrimed = false;
+    let ambientPlayPending = false;
     let lastPlaySucceeded = false;
 
     try {
@@ -74,7 +64,7 @@
       soundBtn.dataset.audioReady = lastPlaySucceeded ? '1' : '0';
     }
 
-    function makeAudio(src, { loop = false } = {}) {
+    function makeAudio(src, loop = false) {
       const audio = document.createElement('audio');
       audio.src = src;
       audio.preload = 'auto';
@@ -90,171 +80,109 @@
       return audio;
     }
 
-    function stopAndRemove(audio) {
-      if (!audio) return;
-      try { audio.pause(); } catch (_) {}
-      try { audio.removeAttribute('src'); } catch (_) {}
-      try { audio.load(); } catch (_) {}
-      try { audio.remove(); } catch (_) {}
-    }
-
-    function destroyMedia() {
-      stopAndRemove(ambient);
-      ambient = null;
-      for (const pool of pools.values()) {
-        for (const audio of pool) stopAndRemove(audio);
-      }
-      pools = new Map();
-      poolCursor = new Map();
-      lastPlaySucceeded = false;
-    }
-
-    function addPool(key, src, count = 3) {
-      const pool = [];
-      for (let i = 0; i < count; i++) pool.push(makeAudio(src));
-      pools.set(key, pool);
-      poolCursor.set(key, 0);
-    }
-
-    function buildMedia() {
-      if (ambient) return;
-      const generation = ++mediaGeneration;
-      ambient = makeAudio(files.forest, { loop: true });
-      ambient.volume = 0.52;
-
-      addPool('jump', files.jump, 2);
-      addPool('land', files.land, 2);
-      addPool('cratePickup', files.cratePickup, 2);
-      addPool('crateDrop', files.crateDrop, 2);
-      files.footsteps.forEach((src, i) => addPool(`footstep${i}`, src, 2));
-
-      const noteSuccess = () => {
-        if (generation !== mediaGeneration) return;
-        lastPlaySucceeded = true;
-        updateButton();
-      };
-      ambient.addEventListener('playing', noteSuccess, { passive: true });
-    }
-
     function ensureMedia() {
-      if (!ambient) buildMedia();
+      if (ambient && footstep) return;
+      ambient = makeAudio(files.forest, true);
+      ambient.volume = 0.48;
+      footstep = makeAudio(files.footstep, false);
+      footstep.volume = 0.36;
+
+      ambient.addEventListener('playing', () => {
+        lastPlaySucceeded = true;
+        ambientPlayPending = false;
+        updateButton();
+      });
+      ambient.addEventListener('pause', () => {
+        ambientPlayPending = false;
+      });
     }
 
     function startAmbience() {
       if (!enabled) return;
       ensureMedia();
-      if (!ambient) return;
-      ambient.volume = 0.52;
-      const promise = ambient.play();
-      if (promise && typeof promise.then === 'function') {
-        promise.then(() => {
-          lastPlaySucceeded = true;
-          updateButton();
-        }).catch(err => {
-          lastPlaySucceeded = false;
-          updateButton();
-          console.warn('SideScroll ambience play was blocked', err);
-        });
+      if (!ambient || !ambient.paused || ambientPlayPending) return;
+      ambient.volume = 0.48;
+      ambientPlayPending = true;
+      try {
+        const promise = ambient.play();
+        if (promise && typeof promise.catch === 'function') {
+          promise.catch(err => {
+            ambientPlayPending = false;
+            console.warn('SideScroll ambience play was blocked', err);
+          });
+        }
+      } catch (err) {
+        ambientPlayPending = false;
+        console.warn('SideScroll ambience play failed', err);
       }
     }
 
-    function primeEffectsDuringGesture() {
-      // iOS can require each media element to be "blessed" by a user gesture.
-      // Start one instance from every pool at effectively silent volume while
-      // the pointer event is still active, then rewind it immediately.
-      for (const pool of pools.values()) {
-        const audio = pool[0];
-        if (!audio) continue;
-        const previousVolume = audio.volume;
-        audio.volume = 0.00001;
-        audio.currentTime = 0;
-        try {
-          const promise = audio.play();
-          if (promise && typeof promise.then === 'function') {
-            promise.then(() => {
-              try { audio.pause(); } catch (_) {}
-              try { audio.currentTime = 0; } catch (_) {}
-              audio.volume = previousVolume;
-            }).catch(() => {
-              audio.volume = previousVolume;
-            });
-          } else {
-            try { audio.pause(); } catch (_) {}
-            try { audio.currentTime = 0; } catch (_) {}
-            audio.volume = previousVolume;
-          }
-        } catch (_) {
-          audio.volume = previousVolume;
+    function primeFootstepOnce() {
+      if (!enabled || footstepPrimed) return;
+      ensureMedia();
+      if (!footstep) return;
+
+      // Bless just this single effect element during the user's gesture.  It is
+      // genuinely muted, so unlike the previous multi-effect priming pass it
+      // cannot leak a strange start-up sound.
+      footstepPrimed = true;
+      footstep.muted = true;
+      try {
+        const promise = footstep.play();
+        if (promise && typeof promise.then === 'function') {
+          promise.then(() => {
+            try { footstep.pause(); } catch (_) {}
+            try { footstep.currentTime = 0; } catch (_) {}
+            footstep.muted = false;
+          }).catch(() => {
+            footstep.muted = false;
+            footstepPrimed = false;
+          });
+        } else {
+          try { footstep.pause(); } catch (_) {}
+          try { footstep.currentTime = 0; } catch (_) {}
+          footstep.muted = false;
         }
+      } catch (_) {
+        footstep.muted = false;
+        footstepPrimed = false;
       }
     }
 
     function unlock() {
       if (!enabled) { updateButton(); return; }
       ensureMedia();
-      // Keep these calls synchronous with the real pointer/click event. This
-      // is the part Safari cares about for media playback permission.
       startAmbience();
-      primeEffectsDuringGesture();
-      updateButton();
-    }
-
-    function play(key, { volume = 1, rate = 1 } = {}) {
-      if (!enabled) return;
-      ensureMedia();
-      const pool = pools.get(key);
-      if (!pool || !pool.length) return;
-      let index = poolCursor.get(key) || 0;
-      const audio = pool[index % pool.length];
-      poolCursor.set(key, (index + 1) % pool.length);
-
-      try { audio.pause(); } catch (_) {}
-      try { audio.currentTime = 0; } catch (_) {}
-      audio.volume = Math.max(0, Math.min(1, volume));
-      audio.playbackRate = Math.max(0.55, Math.min(1.65, rate));
-      try {
-        const promise = audio.play();
-        if (promise && typeof promise.then === 'function') {
-          promise.then(() => {
-            lastPlaySucceeded = true;
-            updateButton();
-          }).catch(err => {
-            console.warn(`SideScroll sound ${key} was blocked`, err);
-          });
-        }
-      } catch (err) {
-        console.warn(`SideScroll sound ${key} failed`, err);
-      }
+      primeFootstepOnce();
     }
 
     function playFootstep(runAmount = 0, carrying = false) {
-      const count = files.footsteps.length;
-      if (!count) return;
-      let index = Math.floor(Math.random() * count);
-      if (count > 1 && index === lastFootstep) {
-        index = (index + 1 + Math.floor(Math.random() * (count - 1))) % count;
-      }
-      lastFootstep = index;
-      const run = Math.max(0, Math.min(1, runAmount));
-      const volume = (0.34 + run * 0.18) * (carrying ? 0.92 : 1);
-      const rate = 0.94 + Math.random() * 0.12 + run * 0.035;
-      play(`footstep${index}`, { volume, rate });
-    }
+      if (!enabled || !footstepPrimed) return;
+      ensureMedia();
+      if (!footstep) return;
 
-    function playLanding(speed = 2) {
-      const strength = Math.max(0, Math.min(1, (speed - 0.8) / 4.2));
-      play('land', { volume: 0.28 + strength * 0.30, rate: 1.01 - strength * 0.10 });
+      // One voice, one sample, no pitch shifting and no promise/DOM work on
+      // every step.  The clip is shorter than the fastest stride interval so
+      // it can be safely rewound and reused without overlap.
+      try { footstep.pause(); } catch (_) {}
+      try { footstep.currentTime = 0; } catch (_) {}
+      const run = Math.max(0, Math.min(1, runAmount));
+      footstep.volume = (0.34 + run * 0.08) * (carrying ? 0.96 : 1);
+      footstep.playbackRate = 1;
+      footstep.muted = false;
+      try {
+        const promise = footstep.play();
+        if (promise && typeof promise.catch === 'function') promise.catch(() => {});
+      } catch (_) {}
     }
 
     function stopAll() {
       if (ambient) {
         try { ambient.pause(); } catch (_) {}
       }
-      for (const pool of pools.values()) {
-        for (const audio of pool) {
-          try { audio.pause(); } catch (_) {}
-          try { audio.currentTime = 0; } catch (_) {}
-        }
+      if (footstep) {
+        try { footstep.pause(); } catch (_) {}
+        try { footstep.currentTime = 0; } catch (_) {}
       }
     }
 
@@ -267,21 +195,16 @@
     }
 
     function toggle() { setEnabled(!enabled); }
-    function isEnabled() { return enabled; }
 
     function recover() {
-      // WebKit can leave media output silent after a Home-Screen PWA has been
-      // backgrounded. Rebuilding the elements gives the next real gesture a
-      // clean media session instead of reusing a poisoned one.
-      if (!ambient) return;
-      destroyMedia();
-      buildMedia();
+      ambientPlayPending = false;
+      if (enabled) startAmbience();
       updateButton();
     }
 
-    buildMedia();
+    ensureMedia();
     updateButton();
-    return { unlock, play, playFootstep, playLanding, toggle, isEnabled, updateButton, recover };
+    return { unlock, playFootstep, toggle, recover };
   })();
 
   const gl = canvas.getContext('webgl', {
@@ -2240,7 +2163,6 @@
     };
     standingOnObject = null;
     setDriveAxis(0);
-    SideScrollAudio.play('cratePickup', { volume: 0.34, rate: 0.96 + Math.random() * 0.06 });
     hintEl.textContent = 'Picking up crate';
     hintEl.classList.remove('hidden');
   }
@@ -2293,7 +2215,6 @@
     sortSceneCollections();
     settleGameplayCrates();
     recordObjectEdit(obj);
-    SideScrollAudio.play('crateDrop', { volume: 0.50, rate: 0.92 + Math.random() * 0.08 });
     hintEl.textContent = 'Crate placed';
     hintEl.classList.remove('hidden');
   }
@@ -2382,7 +2303,6 @@
           jumpVelocity = 0;
           jumping = false;
           landedThisFrame = true;
-          SideScrollAudio.playLanding(impactSpeed);
           jumpTime = 0;
           standingOnObject = platform.obj;
         }
@@ -2394,7 +2314,6 @@
         jumpVelocity = 0;
         jumping = false;
         landedThisFrame = true;
-        SideScrollAudio.playLanding(impactSpeed);
         jumpTime = 0;
         standingOnObject = null;
       }
@@ -2436,7 +2355,7 @@
       // Two foot plants per locomotion cycle.  Trigger from travelled distance /
       // rig phase rather than a timer so walk, run and slider speed stay locked.
       if (!jumping && !landedThisFrame && !interactionState) {
-        if (phaseCrossed(previousPhase, locomotionPhase, 0.08) || phaseCrossed(previousPhase, locomotionPhase, 0.56)) {
+        if (phaseCrossed(previousPhase, locomotionPhase, 0.02) || phaseCrossed(previousPhase, locomotionPhase, 0.50)) {
           SideScrollAudio.playFootstep(smoothRun, Boolean(carriedObject));
         }
       }
@@ -2546,7 +2465,6 @@
     // from that surface rather than teleporting back to path level.
     standingOnObject = null;
     jumpVelocity = JUMP_VELOCITY;
-    SideScrollAudio.play('jump', { volume: carriedObject ? 0.18 : 0.22, rate: 0.98 + Math.random() * 0.05 });
     hideHint();
   }
   jumpBtn.addEventListener('pointerdown', e => {

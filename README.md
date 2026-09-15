@@ -1,8 +1,9 @@
-# GameHub v1.8.85
+# GameHub v1.8.86
 
-SideScroll audio recovery update.
+SideScroll audio simplification.
 
-- Replaced SideScroll Web Audio playback with HTML media elements for better iPhone/PWA reliability.
-- Primes ambience and effects from the first user gesture.
-- Rebuilds the audio session after returning from the background.
-- Keeps the four-sample footstep set and the reduced 80-file footprint.
+- Reduced SideScroll to woodland ambience plus one clean footstep voice only.
+- Removed audible multi-effect priming and unused jump, landing and crate sounds.
+- Starts ambience from the first deliberate input without re-running audio setup on every movement touch.
+- Footsteps now follow the locomotion phase with a small iPhone latency compensation.
+- Removed seven now-unused audio files to keep the release lean.
