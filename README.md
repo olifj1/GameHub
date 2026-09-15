@@ -1,9 +1,9 @@
-# GameHub v1.8.83
+# GameHub v1.8.84
 
-SideScroll footprint cleanup.
+SideScroll audio reliability fix.
 
-- Reduced footstep variation from 10 samples to 4; pitch/volume variation still prevents obvious repetition.
-- Re-encoded the woodland ambience at 112 kbps stereo to reduce its file size while retaining the stereo atmosphere.
-- Removed 18 obsolete individual tree/ground PNGs that were superseded by the SideScroll dressing atlas in v1.8.79 and were no longer referenced by the game.
-- Pruned the service-worker cache list accordingly.
-- No gameplay, editor, animation or collision behaviour changed.
+- Fixed footsteps still selecting from 10 slots after the sample set was reduced to 4.
+- Prefetches local audio before the first interaction, then unlocks/decodes it from the first real gesture for more reliable iPhone/PWA playback.
+- Added an iOS/WebKit audio-context priming step and retries ambience after later interactions.
+- Slightly raised the quiet woodland ambience level for phone speakers.
+- Keeps the same four footstep files and compact v1.8.83 asset footprint.
