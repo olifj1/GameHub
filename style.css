@@ -10979,3 +10979,63 @@ body[data-game-id="game-16"] .sidescroll-crate-thumb::after{
 }
 body[data-game-id="game-16"] .sidescroll-crate-thumb::before{transform:rotate(38deg);}
 body[data-game-id="game-16"] .sidescroll-crate-thumb::after{transform:rotate(-38deg);}
+
+/* GameHub v1.8.80 — SideScroll gameplay layer + action row */
+body[data-game-id="game-16"] .sidescroll-secondary-controls{
+  flex:0 0 46px;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:7px;
+  min-height:0;
+}
+body[data-game-id="game-16"] .sidescroll-secondary-controls[hidden]{display:none!important;}
+body[data-game-id="game-16"] .sidescroll-secondary-control{
+  min-width:0;
+  height:46px;
+  padding:3px 14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  border:1.5px solid var(--gh-line-strong);
+  border-radius:14px;
+  background:rgba(247,241,235,.90);
+  color:var(--gh-ink);
+  box-shadow:none;
+  touch-action:none;
+}
+body[data-game-id="game-16"] .sidescroll-secondary-control span{
+  font-size:23px;
+  line-height:1;
+  color:var(--gh-accent);
+  font-weight:800;
+}
+body[data-game-id="game-16"] .sidescroll-secondary-control small{
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.13em;
+}
+body[data-game-id="game-16"] .sidescroll-secondary-control.ready{
+  color:#496b66;
+  border-color:#7f9f99;
+  background:#e4ece8;
+}
+body[data-game-id="game-16"] .sidescroll-secondary-control.carrying{
+  color:#6e5439;
+  border-color:#a98966;
+  background:#efe3d4;
+}
+body[data-game-id="game-16"] .sidescroll-secondary-control:active{transform:translateY(1px);}
+body[data-game-id="game-16"] .sidescroll-editor-controls{
+  grid-template-columns:repeat(4,1fr);
+  grid-template-rows:repeat(2,1fr);
+  flex-basis:112px;
+}
+body[data-game-id="game-16"] #sidescroll-editor-game-layer:not(.active){color:#7a7f81;}
+body[data-game-id="game-16"] #sidescroll-editor-game-layer:disabled{opacity:.28;}
+body[data-game-id="game-16"].sidescroll-editing .sidescroll-secondary-controls{display:none!important;}
+@media(max-height:700px){
+  body[data-game-id="game-16"] .sidescroll-secondary-controls{flex-basis:40px;}
+  body[data-game-id="game-16"] .sidescroll-secondary-control{height:40px;border-radius:12px;}
+  body[data-game-id="game-16"] .sidescroll-secondary-control span{font-size:20px;}
+}

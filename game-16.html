@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#e7dbd2">
-  <link rel="stylesheet" href="style.css?v=1.8.78">
+  <link rel="stylesheet" href="style.css?v=1.8.80">
   <title>SideScroll</title>
 </head>
 <body class="modular-game" data-game-id="game-16">
@@ -19,7 +19,7 @@
       <button class="game-info-close" type="button" aria-label="Close instructions">×</button>
       <p class="kicker">PROTOTYPE</p>
       <h2 id="game-16-info-title">SideScroll</h2>
-      <p>Play mode keeps the spring movement control and jump button. Tap EDIT to author the scene. The asset library now separates Dressing from Gameplay: trees, grass and rocks dress the forest, while the wooden crate is a solid gameplay platform you can place, move, scale and jump onto. Tap the same overlapping spot repeatedly to cycle through depth. Edits save locally on this device so you can switch straight back to PLAY and test them.</p>
+      <p>Play mode uses the spring movement control, Jump and Action. Gameplay assets can be locked to the character's playable depth layer; the wooden crate can be jumped onto, picked up, carried and put down. Tap EDIT to move, add, scale and configure assets. Dressing remains free in depth, while gameplay objects default to the interactive path layer.</p>
     </div>
   </div>
 
@@ -81,11 +81,18 @@
           </div>
         </div>
 
+        <div class="sidescroll-secondary-controls" id="sidescroll-secondary-controls" aria-label="Action controls">
+          <button class="sidescroll-secondary-control" id="sidescroll-action" type="button" aria-label="Action">
+            <span aria-hidden="true">◇</span><small id="sidescroll-action-label">ACTION</small>
+          </button>
+        </div>
+
         <div class="sidescroll-editor-controls" id="sidescroll-editor-controls" hidden aria-label="Scene editor controls">
           <button class="sidescroll-editor-tool primary" id="sidescroll-editor-add" type="button"><span>＋</span><small>ADD</small></button>
           <button class="sidescroll-editor-tool" id="sidescroll-editor-duplicate" type="button"><span>⧉</span><small>DUPLICATE</small></button>
           <button class="sidescroll-editor-tool" id="sidescroll-editor-scale-down" type="button"><span>−</span><small>SCALE</small></button>
           <button class="sidescroll-editor-tool" id="sidescroll-editor-scale-up" type="button"><span>＋</span><small>SCALE</small></button>
+          <button class="sidescroll-editor-tool" id="sidescroll-editor-game-layer" type="button"><span>↔</span><small>GAME LAYER</small></button>
           <button class="sidescroll-editor-tool" id="sidescroll-editor-collision" type="button"><span>▣</span><small>COLLISION</small></button>
           <button class="sidescroll-editor-tool danger" id="sidescroll-editor-delete" type="button"><span>×</span><small>DELETE</small></button>
         </div>
@@ -93,9 +100,9 @@
     </section>
   </main>
 
-  <script src="site-config.js?v=1.8.78"></script>
-  <script src="core.js?v=1.8.78"></script>
-  <script src="walk-rig.js?v=1.8.78"></script>
-  <script src="game-16.js?v=1.8.78"></script>
+  <script src="site-config.js?v=1.8.80"></script>
+  <script src="core.js?v=1.8.80"></script>
+  <script src="walk-rig.js?v=1.8.80"></script>
+  <script src="game-16.js?v=1.8.80"></script>
 </body>
 </html>
