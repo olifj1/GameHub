@@ -1,11 +1,10 @@
-# GameHub v1.8.76
+# GameHub v1.8.77
 
-SideScroll editor MVP.
+SideScroll editor selection pass.
 
-- Uses v1.8.75 as the base; other GameHub games and Walk Lab are unchanged.
-- Extends the warm dirt texture across the whole ground plane so gaps in foliage no longer reveal a flat dark floor.
-- Adds a **Play / Edit** toggle directly in SideScroll.
-- Edit mode can select scenery, drag it across the ground plane, pan on empty space, add any existing tree/ground asset, duplicate, delete, scale, and toggle simple solid collision.
-- Scene edits auto-save locally on the device and are immediately testable by switching back to Play. The asset library includes a Reset control to clear local scene edits.
-- Collision volumes are visible in Edit mode; foreground dressing is ghosted there so hidden gameplay objects are easier to find.
-- The existing fallen-log obstacle is now part of the editable collision system rather than a one-off hard-coded collision test.
+- Edit mode now leaves all foliage fully opaque instead of ghosting foreground layers.
+- The selected asset gets a strong bright-pink render tint plus a thicker selection frame.
+- Repeated taps on the same overlapping stack now cycle front-to-back through every selectable asset under that screen position.
+- The selection label/status shows the current depth position (for example DEPTH 2/5).
+- Dragging still moves the currently selected object; a small movement threshold separates taps used for depth cycling from actual dragging.
+- Built directly from v1.8.76; no changes to Walk Lab or other games.

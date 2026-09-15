@@ -70,6 +70,8 @@
     uniform float uFogFar;
     uniform float uFogAmount;
     uniform float uOpacity;
+    uniform float uHighlight;
+    uniform vec3 uHighlightColor;
     varying vec2 vUV;
     varying float vDepth;
     void main() {
@@ -78,7 +80,8 @@
       if (alpha < 0.045) discard;
       float fog = smoothstep(uFogNear, uFogFar, vDepth) * uFogAmount;
       vec3 base = tex.rgb * uTint;
-      vec3 rgb = mix(base, uFogColor, fog);
+      base = mix(base, uHighlightColor, clamp(uHighlight, 0.0, 1.0) * 0.72);
+      vec3 rgb = mix(base, uFogColor, fog * (1.0 - uHighlight * 0.72));
       gl_FragColor = vec4(rgb, alpha);
     }
   `;
@@ -126,6 +129,8 @@
     fogFar: gl.getUniformLocation(program, 'uFogFar'),
     fogAmount: gl.getUniformLocation(program, 'uFogAmount'),
     opacity: gl.getUniformLocation(program, 'uOpacity'),
+    highlight: gl.getUniformLocation(program, 'uHighlight'),
+    highlightColor: gl.getUniformLocation(program, 'uHighlightColor'),
     uvScale: gl.getUniformLocation(program, 'uUvScale'),
     uvOffset: gl.getUniformLocation(program, 'uUvOffset')
   };
@@ -986,6 +991,8 @@
   let editorPanStart = 0;
   let editorPanCameraX = 0;
   let addAssetType = null;
+  let editorTapState = null;
+  let selectionCycleInfo = null;
   let currentViewMatrix = mat4Identity();
   const editorAssetNames = [
     'tree01','tree02','tree03','tree04','tree05','tree06',
@@ -1098,7 +1105,7 @@
     return { left, right, top, bottom, width: right-left, height: bottom-top, cx:(left+right)*0.5, cy:(top+bottom)*0.5 };
   }
 
-  function pickSceneObject(clientX, clientY) {
+  function pickSceneObjects(clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
     const px = clientX - rect.left;
     const py = clientY - rect.top;
@@ -1110,12 +1117,18 @@
       const pad = 7;
       if (px < b.left-pad || px > b.right+pad || py < b.top-pad || py > b.bottom+pad) continue;
       const centreDist = Math.hypot(px-b.cx, py-b.cy);
-      const area = Math.max(1, b.width*b.height);
-      const score = centreDist + Math.sqrt(area) * 0.10 - obj.z * 1.8;
-      candidates.push({ obj, score });
+      candidates.push({ obj, centreDist });
     }
-    candidates.sort((a,b)=>a.score-b.score);
-    return candidates[0]?.obj || null;
+    // Camera is on +Z, so larger Z is visually nearer. Start with the
+    // foremost item and let repeated taps cycle backward through the stack.
+    candidates.sort((a,b) => (b.obj.z - a.obj.z) || (a.centreDist - b.centreDist));
+    return candidates.map(item => item.obj);
+  }
+
+  function cycleInfoFor(obj, candidates) {
+    if (!obj || !candidates?.length) return null;
+    const index = candidates.indexOf(obj);
+    return index >= 0 ? { objects: candidates.slice(), index } : null;
   }
 
   function sortSceneCollections() {
@@ -1133,8 +1146,9 @@
     editorAddBtn?.classList.toggle('active', !!addAssetType);
   }
 
-  function selectObject(obj) {
+  function selectObject(obj, preserveCycle = false) {
     selectedObject = obj && !obj.deleted ? obj : null;
+    if (!preserveCycle) selectionCycleInfo = null;
     addAssetType = null;
     if (editorPalette) editorPalette.hidden = true;
     updateAssetPaletteState();
@@ -1152,6 +1166,8 @@
     if (editorControls) editorControls.hidden = !editMode;
     if (!editMode) {
       selectedObject = null;
+      selectionCycleInfo = null;
+      editorTapState = null;
       addAssetType = null;
       if (editorPalette) editorPalette.hidden = true;
       setDriveAxis(0);
@@ -1306,13 +1322,15 @@
       const b = objectScreenBounds(selectedObject);
       if (b) {
         ctx.save();
-        ctx.strokeStyle = '#93c0b8';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6,4]);
+        ctx.strokeStyle = '#ff4f95';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([7,3]);
         ctx.strokeRect(b.left-4, b.top-4, b.width+8, b.height+8);
         ctx.setLineDash([]);
         ctx.fillStyle = 'rgba(20,31,34,.78)';
-        const label = `${selectedObject.assetName}  x ${selectedObject.x.toFixed(1)}  z ${selectedObject.z.toFixed(1)}`;
+        const depthLabel = selectionCycleInfo && selectionCycleInfo.objects.includes(selectedObject) && selectionCycleInfo.objects.length > 1
+          ? `  DEPTH ${selectionCycleInfo.objects.indexOf(selectedObject)+1}/${selectionCycleInfo.objects.length}` : '';
+        const label = `${selectedObject.assetName}${depthLabel}  x ${selectedObject.x.toFixed(1)}  z ${selectedObject.z.toFixed(1)}`;
         ctx.font = '700 10px -apple-system, BlinkMacSystemFont, sans-serif';
         const tw = ctx.measureText(label).width + 14;
         const lx = Math.max(4, Math.min(w-tw-4, b.left));
@@ -1412,12 +1430,17 @@
     gl.uniformMatrix4fv(loc.projection, false, projection);
     const tint = tintFor(obj);
     gl.uniform3f(loc.tint, tint[0], tint[1], tint[2]);
+    const selectedHighlight = editMode && obj === selectedObject ? 1.0 : 0.0;
+    gl.uniform1f(loc.highlight, selectedHighlight);
+    gl.uniform3f(loc.highlightColor, 1.0, 0.18, 0.48);
     gl.uniform3f(loc.fogColor, fogColor[0], fogColor[1], fogColor[2]);
     gl.uniform1f(loc.fogNear, 6.2);
     gl.uniform1f(loc.fogFar, 44.0);
     gl.uniform1f(loc.fogAmount, obj.noFog ? 0 : (debugDepth ? 0.22 : 1.0));
-    const editorGhost = editMode && obj.layer === 'foreground' && obj !== selectedObject ? 0.56 : 1.0;
-    gl.uniform1f(loc.opacity, obj.opacity * editorGhost);
+    // Keep the scene fully opaque in Edit mode. Transparency made overlapping
+    // foliage impossible to read; selection is now communicated by a bright
+    // tint + screen-space frame instead.
+    gl.uniform1f(loc.opacity, obj.opacity);
     gl.uniform2f(loc.uvScale, extra?.uvScale?.[0] ?? obj.uvScale?.[0] ?? 1, extra?.uvScale?.[1] ?? obj.uvScale?.[1] ?? 1);
     gl.uniform2f(loc.uvOffset, extra?.uvOffset?.[0] ?? obj.uvOffset?.[0] ?? 0, extra?.uvOffset?.[1] ?? obj.uvOffset?.[1] ?? 0);
     gl.drawElements(gl.TRIANGLES, obj.mesh.count, gl.UNSIGNED_SHORT, 0);
@@ -1466,6 +1489,8 @@
     gl.uniformMatrix4fv(loc.projection, false, projection);
     const tint = debugDepth ? debugTints.character : character.tint;
     gl.uniform3f(loc.tint, tint[0], tint[1], tint[2]);
+    gl.uniform1f(loc.highlight, 0);
+    gl.uniform3f(loc.highlightColor, 1.0, 0.18, 0.48);
     gl.uniform3f(loc.fogColor, fogColor[0], fogColor[1], fogColor[2]);
     gl.uniform1f(loc.fogNear, 6.2);
     gl.uniform1f(loc.fogFar, 44.0);
@@ -1580,8 +1605,10 @@
 
     const motionLabel = jumping ? 'JUMP' : (runBlend > .55 && isWalking ? 'RUN' : (isWalking ? 'WALK' : 'IDLE'));
     if (editMode) {
+      const selectedDepth = selectionCycleInfo && selectedObject && selectionCycleInfo.objects.includes(selectedObject) && selectionCycleInfo.objects.length > 1
+        ? ` · DEPTH ${selectionCycleInfo.objects.indexOf(selectedObject)+1}/${selectionCycleInfo.objects.length}` : '';
       const selected = selectedObject && !selectedObject.deleted
-        ? `${selectedObject.assetName}${selectedObject.collision ? ' · COLLISION' : ''}`
+        ? `${selectedObject.assetName}${selectedObject.collision ? ' · COLLISION' : ''}${selectedDepth}`
         : (addAssetType ? `ADD ${addAssetType}` : 'tap scenery to select');
       statusEl.textContent = `EDIT · ${selected}`;
     } else {
@@ -1714,17 +1741,27 @@
         return;
       }
 
-      const hit = pickSceneObject(e.clientX, e.clientY);
+      const candidates = pickSceneObjects(e.clientX, e.clientY);
+      const alreadySelectedIndex = selectedObject ? candidates.indexOf(selectedObject) : -1;
+      const hit = alreadySelectedIndex >= 0 ? selectedObject : (candidates[0] || null);
       if (hit) {
-        selectObject(hit);
+        if (hit !== selectedObject) selectObject(hit, true);
+        selectionCycleInfo = cycleInfoFor(hit, candidates);
         const point = groundPointFromClient(e.clientX, e.clientY);
         editorDragKind = 'object';
         if (point) editorDragOffset = { x: hit.x - point.x, z: hit.z - point.z };
         else editorDragOffset = { x: 0, z: 0 };
-        hintEl.textContent = 'Selected · drag on the ground plane to reposition';
+        editorTapState = {
+          startX: e.clientX, startY: e.clientY, moved: false,
+          candidates, selectedAtDown: hit, wasAlreadySelected: alreadySelectedIndex >= 0
+        };
+        hintEl.textContent = candidates.length > 1
+          ? `Selected · tap again to cycle ${candidates.length} overlapping assets · drag to move`
+          : 'Selected · drag on the ground plane to reposition';
         hintEl.classList.remove('hidden');
       } else {
         selectObject(null);
+        editorTapState = null;
         editorDragKind = 'pan';
         editorPanStart = e.clientX;
         editorPanCameraX = camera.x;
@@ -1743,6 +1780,11 @@
     if (editMode) {
       if (e.pointerId !== editorPointer) return;
       if (editorDragKind === 'object' && selectedObject) {
+        if (editorTapState) {
+          const travel = Math.hypot(e.clientX - editorTapState.startX, e.clientY - editorTapState.startY);
+          if (travel < 6 && !editorTapState.moved) return;
+          editorTapState.moved = true;
+        }
         const point = groundPointFromClient(e.clientX, e.clientY);
         if (!point) return;
         selectedObject.x = point.x + editorDragOffset.x;
@@ -1750,6 +1792,7 @@
         selectedObject.y = pathGroundYAt(selectedObject.x, selectedObject.z);
         moveObjectToCorrectCollection(selectedObject);
         sortSceneCollections();
+        selectionCycleInfo = null;
       } else if (editorDragKind === 'pan') {
         const dx = e.clientX - editorPanStart;
         camera.x = editorPanCameraX - dx * 0.0075;
@@ -1764,7 +1807,21 @@
   const endDrag = e => {
     if (editMode) {
       if (e.pointerId !== editorPointer) return;
-      if (editorDragKind === 'object' && selectedObject) recordObjectEdit(selectedObject);
+      if (editorDragKind === 'object' && selectedObject) {
+        if (editorTapState?.moved) {
+          recordObjectEdit(selectedObject);
+        } else if (editorTapState?.wasAlreadySelected && editorTapState.candidates.length > 1) {
+          const candidates = editorTapState.candidates.filter(obj => !obj.deleted);
+          const currentIndex = Math.max(0, candidates.indexOf(editorTapState.selectedAtDown));
+          const next = candidates[(currentIndex + 1) % candidates.length];
+          selectedObject = next;
+          selectionCycleInfo = cycleInfoFor(next, candidates);
+          updateEditorButtons();
+          hintEl.textContent = `Depth ${selectionCycleInfo.index + 1}/${candidates.length} · tap again to cycle · drag to move`;
+          hintEl.classList.remove('hidden');
+        }
+      }
+      editorTapState = null;
       editorPointer = null;
       editorDragKind = null;
       return;

@@ -186,7 +186,7 @@ window.APP_CONFIG = {
       "description": "Explore the layered 3D forest with a spring movement slider, jump the fallen log, and test the walk-to-run range.",
       "icon": "♠",
       "enabled": true,
-      "path": "game-16.html?v=1.8.76"
+      "path": "game-16.html?v=1.8.77"
     },
     {
       "id": "game-17",
