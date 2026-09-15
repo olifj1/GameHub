@@ -10980,7 +10980,7 @@ body[data-game-id="game-16"] .sidescroll-crate-thumb::after{
 body[data-game-id="game-16"] .sidescroll-crate-thumb::before{transform:rotate(38deg);}
 body[data-game-id="game-16"] .sidescroll-crate-thumb::after{transform:rotate(-38deg);}
 
-/* GameHub v1.8.80 — SideScroll gameplay layer + action row */
+/* GameHub v1.8.81 — SideScroll gameplay layer + action row */
 body[data-game-id="game-16"] .sidescroll-secondary-controls{
   flex:0 0 46px;
   display:grid;

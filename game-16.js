@@ -421,10 +421,10 @@
     ctx.globalAlpha=1;
   },256,128,true);
 
-  // v1.8.80: forest dressing now comes from one authored atlas.
+  // v1.8.81: forest dressing now comes from one authored atlas.
   // This removes the old per-file fallback path which could substitute the
   // full woodland source sheet when an individual PNG failed to load.
-  textures.dressingAtlas = createImageTexture('sidescroll-dressing-atlas.png?v=1.8.80', 'SideScroll dressing atlas');
+  textures.dressingAtlas = createImageTexture('sidescroll-dressing-atlas.png?v=1.8.81', 'SideScroll dressing atlas');
   const assetUv = {
     tree06: { scale: [0.107421875, 0.373046875], offset: [0.003906250, 0.623046875] },
     tree02: { scale: [0.139648438, 0.362304688], offset: [0.115234375, 0.633789062] },
@@ -476,28 +476,31 @@
   assetAspect.crate = 1.08;
   textures.crate = createTexture((ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
-    const x = 30, y = 46, cw = 186, ch = 174;
-    // top and side give a tiny bit of volume while staying in the illustrated style
+    // Fill the texture right down to the billboard baseline.  The previous
+    // crate art had transparent padding beneath it, so the geometry was on the
+    // path while the visible box appeared to float above it.
+    const x = 18, y = 10, cw = 220, ch = 246;
+    const topDepth = 20;
     ctx.fillStyle = '#a97b4e';
-    ctx.beginPath(); ctx.moveTo(x, y + 18); ctx.lineTo(x + 22, y); ctx.lineTo(x + cw, y); ctx.lineTo(x + cw - 20, y + 18); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x, y + topDepth); ctx.lineTo(x + 24, y); ctx.lineTo(x + cw, y); ctx.lineTo(x + cw - 22, y + topDepth); ctx.closePath(); ctx.fill();
     ctx.fillStyle = '#775339';
-    ctx.beginPath(); ctx.moveTo(x + cw - 20, y + 18); ctx.lineTo(x + cw, y); ctx.lineTo(x + cw, y + ch - 8); ctx.lineTo(x + cw - 20, y + ch); ctx.closePath(); ctx.fill();
-    const g = ctx.createLinearGradient(x, y + 18, x, y + ch);
+    ctx.beginPath(); ctx.moveTo(x + cw - 22, y + topDepth); ctx.lineTo(x + cw, y); ctx.lineTo(x + cw, y + ch - 8); ctx.lineTo(x + cw - 22, y + ch); ctx.closePath(); ctx.fill();
+    const g = ctx.createLinearGradient(x, y + topDepth, x, y + ch);
     g.addColorStop(0, '#b78654'); g.addColorStop(1, '#8b5f3d');
-    ctx.fillStyle = g; ctx.fillRect(x, y + 18, cw - 20, ch - 18);
-    ctx.strokeStyle = '#5d402e'; ctx.lineWidth = 8; ctx.strokeRect(x + 4, y + 22, cw - 28, ch - 30);
+    ctx.fillStyle = g; ctx.fillRect(x, y + topDepth, cw - 22, ch - topDepth);
+    ctx.strokeStyle = '#5d402e'; ctx.lineWidth = 8; ctx.strokeRect(x + 4, y + topDepth + 4, cw - 32, ch - topDepth - 8);
     ctx.lineWidth = 10;
-    ctx.beginPath(); ctx.moveTo(x + 12, y + 30); ctx.lineTo(x + cw - 32, y + ch - 18); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x + cw - 32, y + 30); ctx.lineTo(x + 12, y + ch - 18); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + 12, y + topDepth + 12); ctx.lineTo(x + cw - 36, y + ch - 10); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + cw - 36, y + topDepth + 12); ctx.lineTo(x + 12, y + ch - 10); ctx.stroke();
     ctx.strokeStyle = 'rgba(235,198,143,.42)'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(x + 12, y + 34); ctx.lineTo(x + cw - 34, y + 34); ctx.stroke();
-    for (let i=0;i<6;i++) {
+    ctx.beginPath(); ctx.moveTo(x + 12, y + topDepth + 15); ctx.lineTo(x + cw - 38, y + topDepth + 15); ctx.stroke();
+    for (let i=0;i<7;i++) {
       ctx.strokeStyle = `rgba(77,49,32,${0.12 + i*0.012})`; ctx.lineWidth = 2;
-      const yy = y + 46 + i * 22; ctx.beginPath(); ctx.moveTo(x + 16, yy); ctx.lineTo(x + cw - 38, yy + (i%2?2:-2)); ctx.stroke();
+      const yy = y + topDepth + 32 + i * 27; ctx.beginPath(); ctx.moveTo(x + 16, yy); ctx.lineTo(x + cw - 42, yy + (i%2?2:-2)); ctx.stroke();
     }
   }, 256, 256, false);
 
-  textures.rigAtlas = createImageTexture(Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.80`, 'Walk Lab cutout rig atlas');
+  textures.rigAtlas = createImageTexture(Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.81`, 'Walk Lab cutout rig atlas');
 
   function mulberry32(seed) {
     return function() {
@@ -528,7 +531,7 @@
   // First gameplay obstacle: a shin-high fallen log on the path.  It repeats
   // with the scenery tile, giving us a concrete jump-height/distance target.
   const TEST_OBSTACLE_X = 3.35;
-  const TEST_OBSTACLE_Z = -0.36;
+  const TEST_OBSTACLE_Z = 0.0;
   const TEST_OBSTACLE_HEIGHT = 0.76;
   const TEST_OBSTACLE_HALF_WIDTH = 0.62;
   const TEST_OBSTACLE_CLEARANCE = 0.68;
@@ -560,6 +563,20 @@
   function pathGroundYAt(x, z = 0) {
     return groundY + pathProfileHeight(z) + pathUndulationAtX(x);
   }
+
+  // One authoritative playable floor height.  Character feet, locked gameplay
+  // objects and platform collision all reference this same centre line rather
+  // than each using a slightly different interpretation of the path mesh.
+  function playSurfaceYAt(x) {
+    return pathGroundYAt(x, pathZ);
+  }
+
+  const CRATE_HALF_WIDTH_FACTOR = 0.43;
+  const CRATE_COLLISION_HEIGHT_FACTOR = 0.96;
+  // The painted boots extend up to ~0.087 rig units below their ankle/toe baseline in
+  // the v4 atlas.  Raise only the rendered rig by that amount so the visible
+  // soles, not the internal bone line, sit on the playable floor.
+  const CHARACTER_SOLE_ART_LOCAL_OFFSET = 0.0870;
 
 
   // World-anchored dirt floor.  Earlier builds moved this plane with the
@@ -614,14 +631,14 @@
   const sceneData = (() => {
     try {
       const parsed = JSON.parse(localStorage.getItem(SCENE_STORAGE_KEY) || 'null');
-      if (parsed && (parsed.version === 2 || parsed.version === 3)) {
-        parsed.version = 3;
+      if (parsed && (parsed.version === 2 || parsed.version === 3 || parsed.version === 4)) {
+        parsed.version = 4;
         parsed.overrides ||= {};
         parsed.added ||= [];
         return parsed;
       }
     } catch (_) {}
-    return { version: 3, overrides: {}, added: [] };
+    return { version: 4, overrides: {}, added: [] };
   })();
 
   function saveSceneData() {
@@ -866,13 +883,13 @@
     // stood on.  This gives the editor a clear object for jump tuning.
     testObstacleObject = addObject(frontOccluders, 'crate', TEST_OBSTACLE_X, TEST_OBSTACLE_Z, 0.96, 0.88, {
       id: 'gameplay-crate-01',
-      y: pathGroundYAt(TEST_OBSTACLE_X, TEST_OBSTACLE_Z),
+      y: playSurfaceYAt(TEST_OBSTACLE_X),
       shade: 1.0,
       opacity: 1.0,
       layer: 'foreground',
       category: 'gameplay',
       gameplayType: 'crate',
-      collision: { halfWidth: 0.44, height: 0.82, depth: 0.82, platform: true }
+      collision: { halfWidth: 0.44, height: 0.88 * CRATE_COLLISION_HEIGHT_FACTOR, depth: 0.82, platform: true }
     });
 
     // Occasional larger near-side assets give a stronger sense of passing
@@ -939,7 +956,9 @@
     if (obj.category === 'gameplay' && obj.gameplayLayerLocked) obj.z = pathZ;
     if (override.collision === null) obj.collision = null;
     else if (override.collision) obj.collision = { ...override.collision };
-    obj.y = pathGroundYAt(obj.x, obj.z);
+    obj.y = Number.isFinite(override.y)
+      ? override.y
+      : (obj.category === 'gameplay' && obj.gameplayLayerLocked ? playSurfaceYAt(obj.x) : pathGroundYAt(obj.x, obj.z));
     moveObjectToCorrectCollection(obj);
   }
 
@@ -948,7 +967,7 @@
     if (obj.userAdded) {
       const saved = sceneData.added.find(item => item.id === obj.id);
       const payload = {
-        id: obj.id, assetName: obj.assetName, x: obj.x, z: obj.z,
+        id: obj.id, assetName: obj.assetName, x: obj.x, y: obj.y, z: obj.z,
         sx: obj.sx, sy: obj.sy, flip: obj.flip, collision: obj.collision ? { ...obj.collision } : null,
         category: obj.category || 'dressing', gameplayType: obj.gameplayType || null,
         gameplayLayerLocked: !!obj.gameplayLayerLocked, deleted: !!obj.deleted
@@ -957,7 +976,7 @@
       else sceneData.added.push(payload);
     } else {
       sceneData.overrides[obj.id] = {
-        x: obj.x, z: obj.z, sx: obj.sx, sy: obj.sy, flip: obj.flip,
+        x: obj.x, y: obj.y, z: obj.z, sx: obj.sx, sy: obj.sy, flip: obj.flip,
         collision: obj.collision ? { ...obj.collision } : null, category: obj.category || 'dressing',
         gameplayType: obj.gameplayType || null, gameplayLayerLocked: !!obj.gameplayLayerLocked, deleted: !!obj.deleted
       };
@@ -972,7 +991,7 @@
       const collection = saved.category === 'gameplay' || saved.assetName === 'crate' ? frontOccluders : targetCollectionForZ(saved.z);
       const obj = addObject(collection, saved.assetName, saved.x, saved.z, saved.sx, saved.sy, {
         id: saved.id, baseSx: saved.sx, baseSy: saved.sy, flip: saved.flip,
-        y: pathGroundYAt(saved.x, saved.z), collision: saved.collision, deleted: saved.deleted,
+        y: Number.isFinite(saved.y) ? saved.y : ((saved.category === 'gameplay' || saved.assetName === 'crate') ? playSurfaceYAt(saved.x) : pathGroundYAt(saved.x, saved.z)), collision: saved.collision, deleted: saved.deleted,
         userAdded: true, shade: 1.0, opacity: 0.98, layer: classifyLayer(saved.z),
         category: saved.category || (saved.assetName === 'crate' ? 'gameplay' : 'dressing'), gameplayType: saved.gameplayType || (saved.assetName === 'crate' ? 'crate' : null),
         gameplayLayerLocked: typeof saved.gameplayLayerLocked === 'boolean' ? saved.gameplayLayerLocked : (saved.category === 'gameplay' || saved.assetName === 'crate')
@@ -980,7 +999,7 @@
       obj.sx = saved.sx; obj.sy = saved.sy;
       if (obj.category === 'gameplay' && obj.gameplayLayerLocked) {
         obj.z = pathZ;
-        obj.y = pathGroundYAt(obj.x, pathZ);
+        if (!Number.isFinite(saved.y)) obj.y = playSurfaceYAt(obj.x);
         moveObjectToCorrectCollection(obj);
       }
     }
@@ -991,10 +1010,11 @@
 
   scatterForest();
   restoreSceneEdits();
+  settleGameplayCrates();
 
   const character = {
     x: 0,
-    y: pathGroundYAt(0, pathZ),
+    y: playSurfaceYAt(0),
     z: pathZ,
     scale: 2.31,
     tint: [1.0, 1.0, 1.0],
@@ -1003,6 +1023,10 @@
     distanceTravelled: 0,
     lastFacing: 1
   };
+
+  function characterRenderY() {
+    return character.y + CHARACTER_SOLE_ART_LOCAL_OFFSET * character.scale;
+  }
 
   const SHARED_ANIM_KEY = 'gamehub.walklab.anim.v4';
   const SHARED_CLIPS_KEY = 'gamehub.walklab.anim.v6';
@@ -1330,15 +1354,16 @@
     const info = editorAssetInfo.get(type) || { category: 'dressing', gameplayType: null };
     const collection = info.category === 'gameplay' ? frontOccluders : targetCollectionForZ(point.z);
     const gameplayCollision = type === 'crate'
-      ? { halfWidth: Math.max(0.46, w * 0.43), height: h * 0.94, depth: 0.82, platform: true }
+      ? { halfWidth: Math.max(0.46, w * CRATE_HALF_WIDTH_FACTOR), height: h * CRATE_COLLISION_HEIGHT_FACTOR, depth: 0.82, platform: true }
       : null;
     const placementZ = info.category === 'gameplay' ? pathZ : point.z;
     const obj = addObject(collection, type, point.x, placementZ, w, h, {
-      id, userAdded:true, baseSx:w, baseSy:h, y:pathGroundYAt(point.x, info.category === 'gameplay' ? pathZ : point.z),
+      id, userAdded:true, baseSx:w, baseSy:h, y:info.category === 'gameplay' ? playSurfaceYAt(point.x) : pathGroundYAt(point.x, point.z),
       shade:1, opacity:.99, layer:classifyLayer(info.category === 'gameplay' ? pathZ : point.z),
       category: info.category || 'dressing', gameplayType: info.gameplayType || null, collision: gameplayCollision,
       gameplayLayerLocked: info.category === 'gameplay'
     });
+    if (obj.category === 'gameplay') obj.y = restYForGameplayObject(obj, obj.x, null, true);
     moveObjectToCorrectCollection(obj);
     sortSceneCollections();
     recordObjectEdit(obj);
@@ -1353,10 +1378,11 @@
     const collection = selectedObject.category === 'gameplay' ? frontOccluders : targetCollectionForZ(point.z);
     const obj = addObject(collection, selectedObject.assetName, point.x, point.z, selectedObject.sx, selectedObject.sy, {
       id, userAdded:true, baseSx:selectedObject.baseSx || selectedObject.sx, baseSy:selectedObject.baseSy || selectedObject.sy,
-      y:pathGroundYAt(point.x, point.z), shade:selectedObject.shade, opacity:selectedObject.opacity,
+      y:selectedObject.category === 'gameplay' ? playSurfaceYAt(point.x) : pathGroundYAt(point.x, point.z), shade:selectedObject.shade, opacity:selectedObject.opacity,
       flip:selectedObject.flip, layer:classifyLayer(point.z), collision:selectedObject.collision ? { ...selectedObject.collision } : null,
       category:selectedObject.category || 'dressing', gameplayType:selectedObject.gameplayType || null, gameplayLayerLocked: !!selectedObject.gameplayLayerLocked
     });
+    if (obj.category === 'gameplay') obj.y = restYForGameplayObject(obj, obj.x, null, true);
     moveObjectToCorrectCollection(obj);
     sortSceneCollections();
     recordObjectEdit(obj);
@@ -1373,7 +1399,10 @@
       selectedObject.collision.halfWidth *= ratio;
       selectedObject.collision.height *= ratio;
     }
-    selectedObject.y = pathGroundYAt(selectedObject.x, selectedObject.z);
+    selectedObject.y = selectedObject.category === 'gameplay'
+      ? restYForGameplayObject(selectedObject)
+      : pathGroundYAt(selectedObject.x, selectedObject.z);
+    if (selectedObject.category === 'gameplay') settleGameplayCrates();
     recordObjectEdit(selectedObject);
     updateEditorButtons();
   }
@@ -1382,7 +1411,7 @@
     if (!selectedObject || selectedObject.deleted) return;
     selectedObject.collision = selectedObject.collision ? null : {
       halfWidth: Math.max(0.18, selectedObject.sx * (selectedObject.category === 'gameplay' ? 0.43 : 0.34)),
-      height: Math.max(0.24, selectedObject.sy * (selectedObject.category === 'gameplay' ? 0.94 : 0.66)),
+      height: Math.max(0.24, selectedObject.sy * (selectedObject.category === 'gameplay' ? CRATE_COLLISION_HEIGHT_FACTOR : 0.66)),
       depth: Math.max(0.42, Math.min(1.15, selectedObject.sx * 0.42)),
       platform: selectedObject.category === 'gameplay'
     };
@@ -1395,7 +1424,7 @@
     selectedObject.gameplayLayerLocked = !selectedObject.gameplayLayerLocked;
     if (selectedObject.gameplayLayerLocked) {
       selectedObject.z = pathZ;
-      selectedObject.y = pathGroundYAt(selectedObject.x, pathZ);
+      selectedObject.y = restYForGameplayObject(selectedObject);
       moveObjectToCorrectCollection(selectedObject);
       sortSceneCollections();
     }
@@ -1409,8 +1438,10 @@
 
   function deleteSelected() {
     if (!selectedObject || selectedObject.deleted) return;
+    const wasGameplay = selectedObject.category === 'gameplay';
     selectedObject.deleted = true;
     recordObjectEdit(selectedObject);
+    if (wasGameplay) settleGameplayCrates();
     selectedObject = null;
     updateEditorButtons();
   }
@@ -1476,7 +1507,7 @@
       if (obj === selectedObject) continue;
       const c = obj.collision;
       const drawX = obj.wrap ? wrapX(obj.x, camera.x) : obj.x;
-      const y0 = pathGroundYAt(obj.x, obj.z);
+      const y0 = obj.y;
       const points = [
         projectWorldPoint(drawX-c.halfWidth, y0, obj.z),
         projectWorldPoint(drawX+c.halfWidth, y0, obj.z),
@@ -1521,7 +1552,7 @@
       if (selectedObject.collision) {
         const c = selectedObject.collision;
         const drawX = selectedObject.wrap ? wrapX(selectedObject.x, camera.x) : selectedObject.x;
-        const y0 = pathGroundYAt(selectedObject.x, selectedObject.z);
+        const y0 = selectedObject.y;
         const points = [
           projectWorldPoint(drawX-c.halfWidth, y0, selectedObject.z),
           projectWorldPoint(drawX+c.halfWidth, y0, selectedObject.z),
@@ -1564,10 +1595,62 @@
     return allSceneObjects().filter(obj => !obj.deleted && !obj.carried && obj.collision);
   }
 
+  function isGameplayCrate(obj) {
+    return !!obj && !obj.deleted && !obj.carried && obj.category === 'gameplay' && obj.gameplayType === 'crate';
+  }
+
+  function crateHalfWidth(obj) {
+    return obj?.collision?.halfWidth ?? Math.max(0.18, (obj?.sx || 0.9) * CRATE_HALF_WIDTH_FACTOR);
+  }
+
+  function crateHeight(obj) {
+    return obj?.collision?.height ?? Math.max(0.24, (obj?.sy || 0.88) * CRATE_COLLISION_HEIGHT_FACTOR);
+  }
+
+  function cratesOverlapForStack(a, b) {
+    if (!(a.gameplayLayerLocked && b.gameplayLayerLocked) && Math.abs(a.z - b.z) > 0.28) return false;
+    const ax = wrapX(a.x, b.x);
+    const reach = Math.min(crateHalfWidth(a), crateHalfWidth(b)) * 0.92;
+    return Math.abs(ax - b.x) <= Math.max(0.16, reach);
+  }
+
+  function restYForGameplayObject(obj, aroundX = obj.x, settled = null, allowAnySupport = false) {
+    if (!isGameplayCrate(obj)) return obj?.category === 'gameplay' && obj?.gameplayLayerLocked
+      ? playSurfaceYAt(aroundX)
+      : pathGroundYAt(aroundX, obj?.z ?? pathZ);
+    let baseY = obj.gameplayLayerLocked ? playSurfaceYAt(aroundX) : pathGroundYAt(aroundX, obj.z);
+    const currentBase = Number.isFinite(obj.y) ? obj.y : baseY;
+    const supports = settled || allSceneObjects().filter(other => isGameplayCrate(other) && other !== obj);
+    for (const other of supports) {
+      if (other === obj || !cratesOverlapForStack(obj, other)) continue;
+      const top = other.y + crateHeight(other);
+      // Normal settling only accepts things that are already beneath this
+      // crate.  Explicit placement/drop can opt in to the highest overlapping
+      // support, which is what gives us intentional crate stacking.
+      if (!allowAnySupport && top > currentBase + 0.10) continue;
+      if (top > baseY) baseY = top;
+    }
+    return baseY;
+  }
+
+  function settleGameplayCrates() {
+    const crates = allSceneObjects().filter(isGameplayCrate).sort((a,b) => a.y - b.y || a.x - b.x);
+    const settled = [];
+    for (const crate of crates) {
+      if (crate.gameplayLayerLocked) crate.z = pathZ;
+      if (crate.collision) {
+        crate.collision.halfWidth = Math.max(0.12, crate.sx * CRATE_HALF_WIDTH_FACTOR);
+        crate.collision.height = Math.max(0.18, crate.sy * CRATE_COLLISION_HEIGHT_FACTOR);
+      }
+      crate.y = restYForGameplayObject(crate, crate.x, settled);
+      settled.push(crate);
+    }
+  }
+
   function platformOffsetFor(obj, characterX) {
     if (!obj?.collision?.platform) return 0;
-    const platformTop = pathGroundYAt(obj.x, obj.z) + (obj.collision.height ?? obj.sy * 0.94);
-    return platformTop - pathGroundYAt(characterX, pathZ);
+    const platformTop = obj.y + (obj.collision.height ?? obj.sy * CRATE_COLLISION_HEIGHT_FACTOR);
+    return platformTop - playSurfaceYAt(characterX);
   }
 
   function platformUnder(characterX, ceiling = Infinity) {
@@ -1691,23 +1774,33 @@
     return p;
   }
 
-  function heldCrateTransform(facing) {
+  function heldCrateTransform(facing, pose = null) {
     const obj = carriedObject || interactionState?.object;
     const sx = obj ? obj.sx : 0.96;
     const sy = obj ? obj.sy : 0.88;
-    return {
-      x: character.x + facing * CARRY_FORWARD,
-      y: character.y + CARRY_BOTTOM,
-      z: character.z - 0.0004,
-      sx, sy
-    };
+    let x = character.x + facing * CARRY_FORWARD;
+    let y = characterRenderY() + CARRY_BOTTOM;
+
+    // Attach the carried crate to the actual animated hand position rather than
+    // to a fixed world height.  That means the box inherits the same pelvis /
+    // shoulder rise and fall as the walk cycle instead of appearing to hover
+    // while the character bobs behind it.
+    if (pose) {
+      const g = Rig.geometry(pose);
+      const handX = ((g.aW.x + g.bW.x) * 0.5) * character.scale;
+      const handY = ((g.aW.y + g.bW.y) * 0.5) * character.scale;
+      x = character.x + handX * facing;
+      y = characterRenderY() + handY - sy * 0.52;
+    }
+
+    return { x, y, z: character.z - 0.0004, sx, sy };
   }
 
-  function interactionCrateTransform(facing) {
-    if (!interactionState) return carriedObject ? heldCrateTransform(facing) : null;
+  function interactionCrateTransform(facing, pose = null) {
+    if (!interactionState) return carriedObject ? heldCrateTransform(facing, pose) : null;
     const st = interactionState;
     const p = smooth01(st.time / st.duration);
-    const held = heldCrateTransform(facing);
+    const held = heldCrateTransform(facing, pose);
     if (st.type === 'pickup') {
       const lift = smooth01(Rig.clamp((p - 0.18) / 0.82, 0, 1));
       return {
@@ -1726,10 +1819,10 @@
     };
   }
 
-  function drawCarriedCrate(view, facing) {
+  function drawCarriedCrate(view, facing, pose = null) {
     const obj = interactionState?.object || carriedObject;
     if (!obj) return;
-    const tr = interactionCrateTransform(facing);
+    const tr = interactionCrateTransform(facing, pose);
     if (!tr) return;
     const temp = {
       ...obj,
@@ -1754,9 +1847,10 @@
     if (!mesh || !r) return;
 
     const ax = character.x + part.a.x * character.scale * facing;
-    const ay = character.y + part.a.y * character.scale;
+    const renderY = characterRenderY();
+    const ay = renderY + part.a.y * character.scale;
     const bx = character.x + part.b.x * character.scale * facing;
-    const by = character.y + part.b.y * character.scale;
+    const by = renderY + part.b.y * character.scale;
     const dvx = bx - ax, dvy = by - ay;
     const p0x = r.a0[0] * r.w, p0y = r.a0[1] * r.h;
     const p1x = r.a1[0] * r.w, p1y = r.a1[1] * r.h;
@@ -1820,12 +1914,12 @@
     let crateDrawn = false;
     for (const part of parts) {
       if (!crateDrawn && (carriedObject || interactionState) && part.name === 'near_upper_arm') {
-        drawCarriedCrate(view, facing);
+        drawCarriedCrate(view, facing, pose);
         crateDrawn = true;
       }
       drawRigPartWebGL(part, view, facing);
     }
-    if (!crateDrawn && (carriedObject || interactionState)) drawCarriedCrate(view, facing);
+    if (!crateDrawn && (carriedObject || interactionState)) drawCarriedCrate(view, facing, pose);
   }
 
   function nearestActionCrate() {
@@ -1840,7 +1934,12 @@
       if (Math.abs(obj.z - pathZ) > Math.max(0.95, depth)) continue;
       const ox = wrapX(obj.x, characterXNow);
       const d = Math.abs(ox - characterXNow);
-      if (d <= ACTION_RANGE && d < bestD) { best = obj; bestD = d; }
+      // When crates are stacked at the same X, prefer the upper accessible one
+      // so ACTION naturally peels a stack from the top instead of removing its
+      // support from underneath.
+      if (d <= ACTION_RANGE && (d < bestD - 0.02 || (Math.abs(d - bestD) <= 0.02 && (!best || obj.y > best.y)))) {
+        best = obj; bestD = d;
+      }
     }
     return best;
   }
@@ -1871,6 +1970,9 @@
     if (!obj || carriedObject || interactionState || jumping) return;
     const characterXNow = camera.x + character.screenOffsetX;
     obj.carried = true;
+    // If this was the lower crate in a stack, the remaining crates settle onto
+    // the next available support immediately rather than being left floating.
+    settleGameplayCrates();
     interactionState = {
       type: 'pickup',
       time: 0,
@@ -1899,7 +2001,9 @@
     const facing = character.lastFacing >= 0 ? 1 : -1;
     const x = character.x + facing * 0.92;
     const z = carriedObject?.gameplayLayerLocked === false ? carriedObject.z : pathZ;
-    return { x, z, y: pathGroundYAt(x, z) };
+    const temp = carriedObject ? { ...carriedObject, x, z, carried: false } : null;
+    const y = temp ? restYForGameplayObject(temp, x, null, true) : playSurfaceYAt(x);
+    return { x, z, y };
   }
 
   function startDrop() {
@@ -1924,12 +2028,13 @@
     const obj = interactionState.object;
     obj.x = interactionState.targetX;
     obj.z = obj.gameplayLayerLocked === false ? interactionState.targetZ : pathZ;
-    obj.y = pathGroundYAt(obj.x, obj.z);
     obj.carried = false;
+    obj.y = interactionState.targetY;
     carriedObject = null;
     interactionState = null;
     moveObjectToCorrectCollection(obj);
     sortSceneCollections();
+    settleGameplayCrates();
     recordObjectEdit(obj);
     hintEl.textContent = 'Crate placed';
     hintEl.classList.remove('hidden');
@@ -1941,12 +2046,13 @@
     const target = dropTargetForCarried();
     obj.x = target.x;
     obj.z = obj.gameplayLayerLocked === false ? target.z : pathZ;
-    obj.y = pathGroundYAt(obj.x, obj.z);
     obj.carried = false;
+    obj.y = target.y;
     carriedObject = null;
     interactionState = null;
     moveObjectToCorrectCollection(obj);
     sortSceneCollections();
+    settleGameplayCrates();
     recordObjectEdit(obj);
   }
 
@@ -2065,7 +2171,7 @@
     previousCameraX = camera.x;
 
     character.x = camera.x + character.screenOffsetX;
-    character.y = pathGroundYAt(character.x, pathZ) + jumpOffset;
+    character.y = playSurfaceYAt(character.x) + jumpOffset;
 
     gl.clearColor(fogColor[0], fogColor[1], fogColor[2], 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -2287,7 +2393,9 @@
         selectedObject.z = selectedObject.category === 'gameplay' && selectedObject.gameplayLayerLocked
           ? pathZ
           : Rig.clamp(point.z + editorDragOffset.z, WORLD.farZ + 0.8, WORLD.nearZ - 0.6);
-        selectedObject.y = pathGroundYAt(selectedObject.x, selectedObject.z);
+        selectedObject.y = selectedObject.category === 'gameplay'
+          ? restYForGameplayObject(selectedObject)
+          : pathGroundYAt(selectedObject.x, selectedObject.z);
         moveObjectToCorrectCollection(selectedObject);
         sortSceneCollections();
         selectionCycleInfo = null;
@@ -2373,7 +2481,7 @@
     if (interactionState?.type === 'drop') completeDrop();
     interactionState = null;
     locomotionPhase = 0;
-    character.y = pathGroundYAt(character.x, pathZ);
+    character.y = playSurfaceYAt(character.x);
     lastTime = performance.now();
     previousCameraX = camera.x;
   });

@@ -1,9 +1,10 @@
-# GameHub v1.8.80
+# GameHub v1.8.81
 
-SideScroll gameplay-layer, world-ground and carry-interaction pass.
+SideScroll grounding, carry-follow and crate-stacking pass.
 
-- Gameplay assets now default to the character depth layer, with a GAME LAYER toggle in Edit mode.
-- The dirt floor is now a real world-anchored ground plane spanning the scene depth, so its UVs no longer slide with the camera.
-- Added a second Play control row with an ACTION button.
-- Wooden crates can be picked up, carried with an arms-forward carry pose, put down again, jumped onto, and used as solid platforms.
-- Pick-up and put-down use short live rig transitions rather than baked sprites.
+- Character rendering now uses the centre of the raised path as the single gameplay floor reference, with a calibrated sole offset so the painted boots sit on the surface instead of sinking through it.
+- Wooden crate artwork now reaches the billboard baseline, and its collision/platform height is matched to the visible crate so boxes no longer appear to float.
+- Carried crates are attached to the animated hand position, so they rise and fall naturally with the character's walking body motion.
+- Crates can now be stacked by putting one down on top of another; platform collision uses each crate's actual world height, so the character can stand/jump on stacked levels.
+- ACTION prefers the upper crate when several are stacked at the same position.
+- Stack height is saved with scene edits so authored stacks survive reloads.
