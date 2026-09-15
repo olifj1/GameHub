@@ -9,6 +9,7 @@
   const statusEl = document.getElementById('sidescroll-status');
   const hintEl = document.getElementById('sidescroll-hint');
   const debugBtn = document.getElementById('sidescroll-depth');
+  const soundBtn = document.getElementById('sidescroll-sound');
   const depthKey = document.getElementById('sidescroll-depth-key');
   const driveControl = document.getElementById('sidescroll-drive');
   const driveThumb = document.getElementById('sidescroll-drive-thumb');
@@ -32,6 +33,169 @@
   const editorGameLayerBtn = document.getElementById('sidescroll-editor-game-layer');
   const editorCollisionBtn = document.getElementById('sidescroll-editor-collision');
   const editorDeleteBtn = document.getElementById('sidescroll-editor-delete');
+
+  // SideScroll audio is deliberately local/offline.  iOS requires an AudioContext
+  // to be created/resumed from a real user gesture, so every pointer/key gesture
+  // opportunistically unlocks it while the actual buffers load in the background.
+  const SideScrollAudio = (() => {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const ENABLE_KEY = 'gamehub.sidescroll.audio.enabled.v1';
+    const files = {
+      forest: 'sidescroll-audio-forest.mp3?v=1.8.83',
+      jump: 'sidescroll-audio-jump.mp3?v=1.8.83',
+      land: 'sidescroll-audio-land.mp3?v=1.8.83',
+      cratePickup: 'sidescroll-audio-crate-pickup.mp3?v=1.8.83',
+      crateDrop: 'sidescroll-audio-crate-drop.mp3?v=1.8.83',
+      footsteps: Array.from({ length: 4 }, (_, i) => `sidescroll-audio-footstep-${String(i).padStart(2,'0')}.mp3?v=1.8.83`)
+    };
+
+    let ctx = null;
+    let master = null;
+    let ambienceGain = null;
+    let sfxGain = null;
+    let ambientSource = null;
+    let loadingPromise = null;
+    let enabled = true;
+    let lastFootstep = -1;
+    const buffers = new Map();
+
+    try {
+      const saved = localStorage.getItem(ENABLE_KEY);
+      if (saved === '0') enabled = false;
+    } catch (_) {}
+
+    function updateButton() {
+      if (!soundBtn) return;
+      soundBtn.textContent = enabled ? 'Sound' : 'Muted';
+      soundBtn.setAttribute('aria-pressed', String(!enabled));
+      soundBtn.setAttribute('aria-label', enabled ? 'Mute sound' : 'Turn sound on');
+    }
+
+    function setupContext() {
+      if (ctx || !Ctx) return ctx;
+      ctx = new Ctx();
+      master = ctx.createGain();
+      ambienceGain = ctx.createGain();
+      sfxGain = ctx.createGain();
+      master.gain.value = enabled ? 0.78 : 0;
+      ambienceGain.gain.value = 2.35;
+      sfxGain.gain.value = 1;
+      ambienceGain.connect(master);
+      sfxGain.connect(master);
+      master.connect(ctx.destination);
+      return ctx;
+    }
+
+    async function loadBuffer(key, url) {
+      try {
+        const response = await fetch(url, { cache: 'default' });
+        if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+        const data = await response.arrayBuffer();
+        const buffer = await ctx.decodeAudioData(data.slice(0));
+        buffers.set(key, buffer);
+      } catch (err) {
+        console.warn(`SideScroll audio failed to load ${url}`, err);
+      }
+    }
+
+    function preload() {
+      if (!ctx) return Promise.resolve();
+      if (loadingPromise) return loadingPromise;
+      const tasks = [
+        loadBuffer('forest', files.forest),
+        loadBuffer('jump', files.jump),
+        loadBuffer('land', files.land),
+        loadBuffer('cratePickup', files.cratePickup),
+        loadBuffer('crateDrop', files.crateDrop),
+        ...files.footsteps.map((url, i) => loadBuffer(`footstep${i}`, url))
+      ];
+      loadingPromise = Promise.all(tasks).then(() => {
+        if (enabled) startAmbience();
+      });
+      return loadingPromise;
+    }
+
+    async function unlock() {
+      if (!enabled || !Ctx) { updateButton(); return; }
+      setupContext();
+      try {
+        if (ctx.state !== 'running') await ctx.resume();
+      } catch (_) {}
+      preload();
+      updateButton();
+    }
+
+    function startAmbience() {
+      if (!enabled || !ctx || ctx.state !== 'running' || ambientSource || !buffers.has('forest')) return;
+      const source = ctx.createBufferSource();
+      source.buffer = buffers.get('forest');
+      source.loop = true;
+      source.connect(ambienceGain);
+      source.start();
+      source.onended = () => { if (ambientSource === source) ambientSource = null; };
+      ambientSource = source;
+    }
+
+    function stopAmbience() {
+      if (!ambientSource) return;
+      try { ambientSource.stop(); } catch (_) {}
+      try { ambientSource.disconnect(); } catch (_) {}
+      ambientSource = null;
+    }
+
+    function play(key, { volume = 1, rate = 1 } = {}) {
+      if (!enabled || !ctx || ctx.state !== 'running') return;
+      const buffer = buffers.get(key);
+      if (!buffer) return;
+      const source = ctx.createBufferSource();
+      const gain = ctx.createGain();
+      source.buffer = buffer;
+      source.playbackRate.value = Math.max(0.55, Math.min(1.65, rate));
+      gain.gain.value = Math.max(0, Math.min(2, volume));
+      source.connect(gain);
+      gain.connect(sfxGain);
+      source.start();
+    }
+
+    function playFootstep(runAmount = 0, carrying = false) {
+      let index = Math.floor(Math.random() * 10);
+      if (index === lastFootstep) index = (index + 1 + Math.floor(Math.random() * 8)) % 10;
+      lastFootstep = index;
+      const run = Math.max(0, Math.min(1, runAmount));
+      const volume = (0.22 + run * 0.12) * (carrying ? 0.92 : 1);
+      const rate = 0.96 + Math.random() * 0.08 + run * 0.035;
+      play(`footstep${index}`, { volume, rate });
+    }
+
+    function playLanding(speed = 2) {
+      const strength = Math.max(0, Math.min(1, (speed - 0.8) / 4.2));
+      play('land', { volume: 0.20 + strength * 0.25, rate: 1.01 - strength * 0.10 });
+    }
+
+    function setEnabled(next) {
+      enabled = Boolean(next);
+      try { localStorage.setItem(ENABLE_KEY, enabled ? '1' : '0'); } catch (_) {}
+      updateButton();
+      if (!ctx) {
+        if (enabled) unlock();
+        return;
+      }
+      const now = ctx.currentTime;
+      master.gain.cancelScheduledValues(now);
+      master.gain.setTargetAtTime(enabled ? 0.78 : 0, now, 0.025);
+      if (enabled) {
+        unlock().then(startAmbience);
+      } else {
+        stopAmbience();
+      }
+    }
+
+    function toggle() { setEnabled(!enabled); }
+    function isEnabled() { return enabled; }
+
+    updateButton();
+    return { unlock, play, playFootstep, playLanding, toggle, isEnabled, updateButton };
+  })();
 
   const gl = canvas.getContext('webgl', {
     alpha: false,
@@ -421,10 +585,10 @@
     ctx.globalAlpha=1;
   },256,128,true);
 
-  // v1.8.81: forest dressing now comes from one authored atlas.
+  // Forest dressing comes from one authored atlas.
   // This removes the old per-file fallback path which could substitute the
   // full woodland source sheet when an individual PNG failed to load.
-  textures.dressingAtlas = createImageTexture('sidescroll-dressing-atlas.png?v=1.8.81', 'SideScroll dressing atlas');
+  textures.dressingAtlas = createImageTexture('sidescroll-dressing-atlas.png?v=1.8.82', 'SideScroll dressing atlas');
   const assetUv = {
     tree06: { scale: [0.107421875, 0.373046875], offset: [0.003906250, 0.623046875] },
     tree02: { scale: [0.139648438, 0.362304688], offset: [0.115234375, 0.633789062] },
@@ -500,7 +664,7 @@
     }
   }, 256, 256, false);
 
-  textures.rigAtlas = createImageTexture(Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.81`, 'Walk Lab cutout rig atlas');
+  textures.rigAtlas = createImageTexture(Rig.ATLAS.url.startsWith('data:') ? Rig.ATLAS.url : `${Rig.ATLAS.url}?v=1.8.82`, 'Walk Lab cutout rig atlas');
 
   function mulberry32(seed) {
     return function() {
@@ -1110,6 +1274,11 @@
   const DROP_DURATION = 0.44;
   const CARRY_FORWARD = 0.48;
   const CARRY_BOTTOM = 0.58;
+
+  function phaseCrossed(previous, current, target) {
+    if (current >= previous) return previous < target && current >= target;
+    return previous < target || current >= target;
+  }
 
   let activePointer = null;
   let dragStartX = 0;
@@ -1984,6 +2153,7 @@
     };
     standingOnObject = null;
     setDriveAxis(0);
+    SideScrollAudio.play('cratePickup', { volume: 0.34, rate: 0.96 + Math.random() * 0.06 });
     hintEl.textContent = 'Picking up crate';
     hintEl.classList.remove('hidden');
   }
@@ -2036,6 +2206,7 @@
     sortSceneCollections();
     settleGameplayCrates();
     recordObjectEdit(obj);
+    SideScrollAudio.play('crateDrop', { volume: 0.50, rate: 0.92 + Math.random() * 0.08 });
     hintEl.textContent = 'Crate placed';
     hintEl.classList.remove('hidden');
   }
@@ -2071,6 +2242,7 @@
     resize();
     const dt = Math.min(0.05, (now - lastTime) / 1000);
     lastTime = now;
+    let landedThisFrame = false;
 
     if (interactionState) {
       interactionState.time += dt;
@@ -2118,18 +2290,24 @@
         const characterXNow = camera.x + character.screenOffsetX;
         const platform = platformUnder(characterXNow, previousJumpOffset + 0.10);
         if (platform && previousJumpOffset >= platform.offset - 0.04 && jumpOffset <= platform.offset) {
+          const impactSpeed = Math.abs(jumpVelocity);
           jumpOffset = platform.offset;
           jumpVelocity = 0;
           jumping = false;
+          landedThisFrame = true;
+          SideScrollAudio.playLanding(impactSpeed);
           jumpTime = 0;
           standingOnObject = platform.obj;
         }
       }
 
       if (jumping && jumpOffset <= 0 && jumpTime > 0.18) {
+        const impactSpeed = Math.abs(jumpVelocity);
         jumpOffset = 0;
         jumpVelocity = 0;
         jumping = false;
+        landedThisFrame = true;
+        SideScrollAudio.playLanding(impactSpeed);
         jumpTime = 0;
         standingOnObject = null;
       }
@@ -2164,9 +2342,17 @@
     if (isWalking) {
       const travel = Math.abs(cameraDelta);
       const stride = Rig.lerp(WALK_STRIDE, RUN_STRIDE, smoothRun);
+      const previousPhase = locomotionPhase;
       locomotionPhase = (locomotionPhase + travel / Math.max(0.001, stride)) % 1;
       character.distanceTravelled += travel;
       character.lastFacing = cameraDelta >= 0 ? 1 : -1;
+      // Two foot plants per locomotion cycle.  Trigger from travelled distance /
+      // rig phase rather than a timer so walk, run and slider speed stay locked.
+      if (!jumping && !landedThisFrame && !interactionState) {
+        if (phaseCrossed(previousPhase, locomotionPhase, 0.08) || phaseCrossed(previousPhase, locomotionPhase, 0.56)) {
+          SideScrollAudio.playFootstep(smoothRun, Boolean(carriedObject));
+        }
+      }
     }
     previousCameraX = camera.x;
 
@@ -2273,6 +2459,7 @@
     // from that surface rather than teleporting back to path level.
     standingOnObject = null;
     jumpVelocity = JUMP_VELOCITY;
+    SideScrollAudio.play('jump', { volume: carriedObject ? 0.18 : 0.22, rate: 0.98 + Math.random() * 0.05 });
     hideHint();
   }
   jumpBtn.addEventListener('pointerdown', e => {
@@ -2285,6 +2472,14 @@
     e.preventDefault();
     performAction();
     actionBtn.setPointerCapture?.(e.pointerId);
+  });
+
+  // Any deliberate input can satisfy the iPhone audio-unlock requirement.
+  document.addEventListener('pointerdown', () => { SideScrollAudio.unlock(); }, { capture: true, passive: true });
+  document.addEventListener('keydown', () => { SideScrollAudio.unlock(); }, { capture: true });
+  soundBtn?.addEventListener('click', e => {
+    e.preventDefault();
+    SideScrollAudio.toggle();
   });
 
   debugBtn.addEventListener('click', () => {
