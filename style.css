@@ -10761,7 +10761,6 @@ body[data-game-id="game-16"] .sidescroll-stage-actions{
   flex:0 0 auto;
 }
 body[data-game-id="game-16"] .sidescroll-stage-actions .sidescroll-depth-button,
-body[data-game-id="game-16"] .sidescroll-sound-button,
 body[data-game-id="game-16"] .sidescroll-edit-button{
   min-height:36px;
   padding:0 9px;
@@ -10775,17 +10774,13 @@ body[data-game-id="game-16"] .sidescroll-edit-button{
   font-weight:900;
   letter-spacing:.04em;
 }
-body[data-game-id="game-16"] .sidescroll-sound-button[aria-pressed="true"]{
-  background:rgba(92,85,81,.78);
-  color:rgba(242,247,248,.70);
-}
 body[data-game-id="game-16"] .sidescroll-edit-button[aria-pressed="true"]{
   background:rgba(111,143,137,.82);
   border-color:rgba(234,245,242,.62);
   color:white;
 }
 body[data-game-id="game-16"] .sidescroll-status{
-  max-width:calc(100% - 182px);
+  max-width:calc(100% - 126px);
 }
 body[data-game-id="game-16"] .sidescroll-editor-overlay{
   position:absolute;

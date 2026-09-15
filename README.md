@@ -1,10 +1,8 @@
-# GameHub v1.8.88
+# GameHub v1.8.89
 
-SideScroll footstep stability + cadence rebuild.
+SideScroll audio rollback.
 
-- Removes all runtime footstep playback-rate changes, seeks, restarts and pauses while moving.
-- Uses three tiny fixed-rate cadence loops (slow / walk / run), all unlocked once and kept running silently.
-- Movement only changes which loop is audible, so stopping/starting should no longer stall rendering.
-- Each cadence loop contains four soft grass/dirt-style contacts per animation cycle, matching the four visual foot contacts.
-- Replaces the hard, door-like Kenney RPG step with a softer custom footfall texture.
-- Woodland ambience remains independent and starts from the first user interaction.
+- Restores SideScroll gameplay/rendering code to the last pre-audio version (v1.8.81).
+- Removes the entire SideScroll audio implementation: no audio context, sound button, ambience, footsteps, jump/landing or crate sounds.
+- Keeps the later footprint cleanup by removing 18 obsolete individual SideScroll tree/ground PNGs that are no longer used by the atlas-based renderer.
+- Bumps the service-worker cache so the rollback replaces recent audio builds cleanly.
