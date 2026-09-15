@@ -1,8 +1,7 @@
-# GameHub v1.8.89
+# GameHub v1.8.90
 
-SideScroll audio rollback.
+Project split cleanup.
 
-- Restores SideScroll gameplay/rendering code to the last pre-audio version (v1.8.81).
-- Removes the entire SideScroll audio implementation: no audio context, sound button, ambience, footsteps, jump/landing or crate sounds.
-- Keeps the later footprint cleanup by removing 18 obsolete individual SideScroll tree/ground PNGs that are no longer used by the atlas-based renderer.
-- Bumps the service-worker cache so the rollback replaces recent audio builds cleanly.
+- SideScroll and Walk Lab have moved to their own standalone PWA.
+- Removed both games and their dedicated rig/texture assets from GameHub.
+- No changes to the remaining GameHub games.

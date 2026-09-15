@@ -168,7 +168,7 @@ window.APP_CONFIG = {
       "id": "game-14",
       "displayName": "Tower Attack",
       "description": "Attack and defend in real time: deploy units, place weapons and break the enemy base.",
-      "icon": "⇧",
+      "icon": "\u21e7",
       "enabled": true,
       "path": "game-14.html?v=1.8.13"
     },
@@ -176,25 +176,9 @@ window.APP_CONFIG = {
       "id": "game-15",
       "displayName": "My House",
       "description": "Furnish a four-room 3D dollhouse, dress the rooms and make it your own.",
-      "icon": "⌂",
+      "icon": "\u2302",
       "enabled": true,
       "path": "game-15.html?v=1.8.23"
-    },
-    {
-      "id": "game-16",
-      "displayName": "SideScroll",
-      "description": "Explore the layered 3D forest with a spring movement slider, jump the fallen log, and test the walk-to-run range.",
-      "icon": "♠",
-      "enabled": true,
-      "path": "game-16.html?v=1.8.89"
-    },
-    {
-      "id": "game-17",
-      "displayName": "Walk Lab",
-      "description": "Inspect and edit the shared cutout walk, airborne run and trailing-leg jump clips with panning and pinch zoom.",
-      "icon": "↻",
-      "enabled": true,
-      "path": "game-17.html?v=1.8.74"
     }
   ]
 };
