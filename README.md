@@ -1,9 +1,10 @@
-# GameHub v1.8.86
+# GameHub v1.8.87
 
-SideScroll audio simplification.
+SideScroll footstep performance fix.
 
-- Reduced SideScroll to woodland ambience plus one clean footstep voice only.
-- Removed audible multi-effect priming and unused jump, landing and crate sounds.
-- Starts ambience from the first deliberate input without re-running audio setup on every movement touch.
-- Footsteps now follow the locomotion phase with a small iPhone latency compensation.
-- Removed seven now-unused audio files to keep the release lean.
+- Replaced per-footstep HTML audio restarts with one continuously running footstep loop.
+- The loop contains the same single footstep sample twice with silence between steps.
+- Walking now changes only footstep volume and playback rate; it never calls play(), pause() or seeks for individual steps.
+- Footstep cadence follows actual movement speed and re-syncs with the walk cycle when movement starts.
+- Keeps woodland ambience as a separate continuous loop.
+- Replaced the old single-step MP3 with a small pre-built WAV loop, keeping the release at the same file count.
